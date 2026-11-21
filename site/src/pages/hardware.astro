@@ -9,6 +9,7 @@ import { classroomHost, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const cad = repo + '/blob/main/hardware/';
+const caseQuests = repo + '/blob/main/quest/README.md#bambu-p1s-case-test-track';
 const raw = repo + '/raw/refs/heads/main/hardware/';
 const mesh = raw + 'stl/';
 const caseFiles = [
@@ -59,6 +60,7 @@ const parts = [
         ))}
       </dl>
       <a class="mt-4 inline-block text-accent" href={cad + 'p1s/README.md'}>P1S settings and fit checklist</a>
+      <a class="mt-4 ml-4 inline-block text-accent" href={caseQuests}>Follow the P1S print and test quests</a>
     </section>
     <section class="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-8" aria-labelledby="rail-title">
       <div>

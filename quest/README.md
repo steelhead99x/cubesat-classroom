@@ -8,10 +8,11 @@ Pass working lessons and well-documented evidence from students, teachers and ra
 
 ### Start with what you have
 
-Write down the board model, available sensors, and computer operating system. If you have several boards, pick one for the first run. No hardware is needed to get started.
+Write down the equipment you have, including the board or printer model, available sensors, and computer operating system. If you have several boards, pick one for the first run. No hardware is needed to get started.
 
 | Your setup | First quest |
 | --- | --- |
+| Bambu Lab P1S | [Validate the Rev A case slice](/quest/m0/slice-p1s-case.md) |
 | Computer only or unsure | [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md) |
 | Arduino, such as an Uno | [Read one Arduino sample](/quest/m0/arduino-first-reading.md) |
 | Seeed XIAO, such as ESP32-C3 or RP2040 | [Record a XIAO bench sample](/quest/m0/xiao-first-reading.md) |
@@ -21,6 +22,17 @@ Write down the board model, available sensors, and computer operating system. If
 ### Teacher pilot
 
 Start in M0. After a run, tell us which steps the class completed, which instruction they got stuck on, and one change you would make. Share a redacted note through the [contribution guide](../CONTRIBUTING.md). Teachers can pilot and review lessons before any flight work.
+
+### Bambu P1S case test track
+
+Use the enclosed Rev A case for these bench quests. Start with PLA and move through the steps in order. The Rev B rail-fit and ISS work has its own review path below.
+
+1. [Validate the slice in Bambu Studio](/quest/m0/slice-p1s-case.md)
+2. [Print and measure the PLA fastener coupon](/quest/m0/print-p1s-case-coupon.md)
+3. [Print the shell and lid](/quest/m0/print-p1s-case-parts.md)
+4. [Test the assembly fit](/quest/m0/test-p1s-case-fit.md)
+5. [Review an improvement against the fit evidence](/quest/m0/improve-p1s-case.md)
+6. [Repeat the fit test](/quest/m0/retest-p1s-case.md)
 
 ### Flight work
 
