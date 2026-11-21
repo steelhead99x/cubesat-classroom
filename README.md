@@ -1,60 +1,50 @@
 # <img src="site/public/mark.svg" width="38" height="38" alt=""> CubeSat Classroom
 
-**Build a small experiment. Bring back a measurement. Teach the next crew what you learned.**
+**A free space lab for K–12 classrooms.** Students send commands to a practice satellite, bring back a measurement, and teach the next class what they learned.
 
-CubeSat Classroom is a free, open-source space lab for K–12 learners, educators and amateur-radio mentors, inspired by Teachers in Space and AMSAT. A class can run a practice satellite mission in one afternoon with no radio license, no hardware and no cost. **The project is open for contributions.**
+No radio license, hardware or account is needed to start.
 
-[Project page](https://cubesatclass.org/) · [GitHub Pages](https://steelhead99x.github.io/cubesat-classroom/) · [Teachers in Space fundraiser](https://givebutter.com/fund-stem-training-for-100-educators-s14sb0)
+## Start here
 
-## Help build it
+1. **Try it in your browser.** Open the [practice ground station and example quests](https://cubesatclass.org/quests/). Pick Beginner if you are new.
+2. **Follow the quick start guide.** The [quick start guide](docs/quick-start.md) shows how to run the real station on a computer, step by step. You can also [print the one-page version](output/pdf/cubesat-classroom-quick-start.pdf).
+3. **Come to a workshop.** Three in-person workshops a year bring teachers, students and radio mentors together with real parts.
 
-This repository is a starting framework for a community project. We’re looking for teachers to try and improve lessons, radio volunteers to review station procedures, students to publish reproducible observations with an adult reviewer, and builders to contribute code, CAD and bench results. Start with the [quick-start guide](docs/quick-start.md) or [print the one-page handout](output/pdf/cubesat-classroom-quick-start.pdf), then pick [an open quest](/quest/README.md).
-
-AI tools are welcome for drafting, coding and analyzing data. A contributor owns the result, an independent person reviews it, and measured claims need reproducible evidence. The classroom station runs without an AI service. Use our [contribution and review standards](CONTRIBUTING.md).
-
-## Run the ground station
-
-Paste this into a terminal on macOS, Linux, or WSL, follow the prompts, then open the local address the station prints.
+Want to see the code run right away? On macOS, Linux or Windows (WSL), paste this into a terminal and follow the prompts:
 
 ```sh
 curl -fsSL https://cubesat.club/start.sh | bash
 ```
 
-With an existing checkout, run `bash docs/start.sh`. The guide explains each step and asks before downloading files, installing Rust, or launching the station. It needs Rust 1.91 or newer.
+## What's inside
 
-The commands and responses cross two pinned MoQ-over-QUIC relays on localhost. That is the first relay design exercise. The default readings and camera are simulated. The console can also read configured Linux sensor files. A separate [SubGHz H.264 rehearsal](docs/demo.md) replays the existing public [moq-subghz](https://github.com/steelhead99x/moq-subghz) format.
+- **Example quests:** five short lessons in the browser, each at three levels.
+- **Ground station:** a practice station you run on your own computer.
+- **Balloon lab:** compare your classroom's measurements with a real balloon flight. See the [balloon lab](docs/balloon-lab.md).
+- **3D-printable CubeSat:** a 10 cm model to print and measure. See the [hardware guide](hardware/README.md).
+- **Quest board:** more [quests](quest/README.md) for teachers, students, radio mentors and builders.
 
-## Try it first
+## Get involved
 
-Open [the project page](https://cubesatclass.org/) and run the practice ground station in your browser. Five example quests at beginner, intermediate and professional level each earn a mission patch. No account is needed.
+Everyone is welcome: teachers, students (with an adult), amateur radio operators and builders.
 
-## Why this project uses MoQ
+- [Pick a quest](quest/README.md)
+- [Read how to contribute](CONTRIBUTING.md)
+- [Give feedback](https://github.com/steelhead99x/cubesat-classroom/issues/new?template=feedback.yml)
+- [Donate to Teachers in Space](https://givebutter.com/fund-stem-training-for-100-educators-s14sb0)
 
-One school with an antenna can share a satellite pass, live, with every classroom that has a browser. [Why MoQ: evidence and roadmap](docs/why-moq.md) separates what the moq-subghz bench has measured on a 2015 Raspberry Pi 2 from what is still to be proven.
+## For engineers and reviewers
 
-## Plans and the quest guide
+- [Why Media over QUIC: evidence and roadmap](docs/why-moq.md)
+- [Mission and radio design](docs/mission.md)
+- [Free and paid plans, a draft for discussion](docs/assistant-plans.md)
+- [Rules for AI assistants in this repository](AGENTS.md)
+- [Website](site/README.md), [mobile app](mobile/README.md) and [SubGHz video rehearsal](docs/demo.md)
 
-[docs/assistant-plans.md](docs/assistant-plans.md) is an open draft of free and paid ways to run a mission, including a proposed $9.99 Crew Plus plan with a guarded quest guide. AI assistants working in this repository follow the classroom rules in [AGENTS.md](AGENTS.md). Feedback is welcome on all of it.
+## Thanks
 
-## Pick a project
-
-- **Students and teachers:** [Run the balloon ground lab](docs/balloon-lab.md). Compare a measured pressure and temperature log with archived flight data, then teach another group how to repeat the experiment.
-- **Builders:** [Print the 1U rail-fit set](hardware/README.md). The mechanical kit targets the Bambu P1S. Start with a PLA rail coupon, then repeat the fit check in ASA.
-- **Radio volunteers:** [Review the relay and RF design](docs/mission.md). The SubGHz, S-band and X-band roles are proposed experiments.
-- **Flight reviewers:** [Review the hosted experiment concept](docs/hosted-experiment-review.md).
-- **Proposal reviewers:** [Review the microscope collection plate idea](docs/micro-collection-plate.md). Image an exposed plate, send each capture to schools with receive stations, and build toward future lunar-style projects.
-- **Contributors:** [Choose a quest](quest/README.md) and follow the [volunteer contribution guide](CONTRIBUTING.md).
-
-The hosted research-flight candidate centers on a self-contained sensor logger and post-flight data access. A balloon team can rehearse that workflow on the ground. An orbital relay and licensed on-air experiments are separate work that require additional integration and authorization.
-
-## Work on the apps
-
-See the [website](site/README.md), the [iOS and Android template](mobile/README.md), and the optional [MoQ.pro development guide](docs/moq-pro-development.md).
-
-## Built with
-
-The ground station's networking runs on the open-source Media over QUIC Rust libraries and IETF work from [moq.dev](https://moq.dev). Quests are organized with tools from [kixel.ai](https://kixel.ai). Thank you to both communities.
+The station's networking runs on the open-source Media over QUIC libraries and IETF work from [moq.dev](https://moq.dev). Quests are organized with tools from [kixel.ai](https://kixel.ai). The project is an independent volunteer effort inspired by Teachers in Space and AMSAT.
 
 ## License
 
-Original material in this repository is available under either the [MIT License](LICENSE-MIT) or [Apache License 2.0](LICENSE-APACHE), at your option. Third-party material retains its own license.
+MIT or Apache 2.0, your choice. See [LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE](LICENSE-APACHE). Third-party material keeps its own license.

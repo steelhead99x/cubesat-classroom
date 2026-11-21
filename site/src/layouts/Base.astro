@@ -30,6 +30,13 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     {image && <meta property="og:image" content={image}>}
     {image && <meta name="twitter:card" content="summary_large_image">}
     <title>{title}</title>
+    <script is:inline>
+      // Apply the saved level before first paint so the page doesn't flash beginner text.
+      try {
+        var level = localStorage.getItem('cubesat.level');
+        if (level === 'beginner' || level === 'intermediate' || level === 'professional') document.documentElement.dataset.level = level;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
