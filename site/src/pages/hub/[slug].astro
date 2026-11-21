@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
+import PageHero from '../../components/PageHero.astro';
 import { classroomHost, hubs } from '../../hubs.mjs';
 
 export function getStaticPaths() {
@@ -14,14 +15,12 @@ const homeFor = (item: typeof hubs[number]) => 'https://' + item.host + (item.sl
 <Base title={hub.name + ' | CubeSat Classroom'} description={hub.description} canonical={homeFor(hub)}>
   <SiteHeader slot="header" home={'https://' + classroomHost + '/'} label="Project sites"
     links={hubs.map(item => ({ label: item.name, href: homeFor(item), current: item.host === hub.host }))} />
-  <div class="night">
-    <div class="shell py-12 lg:py-16">
-      <h1 class="max-w-4xl">{hub.heading}</h1>
-      <p class="intro mt-5 max-w-2xl">{hub.description}</p>
-    </div>
-  </div>
+  <PageHero>
+    <h1 class="max-w-3xl">{hub.heading}</h1>
+    <p class="lede mt-5">{hub.description}</p>
+  </PageHero>
   <div class="shell py-12">
-    <section aria-labelledby="resources" class="max-w-2xl rounded-2xl border border-line bg-white p-5 sm:p-6">
+    <section aria-labelledby="resources" class="max-w-2xl rounded-[1.5rem] bg-white p-6 ring-1 ring-line sm:p-8">
       <h2 id="resources">Get started</h2>
       <ul class="mt-3 divide-y divide-line">
         {hub.links.map(([label, url]) => (

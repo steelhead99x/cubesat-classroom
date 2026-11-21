@@ -1,0 +1,19 @@
+---
+// The sky above the horizon: every page opens here. The header sits in the same
+// sky, then the dawn line marks the move to the classroom below.
+import OrbitArc from './OrbitArc.astro';
+
+interface Props {
+  size?: 'large' | 'small';
+  labels?: boolean;
+  class?: string;
+}
+const { size = 'small', labels = false, class: extra = '' } = Astro.props;
+---
+<div class="sky relative overflow-hidden">
+  <OrbitArc labels={labels} />
+  <div class={`shell relative ${size === 'large' ? 'pt-10 pb-36 sm:pb-44 lg:pt-16' : 'py-12 lg:py-16'} ${extra}`}>
+    <slot />
+  </div>
+</div>
+<div class="horizon" aria-hidden="true"></div>

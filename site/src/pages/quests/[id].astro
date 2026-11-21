@@ -8,6 +8,7 @@ import StationDemo from '../../components/StationDemo.astro';
 import Patch from '../../components/Patch.astro';
 import FullExperience from '../../components/FullExperience.astro';
 import QuestGuide from '../../components/QuestGuide.astro';
+import PageHero from '../../components/PageHero.astro';
 import { classroomHost, repo } from '../../hubs.mjs';
 import { levels, inline } from '../../levels';
 
@@ -29,18 +30,16 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
     { label: 'Quests', href: base + '/quests/', current: true },
     { label: 'Plans', href: base + '/plans/' },
   ]} />
-  <div class="graph border-b border-line">
-    <div class="shell grid items-center gap-6 py-10 sm:grid-cols-[1fr_auto] lg:py-12">
-      <div>
-        <a class="text-sm font-bold text-ink underline underline-offset-4" href={base + '/quests/'}>All quests</a>
-        <p class="mt-5 font-bold text-faint">Quest {quest.data.order} of {total}, {quest.data.minutes} minutes, {quest.data.skill.toLowerCase()}</p>
-        <h1 class="mt-2 max-w-3xl">{quest.data.title}</h1>
-        <p class="lede mt-3">{quest.data.summary}</p>
-        <div class="mt-6"><LevelPicker /></div>
-      </div>
-      <div class="hidden sm:block"><Patch id={quest.id} name={quest.data.title} label={quest.data.patch} size={160} /></div>
+  <PageHero class="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
+    <div>
+      <a class="text-sm font-bold text-blue-100 underline underline-offset-4 hover:text-white" href={base + '/quests/'}>All quests</a>
+      <p class="mt-5 font-bold text-horizon">Quest {quest.data.order} of {total}, {quest.data.minutes} minutes, {quest.data.skill.toLowerCase()}</p>
+      <h1 class="mt-2 max-w-3xl">{quest.data.title}</h1>
+      <p class="lede mt-3">{quest.data.summary}</p>
+      <div class="mt-6"><LevelPicker tone="dark" /></div>
     </div>
-  </div>
+    <div class="relative hidden sm:block"><Patch id={quest.id} name={quest.data.title} label={quest.data.patch} size={170} /></div>
+  </PageHero>
   <div class="shell space-y-16 py-12">
     <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)]">
       <article class="space-y-6">

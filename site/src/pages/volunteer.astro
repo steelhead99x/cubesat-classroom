@@ -4,6 +4,8 @@ import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import QuickStart from '../components/QuickStart.astro';
 import RelatedProjects from '../components/RelatedProjects.astro';
+import PageHero from '../components/PageHero.astro';
+import { Image } from 'astro:assets';
 import Workshops from '../components/Workshops.astro';
 import rail from '../../../docs/assets/rail-fit.png';
 import { classroomHost, fundraiser, repo } from '../hubs.mjs';
@@ -29,20 +31,18 @@ const roles = [
     { label: 'Donate', href: '#give' },
     { label: 'Classroom', href: 'https://' + classroomHost + '/' },
   ]} />
-      <div class="night">
-        <section class="shell grid gap-9 py-12 lg:grid-cols-[1.3fr_1fr] lg:items-center lg:py-16">
-          <div>
-            <p class="kicker">The volunteer community behind CubeSat Classroom</p>
-            <h1>Help a classroom run its first space mission.</h1>
-            <p class="intro mt-5">Give a K–12 crew a first taste of space science. Help them build a model, request a simulated sensor reading, and teach the next crew how they did it.</p>
-            <a class="button launch mt-7" href="#volunteer">Find a way to help</a>
-          </div>
-          <figure class="chassis">
-            <img src={rail.src} width={rail.width} height={rail.height} alt="Exploded model of the CubeSat frame, camera cover, and base plate">
-            <figcaption>The 1U CubeSat bench model. Print it and test it with a classroom crew.</figcaption>
-          </figure>
-        </section>
-      </div>
+      <PageHero class="grid gap-9 lg:grid-cols-[1.3fr_1fr] lg:items-center">
+        <div>
+          <p class="kicker">The volunteer community behind CubeSat Classroom</p>
+          <h1>Help a classroom run its first space mission.</h1>
+          <p class="lede mt-5">Give a K–12 crew a first taste of space science. Help them build a model, request a simulated sensor reading, and teach the next crew how they did it.</p>
+          <a class="button launch mt-7" href="#volunteer">Find a way to help</a>
+        </div>
+        <figure class="chassis relative m-0 bg-transparent">
+          <Image src={rail} alt="Exploded model of the CubeSat frame, camera cover, and base plate" widths={[360, 720]} sizes="(min-width: 1024px) 28rem, 100vw" />
+          <figcaption>The 1U CubeSat bench model. Print it and test it with a classroom crew.</figcaption>
+        </figure>
+      </PageHero>
       <div class="shell py-12">
         <QuickStart />
         <section id="volunteer" class="mt-10" aria-labelledby="volunteer-title">
