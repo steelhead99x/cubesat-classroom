@@ -40,6 +40,7 @@ Use the enclosed Rev A case for these bench quests. Start with PLA and move thro
 - [Rehearse the five-minute demo offline](/quest/m0/demo-offline-rehearsal.md) and record a restart procedure.
 - [Trace a sensor value from file to display](/quest/m0/trace-sensor-fixtures.md) and verify what happens when an input is missing.
 - [Measure what the camera lid blocks](/quest/m0/measure-case-camera-view.md) once the P1S case fit has been tested.
+- [Send a reading from the Moon](/quest/m0/moon-relay.md) in a group simulation that needs only paper and a timer.
 
 ### Flight work
 
