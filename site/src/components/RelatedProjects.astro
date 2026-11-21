@@ -1,0 +1,66 @@
+---
+// Active projects and communities worth knowing. Descriptions are our own
+// summaries; each link goes to the project's official site.
+const projects = [
+  {
+    name: 'AMSAT CubeSatSim',
+    href: 'https://cubesatsim.org',
+    kind: 'Hardware',
+    text: 'A low-cost, 3D-printed 1U CubeSat simulator built on a Raspberry Pi. It sends real telemetry that a classroom can receive and decode.',
+  },
+  {
+    name: 'AMSAT',
+    href: 'https://www.amsat.org',
+    kind: 'Community',
+    text: 'The Radio Amateur Satellite Corporation builds amateur satellites and supports satellite education and operating.',
+  },
+  {
+    name: 'ARISS',
+    href: 'https://www.ariss.org',
+    kind: 'Education',
+    text: 'Amateur Radio on the International Space Station arranges scheduled radio contacts between students and ISS crew members.',
+  },
+  {
+    name: 'SatNOGS',
+    href: 'https://satnogs.org',
+    kind: 'Ground stations',
+    text: 'An open-source global network of satellite ground stations from the Libre Space Foundation. Observations are public.',
+  },
+  {
+    name: 'Summits on the Air',
+    href: 'https://www.sota.org.uk',
+    kind: 'Radio club',
+    text: 'An award program for portable amateur radio from hills and mountains. Shortwave listeners can take part too.',
+  },
+  {
+    name: 'Parks on the Air',
+    href: 'https://parksontheair.com',
+    kind: 'Radio club',
+    text: 'An international program for portable amateur radio from parks and public lands, with a strong volunteer community.',
+  },
+];
+---
+<section id="related" class="scroll-mt-6" aria-labelledby="related-title">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h2 id="related-title">Great projects to explore next</h2>
+      <p class="mt-2 max-w-2xl text-muted">CubeSat Classroom is one small part of a large amateur space and radio community. These projects are active and welcome newcomers.</p>
+    </div>
+  </div>
+  <ul class="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+    {projects.map(project => (
+      <li class="flex min-w-0 flex-col border-t-2 border-ink pt-4">
+        <span class="text-sm font-bold text-faint">{project.kind}</span>
+        <a class="mt-1 text-lg font-bold text-ink underline-offset-4 hover:underline" href={project.href}>{project.name}</a>
+        <p class="mt-2 text-sm text-muted">{project.text}</p>
+      </li>
+    ))}
+  </ul>
+  <div class="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-[1.25rem] bg-night p-6 text-white">
+    <p class="max-w-2xl text-sm text-blue-100">
+      <strong class="text-white">AMSAT Discord.</strong> Real-time chat for the amateur satellite community, run by AMSAT. Best for adult mentors and volunteers; check Discord's age rules before students join.
+    </p>
+    <a class="button launch text-sm" href="https://www.amsat.org/?p=45583">How to join</a>
+  </div>
+  <p class="mt-3 text-xs text-faint">Know an active project that belongs here? <a class="font-semibold text-ink underline underline-offset-4" href="https://github.com/steelhead99x/cubesat-classroom/issues/new?labels=feedback&title=Related%20project%20suggestion">Suggest it</a>.</p>
+</section>

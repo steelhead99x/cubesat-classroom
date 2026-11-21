@@ -24,6 +24,18 @@ With an existing checkout, run `bash docs/start.sh`. The guide explains each ste
 
 The commands and responses cross two pinned MoQ-over-QUIC relays on localhost. That is the first relay design exercise. The default readings and camera are simulated. The console can also read configured Linux sensor files. A separate [SubGHz H.264 rehearsal](docs/demo.md) replays the existing public [moq-subghz](https://github.com/steelhead99x/moq-subghz) format.
 
+## Try it first
+
+Open [the project page](https://cubesatclass.org/) and run the practice ground station in your browser. Five example quests at beginner, intermediate and professional level each earn a mission patch. No account is needed.
+
+## Why this project uses MoQ
+
+One school with an antenna can share a satellite pass, live, with every classroom that has a browser. [Why MoQ: evidence and roadmap](docs/why-moq.md) separates what the moq-subghz bench has measured on a 2015 Raspberry Pi 2 from what is still to be proven.
+
+## Plans and the quest guide
+
+[docs/assistant-plans.md](docs/assistant-plans.md) is an open draft of free and paid ways to run a mission, including a proposed $9.99 Crew Plus plan with a guarded quest guide. AI assistants working in this repository follow the classroom rules in [AGENTS.md](AGENTS.md). Feedback is welcome on all of it.
+
 ## Pick a project
 
 - **Students and teachers:** [Run the balloon ground lab](docs/balloon-lab.md). Compare a measured pressure and temperature log with archived flight data, then teach another group how to repeat the experiment.

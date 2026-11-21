@@ -1,0 +1,21 @@
+---
+import { repo } from '../hubs.mjs';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<section class="rounded-[1.25rem] bg-white p-6 ring-1 ring-line sm:p-8" aria-labelledby="next-steps-title">
+  <h2 id="next-steps-title">Ready for the full mission?</h2>
+  <p class="mt-3 max-w-2xl text-muted">These example quests are an introduction. The repository has the real station, hardware quests for Arduino, Seeed XIAO and Raspberry Pi, the balloon lab and the 3D-print files.</p>
+  <div class="mt-6 grid gap-4 md:grid-cols-2">
+    <div class="rounded-xl bg-paper p-4">
+      <h3 class="text-lg">Run it yourself, free</h3>
+      <p class="mt-1 text-sm text-muted">Install the station, open the quest board, and use your own AI assistant with the project's quest-guide instructions.</p>
+      <a class="mt-3 inline-block text-sm font-semibold underline underline-offset-4" href={repo + '/tree/main/quest'}>Open the quest board</a>
+    </div>
+    <div class="rounded-xl bg-paper p-4">
+      <h3 class="text-lg">Guided crew plan, proposed</h3>
+      <p class="mt-1 text-sm text-muted">A hosted quest guide with classroom guardrails, so nobody needs an AI account. We are still shaping it.</p>
+      <a class="mt-3 inline-block text-sm font-semibold underline underline-offset-4" href={base + '/plans/'}>Read the proposal and give feedback</a>
+    </div>
+  </div>
+</section>

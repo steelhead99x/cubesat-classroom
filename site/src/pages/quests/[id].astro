@@ -1,0 +1,94 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import LevelPicker from '../../components/LevelPicker.astro';
+import StationDemo from '../../components/StationDemo.astro';
+import Patch from '../../components/Patch.astro';
+import FullExperience from '../../components/FullExperience.astro';
+import { classroomHost, repo } from '../../hubs.mjs';
+import { levels, inline } from '../../levels';
+
+export async function getStaticPaths() {
+  const quests = (await getCollection('quests')).sort((a, b) => a.data.order - b.data.order);
+  return quests.map((quest, index) => ({
+    params: { id: quest.id },
+    props: { quest, next: quests[index + 1], total: quests.length },
+  }));
+}
+
+const { quest, next, total } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const feedback = `${repo}/issues/new?labels=feedback&title=${encodeURIComponent('Quest feedback: ' + quest.data.title)}`;
+---
+<Base title={quest.data.title + ' | Example quest | CubeSat Classroom'} description={quest.data.summary} canonical={`https://${classroomHost}/quests/${quest.id}/`}>
+  <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Home', href: base + '/' },
+    { label: 'Quests', href: base + '/quests/', current: true },
+    { label: 'Plans', href: base + '/plans/' },
+  ]} />
+  <div class="graph border-b border-line">
+    <div class="shell grid items-center gap-6 py-10 sm:grid-cols-[1fr_auto] lg:py-12">
+      <div>
+        <a class="text-sm font-bold text-ink underline underline-offset-4" href={base + '/quests/'}>All quests</a>
+        <p class="mt-5 font-bold text-faint">Quest {quest.data.order} of {total}, {quest.data.minutes} minutes, {quest.data.skill.toLowerCase()}</p>
+        <h1 class="mt-2 max-w-3xl">{quest.data.title}</h1>
+        <p class="lede mt-3">{quest.data.summary}</p>
+        <div class="mt-6"><LevelPicker /></div>
+      </div>
+      <div class="hidden sm:block"><Patch id={quest.id} name={quest.data.title} label={quest.data.patch} size={160} /></div>
+    </div>
+  </div>
+  <div class="shell space-y-16 py-12">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)]">
+      <article class="space-y-6">
+        {levels.map(level => {
+          const data = quest.data[level.id];
+          return (
+            <div data-show={level.id} class="space-y-6">
+              <section aria-labelledby={`steps-${level.id}`}>
+                <h2 id={`steps-${level.id}`} class="text-2xl">Steps for {level.name.toLowerCase()} crews</h2>
+                <div class="quest-steps mt-4 text-muted"><ol>{data.steps.map(step => <li set:html={inline(step)} />)}</ol></div>
+              </section>
+              <section class="rounded-xl bg-[#e3f6ec] p-4" aria-labelledby={`check-${level.id}`}>
+                <h3 id={`check-${level.id}`} class="text-base text-[#14532d]">Check your work</h3>
+                <p class="mt-1 text-[#14532d]">{data.check}</p>
+              </section>
+              <section class="rounded-xl bg-[#fff4cc] p-4" aria-labelledby={`discuss-${level.id}`}>
+                <h3 id={`discuss-${level.id}`} class="text-base text-[#713f12]">Talk it over</h3>
+                <p class="mt-1 text-[#713f12]">{data.discuss}</p>
+              </section>
+            </div>
+          );
+        })}
+        <div class="flex flex-wrap items-center gap-3">
+          <button type="button" data-complete={quest.id} class="button quiet aria-pressed:border-transparent aria-pressed:bg-mint" aria-pressed="false">Mark this quest done</button>
+          {next
+            ? <a class="button launch" href={`${base}/quests/${next.id}/`}>Next quest: {next.data.title}</a>
+            : <a class="button launch" href={base + '/quests/'}>See all your patches</a>}
+        </div>
+        <p class="text-sm text-faint">Something unclear or wrong? <a class="font-bold text-ink underline underline-offset-4" href={feedback}>Suggest a change on GitHub</a>.</p>
+      </article>
+      <StationDemo heading={false} />
+    </div>
+    <FullExperience />
+  </div>
+  <SiteFooter slot="footer" />
+</Base>
+
+<script>
+  import { earn, earned, paint } from '../../patches';
+
+  const button = document.querySelector<HTMLButtonElement>('[data-complete]');
+  function sync(just?: string) {
+    paint(just);
+    if (!button) return;
+    const done = earned().has(button.dataset.complete!);
+    button.setAttribute('aria-pressed', String(done));
+    button.textContent = done ? 'Patch earned' : 'Mark this quest done';
+  }
+  button?.addEventListener('click', () => earn(button.dataset.complete!));
+  document.addEventListener('patchearned', event => sync((event as CustomEvent<string>).detail));
+  sync();
+</script>

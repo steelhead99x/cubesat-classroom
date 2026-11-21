@@ -1,82 +1,117 @@
 @import "tailwindcss";
 
-/* Brand tokens: available as Tailwind utilities (bg-night, text-sky, border-line, ...). */
+/* Brand tokens, available as Tailwind utilities (bg-night, text-sky, border-line...).
+   Navy, sky and signal come from the CubeSat mark. Solar, mint and violet are only
+   for mission patches and status, so colour always means something. */
 @theme {
   --color-night: #10264a;
   --color-navy: #18335d;
-  --color-paper: #f5f7fc;
+  --color-paper: #f3f6fb;
+  --color-grid: #dfe7f3;
   --color-ink: #152a50;
   --color-sky: #a4c9ff;
-  --color-signal: #a7283a;
+  --color-signal: #ef6b6c;
+  --color-signal-deep: #a7283a;
+  --color-solar: #ffd23f;
+  --color-mint: #6fd3a0;
+  --color-violet: #b9a4ff;
   --color-line: #d6e0f1;
-  --color-muted: #405569;
-  --color-faint: #5a6e80;
-  --font-sans: system-ui, sans-serif;
+  --color-muted: #3f5573;
+  --color-faint: #5a6e88;
+  --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --font-sans: "Atkinson Hyperlegible", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 @layer base {
   :root {
     color-scheme: light;
-    --night: #10264a;
-    --navy: #18335d;
-    --paper: #f5f7fc;
-    --ink: #152a50;
-    --sky: #a4c9ff;
-    --red: #a7283a;
-    font-family: system-ui, sans-serif;
+    --night: var(--color-night);
+    --navy: var(--color-navy);
+    --paper: var(--color-paper);
+    --ink: var(--color-ink);
+    --sky: var(--color-sky);
+    font-family: var(--font-sans);
   }
 
   html { scroll-behavior: smooth; }
-  body { color: var(--ink); background: var(--paper); line-height: 1.6; }
-  nav a { color: #d4e1eb; font-size: .9rem; text-decoration: none; }
-  nav a:hover, .light-link:hover { color: var(--sky); }
+  body { color: var(--ink); background: var(--paper); line-height: 1.6; font-size: 1.0625rem; }
+  nav a { color: #d4e1eb; text-decoration: none; }
+  nav a:hover { color: var(--sky); }
+  nav [aria-current="page"] { color: #fff; text-decoration: underline; text-decoration-color: var(--color-solar); text-decoration-thickness: 3px; text-underline-offset: .4em; }
 
-  :focus-visible { outline: 3px solid #2582b2; outline-offset: 4px; }
-  h1, h2, h3 { font-weight: 780; line-height: 1.1; letter-spacing: -.045em; }
-  h1 { font-size: clamp(2.55rem, 7vw, 5.1rem); }
-  h1 em { color: var(--sky); font-style: normal; }
-  h2 { font-size: clamp(1.45rem, 3.5vw, 2.05rem); }
-  h3 { font-size: 1.3rem; }
+  :focus-visible { outline: 3px solid #2563c9; outline-offset: 3px; border-radius: 4px; }
+  h1, h2, h3 { font-family: var(--font-display); line-height: 1.04; font-weight: 750; }
+  h1 { font-size: clamp(2.5rem, 5.4vw, 4.25rem); letter-spacing: -.025em; font-variation-settings: "wdth" 92; }
+  h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); letter-spacing: -.015em; font-variation-settings: "wdth" 95; }
+  h3 { font-size: 1.25rem; letter-spacing: -.01em; }
   button { cursor: pointer; }
   a { text-underline-offset: .22em; }
-  nav [aria-current="page"] { text-decoration: underline; color: var(--sky); }
+  code { font-family: var(--font-mono); }
 }
 
 @layer components {
-  .shell { width: min(100% - 2rem, 69rem); margin-inline: auto; }
+  .shell { width: min(100% - 2rem, 72rem); margin-inline: auto; }
   .night { background: var(--night); color: #fff; }
-  .brand { color: inherit; font-size: 1.04rem; font-weight: 780; letter-spacing: -.02em; text-decoration: none; }
-  .skip { position: fixed; z-index: 1; left: 1rem; top: -5rem; padding: .55rem .85rem; background: var(--paper); color: var(--ink); }
+  .graph { background-color: var(--color-paper); background-image: linear-gradient(var(--color-grid) 1px, transparent 1px), linear-gradient(90deg, var(--color-grid) 1px, transparent 1px); background-size: 24px 24px; background-position: -1px -1px; }
+  .brand { color: inherit; font-family: var(--font-display); font-size: 1.12rem; font-weight: 750; text-decoration: none; }
+  .skip { position: fixed; z-index: 10; left: 1rem; top: -5rem; padding: .55rem .85rem; background: #fff; color: var(--ink); border-radius: .5rem; }
   .skip:focus { top: 1rem; }
-  .night :focus-visible, .terminal :focus-visible { outline-color: var(--sky); }
-  .shell section a:not(.button):not(.light-link), footer a { text-decoration: underline; font-weight: 680; }
-  .eyebrow { margin-bottom: .85rem; color: #c7d8e7; font-size: .77rem; font-weight: 725; text-transform: uppercase; letter-spacing: .16em; }
-  .intro { max-width: 31rem; color: #d9e4ee; font-size: clamp(1rem, 2vw, 1.21rem); }
-  .button { display: inline-flex; align-items: center; gap: .65rem; border-radius: .65rem; padding: .72rem 1rem; font-weight: 750; }
-  .launch { background: var(--sky); color: var(--night); }
-  .launch:hover { background: #c4dcff; }
-  .light-link { color: #dae5ed; font-weight: 650; text-decoration: underline; }
+  .night :focus-visible, .terminal :focus-visible { outline-color: var(--color-solar); }
+  .shell section a:not(.button), footer a { text-decoration: underline; font-weight: 700; }
 
-  .chassis {
-    overflow: hidden;
-    position: relative;
-    border: 1px solid #39516a;
-    border-radius: 1.15rem;
-    background-color: #173660;
-    background-image: linear-gradient(#506a841f 1px, transparent 1px), linear-gradient(90deg, #506a841f 1px, transparent 1px);
-    background-size: 1.75rem 1.75rem;
-  }
-  .chassis img { width: 100%; height: clamp(13rem, 46vw, 21rem); object-fit: contain; }
-  .chassis figcaption { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; border-top: 1px solid #364f65; padding: .75rem 1rem; background: var(--navy); color: #e1eaf1; font-size: .83rem; }
-  .chassis figcaption span { color: var(--sky); font-family: ui-monospace, monospace; }
+  /* A short sentence-case lead-in above a page title, only where it carries information. */
+  .kicker { margin-bottom: .75rem; color: #c9d8ee; font-weight: 700; }
+  .intro { max-width: 34rem; color: #dbe6f5; font-size: clamp(1.05rem, 2vw, 1.25rem); }
+  .lede { max-width: 36rem; color: var(--color-muted); font-size: clamp(1.05rem, 2vw, 1.22rem); }
 
-  .start { min-width: 0; padding: clamp(1.1rem, 3vw, 1.65rem); border: 1px solid #d6e0f1; border-radius: 1rem; background: #fff; }
-  .start p { color: #405569; }
-  .terminal { border-radius: .65rem; background: var(--night); color: #eaf5ed; padding: .85rem 1rem; }
-  .terminal code { min-width: 0; overflow-wrap: anywhere; font-size: .84rem; }
-  .terminal button { border: 1px solid #698dbb; border-radius: .45rem; padding: .3rem .56rem; color: var(--sky); font-weight: 680; font-size: .82rem; white-space: nowrap; }
+  .button { display: inline-flex; align-items: center; gap: .6rem; border-radius: .7rem; padding: .75rem 1.1rem; font-weight: 700; text-decoration: none; }
+  .launch { background: var(--color-solar); color: var(--night); box-shadow: 0 3px 0 #c9a21a; }
+  .launch:hover { background: #ffdc66; }
+  .launch:active { transform: translateY(2px); box-shadow: 0 1px 0 #c9a21a; }
+  .quiet { color: var(--ink); border: 2px solid var(--ink); }
+  .quiet:hover { background: #fff; }
+
+  .chassis { overflow: hidden; position: relative; border-radius: 1.25rem; background-color: #173660; background-image: linear-gradient(#506a8424 1px, transparent 1px), linear-gradient(90deg, #506a8424 1px, transparent 1px); background-size: 1.5rem 1.5rem; }
+  .chassis img { width: 100%; height: clamp(13rem, 42vw, 22rem); object-fit: contain; }
+  .chassis figcaption { border-top: 1px solid #364f65; padding: .75rem 1rem; background: var(--navy); color: #e1eaf1; font-size: .9rem; }
+
+  .start { min-width: 0; padding: clamp(1.2rem, 3vw, 1.8rem); border-radius: 1.25rem; background: #fff; box-shadow: 0 0 0 1px var(--color-line); }
+  .start p { color: var(--color-muted); }
+  .terminal { border-radius: .7rem; background: var(--night); color: #eaf5ed; padding: .85rem 1rem; }
+  .terminal code { min-width: 0; overflow-wrap: anywhere; font-size: .9rem; }
+  .terminal button { border: 1px solid #698dbb; border-radius: .45rem; padding: .3rem .6rem; color: var(--color-solar); font-weight: 700; font-size: .85rem; white-space: nowrap; }
   .terminal button:hover { background: #234574; }
 
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  .quest-steps ol { display: grid; gap: .8rem; padding-left: 1.5rem; list-style: decimal; }
+  .quest-steps li { padding-left: .25rem; }
+  .quest-steps li::marker { color: var(--color-night); font-family: var(--font-display); font-weight: 800; }
+  .quest-steps strong { color: var(--color-ink); }
+  .quest-steps code { font-size: .88em; padding: .05rem .3rem; border-radius: .3rem; background: #e3ecfb; color: var(--color-ink); }
+
+  /* Level-specific content: data-show="beginner intermediate" hides an element unless
+     the chosen level is listed. Without JavaScript the beginner level shows. */
+  :root:not([data-level]) [data-show]:not([data-show~="beginner"]),
+  :root[data-level="beginner"] [data-show]:not([data-show~="beginner"]),
+  :root[data-level="intermediate"] [data-show]:not([data-show~="intermediate"]),
+  :root[data-level="professional"] [data-show]:not([data-show~="professional"]) { display: none; }
+
+  /* Mission patches: grey stitching until earned, then a coloured band with a white core. */
+  .patch { --patch: #c5d1e3; color: #8696ae; }
+  .patch .band { fill: #fff; stroke: var(--patch); }
+  .patch .stitch { stroke: var(--patch); stroke-dasharray: 2.5 3.5; }
+  .patch .core { fill: var(--color-paper); }
+  .patch .icon { stroke: #9aaac2; }
+  .patch[data-earned] { color: var(--color-night); }
+  .patch[data-earned] .band { fill: var(--tone); stroke: var(--color-night); }
+  .patch[data-earned] .stitch { stroke: var(--color-night); stroke-opacity: .55; }
+  .patch[data-earned] .core { fill: #fff; }
+  .patch[data-earned] .icon { stroke: var(--color-night); }
+  .patch-just-earned { animation: stamp .45s cubic-bezier(.2, 1.4, .4, 1); }
+  @keyframes stamp { 0% { transform: scale(1.25) rotate(-8deg); } 100% { transform: scale(1) rotate(0); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .patch-just-earned { animation: none; }
+  }
 }

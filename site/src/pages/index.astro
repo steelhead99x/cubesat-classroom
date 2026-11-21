@@ -2,94 +2,118 @@
 import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import LabCard from '../components/LabCard.astro';
+import LevelPicker from '../components/LevelPicker.astro';
 import StationDemo from '../components/StationDemo.astro';
+import PatchShelf from '../components/PatchShelf.astro';
+import MissionFanout from '../components/MissionFanout.astro';
 import ProposalCard from '../components/ProposalCard.astro';
+import RelatedProjects from '../components/RelatedProjects.astro';
 import QuickStart from '../components/QuickStart.astro';
+import Workshops from '../components/Workshops.astro';
 import rail from '../../../docs/assets/rail-fit.png';
 import { classroomHost, fundraiser, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const site = 'https://' + classroomHost;
 const labs = [
-  { icon: 'station', name: 'Ground station', description: 'Send a request to a simulated CubeSat, read the reply with its unit, and watch practice video.', action: 'Try it in the browser', href: '#demo' },
-  { icon: 'balloon', name: 'Balloon lab', description: 'Log pressure and temperature in class, then compare your measurements with real flight data.', action: 'Open the lesson', href: repo + '/blob/main/docs/balloon-lab.md' },
-  { icon: 'cube', name: 'Print the CubeSat', description: 'Print a 1U bench model on a Bambu P1S. Start in PLA and measure how the parts fit.', action: 'Get the print files', href: repo + '/tree/main/hardware' },
-] as const;
-const facts = [
-  ['1U', '10 cm printable bench model'],
-  ['2', 'MoQ relays between ground and payload'],
-  ['0', 'accounts or licenses to start'],
+  { name: 'Ground station', text: 'Send requests to a simulated CubeSat over two MoQ relays on your own computer.', href: '#start', action: 'Install the station' },
+  { name: 'Balloon lab', text: 'Log pressure and temperature in class, then compare your data with a real balloon flight.', href: repo + '/blob/main/docs/balloon-lab.md', action: 'Open the lesson' },
+  { name: 'Print the CubeSat', text: 'Print a 1U bench model on a Bambu P1S. Start in PLA and measure how the parts fit.', href: repo + '/tree/main/hardware', action: 'Get the print files' },
 ];
 ---
 <Base
-  title="CubeSat Classroom: build a CubeSat, run the mission"
-  description="An open space lab for K–12. Run a practice CubeSat ground station, print a satellite model, and teach the next crew."
+  title="CubeSat Classroom: run a satellite mission from your classroom"
+  description="A free, open space lab for K–12. Run a practice CubeSat ground station in your browser, earn mission patches, and teach the next crew."
   canonical={site + '/'}
   image={site + rail.src.replace(base, '')}
 >
   <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Try it', href: '#demo' },
+    { label: 'Quests', href: base + '/quests/' },
+    { label: 'How it works', href: '#fanout' },
     { label: 'Labs', href: '#labs' },
     { label: 'Install', href: '#start' },
-    { label: 'Quests', href: '#quests' },
-    { label: 'Donate', href: '#support' },
+    { label: 'Plans', href: base + '/plans/' },
+    { label: 'Workshops', href: '#workshops' },
   ]} />
 
-  <div class="night">
-    <section class="shell grid items-center gap-8 py-12 lg:grid-cols-[1.2fr_1fr] lg:gap-14 lg:py-16">
-      <div>
-        <p class="eyebrow">An open space lab for K–12</p>
-        <h1>Build a CubeSat.<br><em>Run the mission.</em></h1>
-        <p class="intro mt-5">Students send requests to a practice satellite, bring back a measurement, and write down what the next crew should check. No radio license, hardware or account needed to start.</p>
-        <div class="mt-7 flex flex-wrap items-center gap-5">
-          <a class="button launch" href="#demo">Try the ground station <span aria-hidden="true">↓</span></a>
-          <a class="light-link" href="#start">Install it on a computer</a>
+  <div class="graph border-b border-line">
+    <section class="shell grid items-start gap-10 py-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)] lg:gap-12 lg:py-16">
+      <div class="lg:pt-6">
+        <h1>Run a satellite mission from your classroom.</h1>
+        <p class="lede mt-5">Send a command, wait for the reply, and see what makes it back to Earth. Try it right here, then earn a patch for every quest you finish.</p>
+        <div class="mt-7"><LevelPicker describe /></div>
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a class="button launch" href={base + '/quests/'}>Start the first quest</a>
+          <a class="button quiet" href="#start">Install the real station</a>
         </div>
-        <dl class="mt-10 grid max-w-md grid-cols-3 gap-4 border-t border-white/15 pt-6">
-          {facts.map(([value, label]) => (
-            <div><dt class="sr-only">{label}</dt><dd class="text-3xl font-bold tracking-tight text-sky">{value}</dd><p class="mt-1 text-xs leading-snug text-blue-100/80" aria-hidden="true">{label}</p></div>
-          ))}
-        </dl>
+        <p class="mt-4 max-w-md text-sm text-faint">Teachers: the browser quests need no setup, no accounts and no technical background. Start on Beginner.</p>
       </div>
-      <figure class="chassis">
-        <img src={rail.src} width={rail.width} height={rail.height} alt="Exploded CAD view of the printed chassis, camera cover, and base plate" fetchpriority="high">
-        <figcaption><span>Rev B</span> 3D-printable 1U bench model</figcaption>
-      </figure>
+      <StationDemo heading={false} />
     </section>
   </div>
 
-  <div class="shell space-y-16 py-14">
-    <StationDemo />
-
-    <section id="labs" class="scroll-mt-6" aria-labelledby="labs-title">
-      <h2 id="labs-title">Classroom labs</h2>
-      <div class="mt-5 grid gap-4 md:grid-cols-3">
-        {labs.map(lab => <LabCard {...lab} />)}
+  <div class="shell space-y-20 py-16">
+    <section aria-labelledby="patches-title" class="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)] lg:items-center">
+      <div>
+        <h2 id="patches-title">Collect five mission patches</h2>
+        <p class="mt-3 text-muted">Real missions have patches. So do yours. Each example quest takes 5 to 10 minutes in the practice station above, at the level you picked.</p>
+        <p class="mt-3 text-sm text-faint">Progress stays in this browser. No account, no tracking.</p>
       </div>
+      <PatchShelf />
     </section>
 
+    <MissionFanout />
+  </div>
+
+  <section id="labs" class="night scroll-mt-0" aria-labelledby="labs-title">
+    <div class="shell grid gap-10 py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center">
+      <figure class="chassis m-0">
+        <img src={rail.src} width={rail.width} height={rail.height} alt="Exploded CAD view of the printed CubeSat chassis, camera cover and base plate" loading="lazy">
+        <figcaption>Rev B, the 3D-printable 1U bench model. Ten centimetres on each side.</figcaption>
+      </figure>
+      <div>
+        <h2 id="labs-title" class="text-white">When you are ready for the real thing</h2>
+        <p class="mt-3 max-w-lg text-blue-100">Three labs your class can run with a computer, a balloon log, or a 3D printer.</p>
+        <ul class="mt-8 divide-y divide-white/15 border-y border-white/15">
+          {labs.map(lab => (
+            <li class="grid gap-1 py-5 sm:grid-cols-[10rem_1fr] sm:gap-6">
+              <h3 class="text-white">{lab.name}</h3>
+              <div>
+                <p class="text-blue-100">{lab.text}</p>
+                <a class="mt-2 inline-block font-bold text-solar underline underline-offset-4" href={lab.href}>{lab.action}</a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="shell space-y-20 py-16">
     <div id="get-started"><QuickStart /></div>
 
-    <div class="grid gap-x-12 gap-y-8 md:grid-cols-2">
+    <div id="support" class="scroll-mt-6"><Workshops /></div>
+
+    <div class="grid gap-x-12 gap-y-10 md:grid-cols-2">
       <section id="quests" class="scroll-mt-6" aria-labelledby="quests-title">
         <h2 id="quests-title">Help the next crew</h2>
         <p class="mt-3 mb-4 text-muted">The project is open for contributions. Try a lesson, record a bench test, or improve a part, and write the steps so another group can repeat it. AI tools are welcome. A person owns each result, and someone else reviews it.</p>
         <div class="flex flex-wrap gap-x-5 gap-y-2">
-          <a class="font-semibold underline underline-offset-4" href={repo + '/tree/main/quest'}>Pick a quest <span aria-hidden="true">↗</span></a>
-          <a class="font-semibold underline underline-offset-4" href={repo + '/blob/main/CONTRIBUTING.md'}>How to contribute <span aria-hidden="true">↗</span></a>
+          <a class="font-bold underline underline-offset-4" href={repo + '/tree/main/quest'}>Pick a quest on GitHub</a>
+          <a class="font-bold underline underline-offset-4" href={repo + '/blob/main/CONTRIBUTING.md'}>How to contribute</a>
         </div>
       </section>
-      <section id="support" class="scroll-mt-6 rounded-2xl bg-rose-50 p-5 sm:p-6" aria-labelledby="support-title">
-        <h2 id="support-title">Support Teachers in Space</h2>
-        <p class="mt-3 mb-4 text-muted">Volunteers build and run this project. Donations go directly to Teachers in Space for teacher training and spaceflight.</p>
-        <a class="font-semibold text-signal underline underline-offset-4" href={fundraiser}>Donate to Teachers in Space <span aria-hidden="true">↗</span></a>
+      <section class="scroll-mt-6" aria-labelledby="tis-title">
+        <h2 id="tis-title">Support Teachers in Space</h2>
+        <p class="mt-3 mb-4 text-muted">Volunteers build and run this project. Donations go directly to Teachers in Space for teacher training, spaceflight and the workshops.</p>
+        <a class="font-bold text-signal-deep underline underline-offset-4" href={fundraiser}>Donate to Teachers in Space</a>
       </section>
     </div>
 
     <ProposalCard />
+    <RelatedProjects />
 
-    <p class="text-sm text-faint">Networking runs on the open-source Media over QUIC libraries and IETF work from <a class="font-semibold text-ink underline underline-offset-4" href="https://moq.dev">moq.dev</a>. Quests are organized with tools from <a class="font-semibold text-ink underline underline-offset-4" href="https://kixel.ai">kixel.ai</a>.</p>
+    <p class="text-sm text-faint">Networking runs on the open-source Media over QUIC libraries and IETF work from <a class="font-bold text-ink underline underline-offset-4" href="https://moq.dev">moq.dev</a>. Quests are organized with tools from <a class="font-bold text-ink underline underline-offset-4" href="https://kixel.ai">kixel.ai</a>.</p>
   </div>
 
   <SiteFooter slot="footer" />

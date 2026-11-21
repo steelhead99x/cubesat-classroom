@@ -1,0 +1,38 @@
+name: Feedback
+description: Comment on a quest, the website, the plans proposal or anything else.
+labels: [feedback]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: What is this about?
+      options:
+        - An example quest on the website
+        - The practice ground station
+        - Free and paid plans proposal
+        - Guardrails or privacy
+        - A repository quest or lesson
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Your feedback
+      description: Quote the line or describe the screen you are commenting on, then say what you would change and why.
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Which best describes you?
+      options:
+        - Teacher
+        - Student (with an adult's help)
+        - Amateur radio mentor
+        - Builder or developer
+        - Parent
+        - Other
+  - type: markdown
+    attributes:
+      value: Please leave out student names, schools, locations and contact details.

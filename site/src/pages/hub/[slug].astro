@@ -25,7 +25,7 @@ const homeFor = (item: typeof hubs[number]) => 'https://' + item.host + (item.sl
       <h2 id="resources">Get started</h2>
       <ul class="mt-3 divide-y divide-line">
         {hub.links.map(([label, url]) => (
-          <li><a class="flex items-center justify-between gap-4 py-3 font-semibold hover:text-blue-700" href={url}>{label} <span aria-hidden="true">↗</span></a></li>
+          <li><a class="flex items-center justify-between gap-4 py-3 font-semibold hover:text-blue-700" href={url}>{label}</a></li>
         ))}
       </ul>
     </section>

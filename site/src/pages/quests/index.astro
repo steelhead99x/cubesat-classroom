@@ -1,0 +1,52 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import LevelPicker from '../../components/LevelPicker.astro';
+import Patch from '../../components/Patch.astro';
+import FullExperience from '../../components/FullExperience.astro';
+import { classroomHost } from '../../hubs.mjs';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const quests = (await getCollection('quests')).sort((a, b) => a.data.order - b.data.order);
+const total = quests.reduce((sum, quest) => sum + quest.data.minutes, 0);
+---
+<Base title="Example quests | CubeSat Classroom" description="Five short quests in the browser, at beginner, intermediate or professional level. Earn a mission patch for each one." canonical={'https://' + classroomHost + '/quests/'}>
+  <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Home', href: base + '/' },
+    { label: 'Quests', href: base + '/quests/', current: true },
+    { label: 'Plans', href: base + '/plans/' },
+  ]} />
+  <div class="graph border-b border-line">
+    <div class="shell py-12 lg:py-16">
+      <h1 class="max-w-3xl">Five quests. Five patches. About {total} minutes.</h1>
+      <p class="lede mt-5">Every quest runs in the practice ground station, so all you need is this page. Pick a level first. You can change it any time.</p>
+      <div class="mt-8"><LevelPicker showIntro /></div>
+    </div>
+  </div>
+  <div class="shell space-y-16 py-14">
+    <ol class="space-y-4">
+      {quests.map(quest => (
+        <li>
+          <a href={`${base}/quests/${quest.id}/`} class="group grid items-center gap-5 rounded-[1.25rem] bg-white p-5 no-underline ring-1 ring-line transition-shadow hover:ring-2 hover:ring-night sm:grid-cols-[auto_1fr_auto] sm:p-6">
+            <Patch id={quest.id} name={quest.data.title} label={quest.data.patch} size={96} />
+            <div>
+              <p class="text-sm font-bold text-faint">Quest {quest.data.order}, {quest.data.minutes} minutes</p>
+              <h2 class="mt-1 text-2xl group-hover:underline">{quest.data.title}</h2>
+              <p class="mt-1 text-muted">{quest.data.summary}</p>
+            </div>
+            <span class="justify-self-start rounded-full bg-paper px-3 py-1 text-sm font-bold text-ink sm:justify-self-end">{quest.data.skill}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+    <FullExperience />
+  </div>
+  <SiteFooter slot="footer" />
+</Base>
+
+<script>
+  import { paint } from '../../patches';
+  paint();
+</script>
