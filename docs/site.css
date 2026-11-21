@@ -22,7 +22,7 @@ nav { gap: 22px; }
 .hero-grid { display: grid; grid-template-columns: 1.13fr 1fr; align-items: center; gap: 1.2rem; padding-block: 32px 44px; }
 .eyebrow { margin: 0 0 12px; font-weight: 800; color: #83d8e6; }
 h1, h2 { margin: 0; letter-spacing: -.035em; line-height: 1.08; }
-h1 { font-size: clamp(2.5rem,5.5vw,4.25rem); max-width: 13ch; }
+h1 { font-size: clamp(2.5rem,5vw,4.1rem); }
 h2 { font-size: clamp(1.55rem,3.8vw,2.1rem); }
 p { line-height: 1.55; margin: 10px 0 16px; }
 .pitch > p:not(.eyebrow) { max-width: 44ch; margin: 20px 0 25px; color: #cedbef; font-size: 1.11rem; }
