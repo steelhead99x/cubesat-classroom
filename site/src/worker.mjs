@@ -1,7 +1,18 @@
-import { hubs } from './hubs.mjs';
+import { hubs, redirects } from './hubs.mjs';
 import { answerFor, questionText } from './guide/answers.mjs';
 
-const homeByHost = new Map(hubs.filter(hub => hub.slug !== 'lessons').map(({ host, slug }) => [host, slug === 'volunteer' ? '/volunteer/' : '/hub/' + slug + '/']));
+// Hubs with their own `path` live on another host (GitHub Pages or the classroom home), not here.
+const homeByHost = new Map(hubs.filter(hub => !hub.path).map(({ host, slug }) => [host, '/hub/' + slug + '/']));
+
+// Redirect domains (see `redirects` in hubs.mjs) keep the path and query, so old links and
+// `curl -fsSL https://cubesat.club/start.sh | bash` keep working. Checked before the preview
+// password, so a redirect domain never shows the password page.
+function redirected(request) {
+  const url = new URL(request.url);
+  const target = redirects[url.hostname] ?? redirects[url.hostname.replace(/^www\./, '')];
+  if (!target) return null;
+  return new Response(null, { status: 301, headers: { location: `https://${target}${url.pathname}${url.search}`, 'cache-control': 'public, max-age=3600' } });
+}
 
 // Classroom guardrails for the live quest guide. Mirrors AGENTS.md.
 const SYSTEM = `You are the CubeSat Classroom quest guide, an AI helping K-12 students, teachers and amateur radio mentors with a practice satellite ground station.
@@ -233,6 +244,8 @@ async function privately(response, env) {
 
 export default {
   async fetch(request, env) {
+    const moved = redirected(request);
+    if (moved) return moved;
     const denied = await locked(request, env);
     if (denied) return denied;
     return privately(await route(request, env), env);

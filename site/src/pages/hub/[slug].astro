@@ -10,7 +10,7 @@ export function getStaticPaths() {
 }
 
 const { hub } = Astro.props;
-const homeFor = (item: typeof hubs[number]) => 'https://' + item.host + (item.slug === 'lessons' ? '/hub/lessons/' : '/');
+const homeFor = (item: typeof hubs[number]) => 'https://' + item.host + (item.path ?? '/');
 ---
 <Base title={hub.name + ' | CubeSat Classroom'} description={hub.description} canonical={homeFor(hub)}>
   <SiteHeader slot="header" home={'https://' + classroomHost + '/'} label="Project sites"

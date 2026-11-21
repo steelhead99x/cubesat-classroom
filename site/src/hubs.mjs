@@ -3,6 +3,10 @@
 export const repo = 'https://github.com/steelhead99x/cubesat-classroom';
 export const fundraiser = 'https://givebutter.com/fund-stem-training-for-100-educators-s14sb0';
 export const classroomHost = 'cubesatclass.org';
+// The public site: the GitHub Pages build of this repository (docs/), served at this domain.
+export const publicSite = 'cubesatclassroom.org';
+// Domains the Worker answers only with a permanent redirect to the same path on another host.
+export const redirects = { 'cubesat.club': publicSite };
 
 export const hubs = [
   {
@@ -20,6 +24,7 @@ export const hubs = [
   {
     slug: 'lessons',
     host: 'cubesatclass.org',
+    path: '/hub/lessons/',
     name: 'Lessons',
     heading: 'Space science in the classroom',
     description: 'Try a mission with your class. Record what happened so another crew can repeat it.',
@@ -61,7 +66,8 @@ export const hubs = [
   },
   {
     slug: 'volunteer',
-    host: 'cubesat.club',
+    host: publicSite,
+    path: '/volunteer/',
     name: 'Volunteer',
     heading: 'Help the next crew',
     description: 'CubeSat Classroom is a volunteer-built contribution to space education. Teachers, learners, and amateur-radio mentors keep it going by sharing what they tried and what they learned.',

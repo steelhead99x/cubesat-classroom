@@ -14,7 +14,7 @@ npm run dev
 
 ## Publish
 
-For GitHub Pages, run `npm run build:github` from `site/` and commit the generated files in `docs/` along with the source changes. GitHub Pages serves `docs/` on `main`, including the classroom installer at `start.sh`.
+For GitHub Pages, run `npm run build:github` from `site/` and commit the generated files in `docs/` along with the source changes. GitHub Pages serves `docs/` on `main` at the custom domain in `publicSite` (`cubesatclassroom.org`), including the classroom installer at `start.sh`. The build writes `docs/CNAME` from that setting. In the repository's Pages settings, set the custom domain to the same name and turn on **Enforce HTTPS**. At the domain registrar, point the apex at GitHub Pages (A records `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) and `www` at `steelhead99x.github.io` with a CNAME record.
 
 For Cloudflare, run `npm run build` from `site/`. Deploy `dist/` as [Worker Static Assets](https://developers.cloudflare.com/workers/static-assets/direct-upload/) on the `cubesat-classroom` Worker. Include `src/worker.mjs` as the Worker entry point and `src/hubs.mjs` as a module. Set the static assets binding to `ASSETS` and run the Worker first for `/`. Other paths serve the assets directly.
 
@@ -25,7 +25,9 @@ For Cloudflare, run `npm run build` from `site/`. Deploy `dist/` as [Worker Stat
 | `cubesat.app` | iOS and Android template |
 | `cubesatclass.io` | Ground station and radio |
 | `cubesatclass.dev` | Software development and MoQ.pro testing |
-| `cubesat.club` | Quick start, volunteer contributions, and fundraising links |
+| `cubesat.club` | Permanent redirect to the same path on `cubesatclassroom.org` (set in `redirects` in `src/hubs.mjs`) |
+
+`cubesatclassroom.org` is not a Worker domain. It is the GitHub Pages copy of this repository, so it changes only through reviewed pull requests to `main`.
 
 ## Quest guide
 
@@ -41,7 +43,7 @@ To switch on the live guide (Claude Sonnet 5.5 through the Anthropic API) on Clo
 
 Optional settings: `GUIDE_MODEL` (default `claude-sonnet-5-5`), `GUIDE_EFFORT` (default `low`), `GUIDE_DAILY_LIMIT` (default 10 per device), `GUIDE_GLOBAL_LIMIT` (default 2000 a day for the site), `GUIDE_ALLOWED_ORIGINS` (comma-separated). If the API fails or a limit is reached, visitors get the prewritten answer. The guide's rules mirror [AGENTS.md](../AGENTS.md); review them with a teacher before switching it on for students.
 
-The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The guided installer is published at `https://cubesat.club/start.sh` and mirrored by GitHub Pages. The Rust station and its MoQ/QUIC relays run locally during the lesson.
+The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The guided installer is published by GitHub Pages at `https://cubesatclassroom.org/start.sh`; the old `https://cubesat.club/start.sh` address redirects there. The Rust station and its MoQ/QUIC relays run locally during the lesson.
 
 ## Private preview (password)
 
@@ -55,4 +57,4 @@ The Worker can keep every domain behind one password until the site is ready. Vi
 
 The wording of the under-construction page is in `landing()` in `src/worker.mjs`.
 
-While the password is on, `curl https://cubesat.club/start.sh` also needs it (`curl -u :PASSWORD ...`). People without it can clone the repository and run `bash docs/start.sh`. The GitHub Pages copy under `docs/` is a public part of the repository and is not covered by the password; turn Pages off in the repository settings if it should not be reachable. One shared password keeps casual visitors out; it is not strong protection, so don't put anything private on the site.
+While the password is on, `curl https://cubesatclass.org/start.sh` also needs it (`curl -u :PASSWORD ...`). People without it can clone the repository and run `bash docs/start.sh`. The GitHub Pages copy under `docs/` is a public part of the repository and is not covered by the password; turn Pages off in the repository settings if it should not be reachable. One shared password keeps casual visitors out; it is not strong protection, so don't put anything private on the site.
