@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#192e48">
+  <title>Ground Station · CubeSat Classroom</title>
+  <link rel="stylesheet" href="/style.css">
+  <script defer src="/station.js"></script>
+</head>
+<body>
+<header class="top"><div class="wrap nav">
+  <a href="#station" class="brand"><span class="studs" aria-hidden="true"></span> CubeSat Classroom</a>
+  <nav aria-label="Sections"><a href="#station">Station</a><a href="#quests">Quests</a><a href="#crew">Crew log</a></nav>
+</div></header>
+<main class="wrap">
+  <section class="hero" id="station">
+    <div>
+      <p class="eyebrow">Volunteer space lab</p>
+      <h1>Ground station</h1>
+      <p class="lead">Send a request to a practice CubeSat. See what comes back, then write down what you learned.</p>
+    </div>
+    <div class="route" aria-label="Ground relay connects to spacecraft relay and payload">
+      <div><span class="station-icon blue" aria-hidden="true">▦</span>Ground relay</div><span aria-hidden="true">↔</span>
+      <div><span class="station-icon yellow" aria-hidden="true">▦</span>CubeSat relay</div><span aria-hidden="true">↔</span>
+      <div><span class="station-icon green" aria-hidden="true">▦</span>Payload</div>
+    </div>
+  </section>
+
+  <div class="contact-bar">
+    <div><strong id="contactState">Connecting…</strong><span class="subtle" id="contactMode"> Local practice · no radio</span></div>
+    <button id="contact" class="secondary" type="button" disabled>Pause contact</button>
+  </div>
+  <div class="tasks">
+    <section class="card">
+      <h2>Read the sensors</h2>
+      <p>Ask for one new reading. Read it aloud with its unit.</p>
+      <dl class="sensors">
+        <div><dt>Temperature</dt><dd id="temp">—</dd></div>
+        <div><dt>Voltage</dt><dd id="voltage">—</dd></div>
+        <div><dt>Light</dt><dd id="light">—</dd></div>
+      </dl>
+      <p class="subtle" id="readingStatus">No reading yet</p>
+      <button type="button" data-request="sensors" disabled>Get sensor reading</button>
+    </section>
+    <section class="card">
+      <h2>Watch the test camera</h2>
+      <p>Count the pictures that make it through both relays.</p>
+      <div class="screen"><img id="video" alt="Moving square on the simulated camera color chart" hidden><span id="videoEmpty">Camera is waiting</span></div>
+      <p class="subtle" id="frames">0 of 8 frames · simulated video</p>
+      <button class="amber" type="button" data-request="video" disabled>Start video</button>
+    </section>
+  </div>
+  <p id="event" role="status">Waiting for the station.</p>
+  <section id="quests" class="section">
+    <h2>Classroom quests</h2>
+    <p>Complete a task, then record what you saw. A teacher or radio volunteer can review your notes. Share a tested lesson or a useful correction with the next crew.</p>
+    <ol class="quests">
+      <li><span id="sensorQuest" class="check" role="img" aria-label="Open">○</span><div><strong>Read a measurement</strong><p>Get a reading. What does the unit tell you?</p></div></li>
+      <li><span id="videoQuest" class="check" role="img" aria-label="Open">○</span><div><strong>Bring back a picture</strong><p>Start the video. How many frames arrived?</p></div></li>
+      <li><span id="recoveryQuest" class="check" role="img" aria-label="Open">○</span><div><strong>Lose and regain contact</strong><p>Pause contact, restore it, then make a new request. What came back?</p></div></li>
+    </ol>
+  </section>
+  <section id="crew" class="section">
+    <h2>Crew log</h2>
+    <p>Use a classroom nickname. A licensed mentor can optionally add their amateur radio call sign; it stays in this browser unless they choose to share the exported log.</p>
+    <form id="log">
+      <div class="fields">
+        <label>Student or team nickname <input name="alias" maxlength="32" placeholder="Team Comet" required></label>
+        <label>Mentor call sign <span class="subtle">(optional)</span><input name="call" maxlength="12" autocomplete="off" spellcheck="false"></label>
+      </div>
+      <label>What did you observe? What would you test next?
+        <textarea name="observation" maxlength="1600" rows="4" required></textarea>
+      </label>
+      <button type="submit" class="secondary">Save log to a file</button>
+      <p class="subtle" id="saved" role="status"></p>
+    </form>
+  </section>
+</main>
+<footer class="wrap">Independent volunteer project inspired by Teachers in Space and AMSAT.</footer>
+</body>
+</html>

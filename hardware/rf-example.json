@@ -1,0 +1,8 @@
+{
+  "label": "Illustrative only. Inputs are invented for sensitivity studies. No channel assignment, measured performance, or predicted flight availability.",
+  "profiles": [
+    {"name":"SubGHz", "center_mhz":436, "pa_dbw":0, "tx_gain_dbi":0, "tx_feed_loss_db":1, "rx_gt_db_per_k":-12, "other_losses_db":4, "information_bps":9600, "required_ebn0_db":9},
+    {"name":"S-band", "center_mhz":2250, "pa_dbw":3, "tx_gain_dbi":5, "tx_feed_loss_db":1, "rx_gt_db_per_k":4, "other_losses_db":5, "information_bps":256000, "required_ebn0_db":7},
+    {"name":"X-band", "center_mhz":8200, "pa_dbw":3, "tx_gain_dbi":12, "tx_feed_loss_db":2, "rx_gt_db_per_k":15, "other_losses_db":8, "information_bps":10000000, "required_ebn0_db":7}
+  ]
+}

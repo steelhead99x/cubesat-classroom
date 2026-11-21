@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An open volunteer space lab. Run a practice CubeSat ground station, print a satellite model, or help teach the next crew.">
+  <meta name="theme-color" content="#101f32">
+  <title>CubeSat Classroom</title>
+  <link rel="stylesheet" href="site.css">
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap bar">
+      <a class="brand" href="./"><span class="mark" aria-hidden="true"></span>CubeSat Classroom</a>
+      <nav aria-label="Main"><a href="#get-started">Start</a><a href="https://github.com/steelhead99x/cubesat-classroom/tree/main/quest">Quests</a><a href="#support">Support</a></nav>
+    </div>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="pitch">
+          <p class="eyebrow">An open volunteer space lab</p>
+          <h1>Your first satellite mission starts in the classroom.</h1>
+          <p>Run a practice ground station, bring back a sensor reading, and share what you learned with the next crew.</p>
+          <a class="button primary" href="#get-started">Start the ground station</a>
+        </div>
+        <figure>
+          <img src="assets/rail-fit.png" width="720" height="680" alt="Exploded CAD view of the printed chassis, camera cover, and base plate">
+          <figcaption>Rev B · 3D-printable 1U bench model</figcaption>
+        </figure>
+      </div>
+    </section>
+    <div class="wrap content">
+      <section id="get-started" aria-labelledby="start-title">
+        <h2 id="start-title">One command to start</h2>
+        <p>Paste this into your terminal, then open the address it prints.</p>
+        <div class="terminal">
+          <code id="command">curl -fsSL https://steelhead99x.github.io/cubesat-classroom/start.sh | bash</code>
+          <button id="copy" type="button" hidden>Copy command</button>
+        </div>
+        <p class="note" id="copy-status" role="status">macOS, Linux or WSL. The station uses simulated sensors and video.</p>
+        <p class="short-links"><a href="https://github.com/steelhead99x/cubesat-classroom/blob/main/output/pdf/cubesat-classroom-quick-start.pdf">Print the quick start</a><a href="https://github.com/steelhead99x/cubesat-classroom">View on GitHub</a></p>
+      </section>
+      <section id="contribute" aria-labelledby="contribute-title">
+        <h2 id="contribute-title">Give the next crew a head start</h2>
+        <p>Repeat a lesson, document a test, or improve a part. Teachers, students, and radio volunteers can each take a quest.</p>
+        <div class="quest-links">
+          <a href="https://github.com/steelhead99x/cubesat-classroom/blob/main/quest/m0/repeat-the-station-lesson.md">Teach the station lesson</a>
+          <a href="https://github.com/steelhead99x/cubesat-classroom/blob/main/docs/balloon-lab.md">Try the balloon ground lab</a>
+          <a href="https://github.com/steelhead99x/cubesat-classroom/tree/main/hardware">Print the CubeSat model</a>
+        </div>
+      </section>
+      <section id="support" class="support" aria-labelledby="support-title">
+        <div>
+          <h2 id="support-title">Support Teachers in Space</h2>
+          <p>CubeSat Classroom is an independent volunteer contribution. Give directly to Teachers in Space to support its teacher training and spaceflight campaign.</p>
+        </div>
+        <a class="button secondary" href="https://givebutter.com/fund-stem-training-for-100-educators-s14sb0">Teachers in Space fundraiser</a>
+      </section>
+    </div>
+  </main>
+  <footer class="wrap">An independent volunteer project inspired by Teachers in Space and AMSAT.</footer>
+</body>
+</html>

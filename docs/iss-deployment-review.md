@@ -1,0 +1,41 @@
+# ISS CubeSat deployment hardware review
+
+CubeSat Classroom is evaluating a free-flying satellite delivered as ISS cargo and released into orbit. The chosen deployer, cargo mission and payload agreement determine the standards and verification evidence. The Teachers in Space suborbital experiment and the balloon exercise have their own host interfaces.
+
+## Published design references
+
+| Reference | What it gives us |
+| --- | --- |
+| [Cal Poly CubeSat Design Specification Rev. 14.1](https://static1.squarespace.com/static/5418c831e4b0fa4ecac1bacd/t/62193b7fc9e72e0053f00910/1645820809779/CDS%2BREV14_1%2B2022-02-09.pdf), §2 and Appendix B | A generic 1U envelope of 100 × 100 × 113.5 mm and a typical mass of 2.00 kg. Use it as a starting drawing and compare it with the assigned deployer. |
+| [JAXA J-SSOD and J-SSOD-R interface and safety requirements](https://humans-in-space.jaxa.jp/kibouser/library/item/jx-espc_8e_en.pdf), JX-ESPC-101133-E §§2.1.2, 2.1.5 | For 1U, 100 ± 0.1 mm in X and Y and 113.5 ± 0.1 mm in Z. The specified mass range is 0.13–1.33 kg per 1U. JAXA publishes its own rail, hazard and verification requirements. |
+| [Voyager NanoRacks NRCSD Interface Definition Document](https://voyagertechnologies.com/wp-content/uploads/2025/10/Voyager-CubeSat-Deployer-IDD_2024.01.26.08.00.15.pdf), NR-NRCSD-S0003 Rev. A §§4.1.1–4.1.2 | Four continuous rails are the deployer contact surfaces. The 1U rail length is 113.50 ± 0.10 mm. The table gives 2.40 kg for 1U under its no-attitude-control assumption. For attitude control or relevant design features, the on-orbit ballistic number can drive the allowed mass and belongs in the mission agreement. |
+
+Use the assigned provider's controlled revision and mission-specific agreement for acceptance. The [ISS National Lab NRCSD listing](https://issnationallab.org/facilities/nanoracks-cubesat-deployer/) directs teams to the facility manager for availability. [JAXA’s J-SSOD program page](https://humans-in-space.jaxa.jp/en/biz-lab/experiment/facility/ef/jssod/) describes its service routes. NASA's plan runs ISS operations through 2030, so a deployment slot and its delivery milestones are a feasibility input. [NASA ISS transition plan](https://www.nasa.gov/faqs-the-international-space-station-transition-plan/)
+
+## Current design and evidence to collect
+
+| Review item | Current project and evidence needed |
+| --- | --- |
+| Structure and deployer fit | The P1S-printable Rev B model has four continuous bench rails and removable end plates at 1U scale. For the flight design, develop a fully printed chassis and rail interface against the provider’s controlled drawing. Record the rail material requirement as an open compliance item. Measure the assembled article and complete the provider’s fit check on the accepted configuration. |
+| Mass and balance | The project has no as-built spacecraft mass or center of mass. Budget the chassis, EPS, cells, harness, boards, payload and antennas with margin. Measure mass and center of mass in the stowed configuration. |
+| Crew and deployment safety | Develop the EPS and physical inhibits alongside the structure. For example, the published NRCSD Rev. A calls for three independent deployment-actuated inhibits, a remove-before-flight or apply-before-flight feature, and a minimum post-deploy delay for hazardous operations. Document the schematic, initial and fault states, and tests for the actual assigned requirements. Keep the MoQ payload outside the hardware inhibit chain. |
+| Batteries and materials | Ask the integrator for the accepted verification path for the exact cell and pack. Both provider documents reference [JSC 20793](https://standards.nasa.gov/node/1948). Document cell/pack identity, protections, containment, wiring and evidence. Review fastener retention, vent paths through airlock depressurization, electrical bonding, materials and exposed nonmetal surfaces. A proposed printed flight part needs material/process traceability and provider review of structure and outgassing. |
+| Environmental verification | Ask for the mission test levels, fixture and article rules before booking lab time. Submit fit-check and random-vibration reports, plus shock, thermal-vacuum, bakeout and EMC evidence where the assigned requirements call for them. Include functional checks before and after tests. Use [GSFC-STD-7000B](https://standards.nasa.gov/node/791) as a verification reference where appropriate. |
+| Orbital operations | Build a debris and end-of-life evidence package against the applicable mission requirements. Get a spectrum review before selecting the band and on-air security profile. If pursuing U.S. amateur-satellite operation, review transmission and space-station rules with the mission's radio lead and coordinate through IARU. Keep native QUIC/TLS on the ground IP segment for the initial amateur concept while the over-air format is reviewed. [NASA orbital debris standard](https://standards.nasa.gov/standard/NASA/NASA-STD-871914) · [47 CFR §97.113](https://www.ecfr.gov/current/title-47/chapter-I/subchapter-D/part-97/subpart-B/section-97.113) · [47 CFR §97.207](https://www.ecfr.gov/current/title-47/chapter-I/subchapter-D/part-97/subpart-C/section-97.207) · [IARU coordination](https://www.iaru.org/reference/satellites/) |
+
+## Printed structure qualification
+
+The design requirement is a fully P1S-printable mechanical structure, including deployer-contact rails and printed retainers. The print requirement and provider acceptance both need to be met before flight. Under the published J-SSOD baseline, rail contact surfaces and standoffs that contact adjacent spacecraft must be machined, hard-anodized aluminum. An all-printed polymer rail would need a written exception. Voyager specifies a minimum hardness for the contact surfaces, surface finish and loads, and requires coordination for printed materials. Ask whether the provider would consider the exact printed rail design. Carry this as an unresolved requirement until the provider assigns an acceptance or exception path. [JAXA J-SSOD, §2.1.3](https://humans-in-space.jaxa.jp/kibouser/library/item/jx-espc_8e_en.pdf) · [Voyager NRCSD Rev. A, §§4.1.1, 4.4.13–4.4.14](https://voyagertechnologies.com/wp-content/uploads/2025/10/Voyager-CubeSat-Deployer-IDD_2024.01.26.08.00.15.pdf)
+
+- **Bench print.** Use PLA for dimensional trials and ASA for a second packaging trial. Record material and lot, printer and nozzle, slicer and profile, print orientation, support removal and measured variation. These trials establish fit evidence for the classroom article.
+- **Material and process review.** Ask which filament, lot traceability, process controls, witness coupons, inspection and change-control records the integrator will accept. Agree on tests for layer-direction strength, creep at temperature, rail wear and debris, and material outgassing. Confirm any crew-cabin materials tests that apply.
+- **Assembly verification.** Use the accepted production process on a representative assembly. Verify dimensional stability and retention through the assigned loads and environment, then repeat the fit check. Close the rail interface and material acceptance with written provider disposition.
+
+## Decisions for the first design review
+
+Track the design and verification decisions on the [prioritized quest board](/quest/README.md).
+
+1. Confirm a provider and request the controlled interface drawing, payload agreement template, safety deliverables, test profiles, a written path for printed rail acceptance and a feasible deployment window.
+2. Size a conservative 1U concept against a 1.33 kg ceiling with internal design margin while comparing service routes. This screens the mass budget for J-SSOD and leaves other provider-specific requirements open.
+3. Use one authorized RF link, basic telemetry and a bounded media experiment for the initial spacecraft trade. Compare their stowed antenna volume, energy budget and mission value before adding a camera or more bands. Retain PLA and ASA for bench fit and student training.
+4. Build a compliance matrix from the selected interface. Give each applicable requirement its source revision, responsible person, verification method, evidence and approval status. Obtain written disposition of exceptions from the integrator.
