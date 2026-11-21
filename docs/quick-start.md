@@ -4,14 +4,14 @@
 
 - **Computer.** Use macOS, Linux, or Windows Subsystem for Linux (WSL). Open a terminal on that computer.
 - **Tools.** Check `curl --version` and `git --version`. Ask a mentor to help set up your system’s C compiler and linker (Xcode Command Line Tools on macOS, or build tools such as `build-essential` on Ubuntu).
-- **Internet.** The first run downloads the project and build dependencies. The starter can install Rust and Cargo. A computer is enough for the first mission.
+- **Internet.** The first run downloads the project and build dependencies. The starter can install Rust and Cargo. If you already have Rust, use version 1.91 or newer. A computer is enough for the first mission.
 
 ## 1. Start the build
 
 Paste the command. The starter asks which hardware you have, recommends a quest, and explains each download. Press Enter to continue or type `n` at a confirmation to stop.
 
 ```sh
-curl -fsSL https://cubesatclass.com/start.sh | bash
+curl -fsSL https://cubesat.club/start.sh | bash
 ```
 
 **Check your work.** You should see a recommended quest path and a local web address.

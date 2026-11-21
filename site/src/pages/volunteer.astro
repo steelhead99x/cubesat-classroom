@@ -1,5 +1,6 @@
 ---
 import '../theme.css';
+import QuickStart from '../components/QuickStart.astro';
 import rail from '../../../docs/assets/rail-fit.png';
 import { classroomHost, fundraiser, repo } from '../hubs.mjs';
 
@@ -36,6 +37,7 @@ const roles = [
           <span>CubeSat Club</span>
         </a>
         <nav class="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Main">
+          <a href="#start">Quick start</a>
           <a href="#volunteer">Volunteer</a>
           <a href="#give">Donate</a>
           <a href={'https://' + classroomHost + '/'}>Classroom</a>
@@ -58,7 +60,8 @@ const roles = [
         </section>
       </div>
       <div class="shell py-12">
-        <section id="volunteer" aria-labelledby="volunteer-title">
+        <QuickStart />
+        <section id="volunteer" class="mt-10" aria-labelledby="volunteer-title">
           <h2 id="volunteer-title">Pick one way to help</h2>
           <div class="mt-5 grid gap-4 md:grid-cols-3">
             {roles.map(role => (

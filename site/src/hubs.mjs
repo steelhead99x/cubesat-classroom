@@ -1,6 +1,6 @@
 export const repo = 'https://github.com/steelhead99x/cubesat-classroom';
 export const fundraiser = 'https://givebutter.com/fund-stem-training-for-100-educators-s14sb0';
-export const classroomHost = 'cubesatclass.com';
+export const classroomHost = 'cubesatclass.org';
 
 export const hubs = [
   {
