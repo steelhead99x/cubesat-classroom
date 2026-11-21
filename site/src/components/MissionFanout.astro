@@ -1,0 +1,104 @@
+---
+// The project's core idea: one downlink, copied by MoQ relays to many classrooms.
+// Measured numbers come from the moq-subghz bench described in "Broadcast over
+// MoQ, starting small" (hikd.ai, November 2026). Relay fan-out with live radios
+// and a mesh between schools are next steps, and are labelled that way.
+import { repo } from '../hubs.mjs';
+
+const article = 'https://hikd.ai/posts/broadcast-over-moq/';
+const subghz = 'https://github.com/steelhead99x/moq-subghz';
+const evidence = [
+  ['15 fps', '320×240 test-pattern video sent live from a 2015 Raspberry Pi 2'],
+  ['123–139 ms', 'capture to screen across four radio runs at 300 kbit/s, on a desk'],
+  ['255 B', 'per radio packet on a common LoRa chip in FSK mode'],
+  ['42% → 2%', 'frames lost in a replay test at 1% loss, before and after one spare frame per eight'],
+];
+---
+<section id="fanout" class="scroll-mt-6" aria-labelledby="fanout-title">
+  <div class="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
+    <div>
+      <h2 id="fanout-title">One antenna. Every classroom.</h2>
+      <p class="mt-4 text-lg text-muted">A satellite passes overhead for only a few minutes, and you need an antenna to hear it. With this project, one school with an antenna could share what it hears, live, with any classroom that has a web browser. That is the goal this project is building toward.</p>
+      <p class="mt-4 text-lg text-muted">Your class would not need radio equipment or a license to follow along. If part of the signal is lost, the picture pauses for a moment and then carries on, so students still see what came through. Parts of this already work on a test bench; the rest is being built.</p>
+    </div>
+
+    <figure class="m-0 rounded-[1.5rem] bg-white p-4 ring-1 ring-line sm:p-6">
+      <svg viewBox="0 0 560 300" class="h-auto w-full" role="img" aria-labelledby="fanout-svg-title fanout-svg-desc">
+        <title id="fanout-svg-title">Relay fan-out</title>
+        <desc id="fanout-svg-desc">A CubeSat sends small radio packets to one ground station. The station publishes to a MoQ relay, which shares the stream with two classrooms, a phone app and a quest guide. A dashed line to another school shows a planned link between schools.</desc>
+        <g fill="none" stroke-linecap="round">
+          <path d="M92 70 C150 70 150 150 196 150" stroke="#c99a00" stroke-width="3" stroke-dasharray="2 7"/>
+          <path d="M268 150 H318" stroke="#10264a" stroke-width="3"/>
+          <path d="M390 150 C424 150 424 46 452 46 M390 150 C424 150 424 112 452 112 M390 150 C424 150 424 188 452 188 M390 150 C424 150 424 254 452 254" stroke="#10264a" stroke-width="2.5"/>
+          <path d="M354 186 V250 H300" stroke="#10264a" stroke-width="2" stroke-dasharray="5 6" opacity=".55"/>
+        </g>
+        <g font-family="var(--font-sans)" font-size="13" font-weight="700" fill="#152a50">
+          <g transform="translate(26 40)">
+            <rect x="18" y="10" width="28" height="28" rx="4" fill="#ffd23f" stroke="#10264a" stroke-width="2.5"/>
+            <rect x="0" y="17" width="14" height="14" rx="2" fill="#a4c9ff" stroke="#10264a" stroke-width="2"/>
+            <rect x="50" y="17" width="14" height="14" rx="2" fill="#a4c9ff" stroke="#10264a" stroke-width="2"/>
+            <text x="32" y="62" text-anchor="middle">Satellite</text>
+          </g>
+          <text x="122" y="104" font-size="11" font-weight="400" fill="#5a6e88">small radio messages</text>
+          <g transform="translate(196 124)">
+            <rect width="72" height="52" rx="10" fill="#10264a"/>
+            <path d="M36 14v18m-8 0h16M28 10a11 11 0 0 1 16 0" stroke="#a4c9ff" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            <text x="36" y="72" text-anchor="middle">One school&#39;s antenna</text>
+          </g>
+          <g transform="translate(318 120)">
+            <rect width="72" height="60" rx="30" fill="#6fd3a0" stroke="#10264a" stroke-width="2.5"/>
+            <text x="36" y="35" text-anchor="middle" font-size="13">Relay</text><text x="36" y="-10" text-anchor="middle" font-size="11" font-weight="400" fill="#5a6e88">shares the signal</text>
+          </g>
+          <g transform="translate(226 234)">
+            <rect width="72" height="34" rx="17" fill="#fff" stroke="#10264a" stroke-width="2" stroke-dasharray="5 4"/>
+            <text x="36" y="22" text-anchor="middle" font-size="11">Next school</text>
+            <text x="36" y="52" text-anchor="middle" font-size="11" font-weight="400" fill="#5a6e88">planned</text>
+          </g>
+          {[['Your classroom', 46, '#a4c9ff'], ['Classroom 2', 112, '#a4c9ff'], ['Phone app', 188, '#ef6b6c'], ['Quest guide', 254, '#b9a4ff']].map(([label, y, fill]) => (
+            <g transform={`translate(452 ${Number(y) - 16})`}>
+              <rect width="104" height="32" rx="8" fill={String(fill)} stroke="#10264a" stroke-width="2"/>
+              <text x="52" y="21" text-anchor="middle" font-size="12">{label}</text>
+            </g>
+          ))}
+        </g>
+      </svg>
+      <figcaption class="mt-3 text-sm text-faint">The plan. The practice station on this page simulates the same path in your browser.</figcaption>
+    </figure>
+  </div>
+
+  <details class="group mt-10 rounded-[1.5rem] bg-night text-white open:pb-2">
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 p-6 sm:px-8 [&::-webkit-details-marker]:hidden">
+      <span>
+        <span class="block font-display text-xl font-bold">For engineers and AMSAT reviewers</span>
+        <span class="mt-1 block text-blue-100">How it works, what has been measured on a 2015 Raspberry Pi 2, and what still has to be proven.</span>
+      </span>
+      <span class="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 text-2xl leading-none transition-transform group-open:rotate-45 motion-reduce:transition-none" aria-hidden="true">+</span>
+    </summary>
+    <div class="px-6 pb-6 sm:px-8">
+    <p class="max-w-3xl text-blue-100">The project uses Media over QUIC (MoQ). Media is cut into groups (one keyframe interval) and objects (one frame), and relays fan each subscription out to many viewers. A lost frame pauses the picture until the next keyframe instead of smearing it. The moq-subghz bench runs the same model over a sub-GHz radio: a Raspberry Pi 2 and an SX1276 LoRa chip in FSK mode, written in Rust with rind encryption.</p>
+    <dl class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {evidence.map(([value, label]) => (
+        <div class="flex flex-col-reverse border-t border-white/20 pt-4">
+          <dt class="mt-1 text-sm text-blue-100">{label}</dt>
+          <dd class="font-display text-4xl font-extrabold tracking-tight text-solar">{value}</dd>
+        </div>
+      ))}
+    </dl>
+    <div class="mt-8 grid gap-6 border-t border-white/20 pt-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+      <div>
+        <h3 class="font-display text-lg font-bold text-white">What has to be proven next</h3>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-blue-100">
+          <li>Relay fan-out with the radios live. So far the receiver has fed a relay only from recordings, and fan-out to many viewers has not been measured.</li>
+          <li>Recovering from two lost frames in a row, and longer real-world distance.</li>
+          <li>Joining MoQ over radio, QUIC and TCP so old school computers can take part.</li>
+        </ul>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <a class="button launch" href={article}>Read the article</a>
+        <a class="button border-2 border-white/40 text-white hover:border-white" href={repo + '/blob/main/docs/why-moq.md'}>Evidence and roadmap</a>
+      </div>
+    </div>
+    <p class="mt-6 text-sm text-blue-100/80">Code for the bench: <a class="font-bold text-white underline underline-offset-4" href={subghz}>moq-subghz</a>. Encryption: <a class="font-bold text-white underline underline-offset-4" href="https://github.com/kixel-ai/rind">rind</a>.</p>
+    </div>
+  </details>
+</section>

@@ -1,0 +1,321 @@
+---
+// A browser-only rehearsal of the classroom ground station. It mirrors the Rust
+// simulator: the same synthetic readings, the same eight-frame test chart and the
+// same five-second freshness rule. Nothing leaves the page. The level picker
+// (beginner, intermediate, professional) changes how much of the machinery shows.
+interface Props {
+  heading?: boolean;
+}
+const { heading = true } = Astro.props;
+---
+<section id="demo" class="scroll-mt-6" aria-labelledby={heading ? 'demo-title' : undefined} aria-label={heading ? undefined : 'Practice ground station'}>
+  {heading && (
+    <div class="mb-5">
+      <h2 id="demo-title">Practice ground station</h2>
+      <p class="mt-2 max-w-2xl text-muted">Runs in this page. Nothing is transmitted.</p>
+    </div>
+  )}
+
+  <div class="night overflow-hidden rounded-[1.5rem] bg-night text-white shadow-[0_24px_60px_-20px_rgb(16_38_74/0.55)] ring-1 ring-night">
+    <div class="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-3 text-sm">
+      <p class="flex items-center gap-2 font-bold"><span data-led class="size-2.5 rounded-full bg-mint shadow-[0_0_0_3px_rgb(111_211_160/0.25)]" aria-hidden="true"></span><span data-link-status id="demo-link-status">Connected to the practice CubeSat</span></p>
+      <p class="hidden text-blue-100/70 sm:block"><span data-show="beginner">Practice mode</span><span data-show="intermediate">Two relays, simulated</span><span data-show="professional">Simulated, 2 relays, telemetry.v1</span></p>
+    </div>
+
+    <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+      <div class="flex flex-col gap-5 p-5 sm:p-6">
+        <ol class="grid grid-cols-[auto_1fr_auto_1fr_auto] items-center gap-2 text-center text-xs font-bold text-blue-100" aria-label="Signal path">
+          <li class="flex flex-col items-center gap-1.5">
+            <svg class="size-9 text-sky" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 13v8m-4 0h8M8.5 9.5a5 5 0 0 1 7 0M5.5 6.5a9 9 0 0 1 13 0"/></svg>
+            <span data-show="beginner">You</span><span data-show="intermediate professional">Ground</span>
+          </li>
+          <li data-link class="h-1 rounded-full bg-sky/50" aria-hidden="true"></li>
+          <li class="flex flex-col items-center gap-1.5">
+            <svg class="size-9 text-solar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h6v6H9zM3 10h4v4H3zM17 10h4v4h-4zM7 12h2m6 0h2"/></svg>
+            CubeSat
+          </li>
+          <li data-link class="h-1 rounded-full bg-sky/50" aria-hidden="true"></li>
+          <li class="flex flex-col items-center gap-1.5">
+            <svg class="size-9 text-mint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12v10H6zM9 8V5h6v3M9 13h.01M12 13h3"/></svg>
+            <span data-show="beginner">Sensors</span><span data-show="intermediate professional">Payload</span>
+          </li>
+        </ol>
+
+        <div class="flex flex-wrap gap-2.5">
+          <button data-action="sensors" type="button" aria-describedby="demo-link-status" class="rounded-xl bg-sky px-4 py-2.5 font-bold text-night shadow-[0_3px_0_#6e9bd8] hover:bg-blue-200 active:translate-y-0.5 active:shadow-none aria-disabled:cursor-not-allowed aria-disabled:opacity-45 aria-disabled:shadow-none">
+            <span data-show="beginner">Ask for a reading</span><span data-show="intermediate professional">Get sensor reading</span>
+          </button>
+          <button data-action="video" type="button" aria-describedby="demo-link-status" class="rounded-xl bg-solar px-4 py-2.5 font-bold text-night shadow-[0_3px_0_#c9a21a] hover:bg-yellow-200 active:translate-y-0.5 active:shadow-none aria-disabled:cursor-not-allowed aria-disabled:opacity-45 aria-disabled:shadow-none">
+            <span data-show="beginner">Take pictures</span><span data-show="intermediate professional">Start video</span>
+          </button>
+          <button data-contact type="button" class="rounded-xl border-2 border-white/35 px-4 py-2 font-bold text-white hover:border-white hover:bg-white/10">Pause contact</button>
+        </div>
+
+        <dl class="grid grid-cols-3 gap-2">
+          <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80">Temperature</dt><dd data-temp class="mt-1 font-display text-xl font-bold whitespace-nowrap sm:text-2xl">--</dd></div>
+          <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80"><span data-show="beginner">Battery</span><span data-show="intermediate professional">Bus voltage</span></dt><dd data-volt class="mt-1 font-display text-xl font-bold whitespace-nowrap sm:text-2xl">--</dd></div>
+          <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80">Light</dt><dd data-light class="mt-1 font-display text-xl font-bold whitespace-nowrap sm:text-2xl">--</dd></div>
+        </dl>
+        <p data-fresh class="-mt-2 text-sm text-blue-100/80">No reading yet.</p>
+
+        <details data-show="professional" class="rounded-xl bg-black/25 p-3 text-sm">
+          <summary class="cursor-pointer font-bold text-blue-100">Raw telemetry (last reply)</summary>
+          <pre data-raw class="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-mint">No sample yet.</pre>
+        </details>
+
+        <p class="text-sm text-blue-100/80" data-show="beginner">Tip: pause contact while pictures are coming in, then see what made it.</p>
+      </div>
+
+      <div class="flex flex-col gap-4 border-t border-white/10 bg-navy p-5 sm:p-6 lg:border-t-0 lg:border-l">
+        <figure class="m-0">
+          <canvas data-screen width="320" height="240" class="block aspect-[4/3] w-full rounded-xl bg-[#0b1a33]" role="img" aria-label="Test camera: waiting"></canvas>
+          <figcaption data-frames class="mt-2 text-sm text-blue-100/80">0 of 8 frames</figcaption>
+        </figure>
+        <div class="min-h-0">
+          <p class="font-display text-base font-bold text-white">Mission log</p>
+          <ol data-log class="mt-2 space-y-1.5 text-sm text-blue-100/90" aria-live="polite">
+            <li class="text-blue-100/60">Station ready.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { earn } from '../patches';
+
+  const MAX_AGE_MS = 5000;
+  const FRAME_COUNT = 8;
+  const FRAME_INTERVAL_MS = 500;
+  const TIMEOUT_MS = 3000;
+  const PALETTE = ['#e14346', '#ffc443', '#3ca479', '#3271ca', '#303554', '#f3e8d0'];
+
+  type Level = 'beginner' | 'intermediate' | 'professional';
+  const level = (): Level => (document.documentElement.dataset.level as Level) || 'beginner';
+
+  const root = document.querySelector<HTMLElement>('#demo');
+  if (root) {
+    const $ = <T extends Element>(sel: string) => root.querySelector<T>(sel)!;
+    const sensorsBtn = $<HTMLButtonElement>('[data-action="sensors"]');
+    const videoBtn = $<HTMLButtonElement>('[data-action="video"]');
+    const contactBtn = $<HTMLButtonElement>('[data-contact]');
+    const canvas = $<HTMLCanvasElement>('[data-screen]');
+    const ctx = canvas.getContext('2d')!;
+    const log = $<HTMLOListElement>('[data-log]');
+    const start = performance.now();
+
+    let online = true;
+    let busy = false;
+    let sample: { sequence: number; captured_unix_ms: number; source: string; temperature_c: number; bus_voltage_v: number; light_lux: number } | null = null;
+    let frames = 0;
+    let lossTried = false;
+    let generation = 0; // bumped on every contact change so pending waits end early
+    let requestId = Date.now();
+    let group = 0;
+    let wasFresh: boolean | null = null;
+
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const legDelay = () => 180 + Math.random() * 260;
+    const stamp = () => `${((performance.now() - start) / 1000).toFixed(1)} s`;
+
+    // One message per level: plain words, then measurements, then protocol detail.
+    function note(text: Record<Level, string>, quiet = false) {
+      const lvl = level();
+      if (!text[lvl]) return;
+      const item = document.createElement('li');
+      item.textContent = lvl === 'beginner' ? text.beginner : `${stamp()}  ${text[lvl]}`;
+      if (lvl !== 'beginner') item.className = 'font-mono text-xs';
+      if (quiet) item.classList.add('text-blue-100/60');
+      log.prepend(item);
+      while (log.children.length > 14) log.lastElementChild?.remove();
+    }
+
+    function synthetic(seq: number) {
+      // Same formula and field names as Sample in src/main.rs.
+      return {
+        sequence: seq,
+        captured_unix_ms: Date.now(),
+        source: 'simulation',
+        temperature_c: 18 + (seq % 11) / 2,
+        bus_voltage_v: (3900 + (seq % 61)) / 1000,
+        light_lux: seq % 30 < 20 ? 460 : 0,
+      };
+    }
+
+    function drawFrame(frame: number) {
+      // Same chart as test_frame in src/classroom.rs.
+      for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = PALETTE[i];
+        ctx.fillRect(i * 54, 0, 54, 191);
+        ctx.fillStyle = PALETTE[5 - i];
+        ctx.fillRect(i * 54, 191, 54, 49);
+      }
+      const x = frame * 33 + 24;
+      ctx.fillStyle = '#121c2e';
+      ctx.fillRect(x - 21, 119, 43, 43);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x - 17, 123, 35, 35);
+      canvas.setAttribute('aria-label', `Test camera: frame ${frame + 1} of ${FRAME_COUNT}`);
+      // Approximate encoded size at the station's JPEG quality (75).
+      return Math.round((canvas.toDataURL('image/jpeg', 0.75).length - 23) * 0.75);
+    }
+
+    function drawIdle(text: string) {
+      ctx.fillStyle = '#0b1a33';
+      ctx.fillRect(0, 0, 320, 240);
+      ctx.fillStyle = '#9fb7d9';
+      ctx.font = '700 15px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, 160, 124);
+    }
+
+    function render() {
+      const blocked = busy || !online;
+      for (const button of [sensorsBtn, videoBtn]) button.setAttribute('aria-disabled', String(blocked));
+      contactBtn.textContent = online ? 'Pause contact' : 'Restore contact';
+      for (const line of root!.querySelectorAll('[data-link]')) {
+        line.className = 'h-1 rounded-full ' + (online ? (busy ? 'bg-sky motion-safe:animate-pulse' : 'bg-sky/50') : 'bg-signal');
+      }
+      $<HTMLElement>('[data-led]').className = 'size-2.5 rounded-full ' + (online ? 'bg-mint shadow-[0_0_0_3px_rgb(111_211_160/0.25)]' : 'bg-signal shadow-[0_0_0_3px_rgb(239_107_108/0.25)]');
+      $<HTMLElement>('[data-link-status]').textContent = !online
+        ? 'Contact paused'
+        : busy ? 'Waiting for a reply' : 'Connected to the practice CubeSat';
+      if (sample) {
+        const age = Date.now() - sample.captured_unix_ms;
+        $('[data-temp]').textContent = `${sample.temperature_c.toFixed(1)} °C`;
+        $('[data-volt]').textContent = `${sample.bus_voltage_v.toFixed(3)} V`;
+        $('[data-light]').textContent = `${sample.light_lux} lx`;
+        const fresh = online && age <= MAX_AGE_MS;
+        const seconds = Math.floor(age / 1000);
+        const text = level() === 'beginner'
+          ? (fresh ? `Fresh: this reading is ${seconds} s old.` : `Historical: this reading is ${seconds} s old.${online ? ' Ask again for a fresh one.' : ''}`)
+          : `${fresh ? 'Fresh' : 'Historical'}, captured ${level() === 'professional' ? age + ' ms' : seconds + ' s'} ago`;
+        if (wasFresh !== null && wasFresh !== fresh) note({ beginner: fresh ? 'The reading is fresh.' : 'The reading is now historical, more than 5 seconds old.', intermediate: 'Reading is now historical (older than 5 s).', professional: 'sample age > MAX_AGE (5000 ms): historical' });
+        wasFresh = fresh;
+        const line = $('[data-fresh]');
+        if (line.textContent !== text) line.textContent = text;
+      }
+    }
+
+    // Wait for one leg of the round trip, or fail if contact is paused.
+    async function leg(): Promise<boolean> {
+      const until = performance.now() + legDelay();
+      const startGen = generation;
+      while (performance.now() < until) {
+        if (generation !== startGen && online) { lossTried = true; return false; }
+        if (!online) {
+          const started = generation;
+          const deadline = performance.now() + TIMEOUT_MS;
+          while (generation === started && performance.now() < deadline) await sleep(40);
+          lossTried = true;
+          return false;
+        }
+        await sleep(40);
+      }
+      if (generation !== startGen) { lossTried = true; return false; }
+      return online;
+    }
+
+    const noReply: Record<Level, string> = {
+      beginner: 'No answer. The satellite could not hear us. Try again when contact is on.',
+      intermediate: 'No complete reply. Check contact and try again.',
+      professional: 'timeout: no group on exchange.v1 for this request id',
+    };
+
+    async function requestSensors() {
+      busy = true; render();
+      const id = ++requestId;
+      const sent = performance.now();
+      note({ beginner: 'You asked the satellite for a reading.', intermediate: 'Command sent: read sensors', professional: `PUB classroom/commands  {"id":${id},"issued_ms":${Date.now()},"action":"sensors"}` });
+      const ok = (await leg()) && (await leg());
+      if (ok) {
+        // The demo's sequence follows the clock (seconds), like the station's
+        // `simulate` command. The installed classroom path counts requests instead.
+        sample = synthetic(Math.floor(Date.now() / 1000));
+        const rtt = Math.round(performance.now() - sent);
+        const reply = { id, sample, error: null };
+        const bytes = JSON.stringify(reply).length;
+        note({
+          beginner: `The satellite answered: ${sample.temperature_c.toFixed(1)} °C, ${sample.bus_voltage_v.toFixed(3)} V, ${sample.light_lux} lx.`,
+          intermediate: `Reply in ${rtt} ms, sample #${sample.sequence}: ${sample.temperature_c.toFixed(1)} °C, ${sample.bus_voltage_v.toFixed(3)} V, ${sample.light_lux} lx`,
+          professional: `SUB classroom/payload exchange.v1  reply id ${id}, group ${++group}, ${bytes} B, rtt ${rtt} ms`,
+        });
+        $('[data-raw]').textContent = JSON.stringify(reply, null, 2);
+        earn('first-contact');
+        if (lossTried) earn('lose-the-signal');
+      } else {
+        note(noReply);
+      }
+      busy = false; render();
+    }
+
+    async function requestVideo() {
+      busy = true; frames = 0; render();
+      const id = ++requestId;
+      note({ beginner: 'You asked the camera for pictures.', intermediate: 'Command sent: start test camera', professional: `PUB classroom/commands  {"id":${id},"issued_ms":${Date.now()},"action":"video"}` });
+      drawIdle('Waiting for the first frame');
+      $('[data-frames]').textContent = `0 of ${FRAME_COUNT} frames`;
+      if (!(await leg())) {
+        note(noReply);
+        drawIdle('No reply from the camera');
+        canvas.setAttribute('aria-label', 'Test camera: no reply');
+        busy = false; render(); return;
+      }
+      const g = ++group;
+      const burstGen = generation;
+      const sizes: number[] = [];
+      let total = 0;
+      const burstStart = performance.now();
+      for (let frame = 0; frame < FRAME_COUNT; frame++) {
+        if (frame > 0) await sleep(FRAME_INTERVAL_MS);
+        if (!online || generation !== burstGen) break;
+        const size = drawFrame(frame);
+        sizes.push(size);
+        total += size;
+        frames = frame + 1;
+        $('[data-frames]').textContent = `${frames} of ${FRAME_COUNT} frames`;
+      }
+      const seconds = (performance.now() - burstStart) / 1000;
+      if (frames === FRAME_COUNT) {
+        note({
+          beginner: 'All 8 pictures made it down.',
+          intermediate: `Received all 8 frames in ${seconds.toFixed(1)} s, one every 0.5 s.`,
+          professional: `reply id ${id}, group ${g} complete: 8 JPEG frames of ~${sizes.join(', ')} B (browser-encoded estimate), ${total} B total, ${Math.round((total * 8) / 1000 / seconds)} kbit/s`,
+        });
+        earn('bring-back-a-picture');
+        if (lossTried) earn('lose-the-signal');
+      } else {
+        lossTried = true;
+        $('[data-frames]').textContent = `${frames} of ${FRAME_COUNT} frames, incomplete`;
+        note({
+          beginner: `Contact lost. Only ${frames} of 8 pictures made it.`,
+          intermediate: `Contact lost after ${frames} of 8 frames. The burst is marked incomplete.`,
+          professional: `reply id ${id}, group ${g} stalled after frame ${frames} (~${sizes.join(', ')} B); marked incomplete`,
+        });
+      }
+      busy = false; render();
+    }
+
+    const guard = (action: () => Promise<void>) => () => { if (!busy && online) action(); };
+    sensorsBtn.addEventListener('click', guard(requestSensors));
+    videoBtn.addEventListener('click', guard(requestVideo));
+    contactBtn.addEventListener('click', () => {
+      online = !online;
+      generation++;
+      if (online) {
+        note(busy
+          ? { beginner: 'Contact is back. Wait a moment, then try again.', intermediate: 'Contact restored. Waiting for the pending request to end.', professional: 'bridge session reconnecting; pending request will time out' }
+          : { beginner: 'Contact is back. Try again.', intermediate: 'Contact restored. Try a new request.', professional: 'bridge session up' });
+      } else {
+        note({ beginner: 'Contact paused. The satellite is out of sight.', intermediate: 'Contact paused. The last readings are historical.', professional: 'bridge session closed (contact=false)' });
+      }
+      render();
+    });
+
+    document.addEventListener('levelchange', render);
+    drawIdle('Camera is waiting');
+    render();
+    setInterval(() => { if (!document.hidden) render(); }, 500);
+  }
+</script>

@@ -36,7 +36,8 @@ export const hubs = [
     heading: 'Run the practice ground station',
     description: 'Send a command, read a simulated sensor, and watch practice video in the local Rust ground station.',
     links: [
-      ['Start the station', 'https://' + classroomHost + '/#start'],
+      ['Try the station in your browser', 'https://' + classroomHost + '/#demo'],
+      ['Install the station', 'https://' + classroomHost + '/#start'],
       ['Read the relay and radio design', repo + '/blob/main/docs/mission.md'],
       ['Try the SubGHz video rehearsal', repo + '/blob/main/docs/demo.md'],
     ],

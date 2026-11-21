@@ -1,0 +1,30 @@
+---
+import { patchTones } from '../patches';
+
+interface Props {
+  id: string;
+  name: string;   // full quest title, used for the accessible label
+  label: string;  // short text stitched around the rim
+  size?: number;
+}
+
+const { id, name, label, size = 120 } = Astro.props;
+const ring = `ring-${id}`;
+const tone = patchTones[id] ?? '#a4c9ff';
+const icons: Record<string, string> = {
+  'first-contact': 'M50 64V46m0 0-7 7m7-7 7 7M40 40a14 14 0 0 1 20 0m-25-6a21 21 0 0 1 30 0',
+  'bring-back-a-picture': 'M37 44h26v19H37zM44 44l2.5-4h7l2.5 4M50 59a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z',
+  'lose-the-signal': 'M38 44a17 17 0 0 1 24 0m-19 5a10 10 0 0 1 14 0M50 59h0M38 38l24 26',
+  'fresh-or-historical': 'M50 41v11l7 4M50 66a14 14 0 1 0 0-28 14 14 0 0 0 0 28z',
+  'light-and-shadow': 'M44 42a10 10 0 1 0 0 16 12 12 0 0 1 0-16zM60 40v-3m7 10h3m-5-7 2.5-2.5M60 54a5 5 0 1 0 0-10',
+};
+---
+<svg class="patch" data-patch={id} data-name={name} style={`--tone:${tone}`} viewBox="0 0 100 100" width={size} height={size} role="img">
+  <title>{name}: not earned yet</title>
+  <defs><path id={ring} d="M15 52a35 35 0 0 1 70 0" /></defs>
+  <circle class="band rim" cx="50" cy="50" r="46" stroke-width="3.5" />
+  <circle class="stitch" cx="50" cy="50" r="42.5" fill="none" stroke-width="1.4" />
+  <circle class="core" cx="50" cy="52" r="20" />
+  <text class="label" font-family="var(--font-display)" font-size="10" font-weight="800" fill="currentColor"><textPath href={'#' + ring} startOffset="50%" text-anchor="middle">{label}</textPath></text>
+  <path class="icon" d={icons[id]} fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

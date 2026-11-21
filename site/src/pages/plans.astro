@@ -1,0 +1,124 @@
+---
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { classroomHost, repo } from '../hubs.mjs';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const feedback = (topic: string) => `${repo}/issues/new?template=feedback.yml&labels=feedback,plans&title=${encodeURIComponent('Plans feedback: ' + topic)}`;
+const plans = [
+  {
+    name: 'Try it',
+    price: 'Free',
+    note: 'No account',
+    tone: 'bg-white ring-1 ring-line',
+    items: ['Practice ground station in the browser', 'Five example quests at three levels', 'Mission patches saved in your browser', 'No AI and no tracking'],
+    action: { label: 'Start the first quest', href: base + '/quests/' },
+  },
+  {
+    name: 'Run it yourself',
+    price: 'Free',
+    note: 'Open source',
+    tone: 'bg-white ring-1 ring-line',
+    items: ['The real Rust station over two MoQ relays', 'Full quest board, balloon lab and CAD files', 'Hardware quests for Arduino, XIAO and Raspberry Pi', 'Use your own AI assistant with our quest-guide rules'],
+    action: { label: 'Get the code', href: repo },
+  },
+  {
+    name: 'Crew Plus',
+    price: '$9.99',
+    note: 'per teacher or mentor per month, proposed',
+    tone: 'bg-night text-white',
+    items: ['Everything in Run it yourself, hosted for your class', 'A quest guide that only talks about the mission', 'Students join with a class code, no student accounts', 'Daily limits per student that you control'],
+    action: { label: 'Tell us what you think', href: feedback('Crew Plus') },
+  },
+];
+const perks = [
+  ['Early beta access', 'Try new station features, demos and the mobile app before anyone else.'],
+  ['New quest packs first', 'Hardware quests and lessons arrive in Crew Plus before the public board.'],
+  ['Class progress', 'See which patches each crew has earned, by nickname only.'],
+  ['Crew log export', 'Download logs as PDF or CSV for grading and portfolios.'],
+  ['Teacher controls', 'Set the level, daily limits and which topics the guide covers.'],
+  ['Workshop seats first', 'Early registration for the three in-person workshops each year.'],
+  ['Roadmap vote', 'Help choose the next quest, lab or feature.'],
+];
+const guardrails = [
+  'Talks only about CubeSats, orbits, amateur radio, sensors, data and the quests.',
+  'Gives hints and asks questions instead of doing the work.',
+  'Says it is an AI and never asks for names, schools, locations or contact details.',
+  'Sends unsafe topics to a trusted adult and flags them to the teacher.',
+  'Uses the Anthropic API under commercial terms, never a personal subscription.',
+  'Built to Anthropic’s safeguards for products used by minors, with a COPPA review before launch.',
+];
+---
+<Base title="Plans | CubeSat Classroom" description="A draft for discussion: try it free in the browser, run it yourself free, or a proposed $9.99 Crew Plus plan with a guarded quest guide." canonical={'https://' + classroomHost + '/plans/'}>
+  <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Home', href: base + '/' },
+    { label: 'Quests', href: base + '/quests/' },
+    { label: 'Plans', href: base + '/plans/', current: true },
+  ]} />
+
+  <div class="graph border-b border-line">
+    <div class="shell py-12 lg:py-16">
+      <p class="inline-block rounded-full bg-solar px-3 py-1 text-sm font-bold text-night">Draft for discussion. Nothing is for sale yet.</p>
+      <h1 class="mt-5 max-w-3xl">Three ways to run a mission</h1>
+      <p class="lede mt-5">Try it in the browser, run the real station yourself, or let us host the guided version for your class. Every number on this page is a starting point, and we want your view on all of it.</p>
+      <a class="button quiet mt-7" href={feedback('General')}>Comment on this proposal</a>
+    </div>
+  </div>
+
+  <div class="shell space-y-20 py-14">
+    <section aria-label="Plans">
+      <ul class="grid gap-5 lg:grid-cols-3">
+        {plans.map(plan => (
+          <li class={'flex flex-col rounded-[1.5rem] p-6 sm:p-7 ' + plan.tone}>
+            <h2 class="text-2xl">{plan.name}</h2>
+            <p class="mt-4 flex items-baseline gap-2"><span class="font-display text-5xl font-extrabold tracking-tight">{plan.price}</span><span class={plan.price === 'Free' ? 'text-faint' : 'text-blue-100'}>{plan.note}</span></p>
+            <ul class="mt-6 mb-8 space-y-3">
+              {plan.items.map(item => (
+                <li class="flex gap-3"><svg class={'mt-1 size-4 shrink-0 ' + (plan.price === 'Free' ? 'text-[#1f8a5b]' : 'text-mint')} viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8.5 3 3 7-7"/></svg><span>{item}</span></li>
+              ))}
+            </ul>
+            <a class={'button mt-auto self-start ' + (plan.price === 'Free' ? 'quiet' : 'launch')} href={plan.action.href}>{plan.action.label}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section aria-labelledby="perks-title">
+      <h2 id="perks-title">What could Crew Plus include?</h2>
+      <p class="mt-3 max-w-2xl text-muted">These are candidates, not promises. Tell us which three would matter most in your classroom.</p>
+      <dl class="mt-8 grid gap-x-10 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
+        {perks.map(([title, text]) => (
+          <div class="border-t-2 border-ink pt-4"><dt class="font-display text-lg font-bold">{title}</dt><dd class="mt-1 text-muted">{text}</dd></div>
+        ))}
+      </dl>
+      <a class="mt-8 inline-block font-bold underline underline-offset-4" href={feedback('Crew Plus benefits')}>Vote for the benefits you want</a>
+    </section>
+
+    <section class="grid gap-10 rounded-[1.5rem] bg-white p-6 ring-1 ring-line sm:p-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]" aria-labelledby="guard-title">
+      <div>
+        <h2 id="guard-title">Guardrails come first</h2>
+        <p class="mt-3 text-muted">The hosted guide and the instructions for your own assistant follow the same rules. Students should leave a session knowing more about satellites, not distracted.</p>
+        <p class="mt-4 text-sm text-faint">You can try a demo of the guide with prewritten answers on the home page and on every quest page. A free preview with menu questions only, no typing, is also on the table. It would allow about 10 questions per device per day, counted with a hashed identifier that changes daily.</p>
+      </div>
+      <ul class="space-y-3">
+        {guardrails.map(rule => (
+          <li class="flex gap-3 rounded-xl bg-paper p-3"><svg class="mt-1 size-4 shrink-0 text-night" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5 2.5 4v4c0 3.2 2.4 5.6 5.5 6.5 3.1-.9 5.5-3.3 5.5-6.5V4L8 1.5Z"/></svg><span>{rule}</span></li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="grid gap-8 lg:grid-cols-2" aria-labelledby="feedback-title">
+      <div>
+        <h2 id="feedback-title">Help us shape this</h2>
+        <p class="mt-3 max-w-xl text-muted">The proposal is that anything left after API and hosting costs funds the three in-person workshops each year. Price, benefits, limits and who runs it are still open. The full framework, with open questions for reviewers, is in the repository.</p>
+      </div>
+      <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start lg:justify-end">
+        <a class="button launch" href={feedback('General')}>Give feedback</a>
+        <a class="button quiet" href={repo + '/blob/main/docs/assistant-plans.md'}>Read the full framework</a>
+      </div>
+    </section>
+  </div>
+
+  <SiteFooter slot="footer" />
+</Base>

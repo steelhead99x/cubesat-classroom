@@ -1,0 +1,44 @@
+---
+import { getCollection } from 'astro:content';
+import Patch from './Patch.astro';
+
+interface Props {
+  size?: number;
+}
+
+const { size = 112 } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const quests = (await getCollection('quests')).sort((a, b) => a.data.order - b.data.order);
+---
+<div class="patch-shelf">
+  <ul class="flex flex-wrap justify-center gap-x-4 gap-y-6 sm:justify-start">
+    {quests.map(quest => (
+      <li>
+        <a href={`${base}/quests/${quest.id}/`} class="group flex w-[7.5rem] flex-col items-center gap-2 text-center no-underline">
+          <span class="transition-transform group-hover:-rotate-6 group-focus-visible:-rotate-6 motion-reduce:transition-none"><Patch id={quest.id} name={quest.data.title} label={quest.data.patch} size={size} /></span>
+          <span class="text-sm leading-tight font-bold text-ink group-hover:underline">{quest.data.title}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+  <p data-patch-count role="status" class="mt-5 text-sm font-bold text-muted">No patches yet. Finish a quest to earn your first.</p>
+</div>
+
+<script>
+  import { earned, paint } from '../patches';
+
+  function update(just?: string) {
+    paint(just);
+    const total = document.querySelectorAll('.patch-shelf [data-patch]').length;
+    const count = earned().size;
+    for (const line of document.querySelectorAll('[data-patch-count]')) {
+      line.textContent = count === 0
+        ? 'No patches yet. Finish a quest to earn your first.'
+        : count >= total
+          ? `All ${total} patches earned. You are ready for the real station.`
+          : `${count} of ${total} patches earned.`;
+    }
+  }
+  update();
+  document.addEventListener('patchearned', event => update((event as CustomEvent<string>).detail));
+</script>
