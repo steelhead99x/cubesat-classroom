@@ -2,11 +2,12 @@
 
 :root {
   color-scheme: light;
-  --night: #0e1d2c;
-  --navy: #172a3e;
-  --paper: #f6f7f0;
-  --ink: #15283b;
-  --green: #afef63;
+  --night: #10264a;
+  --navy: #18335d;
+  --paper: #f5f7fc;
+  --ink: #152a50;
+  --sky: #a4c9ff;
+  --red: #a7283a;
   font-family: system-ui, sans-serif;
 }
 
@@ -16,15 +17,15 @@ body { color: var(--ink); background: var(--paper); line-height: 1.6; }
 .night { background: var(--night); color: #fff; }
 .brand { color: inherit; font-size: 1.04rem; font-weight: 780; letter-spacing: -.02em; text-decoration: none; }
 nav a { color: #d4e1eb; font-size: .9rem; text-decoration: none; }
-nav a:hover, .light-link:hover { color: var(--green); }
+nav a:hover, .light-link:hover { color: var(--sky); }
 
 .skip { position: fixed; z-index: 1; left: 1rem; top: -5rem; padding: .55rem .85rem; background: var(--paper); color: var(--ink); }
 .skip:focus { top: 1rem; }
 :focus-visible { outline: 3px solid #2582b2; outline-offset: 4px; }
-.night :focus-visible, .terminal :focus-visible { outline-color: var(--green); }
+.night :focus-visible, .terminal :focus-visible { outline-color: var(--sky); }
 h1, h2, h3 { font-weight: 780; line-height: 1.1; letter-spacing: -.045em; }
 h1 { font-size: clamp(2.55rem, 7vw, 5.1rem); }
-h1 em { color: var(--green); font-style: normal; }
+h1 em { color: var(--sky); font-style: normal; }
 h2 { font-size: clamp(1.45rem, 3.5vw, 2.05rem); }
 h3 { font-size: 1.3rem; }
 button { cursor: pointer; }
@@ -33,8 +34,8 @@ a { text-underline-offset: .22em; }
 .eyebrow { margin-bottom: .85rem; color: #c7d8e7; font-size: .77rem; font-weight: 725; text-transform: uppercase; letter-spacing: .16em; }
 .intro { max-width: 31rem; color: #d9e4ee; font-size: clamp(1rem, 2vw, 1.21rem); }
 .button { display: inline-flex; align-items: center; gap: .65rem; border-radius: .65rem; padding: .72rem 1rem; font-weight: 750; }
-.launch { background: var(--green); color: var(--night); }
-.launch:hover { background: #c4fa88; }
+.launch { background: var(--sky); color: var(--night); }
+.launch:hover { background: #c4dcff; }
 .light-link { color: #dae5ed; font-weight: 650; text-decoration: underline; }
 
 .chassis {
@@ -42,20 +43,27 @@ a { text-underline-offset: .22em; }
   position: relative;
   border: 1px solid #39516a;
   border-radius: 1.15rem;
-  background-color: #172c40;
+  background-color: #173660;
   background-image: linear-gradient(#506a841f 1px, transparent 1px), linear-gradient(90deg, #506a841f 1px, transparent 1px);
   background-size: 1.75rem 1.75rem;
 }
 .chassis img { width: 100%; height: clamp(13rem, 46vw, 21rem); object-fit: contain; }
 .chassis figcaption { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; border-top: 1px solid #364f65; padding: .75rem 1rem; background: var(--navy); color: #e1eaf1; font-size: .83rem; }
-.chassis figcaption span { color: var(--green); font-family: ui-monospace, monospace; }
+.chassis figcaption span { color: var(--sky); font-family: ui-monospace, monospace; }
 
-.lab, .start { min-width: 0; padding: clamp(1.1rem, 3vw, 1.65rem); border: 1px solid #d6dfda; border-radius: 1rem; background: #fff; }
-.lab svg { box-sizing: content-box; background: #e6f5dc; border-radius: .6rem; padding: .55rem; color: #294d32; }
+.lab, .start { min-width: 0; padding: clamp(1.1rem, 3vw, 1.65rem); border: 1px solid #d6e0f1; border-radius: 1rem; background: #fff; }
+.lab svg { box-sizing: content-box; background: #e7efff; border-radius: .6rem; padding: .55rem; color: #205ac5; }
 .lab p, .start p, #quests p, #support p { color: #405569; }
 .terminal { border-radius: .65rem; background: var(--night); color: #eaf5ed; padding: .85rem 1rem; }
 .terminal code { min-width: 0; overflow-wrap: anywhere; font-size: .84rem; }
-.terminal button { border: 1px solid #608177; border-radius: .45rem; padding: .3rem .56rem; color: var(--green); font-weight: 680; font-size: .82rem; white-space: nowrap; }
-.terminal button:hover { background: #203a41; }
-footer { border-top: 1px solid #d7dfda; font-size: .9rem; }
+.terminal button { border: 1px solid #698dbb; border-radius: .45rem; padding: .3rem .56rem; color: var(--sky); font-weight: 680; font-size: .82rem; white-space: nowrap; }
+.terminal button:hover { background: #234574; }
+footer { border-top: 1px solid #d6e0f1; font-size: .9rem; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.lab:nth-child(2) svg { background: #fff0b7; color: #6b4718; }
+.lab:nth-child(3) svg { background: #fcecef; color: var(--red); }
+.donate-panel { padding: 1.1rem; border-radius: 1rem; background: #fcecef; }
+#support a { color: var(--red); }
+.project-links a { color: var(--ink); }
+nav [aria-current="page"] { text-decoration: underline; color: var(--sky); }

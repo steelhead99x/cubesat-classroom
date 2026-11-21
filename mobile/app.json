@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "CubeSat Classroom",
+    "slug": "cubesat-classroom",
+    "scheme": "cubesatclassroom",
+    "version": "0.1.0",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router"],
+    "ios": {
+      "bundleIdentifier": "com.cubesatclass.classroom",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.cubesatclass.classroom",
+      "adaptiveIcon": {
+        "backgroundColor": "#10264a",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      }
+    }
+  }
+}

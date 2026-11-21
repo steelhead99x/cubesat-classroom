@@ -14,13 +14,13 @@ AI tools are welcome for drafting, coding and analyzing data. A contributor owns
 
 ## Run the ground station
 
-Paste this into a terminal on macOS, Linux, or WSL, then open the address it prints.
+Paste this into a terminal on macOS, Linux, or WSL, follow the prompts, then open the local address the station prints.
 
 ```sh
 curl -fsSL https://steelhead99x.github.io/cubesat-classroom/start.sh | bash
 ```
 
-With an existing checkout, run `bash docs/start.sh`. The starter uses Git and installs Rust on the first run if needed.
+With an existing checkout, run `bash docs/start.sh`. The guide explains each step and asks before downloading files, installing Rust, or launching the station.
 
 The commands and responses cross two pinned MoQ-over-QUIC relays on localhost. That is the first relay design exercise. The default readings and camera are simulated. The console can also read configured Linux sensor files. A separate [SubGHz H.264 rehearsal](docs/demo.md) replays the existing public [moq-subghz](https://github.com/steelhead99x/moq-subghz) format.
 
@@ -34,9 +34,9 @@ The commands and responses cross two pinned MoQ-over-QUIC relays on localhost. T
 
 The hosted research-flight candidate centers on a self-contained sensor logger and post-flight data access. A balloon team can rehearse that workflow on the ground. An orbital relay and licensed on-air experiments are separate work that require additional integration and authorization.
 
-## Work on the website
+## Work on the apps
 
-The [Astro + Tailwind site](site/README.md) has local preview and deployment instructions.
+See the [website](site/README.md), the [iOS and Android template](mobile/README.md), and the optional [MoQ.pro development guide](docs/moq-pro-development.md).
 
 ## License
 

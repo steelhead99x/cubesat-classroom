@@ -16,13 +16,14 @@ npm run dev
 
 For GitHub Pages, run `npm run build:github` from `site/` and commit the generated files in `docs/` along with the source changes. GitHub Pages serves `docs/` on `main`, including the classroom installer at `start.sh`.
 
-For Cloudflare Workers Static Assets, build from `site/` and use the authenticated [Cloudflare CLI](https://developers.cloudflare.com/cf/projects/).
+For Cloudflare, run `npm run build` from `site/`. Deploy `dist/` as [Worker Static Assets](https://developers.cloudflare.com/workers/static-assets/direct-upload/) on the `cubesat-classroom` Worker. Include `src/worker.mjs` as the Worker entry point and `src/hubs.mjs` as a module. Set the static assets binding to `ASSETS` and run the Worker first for `/`. Other paths serve the assets directly.
 
-```sh
-npm run build
-cf deploy ./dist
-```
+| Custom domain | Role |
+| --- | --- |
+| `cubesatclass.com` | Classroom home and quick start |
+| `cubesatclass.org` | Curriculum and teacher pilot |
+| `cubesatclass.io` | Ground station and radio |
+| `cubesatclass.dev` | Software development and MoQ.pro testing |
+| `cubesat.club` | Volunteer contributions and fundraising links |
 
-Use the `cubesat-classroom` Worker and add `cubesatclassroom.dev` as a [Worker Custom Domain](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) after the domain is active in the same Cloudflare account. The page keeps the GitHub Pages installer URL so it works on both hosts.
-
-The Rust station and its MoQ/QUIC relays run locally during the lesson. The published site serves the classroom resources.
+The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The site keeps the GitHub Pages installer URL for both hosts. The Rust station and its MoQ/QUIC relays run locally during the lesson.

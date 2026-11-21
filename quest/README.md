@@ -2,9 +2,27 @@
 
 ## Goal
 
-Pass working lessons and well-documented evidence from students, teachers and radio volunteers to the next crew.
+Pass working lessons and well-documented evidence from students, teachers and radio volunteers to the next crew. Use the [quick-start guide](../docs/quick-start.md) for the workflow. The Markdown format comes from [moq-dev/quest](https://github.com/moq-dev/quest).
 
 ## Plan
+
+### Start with what you have
+
+Write down the board model, available sensors, and computer operating system. If you have several boards, pick one for the first run. No hardware is needed to get started.
+
+| Your setup | First quest |
+| --- | --- |
+| Computer only or unsure | [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md) |
+| Arduino, such as an Uno | [Read one Arduino sample](/quest/m0/arduino-first-reading.md) |
+| Seeed XIAO, such as ESP32-C3 or RP2040 | [Record a XIAO bench sample](/quest/m0/xiao-first-reading.md) |
+| Raspberry Pi with Raspberry Pi OS | [Log a Pi reading](/quest/m0/pi-first-reading.md) |
+| Raspberry Pi Pico or another microcontroller | Use a vendor sample for your exact board and follow the [microcontroller quest structure](/quest/m0/arduino-first-reading.md). |
+
+### Teacher pilot
+
+Start in M0. After a run, tell us which steps the class completed, which instruction they got stuck on, and one change you would make. Share a redacted note through the [contribution guide](../CONTRIBUTING.md). Teachers can pilot and review lessons before any flight work.
+
+### Flight work
 
 The ISS hardware work is listed in review priority. Start the provider inquiry and the P1S slice review in parallel. The numbered lists show the recommended order for review. Quest dependencies control what is ready to start. Run `quest unblocked` to see ready work and `quest check` to validate the board. See the [contribution guide](../CONTRIBUTING.md).
 
