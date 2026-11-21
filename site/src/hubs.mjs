@@ -38,6 +38,7 @@ export const hubs = [
     links: [
       ['Try the station in your browser', 'https://' + classroomHost + '/#demo'],
       ['Install the station', 'https://' + classroomHost + '/#start'],
+      ['Build a real ground station, step by step', repo + '/blob/main/docs/ground-station.md'],
       ['Read the relay and radio design', repo + '/blob/main/docs/mission.md'],
       ['Try the SubGHz video rehearsal', repo + '/blob/main/docs/demo.md'],
     ],

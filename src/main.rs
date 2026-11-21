@@ -1,5 +1,7 @@
 mod balloon;
+mod bridge;
 mod classroom;
+mod passes;
 
 use std::io::{self, Write};
 use std::net::SocketAddr;
@@ -42,6 +44,54 @@ enum Command {
         output: PathBuf,
         #[arg(long, default_value_t = 60, value_parser = clap::value_parser!(u32).range(1..=86400))]
         samples: u32,
+    },
+    /// Turn Arduino, XIAO or Raspberry Pi readings into sensor files for the station.
+    SensorBridge {
+        /// Folder to write temperature_mc, voltage_mv, light_lux and pressure_pa into.
+        #[arg(long, default_value = "run/sensors")]
+        out: PathBuf,
+        /// Serial device, file or `-` (standard input) carrying `CSC1 key=value` lines.
+        #[arg(long)]
+        input: Option<PathBuf>,
+        /// Read a Linux file as a sensor: name=path[*scale]. Repeat for each sensor.
+        #[arg(long = "map")]
+        maps: Vec<String>,
+        /// Remove a value if no new reading arrives within this many seconds.
+        #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u64).range(1..=3600))]
+        stale_secs: u64,
+        /// How often to read mapped files, in milliseconds.
+        #[arg(long, default_value_t = 1000, value_parser = clap::value_parser!(u64).range(100..=60_000))]
+        poll_ms: u64,
+    },
+    /// Predict when satellites pass over a location, from a TLE file.
+    ///
+    /// Elements older than 14 days are flagged in the output. A pass already under way
+    /// starts "now"; one still under way at the end of the window is left out.
+    Passes {
+        /// TLE file in three-line format (name line plus two element lines).
+        #[arg(long)]
+        tle: PathBuf,
+        /// Only satellites whose name contains this text (case-insensitive).
+        #[arg(long)]
+        satellite: Option<String>,
+        /// Observer latitude in degrees (north positive).
+        #[arg(long, allow_hyphen_values = true)]
+        lat: f64,
+        /// Observer longitude in degrees (east positive).
+        #[arg(long, allow_hyphen_values = true)]
+        lon: f64,
+        /// Observer altitude in metres.
+        #[arg(long, default_value_t = 0.0, allow_hyphen_values = true)]
+        alt_m: f64,
+        /// Hours ahead to search.
+        #[arg(long, default_value_t = 24.0)]
+        hours: f64,
+        /// Ignore passes whose highest point is below this elevation, in degrees.
+        #[arg(long, default_value_t = 10.0, allow_hyphen_values = true)]
+        min_elevation: f64,
+        /// Print JSON instead of a table.
+        #[arg(long)]
+        json: bool,
     },
     /// Start a loopback-only QUIC relay and print its URL and certificate pin.
     Relay {
@@ -428,6 +478,50 @@ async fn main() -> Result<()> {
             samples,
         } => {
             balloon::log(sensor_dir, output, samples).await?;
+        }
+        Command::SensorBridge {
+            out,
+            input,
+            maps,
+            stale_secs,
+            poll_ms,
+        } => {
+            let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let flag = stop.clone();
+            tokio::spawn(async move {
+                if tokio::signal::ctrl_c().await.is_ok() {
+                    flag.store(true, std::sync::atomic::Ordering::Relaxed);
+                }
+            });
+            let args = bridge::BridgeArgs {
+                out,
+                input,
+                maps,
+                stale_secs,
+                poll_ms,
+            };
+            tokio::task::spawn_blocking(move || bridge::run(args, &stop)).await??;
+        }
+        Command::Passes {
+            tle,
+            satellite,
+            lat,
+            lon,
+            alt_m,
+            hours,
+            min_elevation,
+            json,
+        } => {
+            passes::run(passes::PassArgs {
+                tle,
+                satellite,
+                lat,
+                lon,
+                alt_m,
+                hours,
+                min_elevation,
+                json,
+            })?;
         }
         Command::Relay { port } => relay(port).await?,
         Command::Simulate { link } => publish(link, Sample::synthetic).await?,
