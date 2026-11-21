@@ -85,6 +85,8 @@ Output lists the rise time, the highest elevation and the set time in UTC, with 
 
 ## Level 3: receive real satellites
 
+For a lower-cost first build, see the [classroom receiver design](classroom-receiver.md). It starts with a laptop and a 2 m dipole and adds live phone stats over MoQ, a teacher microphone and a standalone speaker.
+
 This is the station the SatNOGS project recommends for beginners: a fixed antenna, a Raspberry Pi and an inexpensive RTL-SDR software-defined radio dongle. SatNOGS lists the Pi 3B, 3B+ and 4 as known to work. The Pi Zero 2 W is fine for this project's station and bridge but too slow for SatNOGS decoding.
 
 | Part | Job | Approx. price |

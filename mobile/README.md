@@ -14,6 +14,8 @@ Level and patches last only while the app is open. The flight numbers are a desk
 
 Lesson text comes from the website's lessons. After editing `site/src/content/quests/`, run `npm run sync:quests` to refresh `src/data/quests.json`. A fork changes its name and links at the bottom of `src/theme.ts`.
 
+See the [classroom receiver design](../docs/classroom-receiver.md) for the proposed live station connection over Media over QUIC.
+
 Use Node.js 24, then run:
 
 ```sh
