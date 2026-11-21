@@ -1,0 +1,2968 @@
+{
+  "source": "desk simulation",
+  "profile": {
+    "release_s": 3000.0,
+    "burnout_s": 3060.0,
+    "apogee_s": 3156.4311209958546,
+    "reentry_s": 3252.862241991709,
+    "glide_s": 3432.862241991709,
+    "landing_s": 4200.0,
+    "release_m": 13582.4976,
+    "burnout_m": 41952.48518141996,
+    "apogee_m": 87548.3136,
+    "glide_m": 15240.0,
+    "burnout_speed_m_s": 945.6662527139985,
+    "boost_felt_g": 2.6071853499309117,
+    "microgravity_s": 192.8622419917094,
+    "cabin_pressure_pa": 82741.61655181566
+  },
+  "points": [
+    {
+      "elapsed_s": 0.0,
+      "phase": "climb",
+      "altitude_m": 0.0,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 10.0,
+      "phase": "climb",
+      "altitude_m": 0.4517438090666668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 20.0,
+      "phase": "climb",
+      "altitude_m": 1.802950792533334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 30.0,
+      "phase": "climb",
+      "altitude_m": 4.047584284800001,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 40.0,
+      "phase": "climb",
+      "altitude_m": 7.179607620266668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 50.0,
+      "phase": "climb",
+      "altitude_m": 11.192984133333335,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 60.0,
+      "phase": "climb",
+      "altitude_m": 16.0816771584,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 70.0,
+      "phase": "climb",
+      "altitude_m": 21.839650029866668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 80.0,
+      "phase": "climb",
+      "altitude_m": 28.46086608213334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 90.0,
+      "phase": "climb",
+      "altitude_m": 35.9392886496,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 100.0,
+      "phase": "climb",
+      "altitude_m": 44.268881066666665,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 110.0,
+      "phase": "climb",
+      "altitude_m": 53.44360666773334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 120.0,
+      "phase": "climb",
+      "altitude_m": 63.4574287872,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 130.0,
+      "phase": "climb",
+      "altitude_m": 74.30431075946667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 140.0,
+      "phase": "climb",
+      "altitude_m": 85.97821591893334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 150.0,
+      "phase": "climb",
+      "altitude_m": 98.47310760000002,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 160.0,
+      "phase": "climb",
+      "altitude_m": 111.78294913706671,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 170.0,
+      "phase": "climb",
+      "altitude_m": 125.90170386453333,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 180.0,
+      "phase": "climb",
+      "altitude_m": 140.8233351168,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 190.0,
+      "phase": "climb",
+      "altitude_m": 156.54180622826672,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 200.0,
+      "phase": "climb",
+      "altitude_m": 173.05108053333336,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 210.0,
+      "phase": "climb",
+      "altitude_m": 190.34512136640004,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 220.0,
+      "phase": "climb",
+      "altitude_m": 208.41789206186672,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 230.0,
+      "phase": "climb",
+      "altitude_m": 227.26335595413332,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 240.0,
+      "phase": "climb",
+      "altitude_m": 246.87547637760002,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 250.0,
+      "phase": "climb",
+      "altitude_m": 267.2482166666667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 260.0,
+      "phase": "climb",
+      "altitude_m": 288.37554015573335,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 270.0,
+      "phase": "climb",
+      "altitude_m": 310.2514101792,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 280.0,
+      "phase": "climb",
+      "altitude_m": 332.86979007146675,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 290.0,
+      "phase": "climb",
+      "altitude_m": 356.22464316693333,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 300.0,
+      "phase": "climb",
+      "altitude_m": 380.30993280000007,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 310.0,
+      "phase": "climb",
+      "altitude_m": 405.1196223050667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 320.0,
+      "phase": "climb",
+      "altitude_m": 430.64767501653347,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 330.0,
+      "phase": "climb",
+      "altitude_m": 456.8880542687999,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 340.0,
+      "phase": "climb",
+      "altitude_m": 483.83472339626667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 350.0,
+      "phase": "climb",
+      "altitude_m": 511.4816457333334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 360.0,
+      "phase": "climb",
+      "altitude_m": 539.8227846144,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 370.0,
+      "phase": "climb",
+      "altitude_m": 568.8521033738667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 380.0,
+      "phase": "climb",
+      "altitude_m": 598.5635653461335,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 390.0,
+      "phase": "climb",
+      "altitude_m": 628.9511338656001,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 400.0,
+      "phase": "climb",
+      "altitude_m": 660.0087722666667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 410.0,
+      "phase": "climb",
+      "altitude_m": 691.7304438837333,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 420.0,
+      "phase": "climb",
+      "altitude_m": 724.1101120512001,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 430.0,
+      "phase": "climb",
+      "altitude_m": 757.1417401034666,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 440.0,
+      "phase": "climb",
+      "altitude_m": 790.8192913749334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 450.0,
+      "phase": "climb",
+      "altitude_m": 825.1367292,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 460.0,
+      "phase": "climb",
+      "altitude_m": 860.0880169130666,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 470.0,
+      "phase": "climb",
+      "altitude_m": 895.6671178485334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 480.0,
+      "phase": "climb",
+      "altitude_m": 931.8679953408001,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 490.0,
+      "phase": "climb",
+      "altitude_m": 968.6846127242666,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 500.0,
+      "phase": "climb",
+      "altitude_m": 1006.1109333333334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 510.0,
+      "phase": "climb",
+      "altitude_m": 1044.1409205024004,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 520.0,
+      "phase": "climb",
+      "altitude_m": 1082.7685375658668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 530.0,
+      "phase": "climb",
+      "altitude_m": 1121.9877478581334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 540.0,
+      "phase": "climb",
+      "altitude_m": 1161.7925147136,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 550.0,
+      "phase": "climb",
+      "altitude_m": 1202.1768014666666,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 560.0,
+      "phase": "climb",
+      "altitude_m": 1243.1345714517333,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 570.0,
+      "phase": "climb",
+      "altitude_m": 1284.6597880032,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 580.0,
+      "phase": "climb",
+      "altitude_m": 1326.7464144554665,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 590.0,
+      "phase": "climb",
+      "altitude_m": 1369.3884141429332,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 600.0,
+      "phase": "climb",
+      "altitude_m": 1412.5797504000004,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 610.0,
+      "phase": "climb",
+      "altitude_m": 1456.3143865610668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 620.0,
+      "phase": "climb",
+      "altitude_m": 1500.5862859605336,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 630.0,
+      "phase": "climb",
+      "altitude_m": 1545.3894119328,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 640.0,
+      "phase": "climb",
+      "altitude_m": 1590.717727812267,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 650.0,
+      "phase": "climb",
+      "altitude_m": 1636.5651969333335,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 660.0,
+      "phase": "climb",
+      "altitude_m": 1682.9257826304001,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 670.0,
+      "phase": "climb",
+      "altitude_m": 1729.7934482378664,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 680.0,
+      "phase": "climb",
+      "altitude_m": 1777.1621570901336,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 690.0,
+      "phase": "climb",
+      "altitude_m": 1825.0258725216001,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 700.0,
+      "phase": "climb",
+      "altitude_m": 1873.3785578666668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 710.0,
+      "phase": "climb",
+      "altitude_m": 1922.2141764597334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 720.0,
+      "phase": "climb",
+      "altitude_m": 1971.5266916352002,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 730.0,
+      "phase": "climb",
+      "altitude_m": 2021.3100667274668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 740.0,
+      "phase": "climb",
+      "altitude_m": 2071.558265070934,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 750.0,
+      "phase": "climb",
+      "altitude_m": 2122.26525,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 760.0,
+      "phase": "climb",
+      "altitude_m": 2173.424984849067,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 770.0,
+      "phase": "climb",
+      "altitude_m": 2225.031432952533,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 780.0,
+      "phase": "climb",
+      "altitude_m": 2277.0785576448,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 790.0,
+      "phase": "climb",
+      "altitude_m": 2329.5603222602663,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 800.0,
+      "phase": "climb",
+      "altitude_m": 2382.470690133334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 810.0,
+      "phase": "climb",
+      "altitude_m": 2435.8036245984003,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 820.0,
+      "phase": "climb",
+      "altitude_m": 2489.5530889898664,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 830.0,
+      "phase": "climb",
+      "altitude_m": 2543.7130466421336,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 840.0,
+      "phase": "climb",
+      "altitude_m": 2598.2774608896,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 850.0,
+      "phase": "climb",
+      "altitude_m": 2653.240295066667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 860.0,
+      "phase": "climb",
+      "altitude_m": 2708.5955125077335,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 870.0,
+      "phase": "climb",
+      "altitude_m": 2764.3370765472,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 880.0,
+      "phase": "climb",
+      "altitude_m": 2820.4589505194667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 890.0,
+      "phase": "climb",
+      "altitude_m": 2876.9550977589342,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 900.0,
+      "phase": "climb",
+      "altitude_m": 2933.8194816,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 910.0,
+      "phase": "climb",
+      "altitude_m": 2991.046065377067,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 920.0,
+      "phase": "climb",
+      "altitude_m": 3048.628812424533,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 930.0,
+      "phase": "climb",
+      "altitude_m": 3106.5616860768,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 940.0,
+      "phase": "climb",
+      "altitude_m": 3164.838649668267,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 950.0,
+      "phase": "climb",
+      "altitude_m": 3223.453666533333,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 960.0,
+      "phase": "climb",
+      "altitude_m": 3282.4007000064,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 970.0,
+      "phase": "climb",
+      "altitude_m": 3341.6737134218665,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 980.0,
+      "phase": "climb",
+      "altitude_m": 3401.266670114133,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 990.0,
+      "phase": "climb",
+      "altitude_m": 3461.1735334176,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1000.0,
+      "phase": "climb",
+      "altitude_m": 3521.388266666667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1010.0,
+      "phase": "climb",
+      "altitude_m": 3581.9048331957338,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1020.0,
+      "phase": "climb",
+      "altitude_m": 3642.7171963392007,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1030.0,
+      "phase": "climb",
+      "altitude_m": 3703.8193194314667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1040.0,
+      "phase": "climb",
+      "altitude_m": 3765.205165806934,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1050.0,
+      "phase": "climb",
+      "altitude_m": 3826.8686987999995,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1060.0,
+      "phase": "climb",
+      "altitude_m": 3888.8038817450665,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1070.0,
+      "phase": "climb",
+      "altitude_m": 3951.0046779765344,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1080.0,
+      "phase": "climb",
+      "altitude_m": 4013.4650508288005,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1090.0,
+      "phase": "climb",
+      "altitude_m": 4076.1789636362664,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1100.0,
+      "phase": "climb",
+      "altitude_m": 4139.140379733333,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1110.0,
+      "phase": "climb",
+      "altitude_m": 4202.343262454399,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1120.0,
+      "phase": "climb",
+      "altitude_m": 4265.781575133868,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1130.0,
+      "phase": "climb",
+      "altitude_m": 4329.449281106133,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1140.0,
+      "phase": "climb",
+      "altitude_m": 4393.3403437056,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1150.0,
+      "phase": "climb",
+      "altitude_m": 4457.448726266668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1160.0,
+      "phase": "climb",
+      "altitude_m": 4521.768392123733,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1170.0,
+      "phase": "climb",
+      "altitude_m": 4586.2933046112,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1180.0,
+      "phase": "climb",
+      "altitude_m": 4651.017427063467,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1190.0,
+      "phase": "climb",
+      "altitude_m": 4715.934722814934,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1200.0,
+      "phase": "climb",
+      "altitude_m": 4781.039155200001,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1210.0,
+      "phase": "climb",
+      "altitude_m": 4846.324687553067,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1220.0,
+      "phase": "climb",
+      "altitude_m": 4911.785283208534,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1230.0,
+      "phase": "climb",
+      "altitude_m": 4977.414905500799,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1240.0,
+      "phase": "climb",
+      "altitude_m": 5043.207517764266,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1250.0,
+      "phase": "climb",
+      "altitude_m": 5109.157083333334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1260.0,
+      "phase": "climb",
+      "altitude_m": 5175.2575655424,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1270.0,
+      "phase": "climb",
+      "altitude_m": 5241.502927725867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1280.0,
+      "phase": "climb",
+      "altitude_m": 5307.887133218134,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1290.0,
+      "phase": "climb",
+      "altitude_m": 5374.4041453536,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1300.0,
+      "phase": "climb",
+      "altitude_m": 5441.047927466667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1310.0,
+      "phase": "climb",
+      "altitude_m": 5507.812442891734,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1320.0,
+      "phase": "climb",
+      "altitude_m": 5574.691654963201,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1330.0,
+      "phase": "climb",
+      "altitude_m": 5641.679527015467,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1340.0,
+      "phase": "climb",
+      "altitude_m": 5708.770022382932,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1350.0,
+      "phase": "climb",
+      "altitude_m": 5775.957104400001,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1360.0,
+      "phase": "climb",
+      "altitude_m": 5843.234736401066,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1370.0,
+      "phase": "climb",
+      "altitude_m": 5910.596881720534,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1380.0,
+      "phase": "climb",
+      "altitude_m": 5978.037503692801,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1390.0,
+      "phase": "climb",
+      "altitude_m": 6045.550565652266,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1400.0,
+      "phase": "climb",
+      "altitude_m": 6113.130030933334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1410.0,
+      "phase": "climb",
+      "altitude_m": 6180.769862870399,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1420.0,
+      "phase": "climb",
+      "altitude_m": 6248.464024797867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1430.0,
+      "phase": "climb",
+      "altitude_m": 6316.206480050134,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1440.0,
+      "phase": "climb",
+      "altitude_m": 6383.9911919616,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1450.0,
+      "phase": "climb",
+      "altitude_m": 6451.812123866666,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1460.0,
+      "phase": "climb",
+      "altitude_m": 6519.663239099734,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1470.0,
+      "phase": "climb",
+      "altitude_m": 6587.538500995201,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1480.0,
+      "phase": "climb",
+      "altitude_m": 6655.431872887467,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1490.0,
+      "phase": "climb",
+      "altitude_m": 6723.337318110933,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1500.0,
+      "phase": "climb",
+      "altitude_m": 6791.2488,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1510.0,
+      "phase": "climb",
+      "altitude_m": 6859.160281889067,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1520.0,
+      "phase": "climb",
+      "altitude_m": 6927.065727112535,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1530.0,
+      "phase": "climb",
+      "altitude_m": 6994.9590990048,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1540.0,
+      "phase": "climb",
+      "altitude_m": 7062.834360900267,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1550.0,
+      "phase": "climb",
+      "altitude_m": 7130.685476133334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1560.0,
+      "phase": "climb",
+      "altitude_m": 7198.506408038401,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1570.0,
+      "phase": "climb",
+      "altitude_m": 7266.291119949868,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1580.0,
+      "phase": "climb",
+      "altitude_m": 7334.033575202133,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1590.0,
+      "phase": "climb",
+      "altitude_m": 7401.727737129601,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1600.0,
+      "phase": "climb",
+      "altitude_m": 7469.367569066667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1610.0,
+      "phase": "climb",
+      "altitude_m": 7536.947034347732,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1620.0,
+      "phase": "climb",
+      "altitude_m": 7604.460096307201,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1630.0,
+      "phase": "climb",
+      "altitude_m": 7671.900718279467,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1640.0,
+      "phase": "climb",
+      "altitude_m": 7739.262863598933,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1650.0,
+      "phase": "climb",
+      "altitude_m": 7806.540495600002,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1660.0,
+      "phase": "climb",
+      "altitude_m": 7873.727577617066,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1670.0,
+      "phase": "climb",
+      "altitude_m": 7940.8180729845335,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1680.0,
+      "phase": "climb",
+      "altitude_m": 8007.805945036802,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1690.0,
+      "phase": "climb",
+      "altitude_m": 8074.685157108269,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1700.0,
+      "phase": "climb",
+      "altitude_m": 8141.449672533334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1710.0,
+      "phase": "climb",
+      "altitude_m": 8208.093454646401,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1720.0,
+      "phase": "climb",
+      "altitude_m": 8274.610466781867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1730.0,
+      "phase": "climb",
+      "altitude_m": 8340.994672274133,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1740.0,
+      "phase": "climb",
+      "altitude_m": 8407.2400344576,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1750.0,
+      "phase": "climb",
+      "altitude_m": 8473.340516666669,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1760.0,
+      "phase": "climb",
+      "altitude_m": 8539.290082235733,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1770.0,
+      "phase": "climb",
+      "altitude_m": 8605.0826944992,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1780.0,
+      "phase": "climb",
+      "altitude_m": 8670.712316791469,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1790.0,
+      "phase": "climb",
+      "altitude_m": 8736.172912446933,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1800.0,
+      "phase": "climb",
+      "altitude_m": 8801.4584448,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1810.0,
+      "phase": "climb",
+      "altitude_m": 8866.562877185068,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1820.0,
+      "phase": "climb",
+      "altitude_m": 8931.480172936534,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1830.0,
+      "phase": "climb",
+      "altitude_m": 8996.2042953888,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1840.0,
+      "phase": "climb",
+      "altitude_m": 9060.729207876268,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1850.0,
+      "phase": "climb",
+      "altitude_m": 9125.048873733334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1860.0,
+      "phase": "climb",
+      "altitude_m": 9189.1572562944,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1870.0,
+      "phase": "climb",
+      "altitude_m": 9253.048318893867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1880.0,
+      "phase": "climb",
+      "altitude_m": 9316.716024866135,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1890.0,
+      "phase": "climb",
+      "altitude_m": 9380.1543375456,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1900.0,
+      "phase": "climb",
+      "altitude_m": 9443.357220266667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1910.0,
+      "phase": "climb",
+      "altitude_m": 9506.318636363734,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1920.0,
+      "phase": "climb",
+      "altitude_m": 9569.032549171201,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1930.0,
+      "phase": "climb",
+      "altitude_m": 9631.492922023466,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1940.0,
+      "phase": "climb",
+      "altitude_m": 9693.693718254934,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1950.0,
+      "phase": "climb",
+      "altitude_m": 9755.628901200002,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1960.0,
+      "phase": "climb",
+      "altitude_m": 9817.292434193067,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1970.0,
+      "phase": "climb",
+      "altitude_m": 9878.678280568533,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1980.0,
+      "phase": "climb",
+      "altitude_m": 9939.780403660801,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 1990.0,
+      "phase": "climb",
+      "altitude_m": 10000.592766804268,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2000.0,
+      "phase": "climb",
+      "altitude_m": 10061.109333333334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2010.0,
+      "phase": "climb",
+      "altitude_m": 10121.324066582401,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2020.0,
+      "phase": "climb",
+      "altitude_m": 10181.230929885867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2030.0,
+      "phase": "climb",
+      "altitude_m": 10240.823886578131,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2040.0,
+      "phase": "climb",
+      "altitude_m": 10300.096899993601,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2050.0,
+      "phase": "climb",
+      "altitude_m": 10359.043933466666,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2060.0,
+      "phase": "climb",
+      "altitude_m": 10417.658950331734,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2070.0,
+      "phase": "climb",
+      "altitude_m": 10475.9359139232,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2080.0,
+      "phase": "climb",
+      "altitude_m": 10533.868787575468,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2090.0,
+      "phase": "climb",
+      "altitude_m": 10591.451534622933,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2100.0,
+      "phase": "climb",
+      "altitude_m": 10648.6781184,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2110.0,
+      "phase": "climb",
+      "altitude_m": 10705.542502241067,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2120.0,
+      "phase": "climb",
+      "altitude_m": 10762.038649480533,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2130.0,
+      "phase": "climb",
+      "altitude_m": 10818.160523452801,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2140.0,
+      "phase": "climb",
+      "altitude_m": 10873.902087492268,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2150.0,
+      "phase": "climb",
+      "altitude_m": 10929.257304933335,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2160.0,
+      "phase": "climb",
+      "altitude_m": 10984.2201391104,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2170.0,
+      "phase": "climb",
+      "altitude_m": 11038.784553357867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2180.0,
+      "phase": "climb",
+      "altitude_m": 11092.944511010133,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2190.0,
+      "phase": "climb",
+      "altitude_m": 11146.693975401598,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2200.0,
+      "phase": "climb",
+      "altitude_m": 11200.026909866667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2210.0,
+      "phase": "climb",
+      "altitude_m": 11252.937277739735,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2220.0,
+      "phase": "climb",
+      "altitude_m": 11305.4190423552,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2230.0,
+      "phase": "climb",
+      "altitude_m": 11357.466167047467,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2240.0,
+      "phase": "climb",
+      "altitude_m": 11409.072615150935,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2250.0,
+      "phase": "climb",
+      "altitude_m": 11460.23235,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2260.0,
+      "phase": "climb",
+      "altitude_m": 11510.939334929068,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2270.0,
+      "phase": "climb",
+      "altitude_m": 11561.187533272536,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2280.0,
+      "phase": "climb",
+      "altitude_m": 11610.9709083648,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2290.0,
+      "phase": "climb",
+      "altitude_m": 11660.283423540266,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2300.0,
+      "phase": "climb",
+      "altitude_m": 11709.119042133334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2310.0,
+      "phase": "climb",
+      "altitude_m": 11757.4717274784,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2320.0,
+      "phase": "climb",
+      "altitude_m": 11805.335442909867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2330.0,
+      "phase": "climb",
+      "altitude_m": 11852.704151762133,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2340.0,
+      "phase": "climb",
+      "altitude_m": 11899.571817369602,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2350.0,
+      "phase": "climb",
+      "altitude_m": 11945.932403066667,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2360.0,
+      "phase": "climb",
+      "altitude_m": 11991.779872187733,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2370.0,
+      "phase": "climb",
+      "altitude_m": 12037.1081880672,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2380.0,
+      "phase": "climb",
+      "altitude_m": 12081.911314039467,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2390.0,
+      "phase": "climb",
+      "altitude_m": 12126.183213438933,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2400.0,
+      "phase": "climb",
+      "altitude_m": 12169.917849600002,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2410.0,
+      "phase": "climb",
+      "altitude_m": 12213.109185857069,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2420.0,
+      "phase": "climb",
+      "altitude_m": 12255.751185544534,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2430.0,
+      "phase": "climb",
+      "altitude_m": 12297.837811996802,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2440.0,
+      "phase": "climb",
+      "altitude_m": 12339.363028548269,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2450.0,
+      "phase": "climb",
+      "altitude_m": 12380.320798533334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2460.0,
+      "phase": "climb",
+      "altitude_m": 12420.7050852864,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2470.0,
+      "phase": "climb",
+      "altitude_m": 12460.509852141868,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2480.0,
+      "phase": "climb",
+      "altitude_m": 12499.729062434133,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2490.0,
+      "phase": "climb",
+      "altitude_m": 12538.356679497601,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2500.0,
+      "phase": "climb",
+      "altitude_m": 12576.386666666669,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2510.0,
+      "phase": "climb",
+      "altitude_m": 12613.812987275734,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2520.0,
+      "phase": "climb",
+      "altitude_m": 12650.6296046592,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2530.0,
+      "phase": "climb",
+      "altitude_m": 12686.830482151468,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2540.0,
+      "phase": "climb",
+      "altitude_m": 12722.409583086936,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2550.0,
+      "phase": "climb",
+      "altitude_m": 12757.3608708,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2560.0,
+      "phase": "climb",
+      "altitude_m": 12791.678308625069,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2570.0,
+      "phase": "climb",
+      "altitude_m": 12825.355859896536,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2580.0,
+      "phase": "climb",
+      "altitude_m": 12858.3874879488,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2590.0,
+      "phase": "climb",
+      "altitude_m": 12890.767156116268,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2600.0,
+      "phase": "climb",
+      "altitude_m": 12922.488827733336,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2610.0,
+      "phase": "climb",
+      "altitude_m": 12953.546466134401,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2620.0,
+      "phase": "climb",
+      "altitude_m": 12983.934034653867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2630.0,
+      "phase": "climb",
+      "altitude_m": 13013.645496626134,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2640.0,
+      "phase": "climb",
+      "altitude_m": 13042.6748153856,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2650.0,
+      "phase": "climb",
+      "altitude_m": 13071.015954266668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2660.0,
+      "phase": "climb",
+      "altitude_m": 13098.662876603734,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2670.0,
+      "phase": "climb",
+      "altitude_m": 13125.609545731202,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2680.0,
+      "phase": "climb",
+      "altitude_m": 13151.849924983468,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2690.0,
+      "phase": "climb",
+      "altitude_m": 13177.377977694932,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2700.0,
+      "phase": "climb",
+      "altitude_m": 13202.1876672,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2710.0,
+      "phase": "climb",
+      "altitude_m": 13226.272956833067,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2720.0,
+      "phase": "climb",
+      "altitude_m": 13249.627809928534,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2730.0,
+      "phase": "climb",
+      "altitude_m": 13272.2461898208,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2740.0,
+      "phase": "climb",
+      "altitude_m": 13294.122059844269,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2750.0,
+      "phase": "climb",
+      "altitude_m": 13315.249383333334,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2760.0,
+      "phase": "climb",
+      "altitude_m": 13335.622123622401,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2770.0,
+      "phase": "climb",
+      "altitude_m": 13355.234244045867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2780.0,
+      "phase": "climb",
+      "altitude_m": 13374.079707938134,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2790.0,
+      "phase": "climb",
+      "altitude_m": 13392.152478633601,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2800.0,
+      "phase": "climb",
+      "altitude_m": 13409.446519466668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2810.0,
+      "phase": "climb",
+      "altitude_m": 13425.955793771733,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2820.0,
+      "phase": "climb",
+      "altitude_m": 13441.674264883202,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2830.0,
+      "phase": "climb",
+      "altitude_m": 13456.595896135466,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2840.0,
+      "phase": "climb",
+      "altitude_m": 13470.714650862934,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2850.0,
+      "phase": "climb",
+      "altitude_m": 13484.024492400002,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2860.0,
+      "phase": "climb",
+      "altitude_m": 13496.519384081066,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2870.0,
+      "phase": "climb",
+      "altitude_m": 13508.193289240533,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2880.0,
+      "phase": "climb",
+      "altitude_m": 13519.0401712128,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2890.0,
+      "phase": "climb",
+      "altitude_m": 13529.053993332267,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2900.0,
+      "phase": "climb",
+      "altitude_m": 13538.228718933333,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2910.0,
+      "phase": "climb",
+      "altitude_m": 13546.5583113504,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2920.0,
+      "phase": "climb",
+      "altitude_m": 13554.036733917867,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2930.0,
+      "phase": "climb",
+      "altitude_m": 13560.657949970133,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2940.0,
+      "phase": "climb",
+      "altitude_m": 13566.4159228416,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2950.0,
+      "phase": "climb",
+      "altitude_m": 13571.304615866668,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2960.0,
+      "phase": "climb",
+      "altitude_m": 13575.317992379734,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2970.0,
+      "phase": "climb",
+      "altitude_m": 13578.4500157152,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2980.0,
+      "phase": "climb",
+      "altitude_m": 13580.694649207468,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 2990.0,
+      "phase": "climb",
+      "altitude_m": 13582.045856190933,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3000.0,
+      "phase": "boost",
+      "altitude_m": 13582.4976,
+      "felt_g": 2.6071853499309117,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3010.0,
+      "phase": "boost",
+      "altitude_m": 14370.552810595,
+      "felt_g": 2.6071853499309117,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3020.0,
+      "phase": "boost",
+      "altitude_m": 16734.718442379995,
+      "felt_g": 2.6071853499309117,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3030.0,
+      "phase": "boost",
+      "altitude_m": 20674.99449535499,
+      "felt_g": 2.6071853499309117,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3040.0,
+      "phase": "boost",
+      "altitude_m": 26191.38096951998,
+      "felt_g": 2.6071853499309117,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3050.0,
+      "phase": "boost",
+      "altitude_m": 33283.877864874965,
+      "felt_g": 2.6071853499309117,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3060.0,
+      "phase": "microgravity",
+      "altitude_m": 41952.485181420045,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3070.0,
+      "phase": "microgravity",
+      "altitude_m": 50918.81520856002,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3080.0,
+      "phase": "microgravity",
+      "altitude_m": 58904.480235699986,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3090.0,
+      "phase": "microgravity",
+      "altitude_m": 65909.48026283996,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3100.0,
+      "phase": "microgravity",
+      "altitude_m": 71933.81528997995,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3110.0,
+      "phase": "microgravity",
+      "altitude_m": 76977.48531711992,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3120.0,
+      "phase": "microgravity",
+      "altitude_m": 81040.49034425989,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3130.0,
+      "phase": "microgravity",
+      "altitude_m": 84122.83037139986,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3140.0,
+      "phase": "microgravity",
+      "altitude_m": 86224.50539853984,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3150.0,
+      "phase": "microgravity",
+      "altitude_m": 87345.51542567981,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3160.0,
+      "phase": "microgravity",
+      "altitude_m": 87485.86045281979,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3170.0,
+      "phase": "microgravity",
+      "altitude_m": 86645.54047995976,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3180.0,
+      "phase": "microgravity",
+      "altitude_m": 84824.55550709974,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3190.0,
+      "phase": "microgravity",
+      "altitude_m": 82022.90553423972,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3200.0,
+      "phase": "microgravity",
+      "altitude_m": 78240.5905613797,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3210.0,
+      "phase": "microgravity",
+      "altitude_m": 73477.61058851966,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3220.0,
+      "phase": "microgravity",
+      "altitude_m": 67733.96561565965,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3230.0,
+      "phase": "microgravity",
+      "altitude_m": 61009.65564279962,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3240.0,
+      "phase": "microgravity",
+      "altitude_m": 53304.6806699396,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3250.0,
+      "phase": "microgravity",
+      "altitude_m": 44619.04069707957,
+      "felt_g": 0.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3260.0,
+      "phase": "reentry",
+      "altitude_m": 38899.044613320635,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3270.0,
+      "phase": "reentry",
+      "altitude_m": 35026.0000650085,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3280.0,
+      "phase": "reentry",
+      "altitude_m": 31600.533214825635,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3290.0,
+      "phase": "reentry",
+      "altitude_m": 28595.162082132694,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3300.0,
+      "phase": "reentry",
+      "altitude_m": 25982.404686290363,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3310.0,
+      "phase": "reentry",
+      "altitude_m": 23734.779046659332,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3320.0,
+      "phase": "reentry",
+      "altitude_m": 21824.803182600273,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3330.0,
+      "phase": "reentry",
+      "altitude_m": 20224.995113473862,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3340.0,
+      "phase": "reentry",
+      "altitude_m": 18907.872858640778,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3350.0,
+      "phase": "reentry",
+      "altitude_m": 17845.954437461707,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3360.0,
+      "phase": "reentry",
+      "altitude_m": 17011.757869297322,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3370.0,
+      "phase": "reentry",
+      "altitude_m": 16377.801173508302,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3380.0,
+      "phase": "reentry",
+      "altitude_m": 15916.602369455333,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3390.0,
+      "phase": "reentry",
+      "altitude_m": 15600.679476499085,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3400.0,
+      "phase": "reentry",
+      "altitude_m": 15402.550514000242,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3410.0,
+      "phase": "reentry",
+      "altitude_m": 15294.733501319486,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3420.0,
+      "phase": "reentry",
+      "altitude_m": 15249.746457817484,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3430.0,
+      "phase": "reentry",
+      "altitude_m": 15240.10740285493,
+      "felt_g": null,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3440.0,
+      "phase": "glide",
+      "altitude_m": 15098.200915141011,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3450.0,
+      "phase": "glide",
+      "altitude_m": 14899.540376783892,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3460.0,
+      "phase": "glide",
+      "altitude_m": 14700.879838426774,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3470.0,
+      "phase": "glide",
+      "altitude_m": 14502.219300069655,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3480.0,
+      "phase": "glide",
+      "altitude_m": 14303.558761712538,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3490.0,
+      "phase": "glide",
+      "altitude_m": 14104.898223355418,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3500.0,
+      "phase": "glide",
+      "altitude_m": 13906.237684998301,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3510.0,
+      "phase": "glide",
+      "altitude_m": 13707.57714664118,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3520.0,
+      "phase": "glide",
+      "altitude_m": 13508.916608284064,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3530.0,
+      "phase": "glide",
+      "altitude_m": 13310.256069926943,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3540.0,
+      "phase": "glide",
+      "altitude_m": 13111.595531569827,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3550.0,
+      "phase": "glide",
+      "altitude_m": 12912.934993212708,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3560.0,
+      "phase": "glide",
+      "altitude_m": 12714.27445485559,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3570.0,
+      "phase": "glide",
+      "altitude_m": 12515.61391649847,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3580.0,
+      "phase": "glide",
+      "altitude_m": 12316.95337814135,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3590.0,
+      "phase": "glide",
+      "altitude_m": 12118.292839784233,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3600.0,
+      "phase": "glide",
+      "altitude_m": 11919.632301427113,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3610.0,
+      "phase": "glide",
+      "altitude_m": 11720.971763069996,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3620.0,
+      "phase": "glide",
+      "altitude_m": 11522.311224712877,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3630.0,
+      "phase": "glide",
+      "altitude_m": 11323.650686355759,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3640.0,
+      "phase": "glide",
+      "altitude_m": 11124.990147998638,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3650.0,
+      "phase": "glide",
+      "altitude_m": 10926.329609641522,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3660.0,
+      "phase": "glide",
+      "altitude_m": 10727.669071284403,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3670.0,
+      "phase": "glide",
+      "altitude_m": 10529.008532927284,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3680.0,
+      "phase": "glide",
+      "altitude_m": 10330.347994570166,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3690.0,
+      "phase": "glide",
+      "altitude_m": 10131.687456213049,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3700.0,
+      "phase": "glide",
+      "altitude_m": 9933.026917855928,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3710.0,
+      "phase": "glide",
+      "altitude_m": 9734.36637949881,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3720.0,
+      "phase": "glide",
+      "altitude_m": 9535.705841141691,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3730.0,
+      "phase": "glide",
+      "altitude_m": 9337.045302784574,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3740.0,
+      "phase": "glide",
+      "altitude_m": 9138.384764427454,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3750.0,
+      "phase": "glide",
+      "altitude_m": 8939.724226070337,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3760.0,
+      "phase": "glide",
+      "altitude_m": 8741.063687713218,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3770.0,
+      "phase": "glide",
+      "altitude_m": 8542.4031493561,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3780.0,
+      "phase": "glide",
+      "altitude_m": 8343.74261099898,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3790.0,
+      "phase": "glide",
+      "altitude_m": 8145.0820726418615,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3800.0,
+      "phase": "glide",
+      "altitude_m": 7946.421534284744,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3810.0,
+      "phase": "glide",
+      "altitude_m": 7747.760995927624,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3820.0,
+      "phase": "glide",
+      "altitude_m": 7549.1004575705065,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3830.0,
+      "phase": "glide",
+      "altitude_m": 7350.439919213387,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3840.0,
+      "phase": "glide",
+      "altitude_m": 7151.779380856269,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3850.0,
+      "phase": "glide",
+      "altitude_m": 6953.11884249915,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3860.0,
+      "phase": "glide",
+      "altitude_m": 6754.458304142032,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3870.0,
+      "phase": "glide",
+      "altitude_m": 6555.797765784913,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3880.0,
+      "phase": "glide",
+      "altitude_m": 6357.137227427795,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3890.0,
+      "phase": "glide",
+      "altitude_m": 6158.476689070676,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3900.0,
+      "phase": "glide",
+      "altitude_m": 5959.816150713556,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3910.0,
+      "phase": "glide",
+      "altitude_m": 5761.155612356439,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3920.0,
+      "phase": "glide",
+      "altitude_m": 5562.495073999319,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3930.0,
+      "phase": "glide",
+      "altitude_m": 5363.834535642201,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3940.0,
+      "phase": "glide",
+      "altitude_m": 5165.173997285082,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3950.0,
+      "phase": "glide",
+      "altitude_m": 4966.513458927964,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3960.0,
+      "phase": "glide",
+      "altitude_m": 4767.852920570846,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3970.0,
+      "phase": "glide",
+      "altitude_m": 4569.192382213727,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3980.0,
+      "phase": "glide",
+      "altitude_m": 4370.531843856609,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 3990.0,
+      "phase": "glide",
+      "altitude_m": 4171.87130549949,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4000.0,
+      "phase": "glide",
+      "altitude_m": 3973.210767142372,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4010.0,
+      "phase": "glide",
+      "altitude_m": 3774.5502287852523,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4020.0,
+      "phase": "glide",
+      "altitude_m": 3575.8896904281346,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4030.0,
+      "phase": "glide",
+      "altitude_m": 3377.229152071015,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4040.0,
+      "phase": "glide",
+      "altitude_m": 3178.5686137138973,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4050.0,
+      "phase": "glide",
+      "altitude_m": 2979.908075356779,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4060.0,
+      "phase": "glide",
+      "altitude_m": 2781.2475369996596,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4070.0,
+      "phase": "glide",
+      "altitude_m": 2582.586998642542,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4080.0,
+      "phase": "glide",
+      "altitude_m": 2383.9264602854223,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4090.0,
+      "phase": "glide",
+      "altitude_m": 2185.2659219283046,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4100.0,
+      "phase": "glide",
+      "altitude_m": 1986.605383571185,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4110.0,
+      "phase": "glide",
+      "altitude_m": 1787.9448452140673,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4120.0,
+      "phase": "glide",
+      "altitude_m": 1589.2843068569493,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4130.0,
+      "phase": "glide",
+      "altitude_m": 1390.6237684998298,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4140.0,
+      "phase": "glide",
+      "altitude_m": 1191.963230142712,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4150.0,
+      "phase": "glide",
+      "altitude_m": 993.3026917855925,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4160.0,
+      "phase": "glide",
+      "altitude_m": 794.6421534284747,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4170.0,
+      "phase": "glide",
+      "altitude_m": 595.9816150713551,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4180.0,
+      "phase": "glide",
+      "altitude_m": 397.32107671423734,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4190.0,
+      "phase": "glide",
+      "altitude_m": 198.66053835711782,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    },
+    {
+      "elapsed_s": 4200.0,
+      "phase": "landed",
+      "altitude_m": 0.0,
+      "felt_g": 1.0,
+      "cabin_pressure_pa": 82741.61655181566
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+---
+// Height against time for the desk-simulated research flight. The numbers come from
+// `cubesat-classroom flight-profile --json --step-s 10` (see src/flight.rs).
+import data from '../data/flight-profile.json';
+
+const { profile: p, points } = data;
+const W = 480, H = 290, L = 34, R = 10, T = 30, B = 46;
+const top = Math.ceil((p.apogee_m + 5_000) / 20_000) * 20_000;
+const x = (s: number) => L + (s / p.landing_s) * (W - L - R);
+const y = (m: number) => T + (1 - m / top) * (H - T - B);
+const line = points.map((pt, i) => `${i ? 'L' : 'M'}${x(pt.elapsed_s).toFixed(1)} ${y(pt.altitude_m).toFixed(1)}`).join(' ');
+const float = points.filter(pt => pt.phase === 'microgravity');
+const floatLine = [`M${x(p.burnout_s).toFixed(1)} ${y(p.burnout_m).toFixed(1)}`, ...float.map(pt => `L${x(pt.elapsed_s).toFixed(1)} ${y(pt.altitude_m).toFixed(1)}`), `L${x(p.reentry_s).toFixed(1)} ${y(p.burnout_m).toFixed(1)}`].join(' ');
+const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+const km = (m: number) => (m / 1000).toFixed(1);
+const phases = [
+  { name: 'Climb under the carrier aircraft', start: 0, note: `Up to ${km(p.release_m)} km. About 1 g.` },
+  { name: 'Release and rocket boost', start: p.release_s, note: `${Math.round(p.burnout_s - p.release_s)} seconds. About ${p.boost_felt_g.toFixed(1)} g in this model.` },
+  { name: 'Microgravity', start: p.burnout_s, note: `About ${Math.round(p.microgravity_s)} seconds of floating. Highest point ${km(p.apogee_m)} km.` },
+  { name: 'Re-entry', start: p.reentry_s, note: 'The ship slows in thicker air. No g-load figure is published.' },
+  { name: 'Glide and landing', start: p.glide_s, note: `Runway landing about ${Math.round(p.landing_s / 60)} minutes after take-off.` },
+];
+---
+<figure class="m-0">
+  <svg viewBox={`0 0 ${W} ${H}`} class="block h-auto w-full max-w-xl" role="img" aria-labelledby="flight-chart-title flight-chart-desc">
+    <title id="flight-chart-title">Height during the simulated research flight</title>
+    <desc id="flight-chart-desc">A slow climb to {km(p.release_m)} kilometres over {Math.round(p.release_s / 60)} minutes, a steep rise to {km(p.apogee_m)} kilometres, then a fall and a glide to landing at {Math.round(p.landing_s / 60)} minutes.</desc>
+    {Array.from({ length: top / 20_000 + 1 }, (_, i) => i * 20).map(k => (
+      <g>
+        <line x1={L} x2={W - R} y1={y(k * 1000)} y2={y(k * 1000)} stroke="var(--color-line)" stroke-width="1" />
+        <text x={L - 8} y={y(k * 1000) + 4} text-anchor="end" font-size="15" fill="var(--color-muted)">{k}</text>
+      </g>
+    ))}
+    {Array.from({ length: Math.floor(p.landing_s / 600) + 1 }, (_, i) => i * 10).filter(m => p.landing_s - m * 60 > 300).map(m => (
+      <text x={x(m * 60)} y={H - 26} text-anchor="middle" font-size="15" fill="var(--color-muted)">{m}</text>
+    ))}
+    <text x={(L + W - R) / 2} text-anchor="middle" y={H - 6} font-size="15" fill="var(--color-muted)">Minutes after take-off</text>
+    <text x={4} y={14} font-size="15" fill="var(--color-muted)">Height, km</text>
+    <path d={line} fill="none" stroke="var(--color-ink)" stroke-width="2.5" stroke-linejoin="round" />
+    <path d={floatLine} fill="none" stroke="var(--color-horizon-deep)" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+    <circle cx={x(p.apogee_s)} cy={y(p.apogee_m)} r="4.5" fill="var(--color-horizon-deep)" />
+    <text x={x(p.apogee_s) - 10} y={y(p.apogee_m) + 4} text-anchor="end" font-size="15" font-weight="700" fill="var(--color-ink)">{km(p.apogee_m)} km, floating</text>
+    <circle cx={x(p.release_s)} cy={y(p.release_m)} r="4" fill="#fff" stroke="var(--color-ink)" stroke-width="2" />
+    <text x={x(p.release_s) - 10} y={y(p.release_m) - 8} text-anchor="end" font-size="15" fill="var(--color-ink)">Release, {km(p.release_m)} km</text>
+  </svg>
+  <figcaption class="mt-2 text-sm text-muted">Desk simulation from public figures. Not flight data and not a flight plan.</figcaption>
+</figure>
+<ol class="lesson-outline mt-6">
+  {phases.map(ph => (
+    <li class="!grid-cols-[4.2rem_minmax(0,1fr)]"><span>T+{clock(ph.start)}</span><div><strong class="text-ink">{ph.name}</strong><p>{ph.note}</p></div></li>
+  ))}
+</ol>

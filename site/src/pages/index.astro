@@ -26,6 +26,7 @@ const labs = [
   image={site + rail.src.replace(base, '')}
 >
   <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Mission', href: base + '/mission/' },
     { label: 'Lessons', href: base + '/quests/' },
     { label: 'Simulator', href: '#demo' },
     { label: 'Labs', href: '#labs' },
@@ -37,13 +38,13 @@ const labs = [
     <div class="shell grid items-center gap-9 py-11 sm:py-16 lg:grid-cols-[1.12fr_1fr] lg:gap-16">
       <div>
         <p class="field-label">Open-source space education</p>
-        <h1 id="home-title" class="mt-4">A CubeSat lab for the classroom</h1>
-        <p class="lede mt-5">Teach students how a ground station requests data from a satellite. Start with a browser simulator, then take the same questions to a bench or balloon lab.</p>
+        <h1 id="home-title" class="mt-4">Get your class ready for spaceflight</h1>
+        <p class="lede mt-5">Teachers in Space plans to fly two teachers and a classroom sensor kit on a Virgin Galactic research flight, expected in 2027. Practise with a browser ground station, predict the flight, then compare your prediction with the flight data when it is shared.</p>
         <div class="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
           <a class="button primary" href={base + '/quests/first-contact/'}>Start the first lesson</a>
-          <a class="font-bold text-accent underline decoration-line underline-offset-4 hover:decoration-current" href="#demo">Try the simulator</a>
+          <a class="font-bold text-accent underline decoration-line underline-offset-4 hover:decoration-current" href={base + '/mission/'}>See the flight, minute by minute</a>
         </div>
-        <p class="mt-5 text-sm text-muted">For K–12 classrooms. The browser lessons need no account or equipment.</p>
+        <p class="mt-5 text-sm text-muted">For K–12 classrooms. The browser lessons need no account or equipment. An independent volunteer project; Teachers in Space and Virgin Galactic decide what flies.</p>
       </div>
       <figure class="bench-figure m-0">
         <Image src={rail} alt="Exploded CAD view of the CubeSat chassis, camera cover, and base plate" widths={[360, 540, 720]} sizes="(min-width: 1024px) 34rem, 100vw" priority />
@@ -93,6 +94,23 @@ const labs = [
       ))}
     </div>
     <div id="get-started" class="mt-9"><QuickStart /></div>
+  </section>
+
+  <section id="fork" class="shell scroll-mt-6 pb-12 sm:pb-16" aria-labelledby="fork-title">
+    <div class="grid gap-6 border-t-2 border-line pt-8 lg:grid-cols-[.8fr_1.2fr] lg:gap-16">
+      <div>
+        <h2 id="fork-title">Start your own club site</h2>
+        <p class="mt-3 max-w-md text-muted">CubeSat Classroom is a starting kit, not a competitor. Copy it, rename it, and make it your school's, club's or mission's own.</p>
+      </div>
+      <div>
+        <ul class="lesson-outline">
+          <li><span>01</span><div><strong class="text-ink">Fork the repository</strong><p>Lessons, simulator, ground station and print files come with it. MIT or Apache 2.0.</p></div></li>
+          <li><span>02</span><div><strong class="text-ink">Change one settings file</strong><p>Your name, web address and links live in one place.</p></div></li>
+          <li><span>03</span><div><strong class="text-ink">Add your mission</strong><p>Write quests for your balloon, rocket, glider or satellite. Share improvements back if you like.</p></div></li>
+        </ul>
+        <a class="mt-5 inline-block font-bold text-accent underline underline-offset-4" href={repo + '/blob/main/docs/fork-guide.md'}>Read the fork guide</a>
+      </div>
+    </div>
   </section>
 
   <div class="section-band" id="support">
