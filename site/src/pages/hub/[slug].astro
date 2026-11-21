@@ -3,7 +3,7 @@ import '../../theme.css';
 import { classroomHost, hubs } from '../../hubs.mjs';
 
 export function getStaticPaths() {
-  return hubs.map(hub => ({ params: { slug: hub.slug }, props: { hub } }));
+  return hubs.filter(hub => hub.slug !== 'volunteer').map(hub => ({ params: { slug: hub.slug }, props: { hub } }));
 }
 
 const { hub } = Astro.props;

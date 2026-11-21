@@ -21,6 +21,7 @@ For Cloudflare, run `npm run build` from `site/`. Deploy `dist/` as [Worker Stat
 | Custom domain | Role |
 | --- | --- |
 | `cubesatclass.com` | Classroom home and quick start |
+| `cubesat.app` | iOS and Android template |
 | `cubesatclass.org` | Curriculum and teacher pilot |
 | `cubesatclass.io` | Ground station and radio |
 | `cubesatclass.dev` | Software development and MoQ.pro testing |

@@ -4,6 +4,18 @@ export const classroomHost = 'cubesatclass.com';
 
 export const hubs = [
   {
+    slug: 'mobile',
+    host: 'cubesat.app',
+    name: 'Mobile app',
+    heading: 'Practice a mission on your phone',
+    description: 'Try offline telemetry and take classroom lessons with you. The open-source iOS and Android template is ready for developer previews.',
+    links: [
+      ['Run the mobile template', repo + '/blob/main/mobile/README.md'],
+      ['Browse the mobile source', repo + '/tree/main/mobile'],
+      ['Open the classroom quick start', 'https://' + classroomHost + '/#start'],
+    ],
+  },
+  {
     slug: 'lessons',
     host: 'cubesatclass.org',
     name: 'Lessons',

@@ -67,3 +67,8 @@ footer { border-top: 1px solid #d6e0f1; font-size: .9rem; }
 #support a { color: var(--red); }
 .project-links a { color: var(--ink); }
 nav [aria-current="page"] { text-decoration: underline; color: var(--sky); }
+
+.volunteer-role.sky { border-top: .28rem solid #205ac5; }
+.volunteer-role.yellow { border-top: .28rem solid #ca870f; }
+.volunteer-role.rose { border-top: .28rem solid var(--red); }
+#give a { color: var(--red); }
