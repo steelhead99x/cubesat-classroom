@@ -4,7 +4,7 @@
 
 CubeSat Classroom is an independent volunteer project for K–12 learners, educators and amateur-radio mentors, inspired by Teachers in Space and AMSAT.
 
-[Project page](https://cubesatclass.com/) · [GitHub Pages](https://steelhead99x.github.io/cubesat-classroom/) · [Teachers in Space fundraiser](https://givebutter.com/fund-stem-training-for-100-educators-s14sb0)
+[Project page](https://cubesatclass.org/) · [GitHub Pages](https://steelhead99x.github.io/cubesat-classroom/) · [Teachers in Space fundraiser](https://givebutter.com/fund-stem-training-for-100-educators-s14sb0)
 
 ## Help build it
 
@@ -17,7 +17,7 @@ AI tools are welcome for drafting, coding and analyzing data. A contributor owns
 Paste this into a terminal on macOS, Linux, or WSL, follow the prompts, then open the local address the station prints.
 
 ```sh
-curl -fsSL https://cubesatclass.com/start.sh | bash
+curl -fsSL https://cubesat.club/start.sh | bash
 ```
 
 With an existing checkout, run `bash docs/start.sh`. The guide explains each step and asks before downloading files, installing Rust, or launching the station.

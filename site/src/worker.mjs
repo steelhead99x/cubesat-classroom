@@ -1,6 +1,6 @@
 import { hubs } from './hubs.mjs';
 
-const homeByHost = new Map(hubs.map(({ host, slug }) => [host, slug === 'volunteer' ? '/volunteer/' : '/hub/' + slug + '/']));
+const homeByHost = new Map(hubs.filter(hub => hub.slug !== 'lessons').map(({ host, slug }) => [host, slug === 'volunteer' ? '/volunteer/' : '/hub/' + slug + '/']));
 
 export default {
   fetch(request, env) {

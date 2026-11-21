@@ -20,11 +20,11 @@ For Cloudflare, run `npm run build` from `site/`. Deploy `dist/` as [Worker Stat
 
 | Custom domain | Role |
 | --- | --- |
-| `cubesatclass.com` | Classroom home and quick start |
+| `cubesatclass.org` | Classroom home, curriculum, and teacher pilot |
+| `cubesatclass.com` | Redirect to `cubesatclass.org` |
 | `cubesat.app` | iOS and Android template |
-| `cubesatclass.org` | Curriculum and teacher pilot |
 | `cubesatclass.io` | Ground station and radio |
 | `cubesatclass.dev` | Software development and MoQ.pro testing |
-| `cubesat.club` | Volunteer contributions and fundraising links |
+| `cubesat.club` | Quick start, volunteer contributions, and fundraising links |
 
-The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The guided installer is published at `https://cubesatclass.com/start.sh` and mirrored by GitHub Pages. The Rust station and its MoQ/QUIC relays run locally during the lesson.
+The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The guided installer is published at `https://cubesat.club/start.sh` and mirrored by GitHub Pages. The Rust station and its MoQ/QUIC relays run locally during the lesson.

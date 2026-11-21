@@ -1,10 +1,10 @@
 ---
 import '../theme.css';
+import QuickStart from '../components/QuickStart.astro';
 import rail from '../../../docs/assets/rail-fit.png';
 import { fundraiser, hubs, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const command = 'curl -fsSL https://cubesatclass.com/start.sh | bash';
 const labs = [
   { icon: 'station', name: 'Ground station', description: 'Request a sensor reading and watch practice video. Start with a simulated CubeSat.', action: 'Run the station', href: '#start' },
   { icon: 'balloon', name: 'Balloon lab', description: 'Log pressure and temperature in class, then compare your measurements with real flight data.', action: 'Open the lesson', href: repo + '/blob/main/docs/balloon-lab.md' },
@@ -16,7 +16,7 @@ const labs = [
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="An open space lab for K–12 for K–12. Run a practice CubeSat ground station, print a satellite model, and teach the next crew.">
+    <meta name="description" content="An open space lab for K–12. Run a practice CubeSat ground station, print a satellite model, and teach the next crew.">
     <meta name="theme-color" content="#10264a">
     <link rel="icon" type="image/svg+xml" href={base + '/mark.svg'}>
     <title>CubeSat Classroom</title>
@@ -73,17 +73,7 @@ const labs = [
           </div>
         </section>
         <div id="get-started"></div>
-        <section id="start" class="start" aria-labelledby="start-title">
-          <h2 id="start-title">One command to start</h2>
-          <p class="mt-2">Paste this into your terminal and follow the prompts. Open the local address the station prints.</p>
-          <div class="terminal mt-5 flex flex-wrap items-center justify-between gap-3">
-            <code id="command">{command}</code>
-            <button id="copy" type="button" hidden>Copy command</button>
-          </div>
-          <p class="mt-3 text-sm">macOS, Linux or WSL. The station uses simulated sensors and video.</p>
-          <p id="copy-status" class="sr-only" role="status"></p>
-          <a class="mt-4 inline-block" href={repo + '/blob/main/output/pdf/cubesat-classroom-quick-start.pdf'}>Print the one-page quick start <span aria-hidden="true">↗</span></a>
-        </section>
+        <QuickStart />
         <div class="mt-10 grid gap-x-12 gap-y-8 md:grid-cols-2">
           <section id="quests" aria-labelledby="quests-title">
             <div id="contribute"></div>
@@ -104,34 +94,10 @@ const labs = [
       <div class="shell flex flex-wrap items-center justify-between gap-3 py-6">
         <p>An independent volunteer project inspired by Teachers in Space and AMSAT.</p>
         <nav class="project-links flex flex-wrap gap-x-4 gap-y-2" aria-label="Project sites">
-          {hubs.map(hub => <a href={'https://' + hub.host + '/'}>{hub.name}</a>)}
+          {hubs.map(hub => <a href={'https://' + hub.host + (hub.slug === 'lessons' ? '/hub/lessons/' : '/')}>{hub.name}</a>)}
           <a href={repo}>GitHub <span aria-hidden="true">↗</span></a>
         </nav>
       </div>
     </footer>
-    <script>
-      const button = document.querySelector<HTMLButtonElement>('#copy');
-      const command = document.querySelector('#command');
-      const status = document.querySelector('#copy-status');
-
-      if (button && command && status && navigator.clipboard) {
-        button.hidden = false;
-        button.addEventListener('click', async () => {
-          try {
-            await navigator.clipboard.writeText(command.textContent ?? '');
-            status.textContent = 'Command copied.';
-            button.textContent = 'Copied';
-          } catch {
-            status.textContent = 'Select and copy the command from the box.';
-            button.textContent = 'Copy manually';
-            const range = document.createRange();
-            range.selectNodeContents(command);
-            const selection = window.getSelection();
-            selection?.removeAllRanges();
-            selection?.addRange(range);
-          }
-        });
-      }
-    </script>
   </body>
 </html>
