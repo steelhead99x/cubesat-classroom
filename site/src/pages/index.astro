@@ -4,7 +4,7 @@ import rail from '../../../docs/assets/rail-fit.png';
 import { fundraiser, hubs, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const command = 'curl -fsSL https://steelhead99x.github.io/cubesat-classroom/start.sh | bash';
+const command = 'curl -fsSL https://cubesatclass.com/start.sh | bash';
 const labs = [
   { icon: 'station', name: 'Ground station', description: 'Request a sensor reading and watch practice video. Start with a simulated CubeSat.', action: 'Run the station', href: '#start' },
   { icon: 'balloon', name: 'Balloon lab', description: 'Log pressure and temperature in class, then compare your measurements with real flight data.', action: 'Open the lesson', href: repo + '/blob/main/docs/balloon-lab.md' },

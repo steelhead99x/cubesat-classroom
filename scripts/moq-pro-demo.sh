@@ -64,7 +64,7 @@ run_moq() (
   for setting in ${!MOQ_@}; do
     unset "$setting"
   done
-  export MOQ_LOG_LEVEL=off
+  export MOQ_LOG_LEVEL=error
   export MOQ_CONNECT="https://cdn.moq.pro/$project"
   if [[ "$moq_help" == *MOQ_CONNECT_TOKEN* ]]; then
     export MOQ_CONNECT_TOKEN="$token"

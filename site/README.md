@@ -27,4 +27,4 @@ For Cloudflare, run `npm run build` from `site/`. Deploy `dist/` as [Worker Stat
 | `cubesatclass.dev` | Software development and MoQ.pro testing |
 | `cubesat.club` | Volunteer contributions and fundraising links |
 
-The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The site keeps the GitHub Pages installer URL for both hosts. The Rust station and its MoQ/QUIC relays run locally during the lesson.
+The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The guided installer is published at `https://cubesatclass.com/start.sh` and mirrored by GitHub Pages. The Rust station and its MoQ/QUIC relays run locally during the lesson.
