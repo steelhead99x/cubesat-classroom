@@ -14,7 +14,7 @@ The website is the introduction: anyone can try the practice ground station and 
 
 | | Try it | Run it yourself | Crew Plus (proposed) |
 | --- | --- | --- | --- |
-| Price | Free | Free, open source | $9.99 per month per teacher or mentor |
+| Price | Free | Free, open source | $19.99 per month per teacher or mentor |
 | Account | None | None | One adult account holder (teacher, guardian or mentor); students join with a class code |
 | What you get | Browser station, 5 example quests at 3 levels, mission patches | Real Rust station over two MoQ relays, full quest board, balloon lab, CAD, hardware quests | Everything in "Run it yourself", plus a hosted quest guide with classroom guardrails |
 | AI | None | Your own assistant, using [AGENTS.md](../AGENTS.md) | Hosted guide on Claude Sonnet 5.5 through the Anthropic API |
@@ -120,7 +120,7 @@ Two ways to sign in, with different session lengths. Both are planned; none of t
 
 ## Open questions for reviewers and the community
 
-1. Is $9.99 per month per teacher right, or should it be per class, per school, or free for Title I schools?
+1. Is $19.99 per month per teacher right, or should it be per class, per school, or free for Title I schools?
 2. Which three benefits matter most to teachers?
 3. Should the free preview exist at all, or should the free path be "Try it" plus "Run it yourself" only?
 4. Who operates the paid service: Teachers in Space, a new nonprofit, or a volunteer team? Is directing surplus to the three yearly workshops the right policy, and who approves the workshop budget?
