@@ -149,15 +149,13 @@
   :root[data-level="intermediate"] [data-show]:not([data-show~="intermediate"]),
   :root[data-level="professional"] [data-show]:not([data-show~="professional"]) { display: none; }
 
-  /* Mission patches: grey stitching until earned, then a coloured band with a white core. */
+  /* Mission insignia use a muted outline until the corresponding lesson is complete. */
   .patch { --patch: #b7c5da; color: #4f6383; }
   .patch .band { fill: #fff; stroke: var(--patch); }
-  .patch .stitch { stroke: var(--patch); stroke-dasharray: 2.5 3.5; }
   .patch .core { fill: var(--color-paper); }
   .patch .icon { stroke: #6b7f9d; }
   .patch[data-earned] { color: var(--color-night); }
   .patch[data-earned] .band { fill: var(--tone); stroke: var(--color-night); }
-  .patch[data-earned] .stitch { stroke: var(--color-night); stroke-opacity: .55; }
   .patch[data-earned] .core { fill: #fff; }
   .patch[data-earned] .icon { stroke: var(--color-night); }
   .patch-just-earned { animation: stamp .45s cubic-bezier(.2, 1.4, .4, 1); }

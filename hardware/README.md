@@ -22,6 +22,8 @@ The STLs passed mesh and nominal size checks, and both end plates passed the CAD
 
 ## Rev A classroom enclosure
 
+[Open the Bambu P1S test plates](p1s/README.md) for the fit coupon, case shell, and camera lid.
+
 ![Rev A CAD preview of the shell, lid and M3 coupon](rev-a-cad-preview.png)
 
 The assembled shell measures **100 × 100 × 113.5 mm**. It has a 3 mm wall, 4 mm floor, four corner screw columns, a service slot and a removable lid with an 18 mm camera aperture. The three uninterrupted side faces can be used to try antenna placement and routing with paper or dummy parts. Board holes, deployer rails and actual antenna dimensions depend on hardware and the mission ICD. The current model uses generic packaging dimensions, a 0.35 mm per-side lid-tab gap, 3.5 mm lid clearance holes and 2.8 mm body pilots.

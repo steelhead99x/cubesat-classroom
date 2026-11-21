@@ -3,13 +3,19 @@ import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import rail from '../../../docs/assets/rail-fit.png';
+import casePreview from '../../../hardware/rev-a-cad-preview.png';
 import drawing from '../../../hardware/rev-b-drawing.svg?url';
 import { classroomHost, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const cad = repo + '/blob/main/hardware/';
-const mesh = repo + '/raw/refs/heads/main/hardware/stl/';
+const raw = repo + '/raw/refs/heads/main/hardware/';
+const mesh = raw + 'stl/';
+const caseFiles = [
+  { name: 'M3 fit coupon', file: '01-m3-fit-coupon.3mf', size: '48 × 14 × 10 mm', note: 'Print first. Check the fit with the intended fastener.' },
+  { name: 'Case shell', file: '02-case-shell.3mf', size: '100 × 100 × 109.5 mm', note: 'Closed floor down, opening up.' },
+  { name: 'Camera lid', file: '03-camera-lid.3mf', size: '100 × 100 × 6 mm', note: 'Exterior face down, locator tabs up.' },
+];
 const parts = [
   { name: 'Rail corner coupon', dimensions: '26 × 26 × 20', file: 'rev-b-rail-corner-coupon.stl', print: 'Print first, rail end down. Measure the corner and inspect the recessed walls.' },
   { name: 'Rail frame', dimensions: '100 × 100 × 113.5', file: 'rev-b-rail-frame.stl', print: 'Print upright. Check supports under the recessed walls in Bambu Studio.' },
@@ -17,7 +23,7 @@ const parts = [
   { name: 'Camera plate', dimensions: '93.3 × 93.3 × 4.4', file: 'rev-b-camera-plate.stl', print: 'Print the exterior face down. Check the 18 mm opening against the camera’s field of view.' },
 ];
 ---
-<Base title="CAD and print files | CubeSat Classroom" description="Dimensioned Rev B rail-fit drawings, printable STL files, and bench fit requirements for the 1U CubeSat model." canonical={'https://' + classroomHost + '/hardware/'}>
+<Base title="CAD and print files | CubeSat Classroom" description="Bambu P1S test-print files for the Rev A case, plus Rev B rail-fit drawings, STL meshes, and bench fit requirements." canonical={'https://' + classroomHost + '/hardware/'}>
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Lessons', href: base + '/quests/' },
     { label: 'Simulator', href: base + '/#demo' },
@@ -26,21 +32,41 @@ const parts = [
   <section class="classroom-hero">
     <div class="shell grid items-center gap-8 py-12 lg:grid-cols-[1.15fr_1fr]">
       <div>
-        <p class="field-label">Mechanical kit · Revision B</p>
+        <p class="field-label">Bambu Lab P1S mechanical kit</p>
         <h1 class="mt-3">CubeSat CAD and print files</h1>
-        <p class="lede mt-4">Use the Rev B rail-fit set to check the assembly and measure the printed parts on a Bambu P1S. Start with the corner coupon in PLA before printing the frame or repeating the check in ASA.</p>
+        <p class="lede mt-4">Start with the Rev A case on a Bambu P1S. Print the fit coupon in PLA, then check the shell and lid. The Rev B rail-fit set is a separate bench experiment.</p>
         <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <a class="button primary" href={mesh + parts[0].file}>Download the rail coupon</a>
+          <a class="button primary" href={raw + 'p1s/' + caseFiles[0].file}>Download the case fit coupon</a>
           <a class="font-bold text-accent underline underline-offset-4" href={cad + 'generate.py'}>Open the parametric CAD source</a>
         </div>
       </div>
       <figure class="bench-figure m-0">
-        <Image src={rail} alt="Exploded view of the printable rail frame and two end plates" widths={[360, 540]} sizes="(min-width: 1024px) 33rem, 100vw" priority />
-        <figcaption><span>Rev B assembly preview</span><span>Three printed parts</span></figcaption>
+        <Image src={casePreview} alt="Exploded view of the enclosed Rev A case, camera lid, and fastener coupon" widths={[360, 540]} sizes="(min-width: 1024px) 33rem, 100vw" priority />
+        <figcaption><span>Rev A case and fit coupon</span><span>100 × 100 × 113.5 mm assembled</span></figcaption>
       </figure>
     </div>
   </section>
   <div class="shell space-y-12 py-12">
+    <section aria-labelledby="p1s-title">
+      <h2 id="p1s-title">P1S case test prints</h2>
+      <p class="mt-2 text-muted">Choose the P1S profile for your installed nozzle and slice each millimetre-scale model in Bambu Studio. Start with PLA and a 0.4 mm nozzle.</p>
+      <dl class="mt-5 divide-y divide-line border-y border-line">
+        {caseFiles.map(part => (
+          <div class="grid gap-2 py-4 sm:grid-cols-[13rem_1fr] sm:gap-6">
+            <dt><a class="text-accent" href={raw + 'p1s/' + part.file}>{part.name} (3MF)</a></dt>
+            <dd><p class="text-sm font-bold">{part.size}</p><p class="text-muted">{part.note}</p></dd>
+          </div>
+        ))}
+      </dl>
+      <a class="mt-4 inline-block text-accent" href={cad + 'p1s/README.md'}>P1S settings and fit checklist</a>
+    </section>
+    <section class="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-8" aria-labelledby="rail-title">
+      <div>
+        <h2 id="rail-title">Rev B rail-fit model</h2>
+        <p class="mt-2 text-muted">Use the corner coupon to check rail width and inspect the recessed walls before printing the frame.</p>
+      </div>
+      <a class="text-accent" href={mesh + parts[0].file}>Download the rail corner coupon</a>
+    </section>
     <section aria-labelledby="drawing-title">
       <h2 id="drawing-title">Dimensioned drawing</h2>
       <p class="mt-2 text-muted">Nominal dimensions come from the checked-in STL geometry. The drawing shows a front view of the frame and the outside face of the camera plate.</p>
