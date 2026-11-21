@@ -37,11 +37,11 @@ To switch on the live guide (Claude Sonnet 5.5 through the Anthropic API) on Clo
 
 1. Create an API key in the [Claude Console](https://platform.claude.com/). Do not use a personal Claude subscription.
 2. Store it as a Worker secret: `npx wrangler secret put ANTHROPIC_API_KEY`. Never put it in the site code or a `PUBLIC_` variable.
-3. Optional but recommended: bind a KV namespace as `GUIDE_LIMITS` and set the secret `GUIDE_SALT`. This turns on per-device daily limits, counted with a salted hash that rotates daily, and caches answers for a day.
+3. Required for live answers: bind a KV namespace as `GUIDE_LIMITS` and set the secret `GUIDE_SALT` to a long random value. Without both, the guide only shows prewritten answers. They turn on daily limits per device, per network address and for the whole site, and cache answers for a day. Devices and network addresses are stored only as salted hashes that change every day and expire after 25 hours.
 4. Run the Worker first for `/api/*` as well as `/`.
 5. Rebuild the site with `PUBLIC_GUIDE_ENDPOINT=/api/guide npm run build` and deploy.
 
-Optional settings: `GUIDE_MODEL` (default `claude-sonnet-5-5`), `GUIDE_EFFORT` (default `low`), `GUIDE_DAILY_LIMIT` (default 10 per device), `GUIDE_NETWORK_LIMIT` (default 300 a day per network address, so a changed device id cannot get around the device limit), `GUIDE_GLOBAL_LIMIT` (default 2000 a day for the site), `GUIDE_ALLOWED_ORIGINS` (comma-separated). If the API fails, or the network or site-wide limit is reached, visitors get the prewritten answer. A device that reaches its own daily limit is asked to come back tomorrow. The guide's rules mirror [AGENTS.md](../AGENTS.md); review them with a teacher before switching it on for students.
+Optional settings: `GUIDE_MODEL` (default `claude-sonnet-5-5`), `GUIDE_EFFORT` (default `low`), `GUIDE_DAILY_LIMIT` (default 10 per device), `GUIDE_NETWORK_LIMIT` (default 300 a day per network address, so a changed device id cannot get around the device limit), `GUIDE_GLOBAL_LIMIT` (default 2000 a day for the site), `GUIDE_ALLOWED_ORIGINS` (comma-separated; by default only the site's own origin may call the guide). If the API fails, or the network or site-wide limit is reached, visitors get the prewritten answer. A device that reaches its own daily limit is asked to come back tomorrow. The guide's rules mirror [AGENTS.md](../AGENTS.md); review them with a teacher before switching it on for students.
 
 The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The guided installer is published by GitHub Pages at `https://cubesatclassroom.org/start.sh`; the old `https://cubesat.club/start.sh` address redirects there. The Rust station and its MoQ/QUIC relays run locally during the lesson.
 
@@ -51,10 +51,10 @@ The Worker can keep every domain behind one password until the site is ready. Vi
 
 1. Set the secret: `npx wrangler secret put SITE_PASSWORD`, then type the password when asked.
 2. Run the Worker first for **every** path, not only `/`. `wrangler.jsonc` in this folder sets `run_worker_first` for you; if you deploy another way, set it yourself. Otherwise pages other than the home page are served without the check. After deploying, open a page such as `/quests/` in a private window and confirm it shows the under-construction page.
-3. Recommended: `npx wrangler secret put PREVIEW_COOKIE_SECRET` with a long random value, so the sign-in cookie cannot be used to guess the password. Add a Cloudflare rate-limiting rule on `POST /preview-unlock` to slow down guessing.
+3. Required: `npx wrangler secret put PREVIEW_COOKIE_SECRET` with a long random value, so the sign-in cookie cannot be used to guess the password. Without it the password form does not sign anyone in. Add a Cloudflare rate-limiting rule on `POST /preview-unlock` to slow down guessing.
 4. Deploy. The right password sets a cookie for 30 days on that domain. Each domain asks once.
 5. To open the site, delete the secret (`npx wrangler secret delete SITE_PASSWORD`) and deploy again.
 
 The wording of the under-construction page is in `landing()` in `src/worker.mjs`.
 
-While the password is on, `curl https://cubesatclass.org/start.sh` also needs it (`curl -u :PASSWORD ...`). People without it can clone the repository and run `bash docs/start.sh`. The GitHub Pages copy under `docs/` is a public part of the repository and is not covered by the password; turn Pages off in the repository settings if it should not be reachable. One shared password keeps casual visitors out; it is not strong protection, so don't put anything private on the site.
+The published installer address, `https://cubesatclassroom.org/start.sh` (and the old `cubesat.club` address that redirects there), is served by GitHub Pages and never needs the password. While the password is on, `curl https://cubesatclass.org/start.sh` on a Worker domain does need it (`curl -u :PASSWORD ...`). People without it can clone the repository and run `bash docs/start.sh`. The GitHub Pages copy under `docs/` is a public part of the repository and is not covered by the password; turn Pages off in the repository settings if it should not be reachable. One shared password keeps casual visitors out; it is not strong protection, so don't put anything private on the site.

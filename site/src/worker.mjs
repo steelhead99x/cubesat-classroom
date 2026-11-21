@@ -41,7 +41,7 @@ async function sha256(text) {
 async function bump(kv, key, limit) {
   const used = Number((await kv.get(key)) ?? 0);
   if (used >= limit) return false;
-  await kv.put(key, String(used + 1), { expirationTtl: 60 * 60 * 48 });
+  await kv.put(key, String(used + 1), { expirationTtl: 60 * 60 * 25 });
   return true;
 }
 
@@ -51,8 +51,11 @@ async function bump(kv, key, limit) {
 // per-device daily limits (salted, daily-rotating hash) and caches answers.
 async function guide(request, env) {
   if (!env.ANTHROPIC_API_KEY) return json({ error: 'The live guide is not switched on yet.' }, 503);
+  // Browsers always send Origin on a POST from a page. Accept only this site's own origin,
+  // or the list in GUIDE_ALLOWED_ORIGINS, so other sites cannot spend the guide's budget.
   const origin = request.headers.get('origin');
-  if (origin && env.GUIDE_ALLOWED_ORIGINS && !env.GUIDE_ALLOWED_ORIGINS.split(',').includes(origin)) return json({ error: 'Forbidden' }, 403);
+  const allowed = env.GUIDE_ALLOWED_ORIGINS ? env.GUIDE_ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [new URL(request.url).origin];
+  if (!origin || !allowed.includes(origin)) return json({ error: 'Forbidden' }, 403);
 
   // Only fixed ids are accepted. `quest` is checked on its own because general questions
   // ignore it, and it goes into the prompt and the cache key.
@@ -66,10 +69,13 @@ async function guide(request, env) {
   const asked = questionText(quest, question);
   if (!fallback || !asked) return json({ error: 'Unknown question.' }, 400);
 
+  // Without the KV limits and a salt for the hashes, the model is never called: an unlimited
+  // guide could run up any bill, and unsalted address hashes could be reversed.
   const kv = env.GUIDE_LIMITS;
+  if (!kv || !env.GUIDE_SALT) return json({ answer: fallback, fallback: true });
   const day = new Date().toISOString().slice(0, 10);
   const cacheKey = `answer:${day}:${quest}:${question}:${level}`;
-  if (kv) {
+  {
     const cached = await kv.get(cacheKey);
     if (cached) return json({ answer: cached, cached: true });
     // The device id is sent by the browser, so anyone can change it. The network cap is
@@ -78,8 +84,8 @@ async function guide(request, env) {
     // requests that arrive together can each slip past a limit: treat all three as soft.
     const client = (request.headers.get('x-guide-client') ?? '').slice(0, 64) || 'anonymous';
     const address = request.headers.get('cf-connecting-ip') ?? 'unknown';
-    const device = await sha256(`${env.GUIDE_SALT ?? ''}:${day}:${client}`);
-    const network = await sha256(`${env.GUIDE_SALT ?? ''}:${day}:net:${address}`);
+    const device = await sha256(`${env.GUIDE_SALT}:${day}:${client}`);
+    const network = await sha256(`${env.GUIDE_SALT}:${day}:net:${address}`);
     const perDevice = Number(env.GUIDE_DAILY_LIMIT ?? 10);
     const perNetwork = Number(env.GUIDE_NETWORK_LIMIT ?? 300);
     const perSite = Number(env.GUIDE_GLOBAL_LIMIT ?? 2000);
@@ -99,7 +105,7 @@ async function guide(request, env) {
     },
     body: JSON.stringify({
       model: env.GUIDE_MODEL ?? 'claude-sonnet-5-5',
-      max_tokens: 1024,
+      max_tokens: 300,
       output_config: { effort: env.GUIDE_EFFORT ?? 'low' },
       system: `${SYSTEM}\n${LEVEL_NOTE[level]}`,
       messages: [{
@@ -119,7 +125,7 @@ async function guide(request, env) {
   const data = await res.json().catch(() => null);
   const answer = data?.content?.find(block => block.type === 'text')?.text?.trim();
   if (!answer) return json({ answer: fallback, fallback: true });
-  if (kv) await kv.put(cacheKey, answer, { expirationTtl: 60 * 60 * 24 }).catch(error => console.error('Guide: cache write failed', error));
+  await kv.put(cacheKey, answer, { expirationTtl: 60 * 60 * 24 }).catch(error => console.error('Guide: cache write failed', error));
   return json({ answer });
 }
 
@@ -128,7 +134,7 @@ async function guide(request, env) {
 // and a password box. The right password sets a cookie for 30 days. The password lives
 // only in the Worker secret, never in this public repository. Delete the secret to open
 // the site. Scripts can send the password as HTTP Basic auth (any user name).
-const GATE_COOKIE = 'preview';
+const GATE_COOKIE = '__Host-preview';
 const sameText = (a, b) => {
   let diff = a.length ^ b.length;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i % (b.length || 1));
@@ -137,28 +143,24 @@ const sameText = (a, b) => {
 // Hashes are compared, so the check takes the same time whatever was typed.
 const passToken = password => sha256('preview-password:' + password);
 
-// The cookie is "<expiry>.<signature>". It is signed with PREVIEW_COOKIE_SECRET when
-// that secret is set (recommended: a long random value), so the password cannot be
-// worked out from a copied cookie. Without it the password itself is the key.
-let warnedNoCookieSecret = false;
+// The cookie is "<expiry>.<signature>", signed with PREVIEW_COOKIE_SECRET (a long random
+// value), so the password cannot be worked out from a copied cookie. Without that secret
+// no cookie is issued or accepted: only HTTP Basic auth opens the preview.
 async function sign(expiry, env) {
-  if (!env.PREVIEW_COOKIE_SECRET && !warnedNoCookieSecret) {
-    warnedNoCookieSecret = true;
-    console.warn('Preview: PREVIEW_COOKIE_SECRET is not set, so a copied cookie can be used to guess SITE_PASSWORD offline. Set it with `npx wrangler secret put PREVIEW_COOKIE_SECRET`.');
-  }
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.PREVIEW_COOKIE_SECRET || 'preview:' + env.SITE_PASSWORD), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.PREVIEW_COOKIE_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode('preview:' + expiry));
   return [...new Uint8Array(mac)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function validCookie(request, env) {
+  if (!env.PREVIEW_COOKIE_SECRET) return false;
   const value = (request.headers.get('cookie') ?? '').split(/;\s*/).find(c => c.startsWith(GATE_COOKIE + '='))?.slice(GATE_COOKIE.length + 1) ?? '';
   const [expiry, mac] = value.split('.');
   if (!/^\d{10,13}$/.test(expiry ?? '') || !mac || Number(expiry) < Date.now()) return false;
   return sameText(mac, await sign(expiry, env));
 }
 
-function landing(wrong = false) {
+function landing(wrong = false, unconfigured = false) {
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -209,6 +211,7 @@ function landing(wrong = false) {
       <button type="submit">Open the preview</button>
     </div>
     ${wrong ? '<p class="error" role="alert">That password did not match. Check it and try again.</p>' : ''}
+    ${unconfigured ? '<p class="error" role="alert">The password is right, but the preview is not fully set up yet. Ask the site owner to finish the setup.</p>' : ''}
   </form>
   <footer><p>An independent volunteer project.</p></footer>
 </main>
@@ -230,6 +233,10 @@ async function locked(request, env) {
     const form = await request.formData().catch(() => null);
     const given = String(form?.get('password') ?? '').slice(0, 200);
     if (!sameText(await passToken(given), good)) return hasCookie ? Response.redirect(new URL('/', url), 303) : landing(true);
+    if (!env.PREVIEW_COOKIE_SECRET) {
+      console.error('Preview: set PREVIEW_COOKIE_SECRET (npx wrangler secret put PREVIEW_COOKIE_SECRET) before the password form can sign anyone in.');
+      return landing(false, true);
+    }
     const expiry = String(Date.now() + 30 * 24 * 60 * 60 * 1000);
     return new Response(null, {
       status: 303,
@@ -268,13 +275,25 @@ async function privately(response, env) {
   return out;
 }
 
+// Defence in depth for every response. Pages use small inline scripts, so the policy limits
+// framing, plugins, base URLs and form targets rather than scripts.
+function secured(response) {
+  const out = new Response(response.body, response);
+  out.headers.set('content-security-policy', "frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'");
+  out.headers.set('strict-transport-security', 'max-age=31536000');
+  out.headers.set('x-content-type-options', 'nosniff');
+  out.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+  out.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+  return out;
+}
+
 export default {
   async fetch(request, env) {
     const moved = redirected(request);
-    if (moved) return moved;
+    if (moved) return secured(moved);
     const denied = await locked(request, env);
-    if (denied) return denied;
-    return privately(await route(request, env), env);
+    if (denied) return secured(denied);
+    return secured(await privately(await route(request, env), env));
   },
 };
 

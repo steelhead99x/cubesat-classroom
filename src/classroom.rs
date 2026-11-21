@@ -415,6 +415,14 @@ async fn local_only(State(port): State<u16>, request: Request, next: Next) -> Re
         header::HeaderValue::from_static("no-store"),
     );
     response.headers_mut().insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        header::HeaderValue::from_static("nosniff"),
+    );
+    response.headers_mut().insert(
+        header::HeaderName::from_static("cross-origin-resource-policy"),
+        header::HeaderValue::from_static("same-origin"),
+    );
+    response.headers_mut().insert(
         header::CONTENT_SECURITY_POLICY,
         header::HeaderValue::from_static(
             "default-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",

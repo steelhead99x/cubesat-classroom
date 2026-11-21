@@ -16,7 +16,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io::{self, BufRead, BufReader, Read};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -185,8 +185,17 @@ impl Outbox {
     pub fn write(&mut self, field: Field, value: i64, now: Instant) -> Result<()> {
         let target = self.dir.join(field.file);
         let temp = self.dir.join(format!(".{}.tmp", field.file));
-        fs::write(&temp, format!("{value}\n"))
+        // Create the temporary file fresh, never through an existing file or a planted
+        // link, so a shared output folder cannot redirect the write elsewhere.
+        let _ = fs::remove_file(&temp);
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp)
+            .with_context(|| format!("create {}", temp.display()))?;
+        file.write_all(format!("{value}\n").as_bytes())
             .with_context(|| format!("write {}", temp.display()))?;
+        drop(file);
         fs::rename(&temp, &target).with_context(|| format!("replace {}", target.display()))?;
         self.updated.insert(field.file, now);
         Ok(())

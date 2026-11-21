@@ -102,6 +102,10 @@ main() {
     fi
   fi
 
+  if [[ ! -O "$project" ]]; then
+    printf 'The folder %s belongs to another user. Run this command from your own folder, such as your home folder.\n' "$project" >&2
+    return 1
+  fi
   if [[ ! -f "$project/Cargo.toml" || ! -f "$project/docs/start.sh" || ! -d "$project/quest" ]]; then
     printf 'Choose a folder without an existing cubesat-classroom directory and try again.\n' >&2
     return 1
