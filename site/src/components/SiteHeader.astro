@@ -1,0 +1,24 @@
+---
+interface Props {
+  brand?: string;
+  home: string;
+  label?: string;
+  links: { label: string; href: string; current?: boolean }[];
+}
+
+const { brand = 'CubeSat Classroom', home, label = 'Main', links } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<header class="night">
+  <div class="shell flex flex-wrap items-center justify-between gap-x-5 gap-y-3 py-5">
+    <a class="brand inline-flex items-center gap-3" href={home}>
+      <img src={base + '/mark.svg'} width="35" height="35" alt="">
+      <span>{brand}</span>
+    </a>
+    <nav class="flex flex-wrap items-center gap-x-6 gap-y-2" aria-label={label}>
+      {links.map(link => (
+        <a href={link.href} aria-current={link.current ? 'page' : undefined}>{link.label}</a>
+      ))}
+    </nav>
+  </div>
+</header>

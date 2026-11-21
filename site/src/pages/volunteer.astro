@@ -1,5 +1,7 @@
 ---
-import '../theme.css';
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 import QuickStart from '../components/QuickStart.astro';
 import rail from '../../../docs/assets/rail-fit.png';
 import { classroomHost, fundraiser, repo } from '../hubs.mjs';
@@ -8,43 +10,23 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const canonical = 'https://cubesat.club/';
 const description = 'Help a K–12 classroom run its first CubeSat mission. Volunteer as a teacher, amateur-radio mentor, or builder with CubeSat Classroom.';
 const roles = [
-  { title: 'Teach one lesson', summary: 'Run the practice mission with your class. Tell us which step worked, where students got stuck, and what you would change.', action: 'Join the teacher pilot', url: repo + '/blob/main/docs/quick-start.md', color: 'sky' },
-  { title: 'Mentor a crew', summary: 'Help learners understand how a ground station sends commands and receives data. Review a relay or radio test with the crew.', action: 'Review the ground station', url: repo + '/blob/main/quest/m1/ground-station-rf.md', color: 'yellow' },
-  { title: 'Build and test', summary: 'Print a CubeSat part, improve the simulator, or document a bench test another classroom can repeat.', action: 'Choose a contribution quest', url: repo + '/blob/main/quest/README.md', color: 'rose' },
+  { title: 'Teach one lesson', summary: 'Run the practice mission with your class. Tell us which step worked, where students got stuck, and what you would change.', action: 'Join the teacher pilot', url: repo + '/blob/main/docs/quick-start.md', color: 'border-t-blue-700' },
+  { title: 'Mentor a crew', summary: 'Help learners understand how a ground station sends commands and receives data. Review a relay or radio test with the crew.', action: 'Review the ground station', url: repo + '/blob/main/quest/m1/ground-station-rf.md', color: 'border-t-amber-600' },
+  { title: 'Build and test', summary: 'Print a CubeSat part, improve the simulator, or document a bench test another classroom can repeat.', action: 'Choose a contribution quest', url: repo + '/blob/main/quest/README.md', color: 'border-t-signal' },
 ];
 ---
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content={description}>
-    <meta name="theme-color" content="#10264a">
-    <meta property="og:title" content="CubeSat Club · Help a classroom run its first mission">
-    <meta property="og:description" content={description}>
-    <meta property="og:url" content={canonical}>
-    <meta property="og:type" content="website">
-    <link rel="icon" type="image/svg+xml" href={base + '/mark.svg'}>
-    <link rel="canonical" href={canonical}>
-    <title>CubeSat Club | Volunteer with CubeSat Classroom</title>
-  </head>
-  <body>
-    <a class="skip" href="#main">Skip to content</a>
-    <header class="night">
-      <div class="shell flex flex-wrap items-center justify-between gap-x-5 gap-y-3 py-5">
-        <a class="brand inline-flex items-center gap-3" href={canonical}>
-          <img src={base + '/mark.svg'} width="35" height="35" alt="">
-          <span>CubeSat Club</span>
-        </a>
-        <nav class="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Main">
-          <a href="#start">Quick start</a>
-          <a href="#volunteer">Volunteer</a>
-          <a href="#give">Donate</a>
-          <a href={'https://' + classroomHost + '/'}>Classroom</a>
-        </nav>
-      </div>
-    </header>
-    <main id="main">
+<Base
+  title="CubeSat Club | Volunteer with CubeSat Classroom"
+  description={description}
+  canonical={canonical}
+  image={canonical.replace(/\/$/, '') + rail.src.replace(base, '')}
+>
+  <SiteHeader slot="header" brand="CubeSat Club" home={canonical} links={[
+    { label: 'Quick start', href: '#start' },
+    { label: 'Volunteer', href: '#volunteer' },
+    { label: 'Donate', href: '#give' },
+    { label: 'Classroom', href: 'https://' + classroomHost + '/' },
+  ]} />
       <div class="night">
         <section class="shell grid gap-9 py-12 lg:grid-cols-[1.3fr_1fr] lg:items-center lg:py-16">
           <div>
@@ -65,26 +47,19 @@ const roles = [
           <h2 id="volunteer-title">Pick one way to help</h2>
           <div class="mt-5 grid gap-4 md:grid-cols-3">
             {roles.map(role => (
-              <article class={'lab volunteer-role flex flex-col items-start ' + role.color}>
+              <article class={'flex min-w-0 flex-col items-start rounded-2xl border border-t-4 border-line bg-white p-5 sm:p-6 ' + role.color}>
                 <h3>{role.title}</h3>
-                <p class="mt-3 mb-4">{role.summary}</p>
-                <a class="mt-auto" href={role.url}>{role.action} <span aria-hidden="true">↗</span></a>
+                <p class="mt-3 mb-4 text-muted">{role.summary}</p>
+                <a class="mt-auto font-semibold underline underline-offset-4" href={role.url}>{role.action} <span aria-hidden="true">↗</span></a>
               </article>
             ))}
           </div>
         </section>
-        <section id="give" class="donate-panel mt-10" aria-labelledby="give-title">
+        <section id="give" class="mt-10 rounded-2xl bg-rose-50 p-5 sm:p-6" aria-labelledby="give-title">
           <h2 id="give-title">Support Teachers in Space</h2>
-          <p class="mt-3 max-w-2xl">CubeSat Classroom is an open-source contribution to space education, built and supported by volunteers. Give directly to Teachers in Space to help fund its teacher flight program.</p>
-          <a class="mt-4 inline-block" href={fundraiser}>Donate directly to Teachers in Space <span aria-hidden="true">↗</span></a>
+          <p class="mt-3 max-w-2xl text-muted">CubeSat Classroom is an open-source contribution to space education, built and supported by volunteers. Give directly to Teachers in Space to help fund its teacher flight program.</p>
+          <a class="mt-4 inline-block font-semibold text-signal underline underline-offset-4" href={fundraiser}>Donate directly to Teachers in Space <span aria-hidden="true">↗</span></a>
         </section>
       </div>
-    </main>
-    <footer>
-      <div class="shell flex flex-wrap justify-between gap-3 py-6">
-        <p>An independent volunteer project inspired by Teachers in Space and AMSAT.</p>
-        <a href={repo}>Source on GitHub</a>
-      </div>
-    </footer>
-  </body>
-</html>
+  <SiteFooter slot="footer" showHubs={false} />
+</Base>

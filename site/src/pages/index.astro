@@ -1,138 +1,96 @@
 ---
-import '../theme.css';
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import LabCard from '../components/LabCard.astro';
+import StationDemo from '../components/StationDemo.astro';
+import ProposalCard from '../components/ProposalCard.astro';
 import QuickStart from '../components/QuickStart.astro';
 import rail from '../../../docs/assets/rail-fit.png';
-import { classroomHost, fundraiser, hubs, repo } from '../hubs.mjs';
-import station from '../../../docs/assets/station.webp';
+import { classroomHost, fundraiser, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const site = 'https://' + classroomHost;
-const steps = [
-  { title: 'Make contact.', text: 'Request a sensor reading from the practice CubeSat and read it aloud with its unit.' },
-  { title: 'Bring back a picture.', text: 'Start the test camera and count how many frames make it through both relays.' },
-  { title: 'Lose the signal on purpose.', text: 'Pause contact, restore it, and see what a real ground crew has to handle.' },
-  { title: 'Teach the next crew.', text: 'Export a crew log, review it with your teacher, and share what you would test next.' },
-];
 const labs = [
-  { icon: 'station', name: 'Ground station', description: 'Request a sensor reading and watch practice video. Start with a simulated CubeSat.', action: 'Run the station', href: '#start' },
+  { icon: 'station', name: 'Ground station', description: 'Send a request to a simulated CubeSat, read the reply with its unit, and watch practice video.', action: 'Try it in the browser', href: '#demo' },
   { icon: 'balloon', name: 'Balloon lab', description: 'Log pressure and temperature in class, then compare your measurements with real flight data.', action: 'Open the lesson', href: repo + '/blob/main/docs/balloon-lab.md' },
-  { icon: 'cube', name: 'Print the CubeSat', description: 'Print a 1U bench model on a Bambu P1S. Start in PLA and check how the parts fit.', action: 'Get the print files', href: repo + '/tree/main/hardware' },
+  { icon: 'cube', name: 'Print the CubeSat', description: 'Print a 1U bench model on a Bambu P1S. Start in PLA and measure how the parts fit.', action: 'Get the print files', href: repo + '/tree/main/hardware' },
+] as const;
+const facts = [
+  ['1U', '10 cm printable bench model'],
+  ['2', 'MoQ relays between ground and payload'],
+  ['0', 'accounts or licenses to start'],
 ];
 ---
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="An open space lab for K–12. Run a practice CubeSat ground station, print a satellite model, and teach the next crew.">
-    <meta name="theme-color" content="#10264a">
-    <link rel="icon" type="image/svg+xml" href={base + '/mark.svg'}>
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="CubeSat Classroom: build a CubeSat, run the mission">
-    <meta property="og:description" content="A free, open volunteer space lab. Run a practice ground station, bring back a measurement, and teach the next crew.">
-    <meta property="og:url" content={site + '/'}>
-    <meta property="og:image" content={site + rail.src.replace(base, '')}>
-    <meta name="twitter:card" content="summary_large_image">
-    <title>CubeSat Classroom</title>
-  </head>
-  <body>
-    <a class="skip" href="#main">Skip to content</a>
-    <header class="night">
-      <div class="shell flex flex-wrap items-center justify-between gap-x-5 gap-y-3 py-5">
-        <a class="brand inline-flex items-center gap-3" href={base + '/'}>
-          <img src={base + '/mark.svg'} width="35" height="35" alt="">
-          <span>CubeSat Classroom</span>
-        </a>
-        <nav class="flex flex-wrap items-center gap-x-6 gap-y-2" aria-label="Main">
-          <a href="#labs">Classroom</a>
-          <a href="#how">How it works</a>
-          <a href="#quests">Quests</a>
-          <a href="#next">What's next</a>
-          <a href="#support">Donate</a>
-        </nav>
-      </div>
-    </header>
-    <main id="main">
-      <div class="night">
-        <section class="hero shell grid items-center gap-8 py-12 lg:grid-cols-[1.2fr_1fr] lg:gap-14 lg:py-16">
-          <div>
-            <p class="eyebrow">An open space lab for K–12</p>
-            <h1>Build a CubeSat.<br><em>Run the mission.</em></h1>
-            <p class="intro mt-5">Run a practice ground station, bring back a measurement, and teach the next crew what you learned. No radio license, no hardware and no cost to start.</p>
-            <div class="mt-7 flex flex-wrap items-center gap-5">
-              <a class="button launch" href="#start">Start the ground station <span aria-hidden="true">↓</span></a>
-              <a class="light-link" href="#labs">Explore the labs</a>
-            </div>
-          </div>
-          <figure class="chassis">
-            <img src={rail.src} width={rail.width} height={rail.height} alt="Exploded CAD view of the printed chassis, camera cover, and base plate" fetchpriority="high">
-            <figcaption><span>Rev B</span> 3D-printable 1U bench model</figcaption>
-          </figure>
-        </section>
-      </div>
-      <div class="shell pb-12">
-        <section id="labs" class="py-12" aria-labelledby="labs-title">
-          <h2 id="labs-title">Classroom labs</h2>
-          <div class="mt-5 grid gap-4 md:grid-cols-3">
-            {labs.map(lab => (
-              <article class="lab flex flex-col items-start">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  {lab.icon === 'station' && <path d="m4 12 8 8m-1-1 4-4M7 15 4 20h7m-6-7a6 6 0 0 0 8-8L5 13Zm11-8a5 5 0 0 1 3 3m-2-6a8 8 0 0 1 5 5"/>}
-                  {lab.icon === 'balloon' && <path d="M18 9a6 6 0 1 0-12 0c0 4 5 7 6 8 1-1 6-4 6-8Zm-8 9h4m-2 0v3"/>}
-                  {lab.icon === 'cube' && <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3ZM4 7.5l8 4.5 8-4.5M12 12v9"/>}
-                </svg>
-                <h3 class="mt-4">{lab.name}</h3>
-                <p class="mt-2 mb-4">{lab.description}</p>
-                <a class="mt-auto" href={lab.href}>{lab.action} <span aria-hidden="true">↗</span></a>
-              </article>
-            ))}
-          </div>
-        </section>
-        <section id="how" class="pb-12" aria-labelledby="how-title">
-          <h2 id="how-title">A mission your class can run this afternoon</h2>
-          <div class="mt-6 grid items-center gap-8 lg:grid-cols-[1fr_1.15fr]">
-            <ol class="steps">
-              {steps.map(step => <li><strong>{step.title}</strong> {step.text}</li>)}
-            </ol>
-            <figure class="shot">
-              <img src={station.src} width={station.width} height={station.height} loading="lazy" alt="The ground station console showing temperature, voltage and light readings, a test camera frame, and relay status">
-              <figcaption>The classroom ground station runs locally in any browser.</figcaption>
-            </figure>
-          </div>
-        </section>
-        <div id="get-started"></div>
-        <QuickStart />
-        <div class="mt-10 grid gap-x-12 gap-y-8 md:grid-cols-2">
-          <section id="quests" aria-labelledby="quests-title">
-            <div id="contribute"></div>
-            <h2 id="quests-title">Help the next crew</h2>
-            <p class="mt-2 mb-4">The project is open for contributions. Try a lesson, record a bench test, or improve a part. Share the steps so another group can repeat your work. AI tools are welcome; a person owns each result and an independent reviewer checks it.</p>
-            <a href={repo + '/tree/main/quest'}>Pick a quest <span aria-hidden="true">↗</span></a>
-            <a class="ml-3" href={repo + '/blob/main/CONTRIBUTING.md'}>How to contribute <span aria-hidden="true">↗</span></a>
-          </section>
-          <section id="support" class="donate-panel" aria-labelledby="support-title">
-            <h2 id="support-title">Support Teachers in Space</h2>
-            <p class="mt-2 mb-4">This project is built and supported by volunteers as a contribution to space education. Donations go directly to Teachers in Space for teacher training and spaceflight.</p>
-            <a href={fundraiser}>Donate to Teachers in Space <span aria-hidden="true">↗</span></a>
-          </section>
+<Base
+  title="CubeSat Classroom: build a CubeSat, run the mission"
+  description="An open space lab for K–12. Run a practice CubeSat ground station, print a satellite model, and teach the next crew."
+  canonical={site + '/'}
+  image={site + rail.src.replace(base, '')}
+>
+  <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Try it', href: '#demo' },
+    { label: 'Labs', href: '#labs' },
+    { label: 'Install', href: '#start' },
+    { label: 'Quests', href: '#quests' },
+    { label: 'Donate', href: '#support' },
+  ]} />
+
+  <div class="night">
+    <section class="shell grid items-center gap-8 py-12 lg:grid-cols-[1.2fr_1fr] lg:gap-14 lg:py-16">
+      <div>
+        <p class="eyebrow">An open space lab for K–12</p>
+        <h1>Build a CubeSat.<br><em>Run the mission.</em></h1>
+        <p class="intro mt-5">Students send requests to a practice satellite, bring back a measurement, and write down what the next crew should check. No radio license, hardware or account needed to start.</p>
+        <div class="mt-7 flex flex-wrap items-center gap-5">
+          <a class="button launch" href="#demo">Try the ground station <span aria-hidden="true">↓</span></a>
+          <a class="light-link" href="#start">Install it on a computer</a>
         </div>
-        <section id="next" class="proposal mt-12" aria-labelledby="next-title">
-          <p class="tag">Open proposal · reviewers wanted</p>
-          <h2 id="next-title">Next idea: a microscope collection plate</h2>
-          <p class="mt-2 mb-5">Point a small microscope camera at an exposed collection plate and send each image to the ground. Schools with receive stations compare passes and log what changed. The same loop works on the bench, on a balloon and, after review, in orbit. It also builds the skills a future lunar project would need.</p>
-          <a href={repo + '/blob/main/docs/micro-collection-plate.md'}>Read and review the proposal <span aria-hidden="true">↗</span></a>
-        </section>
-        <p class="credits mt-10">Networking runs on the open-source Media over QUIC libraries and IETF work from <a href="https://moq.dev">moq.dev</a>. Quests are organized with tools from <a href="https://kixel.ai">kixel.ai</a>.</p>
+        <dl class="mt-10 grid max-w-md grid-cols-3 gap-4 border-t border-white/15 pt-6">
+          {facts.map(([value, label]) => (
+            <div><dt class="sr-only">{label}</dt><dd class="text-3xl font-bold tracking-tight text-sky">{value}</dd><p class="mt-1 text-xs leading-snug text-blue-100/80" aria-hidden="true">{label}</p></div>
+          ))}
+        </dl>
       </div>
-    </main>
-    <footer>
-      <div class="shell flex flex-wrap items-center justify-between gap-3 py-6">
-        <p>An independent volunteer project inspired by Teachers in Space and AMSAT.</p>
-        <nav class="project-links flex flex-wrap gap-x-4 gap-y-2" aria-label="Project sites">
-          {hubs.map(hub => <a href={'https://' + hub.host + (hub.slug === 'lessons' ? '/hub/lessons/' : '/')}>{hub.name}</a>)}
-          <a href={repo}>GitHub <span aria-hidden="true">↗</span></a>
-        </nav>
+      <figure class="chassis">
+        <img src={rail.src} width={rail.width} height={rail.height} alt="Exploded CAD view of the printed chassis, camera cover, and base plate" fetchpriority="high">
+        <figcaption><span>Rev B</span> 3D-printable 1U bench model</figcaption>
+      </figure>
+    </section>
+  </div>
+
+  <div class="shell space-y-16 py-14">
+    <StationDemo />
+
+    <section id="labs" class="scroll-mt-6" aria-labelledby="labs-title">
+      <h2 id="labs-title">Classroom labs</h2>
+      <div class="mt-5 grid gap-4 md:grid-cols-3">
+        {labs.map(lab => <LabCard {...lab} />)}
       </div>
-    </footer>
-  </body>
-</html>
+    </section>
+
+    <div id="get-started"><QuickStart /></div>
+
+    <div class="grid gap-x-12 gap-y-8 md:grid-cols-2">
+      <section id="quests" class="scroll-mt-6" aria-labelledby="quests-title">
+        <h2 id="quests-title">Help the next crew</h2>
+        <p class="mt-3 mb-4 text-muted">The project is open for contributions. Try a lesson, record a bench test, or improve a part, and write the steps so another group can repeat it. AI tools are welcome. A person owns each result, and someone else reviews it.</p>
+        <div class="flex flex-wrap gap-x-5 gap-y-2">
+          <a class="font-semibold underline underline-offset-4" href={repo + '/tree/main/quest'}>Pick a quest <span aria-hidden="true">↗</span></a>
+          <a class="font-semibold underline underline-offset-4" href={repo + '/blob/main/CONTRIBUTING.md'}>How to contribute <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+      <section id="support" class="scroll-mt-6 rounded-2xl bg-rose-50 p-5 sm:p-6" aria-labelledby="support-title">
+        <h2 id="support-title">Support Teachers in Space</h2>
+        <p class="mt-3 mb-4 text-muted">Volunteers build and run this project. Donations go directly to Teachers in Space for teacher training and spaceflight.</p>
+        <a class="font-semibold text-signal underline underline-offset-4" href={fundraiser}>Donate to Teachers in Space <span aria-hidden="true">↗</span></a>
+      </section>
+    </div>
+
+    <ProposalCard />
+
+    <p class="text-sm text-faint">Networking runs on the open-source Media over QUIC libraries and IETF work from <a class="font-semibold text-ink underline underline-offset-4" href="https://moq.dev">moq.dev</a>. Quests are organized with tools from <a class="font-semibold text-ink underline underline-offset-4" href="https://kixel.ai">kixel.ai</a>.</p>
+  </div>
+
+  <SiteFooter slot="footer" />
+</Base>

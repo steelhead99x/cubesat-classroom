@@ -1,5 +1,7 @@
 ---
-import '../../theme.css';
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 import { classroomHost, hubs } from '../../hubs.mjs';
 
 export function getStaticPaths() {
@@ -8,44 +10,25 @@ export function getStaticPaths() {
 
 const { hub } = Astro.props;
 const homeFor = (item: typeof hubs[number]) => 'https://' + item.host + (item.slug === 'lessons' ? '/hub/lessons/' : '/');
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content={hub.description}>
-    <meta name="theme-color" content="#10264a">
-    <link rel="icon" type="image/svg+xml" href={base + '/mark.svg'}>
-    <link rel="canonical" href={homeFor(hub)}>
-    <title>{hub.name} | CubeSat Classroom</title>
-  </head>
-  <body>
-    <a class="skip" href="#main">Skip to content</a>
-    <header class="night">
-      <div class="shell flex flex-wrap items-center justify-between gap-x-5 gap-y-3 py-5">
-        <a class="brand inline-flex items-center gap-3" href={'https://' + classroomHost + '/'}>
-          <img src={base + '/mark.svg'} width="35" height="35" alt="">
-          <span>CubeSat Classroom</span>
-        </a>
-        <nav class="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Project sites">
-          {hubs.map(item => <a href={homeFor(item)} aria-current={item.host === hub.host ? 'page' : undefined}>{item.name}</a>)}
-        </nav>
-      </div>
-    </header>
-    <main id="main" class="shell py-12">
+<Base title={hub.name + ' | CubeSat Classroom'} description={hub.description} canonical={homeFor(hub)}>
+  <SiteHeader slot="header" home={'https://' + classroomHost + '/'} label="Project sites"
+    links={hubs.map(item => ({ label: item.name, href: homeFor(item), current: item.host === hub.host }))} />
+  <div class="night">
+    <div class="shell py-12 lg:py-16">
       <h1 class="max-w-4xl">{hub.heading}</h1>
-      <p class="mt-5 max-w-2xl text-lg">{hub.description}</p>
-      <section aria-labelledby="resources" class="mt-8 max-w-2xl rounded-2xl bg-white p-6">
-        <h2 id="resources">Get started</h2>
-        <ul class="mt-3 divide-y divide-blue-100">
-          {hub.links.map(([label, url]) => (
-            <li><a class="block py-3" href={url}>{label} <span aria-hidden="true">↗</span></a></li>
-          ))}
-        </ul>
-      </section>
-    </main>
-    <footer><div class="shell py-6">Built and supported by volunteers. Inspired by Teachers in Space and AMSAT.</div></footer>
-  </body>
-</html>
+      <p class="intro mt-5 max-w-2xl">{hub.description}</p>
+    </div>
+  </div>
+  <div class="shell py-12">
+    <section aria-labelledby="resources" class="max-w-2xl rounded-2xl border border-line bg-white p-5 sm:p-6">
+      <h2 id="resources">Get started</h2>
+      <ul class="mt-3 divide-y divide-line">
+        {hub.links.map(([label, url]) => (
+          <li><a class="flex items-center justify-between gap-4 py-3 font-semibold hover:text-blue-700" href={url}>{label} <span aria-hidden="true">↗</span></a></li>
+        ))}
+      </ul>
+    </section>
+  </div>
+  <SiteFooter slot="footer" />
+</Base>
