@@ -18,7 +18,7 @@ Find when a real amateur satellite will be above your school, then check the pre
 5. Check your work: compare the rise time and highest elevation with another tracker, such as Gpredict or an online pass list. Set it to the same location, UTC and a 0° horizon so you compare like with like. Record the difference in seconds and suggest one reason for it.
 6. Share the crew nickname, data download date, satellite, predicted times and the comparison. If a licensed operator or a receive-only station heard the pass, add that as a separate "received RF" result.
 
-## Levels
+### Levels
 
 - **Beginner:** find one pass and say which direction to face.
 - **Intermediate:** explain why a pass that climbs to 60° is easier to hear than one that reaches 12°.
