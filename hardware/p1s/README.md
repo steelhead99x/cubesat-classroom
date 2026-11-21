@@ -1,5 +1,7 @@
 # Bambu P1S Rev A bench case
 
+Follow the [P1S case test quests](../../quest/README.md#bambu-p1s-case-test-track) to validate the slice, print the parts, record fit, and retest improvements.
+
 Use the **Bambu Lab P1S 0.4 mm nozzle** preset, the actual build plate and filament preset, and **0.20 mm Standard** as a starting process. Start with PLA. The [P1S specification](https://cdn1.bambulab.com/documentation/quick-start-59b0cefdc0fc4/P1S/English%20version-Quick%20Start%20Guide%20for%20P1S.pdf) lists a 256 × 256 × 256 mm build volume and support for PLA and ASA.
 
 Each 3MF is a millimetre-scale model centered on its own plate. Import one at a time. Keep its exported orientation, check the dimensions, and slice locally with your profile. The package does not contain G-code, filament temperatures, or a printer connection.
