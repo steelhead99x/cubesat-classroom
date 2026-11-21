@@ -9,7 +9,7 @@ A useful contribution is something another crew can repeat. A wiring note from a
 
 ## Accounts
 
-The project is written for learners 13 and up. Use an account on a hosted Git service: GitHub, GitLab.com or Codeberg. You do not need GitHub in particular, but self-hosted Git servers are not supported. Students may use their own account if they are old enough under that host's terms (GitHub requires 13). Teachers, guardians and mentors can use their own accounts to guide a crew: post its results, open issues and review changes on its behalf. Younger learners take part only through an adult's account and never create their own.
+The project is written for learners 13 and up. Use an account on a hosted Git service: GitHub, GitLab.com or Codeberg. You do not need GitHub in particular, but self-hosted Git servers are not supported. Students may use their own account if they are old enough under that host's terms (GitHub requires 13). Teachers, guardians and mentors can use their own accounts to guide a crew: post its results, open issues and review changes on its behalf. Younger learners take part only alongside an adult who stays for the whole activity; the adult posts for them and never shares a login with anyone under 13. Younger learners never create their own account. See the [mentor quests](quest/README.md#mentor-quests).
 
 ## Community and review standards
 
