@@ -1,5 +1,5 @@
 import { hubs, redirects } from './hubs.mjs';
-import { answerFor, questionText } from './guide/answers.mjs';
+import { answerFor, byQuest, questionText } from './guide/answers.mjs';
 
 // Hubs with their own `path` live on another host (GitHub Pages or the classroom home), not here.
 const homeByHost = new Map(hubs.filter(hub => !hub.path).map(({ host, slug }) => [host, '/hub/' + slug + '/']));
@@ -54,8 +54,14 @@ async function guide(request, env) {
   const origin = request.headers.get('origin');
   if (origin && env.GUIDE_ALLOWED_ORIGINS && !env.GUIDE_ALLOWED_ORIGINS.split(',').includes(origin)) return json({ error: 'Forbidden' }, 403);
 
-  const body = await request.json().catch(() => null);
+  // Only fixed ids are accepted. `quest` is checked on its own because general questions
+  // ignore it, and it goes into the prompt and the cache key.
+  const text = await request.text().catch(() => '');
+  if (text.length > 1024) return json({ error: 'Request too large.' }, 413);
+  let body = null;
+  try { body = JSON.parse(text); } catch { body = null; }
   const { quest = '', question = '', level = '' } = body ?? {};
+  if (typeof quest !== 'string' || (quest !== '' && !Object.hasOwn(byQuest, quest))) return json({ error: 'Unknown quest.' }, 400);
   const fallback = answerFor(quest, question, level);
   const asked = questionText(quest, question);
   if (!fallback || !asked) return json({ error: 'Unknown question.' }, 400);
@@ -66,14 +72,22 @@ async function guide(request, env) {
   if (kv) {
     const cached = await kv.get(cacheKey);
     if (cached) return json({ answer: cached, cached: true });
+    // The device id is sent by the browser, so anyone can change it. The network cap is
+    // keyed on the connecting address, which a visitor cannot pick, and is set high enough
+    // for a whole class behind one school network. Workers KV is not transactional, so
+    // requests that arrive together can each slip past a limit: treat all three as soft.
     const client = (request.headers.get('x-guide-client') ?? '').slice(0, 64) || 'anonymous';
+    const address = request.headers.get('cf-connecting-ip') ?? 'unknown';
     const device = await sha256(`${env.GUIDE_SALT ?? ''}:${day}:${client}`);
+    const network = await sha256(`${env.GUIDE_SALT ?? ''}:${day}:net:${address}`);
     const perDevice = Number(env.GUIDE_DAILY_LIMIT ?? 10);
+    const perNetwork = Number(env.GUIDE_NETWORK_LIMIT ?? 300);
     const perSite = Number(env.GUIDE_GLOBAL_LIMIT ?? 2000);
-    if (!(await bump(kv, `site:${day}`, perSite))) return json({ answer: fallback, limited: 'site' });
     if (!(await bump(kv, `device:${device}`, perDevice))) {
       return json({ message: 'That is all the questions for today. Keep going with the quest steps, and come back tomorrow.' }, 429);
     }
+    if (!(await bump(kv, `network:${network}`, perNetwork))) return json({ answer: fallback, limited: 'network' });
+    if (!(await bump(kv, `site:${day}`, perSite))) return json({ answer: fallback, limited: 'site' });
   }
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -93,13 +107,19 @@ async function guide(request, env) {
         content: `Current quest: ${quest || 'none, general question'}.\nQuestion: ${asked}\nA good answer looks like this example; write your own in the same spirit:\n${fallback}`,
       }],
     }),
-  }).catch(() => null);
+  }).catch(error => {
+    console.error('Guide: Anthropic API request failed', error);
+    return null;
+  });
 
-  if (!res || !res.ok) return json({ answer: fallback, fallback: true });
+  if (!res || !res.ok) {
+    if (res) console.error('Guide: Anthropic API returned', res.status, (await res.text().catch(() => '')).slice(0, 500));
+    return json({ answer: fallback, fallback: true });
+  }
   const data = await res.json().catch(() => null);
   const answer = data?.content?.find(block => block.type === 'text')?.text?.trim();
   if (!answer) return json({ answer: fallback, fallback: true });
-  if (kv) await kv.put(cacheKey, answer, { expirationTtl: 60 * 60 * 24 });
+  if (kv) await kv.put(cacheKey, answer, { expirationTtl: 60 * 60 * 24 }).catch(error => console.error('Guide: cache write failed', error));
   return json({ answer });
 }
 
@@ -120,7 +140,12 @@ const passToken = password => sha256('preview-password:' + password);
 // The cookie is "<expiry>.<signature>". It is signed with PREVIEW_COOKIE_SECRET when
 // that secret is set (recommended: a long random value), so the password cannot be
 // worked out from a copied cookie. Without it the password itself is the key.
+let warnedNoCookieSecret = false;
 async function sign(expiry, env) {
+  if (!env.PREVIEW_COOKIE_SECRET && !warnedNoCookieSecret) {
+    warnedNoCookieSecret = true;
+    console.warn('Preview: PREVIEW_COOKIE_SECRET is not set, so a copied cookie can be used to guess SITE_PASSWORD offline. Set it with `npx wrangler secret put PREVIEW_COOKIE_SECRET`.');
+  }
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.PREVIEW_COOKIE_SECRET || 'preview:' + env.SITE_PASSWORD), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode('preview:' + expiry));
   return [...new Uint8Array(mac)].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -237,7 +262,8 @@ async function privately(response, env) {
   const out = new Response(response.body, response);
   // Pages are never stored. Fingerprinted files may stay in the visitor's own browser cache.
   const html = (out.headers.get('content-type') ?? '').includes('text/html');
-  out.headers.set('cache-control', html ? 'private, no-store' : 'private, max-age=86400');
+  const noStore = /no-store|no-cache/.test(out.headers.get('cache-control') ?? '');
+  out.headers.set('cache-control', html || noStore ? 'private, no-store' : 'private, max-age=86400');
   out.headers.set('x-robots-tag', 'noindex, nofollow');
   return out;
 }
@@ -272,6 +298,7 @@ async function route(request, env) {
       out.headers.set('content-type', 'text/plain; charset=utf-8');
       out.headers.set('content-disposition', 'inline');
       out.headers.set('x-content-type-options', 'nosniff');
+      out.headers.set('cache-control', 'no-cache');
       return out;
     }
     return env.ASSETS.fetch(request);

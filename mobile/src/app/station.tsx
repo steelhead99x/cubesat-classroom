@@ -29,11 +29,13 @@ export default function Station() {
   const [reading, setReading] = useState<ReturnType<typeof sample> | null>(null);
   const [frames, setFrames] = useState(0);
   const [sending, setSending] = useState(false);
-  const [log, setLog] = useState<string[]>(['Station ready.']);
+  // Each line keeps its own id, so the list does not redraw every row when a line is added.
+  const lineId = useRef(0);
+  const [log, setLog] = useState<{ id: number; text: string }[]>([{ id: 0, text: 'Station ready.' }]);
   const sequence = useRef(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const note = (line: string) => setLog(lines => [line, ...lines].slice(0, 12));
+  const note = (text: string) => setLog(lines => [{ id: ++lineId.current, text }, ...lines].slice(0, 12));
   const stop = () => {
     if (timer.current) clearInterval(timer.current);
     timer.current = null;
@@ -113,7 +115,7 @@ export default function Station() {
       <Card>
         <Text accessibilityRole="header" style={shared.heading}>Mission log</Text>
         <View accessibilityLiveRegion="polite" style={{ gap: 4 }}>
-          {log.map((line, i) => <Text key={`${log.length - i}-${line}`} style={[shared.small, i === 0 && { color: theme.ink, fontWeight: '700' }]}>{line}</Text>)}
+          {log.map((line, i) => <Text key={line.id} style={[shared.small, i === 0 && { color: theme.ink, fontWeight: '700' }]}>{line.text}</Text>)}
         </View>
       </Card>
     </Screen>

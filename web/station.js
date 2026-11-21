@@ -96,6 +96,7 @@ requests.forEach(button => button.addEventListener('click', async () => {
 }));
 
 el('contact').addEventListener('click', async () => {
+  if (!station) return;
   requestError = '';
   try { await post('/api/contact', !station.online); }
   catch (error) { requestError = error.message; }

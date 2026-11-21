@@ -9,6 +9,8 @@ them yet: replace them with your own bench readings (a USB power meter is
 enough) and rerun. Budgets are planning numbers, not measured results.
 """
 
+from __future__ import annotations
+
 # One Energizer L91 lithium AA: 3500 mAh at 100 mA, 3400 mAh at 1000 mA
 # (Energizer datasheet). Use 3000 mAh at about 1.4 V under load to leave room.
 #

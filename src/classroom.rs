@@ -169,6 +169,7 @@ async fn payload(
     let _session = client.connect(relay.relay);
     let consumer = origin.consume();
     let mut recent = VecDeque::with_capacity(16);
+    let mut readings = 0_u64;
     loop {
         contact.wait_for(|active| *active).await?;
         let run = async {
@@ -201,9 +202,10 @@ async fn payload(
                     error: None,
                 };
                 if command.action == Action::Sensors {
+                    readings += 1;
                     let reading = match &inputs {
-                        Some(inputs) => inputs.sample(command.id),
-                        None => Sample::synthetic(command.id),
+                        Some(inputs) => inputs.sample(readings),
+                        None => Sample::synthetic(readings),
                     };
                     match reading {
                         Ok(sample) => reply.sample = Some(sample),
@@ -228,7 +230,12 @@ async fn payload(
             Ok::<(), anyhow::Error>(())
         };
         tokio::select! {
-            _ = run => tokio::time::sleep(Duration::from_millis(250)).await,
+            result = run => {
+                if let Err(error) = result {
+                    eprintln!("Payload stopped answering requests, restarting: {error:#}");
+                }
+                tokio::time::sleep(Duration::from_millis(250)).await;
+            }
             changed = async { contact.wait_for(|active| !*active).await.map(|_| ()) } => { changed?; }
         }
     }
@@ -416,25 +423,38 @@ async fn local_only(State(port): State<u16>, request: Request, next: Next) -> Re
     response
 }
 
+async fn report(name: &str, task: impl Future<Output = Result<()>>) {
+    if let Err(error) = task.await {
+        eprintln!("{name} stopped: {error:#}. Restart the station.");
+    }
+}
+
 pub(crate) async fn run(port: u16, sensor_dir: Option<PathBuf>) -> Result<()> {
     let ground = start_relay(0).await?;
     let spacecraft = start_relay(0).await?;
     let ground_link = endpoint(&ground);
     let payload_link = endpoint(&spacecraft);
     let (control, channel) = watch::channel(true);
-    let _bridge = tokio::spawn(bridge(
-        spacecraft.origin.clone(),
-        endpoint(&ground),
-        channel.clone(),
+    // Report a task that stops, so a failure shows its cause instead of only timeouts.
+    let _bridge = tokio::spawn(report(
+        "Radio link simulation",
+        bridge(
+            spacecraft.origin.clone(),
+            endpoint(&ground),
+            channel.clone(),
+        ),
     ));
-    let _payload = tokio::spawn(payload(
-        payload_link,
-        sensor_dir.map(|dir| SensorInputs {
-            temperature_mc: dir.join("temperature_mc"),
-            voltage_mv: dir.join("voltage_mv"),
-            light_lux: dir.join("light_lux"),
-        }),
-        channel,
+    let _payload = tokio::spawn(report(
+        "Payload simulation",
+        payload(
+            payload_link,
+            sensor_dir.map(|dir| SensorInputs {
+                temperature_mc: dir.join("temperature_mc"),
+                voltage_mv: dir.join("voltage_mv"),
+                light_lux: dir.join("light_lux"),
+            }),
+            channel,
+        ),
     ));
 
     let origin = moq_tokio::origin::spawn();

@@ -41,7 +41,7 @@ To switch on the live guide (Claude Sonnet 5.5 through the Anthropic API) on Clo
 4. Run the Worker first for `/api/*` as well as `/`.
 5. Rebuild the site with `PUBLIC_GUIDE_ENDPOINT=/api/guide npm run build` and deploy.
 
-Optional settings: `GUIDE_MODEL` (default `claude-sonnet-5-5`), `GUIDE_EFFORT` (default `low`), `GUIDE_DAILY_LIMIT` (default 10 per device), `GUIDE_GLOBAL_LIMIT` (default 2000 a day for the site), `GUIDE_ALLOWED_ORIGINS` (comma-separated). If the API fails or a limit is reached, visitors get the prewritten answer. The guide's rules mirror [AGENTS.md](../AGENTS.md); review them with a teacher before switching it on for students.
+Optional settings: `GUIDE_MODEL` (default `claude-sonnet-5-5`), `GUIDE_EFFORT` (default `low`), `GUIDE_DAILY_LIMIT` (default 10 per device), `GUIDE_NETWORK_LIMIT` (default 300 a day per network address, so a changed device id cannot get around the device limit), `GUIDE_GLOBAL_LIMIT` (default 2000 a day for the site), `GUIDE_ALLOWED_ORIGINS` (comma-separated). If the API fails, or the network or site-wide limit is reached, visitors get the prewritten answer. A device that reaches its own daily limit is asked to come back tomorrow. The guide's rules mirror [AGENTS.md](../AGENTS.md); review them with a teacher before switching it on for students.
 
 The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The guided installer is published by GitHub Pages at `https://cubesatclassroom.org/start.sh`; the old `https://cubesat.club/start.sh` address redirects there. The Rust station and its MoQ/QUIC relays run locally during the lesson.
 

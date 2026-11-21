@@ -18,6 +18,8 @@ use url::Url;
 const TRACK: &str = "telemetry.v1";
 const MAX_AGE: Duration = Duration::from_secs(5);
 const DEADLINE: Duration = Duration::from_secs(10);
+/// How far ahead of this computer's clock a sender's timestamp may be.
+const MAX_CLOCK_SKEW: Duration = Duration::from_secs(2);
 
 #[derive(Parser)]
 #[command(about = "CubeSat Classroom ground station")]
@@ -222,9 +224,19 @@ impl Sample {
     }
 
     fn age_ms(&self, now: u64) -> Result<u64> {
-        let age = now
-            .checked_sub(self.captured_unix_ms)
-            .context("capture timestamp is ahead of the receiver clock")?;
+        // The sender and receiver can be different computers whose clocks differ a
+        // little. A capture time slightly in the future counts as just captured.
+        let age = match now.checked_sub(self.captured_unix_ms) {
+            Some(age) => age,
+            None => {
+                let ahead = self.captured_unix_ms - now;
+                ensure!(
+                    u128::from(ahead) <= MAX_CLOCK_SKEW.as_millis(),
+                    "capture timestamp is {ahead} ms ahead of the receiver clock; check that both clocks are set"
+                );
+                0
+            }
+        };
         ensure!(
             u128::from(age) <= MAX_AGE.as_millis(),
             "telemetry is stale ({age} ms)"
@@ -614,7 +626,9 @@ mod tests {
         let now = sample.captured_unix_ms;
         assert!(Reading::Temperature.format(&sample, now + 5000).is_ok());
         assert!(Reading::Temperature.format(&sample, now + 5001).is_err());
-        assert!(Reading::Temperature.format(&sample, now - 1).is_err());
+        // A sender clock up to 2 s ahead is tolerated; further ahead is an error.
+        assert!(Reading::Temperature.format(&sample, now - 2000).is_ok());
+        assert!(Reading::Temperature.format(&sample, now - 2001).is_err());
     }
 
     #[test]

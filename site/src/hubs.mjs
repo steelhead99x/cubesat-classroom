@@ -6,7 +6,7 @@ export const classroomHost = 'cubesatclass.org';
 // The public site: the GitHub Pages build of this repository (docs/), served at this domain.
 export const publicSite = 'cubesatclassroom.org';
 // Domains the Worker answers only with a permanent redirect to the same path on another host.
-export const redirects = { 'cubesat.club': publicSite };
+export const redirects = { 'cubesat.club': publicSite, 'cubesatclass.com': classroomHost };
 
 export const hubs = [
   {
