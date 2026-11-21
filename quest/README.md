@@ -17,6 +17,7 @@ Write down the equipment you have, including the board or printer model, availab
 | Arduino, such as an Uno | [Read one Arduino sample](/quest/m0/arduino-first-reading.md) |
 | Seeed XIAO, such as ESP32-C3 or RP2040 | [Record a XIAO bench sample](/quest/m0/xiao-first-reading.md) |
 | Raspberry Pi with Raspberry Pi OS | [Log a Pi reading](/quest/m0/pi-first-reading.md) |
+| Any computer, no extra hardware | [Predict a satellite pass](/quest/m0/predict-a-pass.md) |
 | Raspberry Pi Pico or another microcontroller | Use a vendor sample for your exact board and follow the [microcontroller quest structure](/quest/m0/arduino-first-reading.md). |
 
 ### Teacher pilot
@@ -80,6 +81,7 @@ The ISS hardware work is listed in review priority. Start the provider inquiry a
 
 - [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md)
 - [Compare a balloon bench log with flight data](/quest/m0/balloon-ground-log.md)
+- [Predict a satellite pass](/quest/m0/predict-a-pass.md)
 - [Review a supervised balloon flight](/quest/m1/balloon-partner-review.md)
 - [Review the hosted experiment](/quest/m1/hosted-review.md)
 - [Specify the first conducted RF test](/quest/m1/ground-station-rf.md)
