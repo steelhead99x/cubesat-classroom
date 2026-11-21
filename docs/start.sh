@@ -52,6 +52,14 @@ choose_quest() {
   done
 }
 
+# Print the minor version of the rustc next to a cargo binary, or nothing if it
+# can't be read. Never fails, so `set -euo pipefail` can't abort silently here.
+rust_minor_of() {
+  local rustc_bin
+  rustc_bin="$(dirname -- "$1")/rustc"
+  { "$rustc_bin" --version 2>/dev/null || true; } | sed -n 's/^rustc 1\.\([0-9]*\).*/\1/p'
+}
+
 main() {
   local project cargo_bin cargo_home rustup_bin quest_path
   local assume_yes=false
@@ -118,6 +126,25 @@ main() {
     "$rustup_bin" default stable
   else
     printf 'Cargo is ready.\n'
+  fi
+
+  # The MoQ libraries need Rust 1.91 or newer. Offer a rustup update instead of
+  # failing later with a confusing compile error.
+  local rust_minor
+  rust_minor=$(rust_minor_of "$cargo_bin")
+  if [[ -n "$rust_minor" && "$rust_minor" -lt 91 ]]; then
+    printf 'This Rust is 1.%s. The simulator needs Rust 1.91 or newer.\n' "$rust_minor"
+    if [[ -x "$rustup_bin" ]]; then
+      ask 'Update Rust to the latest stable release with rustup?' || return 0
+      "$rustup_bin" update stable --no-self-update
+      # A distro cargo earlier on PATH would still be old: use rustup's proxy.
+      [[ -x "$cargo_home/bin/cargo" ]] && cargo_bin="$cargo_home/bin/cargo"
+      rust_minor=$(rust_minor_of "$cargo_bin")
+    fi
+    if [[ -n "$rust_minor" && "$rust_minor" -lt 91 ]]; then
+      printf 'Update Rust to 1.91 or newer with help from a mentor, then run this command again.\n' >&2
+      return 1
+    fi
   fi
 
   printf '\n3. Start the practice ground station\n'

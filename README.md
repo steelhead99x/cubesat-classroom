@@ -2,7 +2,7 @@
 
 **Build a small experiment. Bring back a measurement. Teach the next crew what you learned.**
 
-CubeSat Classroom is an independent volunteer project for K–12 learners, educators and amateur-radio mentors, inspired by Teachers in Space and AMSAT.
+CubeSat Classroom is a free, open-source space lab for K–12 learners, educators and amateur-radio mentors, inspired by Teachers in Space and AMSAT. A class can run a practice satellite mission in one afternoon with no radio license, no hardware and no cost. **The project is open for contributions.**
 
 [Project page](https://cubesatclass.org/) · [GitHub Pages](https://steelhead99x.github.io/cubesat-classroom/) · [Teachers in Space fundraiser](https://givebutter.com/fund-stem-training-for-100-educators-s14sb0)
 
@@ -20,7 +20,7 @@ Paste this into a terminal on macOS, Linux, or WSL, follow the prompts, then ope
 curl -fsSL https://cubesat.club/start.sh | bash
 ```
 
-With an existing checkout, run `bash docs/start.sh`. The guide explains each step and asks before downloading files, installing Rust, or launching the station.
+With an existing checkout, run `bash docs/start.sh`. The guide explains each step and asks before downloading files, installing Rust, or launching the station. It needs Rust 1.91 or newer.
 
 The commands and responses cross two pinned MoQ-over-QUIC relays on localhost. That is the first relay design exercise. The default readings and camera are simulated. The console can also read configured Linux sensor files. A separate [SubGHz H.264 rehearsal](docs/demo.md) replays the existing public [moq-subghz](https://github.com/steelhead99x/moq-subghz) format.
 
@@ -30,6 +30,7 @@ The commands and responses cross two pinned MoQ-over-QUIC relays on localhost. T
 - **Builders:** [Print the 1U rail-fit set](hardware/README.md). The mechanical kit targets the Bambu P1S. Start with a PLA rail coupon, then repeat the fit check in ASA.
 - **Radio volunteers:** [Review the relay and RF design](docs/mission.md). The SubGHz, S-band and X-band roles are proposed experiments.
 - **Flight reviewers:** [Review the hosted experiment concept](docs/hosted-experiment-review.md).
+- **Proposal reviewers:** [Review the microscope collection plate idea](docs/micro-collection-plate.md). Image an exposed plate, send each capture to schools with receive stations, and build toward future lunar-style projects.
 - **Contributors:** [Choose a quest](quest/README.md) and follow the [volunteer contribution guide](CONTRIBUTING.md).
 
 The hosted research-flight candidate centers on a self-contained sensor logger and post-flight data access. A balloon team can rehearse that workflow on the ground. An orbital relay and licensed on-air experiments are separate work that require additional integration and authorization.
@@ -37,6 +38,10 @@ The hosted research-flight candidate centers on a self-contained sensor logger a
 ## Work on the apps
 
 See the [website](site/README.md), the [iOS and Android template](mobile/README.md), and the optional [MoQ.pro development guide](docs/moq-pro-development.md).
+
+## Built with
+
+The ground station's networking runs on the open-source Media over QUIC Rust libraries and IETF work from [moq.dev](https://moq.dev). Quests are organized with tools from [kixel.ai](https://kixel.ai). Thank you to both communities.
 
 ## License
 

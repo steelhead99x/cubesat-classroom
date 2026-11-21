@@ -4,6 +4,15 @@ let station;
 let frameId;
 let pending = false;
 let requestError = '';
+let activeRequest = '';
+const labels = Object.fromEntries(requests.map(button => [button.dataset.request, button.textContent]));
+
+function ago(ms) {
+  const seconds = Math.max(0, Math.round(ms / 1000));
+  if (seconds < 60) return `${seconds} s ago`;
+  const minutes = Math.round(seconds / 60);
+  return `${minutes} min ago`;
+}
 
 function render() {
   const {online, fresh, display} = station;
@@ -11,7 +20,15 @@ function render() {
   el('contact').textContent = online ? 'Pause contact' : 'Restore contact';
   el('contact').disabled = false;
   el('contact').parentElement.classList.toggle('paused', !online);
-  requests.forEach(button => { button.disabled = pending || !online; });
+  requests.forEach(button => {
+    button.disabled = pending || !online;
+    button.textContent = pending && activeRequest === button.dataset.request ? 'Waiting for reply…' : labels[button.dataset.request];
+  });
+  el('route').classList.toggle('paused', !online);
+  el('route').classList.toggle('busy', online && pending);
+  el('routeNote').textContent = !online
+    ? 'Simulated radio link · contact paused'
+    : pending ? 'Simulated radio link · request in flight' : 'Simulated radio link · ready';
   const sample = display.sample;
   if (sample) {
     el('temp').textContent = `${sample.temperature_c.toFixed(1)} °C`;
@@ -21,6 +38,8 @@ function render() {
   el('readingStatus').textContent = sample
     ? `${fresh ? 'Fresh reading' : 'Last reading · historical'} · ${sample.source}`
     : 'No reading yet';
+  el('readingAge').textContent = sample ? `Captured ${ago(Date.now() - sample.captured_unix_ms)}` : '';
+  el('readingStatus').classList.toggle('fresh', !!(sample && fresh));
   const count = display.frame_count;
   el('frames').textContent = `${count} of 8 frames · simulated video`;
   el('video').hidden = count === 0;
@@ -29,13 +48,20 @@ function render() {
     frameId = display.frame_id;
     el('video').src = `/api/frame.jpg?v=${frameId}`;
   }
+  let complete = 0;
   for (const [id, done] of [
     ['sensorQuest', !!sample], ['videoQuest', display.video_received], ['recoveryQuest', display.recovery_seen]
   ]) {
     el(id).textContent = done ? '✓' : '○';
     el(id).setAttribute('aria-label', done ? 'Complete' : 'Open');
+    el(id).parentElement.classList.toggle('done', !!done);
+    complete += done ? 1 : 0;
   }
-  el('event').textContent = requestError || display.event;
+  el('questCount').textContent = complete === 3 ? 'All 3 complete · write your crew log' : `${complete} of 3 complete`;
+  el('questMeter').value = complete;
+  const message = requestError || display.event;
+  if (el('event').textContent !== message) el('event').textContent = message;
+  el('event').classList.toggle('error', !!requestError);
 }
 
 async function refresh() {
@@ -61,6 +87,7 @@ async function post(path, value) {
 
 requests.forEach(button => button.addEventListener('click', async () => {
   pending = true;
+  activeRequest = button.dataset.request;
   requestError = '';
   render();
   try { await post('/api/request', button.dataset.request); }

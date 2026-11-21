@@ -59,6 +59,19 @@ a { text-underline-offset: .22em; }
 .terminal button { border: 1px solid #698dbb; border-radius: .45rem; padding: .3rem .56rem; color: var(--sky); font-weight: 680; font-size: .82rem; white-space: nowrap; }
 .terminal button:hover { background: #234574; }
 footer { border-top: 1px solid #d6e0f1; font-size: .9rem; }
+
+.steps { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.steps li { position: relative; padding-left: 3rem; color: #405569; counter-increment: step; }
+.steps li strong { color: var(--ink); }
+.steps li::before { content: counter(step); position: absolute; left: 0; top: -.1rem; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--night); color: var(--sky); font-weight: 780; }
+.shot { margin: 0; }
+.shot img { display: block; width: 100%; height: auto; border: 1px solid #d6e0f1; border-radius: 1rem; box-shadow: 0 14px 34px #10264a24; }
+.shot figcaption { margin-top: .6rem; color: #5a6e80; font-size: .88rem; }
+.proposal { padding: clamp(1.2rem, 3vw, 1.9rem); border: 1px solid #c4d8f5; border-radius: 1rem; background: #eaf1fc; }
+.proposal p:not(.tag) { max-width: 44rem; color: #405569; }
+.tag { display: inline-block; margin-bottom: .7rem; border-radius: 99px; padding: .15rem .65rem; background: var(--night); color: var(--sky); font-size: .78rem; font-weight: 720; }
+.credits { color: #5a6e80; font-size: .88rem; }
+.credits a { color: var(--ink); text-decoration: underline; font-weight: 640; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 .lab:nth-child(2) svg { background: #fff0b7; color: #6b4718; }
