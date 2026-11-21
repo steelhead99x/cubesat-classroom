@@ -50,11 +50,3 @@ The native relay needs a bidirectional IP bearer. The existing MoQ-inspired SubG
 | Command-capable flight station | Independent review of operator authorization, scoped commands, audit events, session and clock handling, payload health, and radio inhibit interfaces. Verify using the actual host and licensed operating configuration. |
 
 A single pair of local relays is the first topology. Multi-spacecraft routing, orbit or balloon position, rotator control, actual radio front ends, and deployment are future contributions.
-
-## From the classroom to the Moon
-
-1. **Classroom.** Run a simulated CubeSat and a ground station on a laptop. Give the station a sensor reading, a picture and a gap in contact to handle.
-2. **Earth orbit.** Predict a pass and use a receive-only ground station to collect a CubeSat signal. When a decoder is available, forward the decoded measurements from the ground station to the classroom app over MoQ. Compare the pass log with the predicted contact window.
-3. **Moon.** Start with a simulation of a lunar sensor, a relay and an Earth ground station. Store a timestamped reading during a gap, deliver it when contact returns, and show when it was measured and when it arrived. A future flight experiment would need a mission partner, a link budget and access to a suitable ground station or relay. [NASA on delay and disruption tolerant networking](https://www.nasa.gov/communicating-with-missions/delay-disruption-tolerant-networking/)
-
-The Earth gateway can publish received readings to the app over MoQ. The space link can use whatever transport the mission supports, including store and forward for gaps in contact.
