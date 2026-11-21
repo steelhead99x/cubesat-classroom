@@ -83,6 +83,24 @@ The ISS hardware work is listed in review priority. Start the provider inquiry a
 12. [Complete the provider’s deployer fit check](/quest/m2/deployer-fit-check.md)
 13. [Submit the ISS qualification evidence](/quest/m2/iss-compliance-handover.md)
 
+### Flight heritage and the suborbital research flight
+
+These quests follow the vehicles the project's mentors have flown experiments on, and the Virgin Galactic research flight the classroom kit is designed around. See the [suborbital flight plan](/docs/suborbital-flight-plan.md).
+
+- [Fly with Perlan 2](/quest/m0/perlan-stratosphere.md)
+- [Find the ISS: orbit, passes and deployment](/quest/m0/iss-orbit.md)
+- [Predict the spaceflight](/quest/m0/predict-the-spaceflight.md)
+- [One sensor, three rides](/quest/m0/one-sensor-three-rides.md)
+- [Draft the suborbital payload package](/quest/m1/suborbital-payload-package.md)
+
+### Satellites that help on Earth
+
+Short examples of what small satellites, radio and sustainable materials do for people, pets and the kits themselves.
+
+- [Wildfires: get a message out by satellite](/quest/m0/wildfire-message-relay.md)
+- [Track a pet by its collar](/quest/m0/pet-collar-tracking.md)
+- [Wool, fibre and static: what should cover the kit?](/quest/m0/wool-fiber-static.md)
+
 ### Parallel classroom, balloon and radio work
 
 - [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md)

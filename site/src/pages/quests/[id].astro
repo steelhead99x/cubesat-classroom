@@ -24,6 +24,7 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
 ---
 <Base title={quest.data.title + ' | Example quest | CubeSat Classroom'} description={quest.data.summary} canonical={`https://${classroomHost}/quests/${quest.id}/`}>
   <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Mission', href: base + '/mission/' },
     { label: 'Lessons', href: base + '/quests/', current: true },
     { label: 'Simulator', href: base + '/#demo' },
     { label: 'CAD', href: base + '/hardware/' },

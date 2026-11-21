@@ -1,3 +1,5 @@
+// Settings for this site. A fork changes these three lines and the `hubs` list below.
+// See docs/fork-guide.md.
 export const repo = 'https://github.com/steelhead99x/cubesat-classroom';
 export const fundraiser = 'https://givebutter.com/fund-stem-training-for-100-educators-s14sb0';
 export const classroomHost = 'cubesatclass.org';
@@ -23,6 +25,7 @@ export const hubs = [
     description: 'Try a mission with your class. Record what happened so another crew can repeat it.',
     links: [
       ['Print the quick-start handout', repo + '/blob/main/output/pdf/cubesat-classroom-quick-start.pdf'],
+      ['Prepare for the research spaceflight', 'https://' + classroomHost + '/mission/'],
       ['Try the balloon lab', repo + '/blob/main/docs/balloon-lab.md'],
       ['Choose a quest for your hardware', repo + '/blob/main/quest/README.md#start-with-what-you-have'],
       ['Teach the ground station lesson', repo + '/blob/main/quest/m0/repeat-the-station-lesson.md'],

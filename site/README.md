@@ -42,3 +42,17 @@ To switch on the live guide (Claude Sonnet 5.5 through the Anthropic API) on Clo
 Optional settings: `GUIDE_MODEL` (default `claude-sonnet-5-5`), `GUIDE_EFFORT` (default `low`), `GUIDE_DAILY_LIMIT` (default 10 per device), `GUIDE_GLOBAL_LIMIT` (default 2000 a day for the site), `GUIDE_ALLOWED_ORIGINS` (comma-separated). If the API fails or a limit is reached, visitors get the prewritten answer. The guide's rules mirror [AGENTS.md](../AGENTS.md); review them with a teacher before switching it on for students.
 
 The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The guided installer is published at `https://cubesat.club/start.sh` and mirrored by GitHub Pages. The Rust station and its MoQ/QUIC relays run locally during the lesson.
+
+## Private preview (password)
+
+The Worker can keep every domain behind one password until the site is ready. Visitors see an "under construction" page with the mission statement and a password box. The password is a Worker secret. Never write it in this public repository.
+
+1. Set the secret: `npx wrangler secret put SITE_PASSWORD`, then type the password when asked.
+2. Run the Worker first for **every** path, not only `/`. `wrangler.jsonc` in this folder sets `run_worker_first` for you; if you deploy another way, set it yourself. Otherwise pages other than the home page are served without the check. After deploying, open a page such as `/quests/` in a private window and confirm it shows the under-construction page.
+3. Recommended: `npx wrangler secret put PREVIEW_COOKIE_SECRET` with a long random value, so the sign-in cookie cannot be used to guess the password. Add a Cloudflare rate-limiting rule on `POST /preview-unlock` to slow down guessing.
+4. Deploy. The right password sets a cookie for 30 days on that domain. Each domain asks once.
+5. To open the site, delete the secret (`npx wrangler secret delete SITE_PASSWORD`) and deploy again.
+
+The wording of the under-construction page is in `landing()` in `src/worker.mjs`.
+
+While the password is on, `curl https://cubesat.club/start.sh` also needs it (`curl -u :PASSWORD ...`). People without it can clone the repository and run `bash docs/start.sh`. The GitHub Pages copy under `docs/` is a public part of the repository and is not covered by the password; turn Pages off in the repository settings if it should not be reachable. One shared password keeps casual visitors out; it is not strong protection, so don't put anything private on the site.

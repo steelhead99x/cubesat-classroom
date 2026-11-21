@@ -1,6 +1,7 @@
 mod balloon;
 mod bridge;
 mod classroom;
+mod flight;
 mod passes;
 
 use std::io::{self, Write};
@@ -90,6 +91,39 @@ enum Command {
         #[arg(long, default_value_t = 10.0, allow_hyphen_values = true)]
         min_elevation: f64,
         /// Print JSON instead of a table.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Desk simulation of a suborbital research flight: phases, height and what a logger should see.
+    ///
+    /// Defaults use public Virgin Galactic figures (Payload User's Guide, 'Galactic 07' flight facts).
+    /// The output is a classroom prediction, not flight data.
+    FlightProfile {
+        /// Write a CSV timeline to this file.
+        #[arg(long, conflicts_with = "json")]
+        output: Option<PathBuf>,
+        /// Height at release from the carrier aircraft, in feet.
+        #[arg(long, default_value_t = 44_562.0)]
+        release_ft: f64,
+        /// Highest point, in miles.
+        #[arg(long, default_value_t = 54.4)]
+        apogee_miles: f64,
+        /// Rocket burn, in seconds.
+        #[arg(long, default_value_t = 60.0)]
+        burn_s: f64,
+        /// Minutes from take-off to release (an assumption; ask the provider).
+        #[arg(long, default_value_t = 50.0)]
+        climb_min: f64,
+        /// Minutes from take-off to landing.
+        #[arg(long, default_value_t = 70.0)]
+        total_min: f64,
+        /// Cabin pressure as an equivalent height, in feet.
+        #[arg(long, default_value_t = 5_500.0)]
+        cabin_ft: f64,
+        /// Seconds between rows.
+        #[arg(long, default_value_t = 1.0)]
+        step_s: f64,
+        /// Print JSON instead of a summary.
         #[arg(long)]
         json: bool,
     },
@@ -250,7 +284,7 @@ fn connect(link: &Link) -> Result<moq_tokio::Client> {
         cfg.tls.fingerprint = vec![pin.clone()];
     }
     // The relays listen on 127.0.0.1 only. The library's default dual-stack
-    // `[::]:0` dial socket fails on hosts with IPv6 disabled (some WSL, Docker
+    // `[::]:0` dial socket fails on hosts with IPv6 disabled (some Windows WSL setups, Docker
     // and managed school machines), so dial loopback relays from IPv4 loopback.
     if is_loopback(&link.relay) {
         cfg.bind = Some(SocketAddr::from(([127, 0, 0, 1], 0)));
@@ -520,6 +554,29 @@ async fn main() -> Result<()> {
                 alt_m,
                 hours,
                 min_elevation,
+                json,
+            })?;
+        }
+        Command::FlightProfile {
+            output,
+            release_ft,
+            apogee_miles,
+            burn_s,
+            climb_min,
+            total_min,
+            cabin_ft,
+            step_s,
+            json,
+        } => {
+            flight::run(flight::FlightArgs {
+                output,
+                release_ft,
+                apogee_miles,
+                burn_s,
+                climb_min,
+                total_min,
+                cabin_ft,
+                step_s,
                 json,
             })?;
         }

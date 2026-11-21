@@ -2,7 +2,7 @@
 
 ## Before you build
 
-- **Computer.** Use macOS, Linux, or Windows Subsystem for Linux (WSL). Open a terminal on that computer.
+- **Computer.** Use macOS, Linux, or Windows. On Windows, run it inside WSL, the Windows Subsystem for Linux. Open a terminal on that computer.
 - **Tools.** Check `curl --version` and `git --version`. Ask a mentor to help set up your system’s C compiler and linker (Xcode Command Line Tools on macOS, or build tools such as `build-essential` on Ubuntu).
 - **Internet.** The first run downloads the project and build dependencies. The starter can install Rust and Cargo. If you already have Rust, use version 1.91 or newer. A computer is enough for the first mission.
 

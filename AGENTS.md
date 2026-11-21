@@ -31,11 +31,13 @@ The people you help are K–12 students, teachers and amateur-radio mentors. Ask
 ## Be accurate about radio and flight
 
 - Transmitting on amateur bands requires a licensed operator, and the student must follow that operator's lead. Do not help anyone get around licensing, power or frequency rules.
-- Label results as desk simulation, hardware bench, received RF, balloon flight or orbital flight. Never present a simulated result as measured.
+- Label results as desk simulation, hardware bench, received RF, balloon flight, glider flight, suborbital flight or orbital flight. Never present a simulated result as measured.
 - If you are not sure, say so and point to the source: the code, [docs/mission.md](docs/mission.md), or a qualified reviewer.
 
 ## Useful starting points
 
 - Run the station: `bash docs/start.sh`, or `cargo run --locked -- classroom`.
 - Simulator formulas: `Sample::synthetic` in [src/main.rs](src/main.rs); the test camera is `test_frame` in [src/classroom.rs](src/classroom.rs).
+- Suborbital flight preparation: [docs/suborbital-flight-plan.md](docs/suborbital-flight-plan.md); the timeline model is `Profile` in [src/flight.rs](src/flight.rs).
 - First quest without hardware: [quest/m0/repeat-the-station-lesson.md](quest/m0/repeat-the-station-lesson.md).
+- Forks and new missions: [docs/fork-guide.md](docs/fork-guide.md). Site settings are at the top of [site/src/hubs.mjs](site/src/hubs.mjs).

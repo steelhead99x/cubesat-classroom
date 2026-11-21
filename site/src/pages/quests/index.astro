@@ -15,6 +15,7 @@ const total = quests.reduce((sum, quest) => sum + quest.data.minutes, 0);
 ---
 <Base title="Classroom lessons | CubeSat Classroom" description="Five browser lessons on satellite operations, each available at three levels." canonical={'https://' + classroomHost + '/quests/'}>
   <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Mission', href: base + '/mission/' },
     { label: 'Lessons', href: base + '/quests/', current: true },
     { label: 'Simulator', href: base + '/#demo' },
     { label: 'CAD', href: base + '/hardware/' },
