@@ -71,3 +71,4 @@ The ISS hardware work is listed in review priority. Start the provider inquiry a
 - [Review a supervised balloon flight](/quest/m1/balloon-partner-review.md)
 - [Review the hosted experiment](/quest/m1/hosted-review.md)
 - [Specify the first conducted RF test](/quest/m1/ground-station-rf.md)
+- [Review the microscope collection plate proposal](/quest/m1/micro-collection-plate.md)
