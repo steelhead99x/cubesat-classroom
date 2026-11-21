@@ -1,4 +1,4 @@
-# CubeSat Classroom
+# <img src="site/public/mark.svg" width="38" height="38" alt=""> CubeSat Classroom
 
 **Build a small experiment. Bring back a measurement. Teach the next crew what you learned.**
 
@@ -33,6 +33,10 @@ The commands and responses cross two pinned MoQ-over-QUIC relays on localhost. T
 - **Contributors:** [Choose a quest](quest/README.md) and follow the [volunteer contribution guide](CONTRIBUTING.md).
 
 The hosted research-flight candidate centers on a self-contained sensor logger and post-flight data access. A balloon team can rehearse that workflow on the ground. An orbital relay and licensed on-air experiments are separate work that require additional integration and authorization.
+
+## Work on the website
+
+The [Astro + Tailwind site](site/README.md) has local preview and deployment instructions.
 
 ## License
 

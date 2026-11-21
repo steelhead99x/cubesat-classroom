@@ -5,7 +5,7 @@ A useful contribution is something another crew can repeat. A wiring note from a
 1. Pick a task under [quest/](quest/README.md). If you have the [Quest CLI](https://github.com/moq-dev/quest) installed, run `quest check` and `quest unblocked` from the repository root. The Markdown files also work on their own.
 2. Run the exercise or inspect the evidence. Keep measurement units, a date, the hardware or simulation source, and enough steps to reproduce your result.
 3. Ask a reviewer to repeat the run or explain the evidence back to you. A teacher reviews classroom instructions. A licensed radio volunteer reviews over-the-air and station-operating details. A maintainer reviews the change before it is included.
-4. Once the project has a public forge, use one pull request per contribution. Use the exact Quest branch with `quest start <path>` if you have permission to claim directly. Volunteers using a fork can offer their results or proposed change for maintainer review.
+4. Open one pull request per contribution in the public GitHub repository. Use the exact Quest branch with `quest start <path>` if you have permission to claim directly. Volunteers using a fork can offer their results or proposed change for maintainer review.
 
 ## Community and review standards
 
