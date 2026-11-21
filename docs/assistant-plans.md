@@ -60,7 +60,7 @@ Free and paid limits are separate, so heavy paid use never eats into the free pr
 - **Paid seats:** the hash is built from the class code and the seat number.
 - **Storage:** only counters are kept. There are no IP logs beyond what abuse prevention requires.
 
-Before setting final caps, price them against current Anthropic API pricing for the chosen model and effort setting.
+Before setting final caps, price them against current Anthropic API pricing for the chosen model and effort setting. The proposed $19.99 price has not yet been checked against these caps.
 
 ## Guardrails
 
