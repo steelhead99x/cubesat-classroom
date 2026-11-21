@@ -2,40 +2,26 @@
 import { levels } from '../levels';
 
 interface Props {
-  showIntro?: boolean;
   describe?: boolean;
-  tone?: 'light' | 'dark';
 }
 
-const { showIntro = false, describe = false, tone = 'light' } = Astro.props;
-const dark = tone === 'dark';
+const { describe = false } = Astro.props;
 ---
 <div class="level-picker">
   <fieldset>
-    <legend class={`text-sm font-bold ${dark ? 'text-blue-100' : 'text-ink'}`}>Pick your level</legend>
-    <div class={`mt-2 inline-flex flex-wrap gap-1 rounded-full p-1 ${dark ? 'bg-white/10 ring-1 ring-white/20' : 'bg-white ring-1 ring-line'}`}>
+    <legend class="text-sm font-bold text-ink">Pick your level</legend>
+    <div class="mt-2 inline-flex flex-wrap gap-1 rounded-lg border border-line bg-white p-1">
       {levels.map(level => (
         <label class="cursor-pointer">
           <input class="peer sr-only" type="radio" name="level" value={level.id} checked={level.id === 'beginner'}>
-          <span class={`block rounded-full px-4 py-2 text-sm font-bold peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 ${dark ? 'text-blue-100 hover:text-white peer-checked:bg-horizon peer-checked:text-night peer-checked:hover:text-night peer-focus-visible:outline-horizon' : 'text-muted hover:text-ink peer-checked:bg-night peer-checked:text-white peer-checked:hover:text-white peer-focus-visible:outline-blue-600'}`}>{level.name}</span>
+          <span class="block rounded-md px-3 py-1.5 text-sm font-bold text-muted hover:text-ink peer-checked:bg-accent peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2">{level.name}</span>
         </label>
       ))}
     </div>
   </fieldset>
   {describe && levels.map(level => (
-    <p data-show={level.id} class={`mt-3 max-w-md text-sm ${dark ? 'text-blue-100' : 'text-muted'}`}><strong class={dark ? 'text-white' : 'text-ink'}>{level.who}.</strong> {level.intro}</p>
+    <p data-show={level.id} class="mt-3 max-w-sm text-sm text-muted">{level.who}</p>
   ))}
-  {showIntro && (
-    <div class="mt-4 grid gap-3 md:grid-cols-3">
-      {levels.map(level => (
-        <div data-level-card={level.id} class="rounded-2xl bg-[#14305a] p-4 ring-1 ring-white/15 transition-colors data-[active]:bg-[#1b3b6d] data-[active]:ring-2 data-[active]:ring-horizon">
-          <p class="text-sm font-bold text-white">{level.name}</p>
-          <p class="mt-0.5 text-xs font-bold text-horizon">{level.who}</p>
-          <p class="mt-2 text-sm text-blue-100">{level.intro}</p>
-        </div>
-      ))}
-    </div>
-  )}
 </div>
 
 <script>
@@ -47,9 +33,6 @@ const dark = tone === 'dark';
     document.documentElement.dataset.level = level;
     for (const input of document.querySelectorAll<HTMLInputElement>('.level-picker input[name="level"]')) {
       input.checked = input.value === level;
-    }
-    for (const card of document.querySelectorAll<HTMLElement>('[data-level-card]')) {
-      card.toggleAttribute('data-active', card.dataset.levelCard === level);
     }
     document.dispatchEvent(new CustomEvent('levelchange', { detail: level }));
   }

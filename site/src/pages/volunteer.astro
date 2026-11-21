@@ -14,9 +14,9 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const canonical = 'https://cubesat.club/';
 const description = 'Help a K–12 classroom run its first CubeSat mission. Volunteer as a teacher, amateur-radio mentor, or builder with CubeSat Classroom.';
 const roles = [
-  { title: 'Teach one lesson', summary: 'Run the practice mission with your class. Tell us which step worked, where students got stuck, and what you would change.', action: 'Join the teacher pilot', url: repo + '/blob/main/docs/quick-start.md', color: 'border-t-blue-700' },
-  { title: 'Mentor a crew', summary: 'Help learners understand how a ground station sends commands and receives data. Review a relay or radio test with the crew.', action: 'Review the ground station', url: repo + '/blob/main/quest/m1/ground-station-rf.md', color: 'border-t-amber-600' },
-  { title: 'Build and test', summary: 'Print a CubeSat part, improve the simulator, or document a bench test another classroom can repeat.', action: 'Choose a contribution quest', url: repo + '/blob/main/quest/README.md', color: 'border-t-signal-deep' },
+  { title: 'Teach one lesson', summary: 'Run the practice mission with your class. Tell us which step worked, where students got stuck, and what you would change.', action: 'Join the teacher pilot', url: repo + '/blob/main/docs/quick-start.md' },
+  { title: 'Mentor a crew', summary: 'Help learners understand how a ground station sends commands and receives data. Review a relay or radio test with the crew.', action: 'Review the ground station', url: repo + '/blob/main/quest/m1/ground-station-rf.md' },
+  { title: 'Build and test', summary: 'Print a CubeSat part, improve the simulator, or document a bench test another classroom can repeat.', action: 'Choose a contribution quest', url: repo + '/blob/main/quest/README.md' },
 ];
 ---
 <Base
@@ -34,9 +34,9 @@ const roles = [
       <PageHero class="grid gap-9 lg:grid-cols-[1.3fr_1fr] lg:items-center">
         <div>
           <p class="kicker">The volunteer community behind CubeSat Classroom</p>
-          <h1>Help a classroom run its first space mission.</h1>
-          <p class="lede mt-5">Give a K–12 crew a first taste of space science. Help them build a model, request a simulated sensor reading, and teach the next crew how they did it.</p>
-          <a class="button launch mt-7" href="#volunteer">Find a way to help</a>
+          <h1>Volunteer with CubeSat Classroom</h1>
+          <p class="lede mt-5">Pilot a lesson, review a radio procedure, or help verify a part. We share results so other classrooms can repeat the work.</p>
+          <a class="button launch mt-7" href="#volunteer">See volunteer roles</a>
         </div>
         <figure class="chassis relative m-0 bg-transparent">
           <Image src={rail} alt="Exploded model of the CubeSat frame, camera cover, and base plate" widths={[360, 720]} sizes="(min-width: 1024px) 28rem, 100vw" />
@@ -46,10 +46,10 @@ const roles = [
       <div class="shell py-12">
         <QuickStart />
         <section id="volunteer" class="mt-10" aria-labelledby="volunteer-title">
-          <h2 id="volunteer-title">Pick one way to help</h2>
+          <h2 id="volunteer-title">Volunteer roles</h2>
           <div class="mt-5 grid gap-4 md:grid-cols-3">
             {roles.map(role => (
-              <article class={'flex min-w-0 flex-col items-start rounded-[1.25rem] border-t-[6px] bg-white p-6 ring-1 ring-line ' + role.color}>
+              <article class="resource flex min-w-0 flex-col items-start">
                 <h3>{role.title}</h3>
                 <p class="mt-3 mb-4 text-muted">{role.summary}</p>
                 <a class="mt-auto font-bold underline underline-offset-4" href={role.url}>{role.action}</a>
@@ -57,7 +57,7 @@ const roles = [
             ))}
           </div>
         </section>
-        <section id="give" class="mt-10 rounded-2xl bg-[#fde8e8] p-6" aria-labelledby="give-title">
+        <section id="give" class="mt-10 border-t border-line pt-6" aria-labelledby="give-title">
           <h2 id="give-title">Support Teachers in Space</h2>
           <p class="mt-3 max-w-2xl text-muted">CubeSat Classroom is an open-source contribution to space education, built and supported by volunteers. Give directly to Teachers in Space to help fund its teacher flight program.</p>
           <a class="mt-4 inline-block font-semibold text-signal-deep underline underline-offset-4" href={fundraiser}>Donate directly to Teachers in Space</a>

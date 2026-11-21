@@ -8,6 +8,8 @@ This set uses one printed frame with four continuous corner rails and two printe
 
 ![Rev B printed rail-fit frame and end plates](rev-b-cad-preview.png)
 
+[Dimensioned Rev B drawing](rev-b-drawing.svg) shows the nominal rail-frame elevation and camera-plate plan from the exported meshes.
+
 | Part | Dimensions (mm) | P1S print and fit check |
 | --- | --- | --- |
 | [Rail corner coupon](stl/rev-b-rail-corner-coupon.stl) | 26 × 26 × 20 | Print first with the rail end down. Check the corner width and whether the recessed walls print cleanly. |
@@ -44,4 +46,5 @@ The exported meshes passed size, watertightness, consistent winding and single-s
 python -m venv /tmp/cubesat-cad
 /tmp/cubesat-cad/bin/pip install -r hardware/requirements.txt
 /tmp/cubesat-cad/bin/python hardware/generate.py
+/tmp/cubesat-cad/bin/python hardware/drawing.py
 ```

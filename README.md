@@ -43,7 +43,7 @@ Everyone is welcome: teachers, students (with an adult), amateur radio operators
 
 ## Thanks
 
-The station's networking runs on the open-source Media over QUIC libraries and IETF work from [moq.dev](https://moq.dev). Quests are organized with tools from [kixel.ai](https://kixel.ai). The project is an independent volunteer effort inspired by Teachers in Space and AMSAT.
+The station's networking runs on the open-source Media over QUIC libraries and IETF work from [moq.dev](https://moq.dev). The project is an independent volunteer effort inspired by Teachers in Space and AMSAT. Volunteer site work by [hikd.ai](https://hikd.ai/).
 
 ## License
 

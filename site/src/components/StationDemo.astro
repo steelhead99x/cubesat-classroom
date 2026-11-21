@@ -16,7 +16,7 @@ const { heading = true } = Astro.props;
     </div>
   )}
 
-  <div class="night overflow-hidden rounded-[1.5rem] bg-night text-white shadow-[0_24px_60px_-20px_rgb(16_38_74/0.55)] ring-1 ring-night">
+  <div class="night overflow-hidden rounded-xl bg-night text-white ring-1 ring-night">
     <div class="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-3 text-sm">
       <p class="flex items-center gap-2 font-bold"><span data-led class="size-2.5 rounded-full bg-mint shadow-[0_0_0_3px_rgb(111_211_160/0.25)]" aria-hidden="true"></span><span data-link-status id="demo-link-status">Connected to the practice CubeSat</span></p>
       <p class="hidden text-blue-100/70 sm:block"><span data-show="beginner">Practice mode</span><span data-show="intermediate">Two relays, simulated</span><span data-show="professional">Simulated, 2 relays, telemetry.v1</span></p>
@@ -42,19 +42,19 @@ const { heading = true } = Astro.props;
         </ol>
 
         <div class="flex flex-wrap gap-2.5">
-          <button data-action="sensors" type="button" aria-describedby="demo-link-status" class="rounded-xl bg-sky px-4 py-2.5 font-bold text-night shadow-[0_3px_0_#6e9bd8] hover:bg-blue-200 active:translate-y-0.5 active:shadow-none aria-disabled:cursor-not-allowed aria-disabled:opacity-45 aria-disabled:shadow-none">
+          <button data-action="sensors" type="button" aria-describedby="demo-link-status" class="rounded-md bg-sky px-4 py-2.5 font-bold text-night hover:bg-blue-200 aria-disabled:cursor-not-allowed aria-disabled:opacity-45">
             <span data-show="beginner">Ask for a reading</span><span data-show="intermediate professional">Get sensor reading</span>
           </button>
-          <button data-action="video" type="button" aria-describedby="demo-link-status" class="rounded-xl bg-horizon px-4 py-2.5 font-bold text-night shadow-[0_3px_0_#b86e00] hover:bg-[#ffc46e] active:translate-y-0.5 active:shadow-none aria-disabled:cursor-not-allowed aria-disabled:opacity-45 aria-disabled:shadow-none">
+          <button data-action="video" type="button" aria-describedby="demo-link-status" class="rounded-md border border-white/35 px-4 py-2.5 font-bold text-white hover:bg-white/10 aria-disabled:cursor-not-allowed aria-disabled:opacity-45">
             <span data-show="beginner">Take pictures</span><span data-show="intermediate professional">Start video</span>
           </button>
-          <button data-contact type="button" class="rounded-xl border-2 border-white/35 px-4 py-2 font-bold text-white hover:border-white hover:bg-white/10">Pause contact</button>
+          <button data-contact type="button" class="rounded-md border border-white/35 px-4 py-2 font-bold text-white hover:border-white hover:bg-white/10">Pause contact</button>
         </div>
 
         <dl class="grid grid-cols-3 gap-2">
-          <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80">Temperature</dt><dd data-temp class="mt-1 font-display text-xl font-bold whitespace-nowrap sm:text-2xl">--</dd></div>
-          <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80"><span data-show="beginner">Battery</span><span data-show="intermediate professional">Bus voltage</span></dt><dd data-volt class="mt-1 font-display text-xl font-bold whitespace-nowrap sm:text-2xl">--</dd></div>
-          <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80">Light</dt><dd data-light class="mt-1 font-display text-xl font-bold whitespace-nowrap sm:text-2xl">--</dd></div>
+          <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80">Temperature</dt><dd data-temp class="mt-1 font-display text-xl font-bold break-words sm:text-2xl">--</dd></div>
+          <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80"><span data-show="beginner">Battery</span><span data-show="intermediate professional">Bus voltage</span></dt><dd data-volt class="mt-1 font-display text-xl font-bold break-words sm:text-2xl">--</dd></div>
+          <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80">Light</dt><dd data-light class="mt-1 font-display text-xl font-bold break-words sm:text-2xl">--</dd></div>
         </dl>
         <p data-fresh class="-mt-2 text-sm text-blue-100/80">No reading yet.</p>
 

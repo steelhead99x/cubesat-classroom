@@ -10,7 +10,7 @@ Three pieces make that possible:
 
 - **The MoQ model** from [moq.dev](https://moq.dev) and the [IETF MoQ working group](https://datatracker.ietf.org/wg/moq/about/). Media is cut into groups (one keyframe interval) and objects (one frame). Relays fan subscriptions out, and a lost frame pauses the picture until the next keyframe instead of smearing it.
 - **moq-subghz** ([source](https://github.com/steelhead99x/moq-subghz)). The same group and object model runs over a sub-GHz radio link built from a Raspberry Pi 2 and a common LoRa chip, with an optional republish to a moq.dev relay.
-- **[rind](https://github.com/kixel-ai/rind)**, a pure-Rust encryption library from kixel.ai. moq-subghz uses it for ChaCha20-Poly1305 frame encryption, light enough for a Pi 2.
+- **[rind](https://github.com/kixel-ai/rind)**, a pure-Rust encryption library. moq-subghz uses it for ChaCha20-Poly1305 frame encryption, light enough for a Pi 2.
 
 ## What has been measured
 
