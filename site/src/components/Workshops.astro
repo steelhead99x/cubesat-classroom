@@ -23,9 +23,9 @@ const funds = [
 <section id={id} class="scroll-mt-6" aria-labelledby={id + '-title'}>
   <div class="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
     <div>
-      <h2 id={id + '-title'}>Planned: three in-person workshops a year</h2>
-      <p class="mt-4 text-lg text-muted">Everything here builds toward a day in the same room: teachers, students and radio mentors with real parts on the table. The website and the quests get you ready. The workshops are where it will come together.</p>
-      <p class="mt-4 text-muted">Dates and places are set with partner schools and announced when they are confirmed.</p>
+      <h2 id={id + '-title'}>Proposed in-person workshops</h2>
+      <p class="mt-4 text-lg text-muted">The proposal calls for three workshops a year. Teachers, students, and radio mentors would assemble a model, run the station, and compare measurements.</p>
+      <p class="mt-4 text-muted">Dates and venues are pending.</p>
       <div class="mt-6 flex flex-wrap gap-3">
         <a class="button launch" href={host}>Host or attend a workshop</a>
         <a class="button quiet" href={fundraiser}>Donate</a>
@@ -44,10 +44,10 @@ const funds = [
     </ol>
   </div>
   <div class="mt-8 rounded-[1.25rem] bg-[#fde8e8] p-6">
-    <h3>What workshop funding covers</h3>
+    <h3>Proposed workshop costs</h3>
     <ul class="mt-3 grid gap-x-8 gap-y-2 text-muted sm:grid-cols-2">
       {funds.map(item => <li class="flex gap-2"><span class="mt-2 size-1.5 shrink-0 rounded-full bg-signal-deep" aria-hidden="true"></span>{item}</li>)}
     </ul>
-    <p class="mt-4 text-sm text-muted">The donate button goes to Teachers in Space, which runs its own teacher training and flight program. CubeSat Classroom is an independent volunteer project. Workshop budgets and goals will be published here once they are set.</p>
+    <p class="mt-4 text-sm text-muted">Donations go directly to Teachers in Space for its teacher training and flight program. CubeSat Classroom workshop budgets are pending.</p>
   </div>
 </section>

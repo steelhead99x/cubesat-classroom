@@ -35,6 +35,12 @@ Use the enclosed Rev A case for these bench quests. Start with PLA and move thro
 5. [Review an improvement against the fit evidence](/quest/m0/improve-p1s-case.md)
 6. [Repeat the fit test](/quest/m0/retest-p1s-case.md)
 
+### Demo and bench experiments
+
+- [Rehearse the five-minute demo offline](/quest/m0/demo-offline-rehearsal.md) and record a restart procedure.
+- [Trace a sensor value from file to display](/quest/m0/trace-sensor-fixtures.md) and verify what happens when an input is missing.
+- [Measure what the camera lid blocks](/quest/m0/measure-case-camera-view.md) once the P1S case fit has been tested.
+
 ### Flight work
 
 The ISS hardware work is listed in review priority. Start the provider inquiry and the P1S slice review in parallel. The numbered lists show the recommended order for review. Quest dependencies control what is ready to start. Run `quest unblocked` to see ready work and `quest check` to validate the board. See the [contribution guide](../CONTRIBUTING.md).

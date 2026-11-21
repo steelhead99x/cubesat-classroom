@@ -4,7 +4,7 @@ The video source is an FFmpeg test pattern. `moq-subghz-send` encodes it into H.
 
 ## Live playback during paced replay
 
-Use the dependency revision and builds in the [README](../README.md). Run one terminal per long-lived process. The relay prints its URL and the ephemeral certificate fingerprint. Export both values in the other terminals and pass the same fingerprint to the upstream publisher.
+Build the tools from the [moq-subghz checkout used in the verification run](https://github.com/steelhead99x/moq-subghz/tree/461f6d3f5e7e7683bd1e85e3ad382d735fa33b0a). Run one terminal per long-lived process. The relay prints its URL and the ephemeral certificate fingerprint. Export both values in the other terminals and pass the same fingerprint to the upstream publisher.
 
 ```bash
 cargo build --locked
