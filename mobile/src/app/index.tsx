@@ -1,34 +1,59 @@
-import { Link } from 'expo-router';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Screen, shared } from '../components/Screen';
-import { theme, fundraiser, repository } from '../theme';
+import { router } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+import { Button, Card, LevelPicker, Screen, shared } from '../components/Screen';
+import quests from '../data/quests.json';
+import { useCrew } from '../state';
+import { appName, theme } from '../theme';
 
 export default function Mission() {
+  const { earned } = useCrew();
+  const next = quests.find(q => !earned.includes(q.id)) ?? quests[0];
   return (
-    <Screen title="CubeSat Classroom" summary="Build a CubeSat. Run a practice mission. Teach the next crew.">
-      <View style={[shared.card, styles.mission]}>
-        <Image source={require('../../assets/android-icon-foreground.png')} style={styles.mark} accessibilityIgnoresInvertColors />
-        <Text accessibilityRole="header" style={shared.heading}>Your first mission</Text>
-        <Text style={shared.body}>Ask the simulator for a sensor reading. Write down what you measured and include its unit.</Text>
-        <Link href="/telemetry" asChild>
-          <Pressable accessibilityRole="link" style={shared.button}>
-            <Text style={shared.buttonText}>Open telemetry</Text>
-          </Pressable>
-        </Link>
-      </View>
-      <View style={[shared.card, styles.support]}>
-        <Text accessibilityRole="header" style={shared.heading}>Built and supported by volunteers</Text>
-        <Text style={shared.body}>This open-source app is a volunteer contribution to space education. Help another classroom by sharing a lesson, bench result, or code fix.</Text>
-        <Link href={`${repository}/blob/main/CONTRIBUTING.md`} style={shared.link}>Contribute to CubeSat Classroom</Link>
-        <Link href={fundraiser} style={[shared.link, styles.donate]}>Give directly to Teachers in Space</Link>
+    <Screen title={appName} summary="Get your class ready for spaceflight. Practise with a ground station, predict the flight, then compare.">
+      <Card tone="night">
+        <Text style={styles.nightLabel}>Expected in 2027</Text>
+        <Text accessibilityRole="header" style={styles.nightHeading}>A classroom experiment on a research spaceflight</Text>
+        <Text style={styles.nightBody}>Teachers in Space plans to fly two teachers and a small sensor kit on a Virgin Galactic research flight. See the ride, minute by minute.</Text>
+        <Button label="Explore the flight" kind="light" onPress={() => router.navigate('/flight')} />
+        <Text style={styles.nightSmall}>An independent volunteer project. Teachers in Space and Virgin Galactic decide what flies.</Text>
+      </Card>
+
+      <Card>
+        <Text style={shared.label}>Pick your level</Text>
+        <LevelPicker />
+      </Card>
+
+      <Card tone="sky">
+        <Text style={shared.label}>{earned.length === 0 ? 'Start here' : `Next lesson · ${earned.length} of ${quests.length} done`}</Text>
+        <Text accessibilityRole="header" style={shared.heading}>{next.title}</Text>
+        <Text style={shared.body}>{next.summary}</Text>
+        <Button label="Open the lesson" onPress={() => router.navigate({ pathname: '/quests/[id]', params: { id: next.id } })} />
+      </Card>
+
+      <Card>
+        <Text accessibilityRole="header" style={shared.heading}>Practice ground station</Text>
+        <Text style={shared.body}>Ask a practice CubeSat for readings and pictures, then pause contact and see what is lost. Everything is simulated on your phone.</Text>
+        <Button label="Open the station" kind="quiet" onPress={() => router.navigate('/station')} />
+      </Card>
+
+      <View style={styles.patches} accessibilityLabel={`Mission patches: ${earned.length} of ${quests.length} earned`}>
+        {quests.map(q => (
+          <View key={q.id} style={[styles.patch, earned.includes(q.id) && styles.patchOn]}>
+            <Text style={[styles.patchText, earned.includes(q.id) && { color: theme.white }]}>{q.patch}</Text>
+          </View>
+        ))}
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  mission: { backgroundColor: theme.sky },
-  support: { backgroundColor: theme.blush },
-  mark: { width: 54, height: 54, backgroundColor: theme.navy, borderRadius: 14 },
-  donate: { color: theme.red },
+  nightLabel: { color: '#ffb547', fontSize: 13, fontWeight: '700' },
+  nightHeading: { color: theme.white, fontSize: 23, lineHeight: 29, fontWeight: '800' },
+  nightBody: { color: '#d7e3f4', fontSize: 16, lineHeight: 24 },
+  nightSmall: { color: '#c9d8ee', fontSize: 13, lineHeight: 19 },
+  patches: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  patch: { borderRadius: 999, borderWidth: 2, borderColor: theme.line, borderStyle: 'dashed', paddingVertical: 6, paddingHorizontal: 12 },
+  patchOn: { backgroundColor: theme.blue, borderColor: theme.blue, borderStyle: 'solid' },
+  patchText: { color: theme.muted, fontSize: 13, fontWeight: '700' },
 });

@@ -10,7 +10,7 @@ export const hubs = [
     host: 'cubesat.app',
     name: 'Mobile app',
     heading: 'Practice a mission on your phone',
-    description: 'Try offline telemetry and take classroom lessons with you. The open-source iOS and Android template is ready for developer previews.',
+    description: 'A practice ground station, the research flight and five lessons on your phone. The open-source Android and iOS app is ready for developer previews.',
     links: [
       ['Run the mobile template', repo + '/blob/main/mobile/README.md'],
       ['Browse the mobile source', repo + '/tree/main/mobile'],
