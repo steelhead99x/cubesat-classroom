@@ -199,7 +199,27 @@ fn connect(link: &Link) -> Result<moq_tokio::Client> {
     if let Some(pin) = &link.fingerprint {
         cfg.tls.fingerprint = vec![pin.clone()];
     }
+    // The relays listen on 127.0.0.1 only. The library's default dual-stack
+    // `[::]:0` dial socket fails on hosts with IPv6 disabled (some WSL, Docker
+    // and managed school machines), so dial loopback relays from IPv4 loopback.
+    if is_loopback(&link.relay) {
+        cfg.bind = Some(SocketAddr::from(([127, 0, 0, 1], 0)));
+    }
     Ok(cfg.init(Default::default())?)
+}
+
+fn is_loopback(url: &Url) -> bool {
+    match url.host() {
+        // `moqt://` is not a special scheme, so the url crate reports IPv4 hosts as domains.
+        Some(url::Host::Domain(name)) => {
+            name.eq_ignore_ascii_case("localhost")
+                || name
+                    .parse::<std::net::Ipv4Addr>()
+                    .is_ok_and(|ip| ip.is_loopback())
+        }
+        Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
+        _ => false,
+    }
 }
 
 async fn relay(port: u16) -> Result<()> {
@@ -453,5 +473,13 @@ mod tests {
         let answer = Reading::Status.format(&sample, now).unwrap();
         assert!(answer.contains("21.5 °C") && answer.contains("3.907 V"));
         assert!(answer.contains("simulation") && answer.contains("100 ms"));
+    }
+
+    #[test]
+    fn detects_loopback_relays() {
+        assert!(is_loopback(&"moqt://localhost:4443".parse().unwrap()));
+        assert!(is_loopback(&"moqt://127.0.0.1:4443".parse().unwrap()));
+        assert!(!is_loopback(&"moqt://relay.example:443".parse().unwrap()));
+        assert!(!is_loopback(&"moqt://[::1]:4443".parse().unwrap()));
     }
 }

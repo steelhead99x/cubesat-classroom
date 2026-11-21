@@ -1,10 +1,18 @@
 ---
 import '../theme.css';
 import rail from '../../../docs/assets/rail-fit.png';
-import { fundraiser, hubs, repo } from '../hubs.mjs';
+import { classroomHost, fundraiser, hubs, repo } from '../hubs.mjs';
+import station from '../../../docs/assets/station.webp';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const command = 'curl -fsSL https://cubesatclass.com/start.sh | bash';
+const site = 'https://' + classroomHost;
+const steps = [
+  { title: 'Make contact.', text: 'Request a sensor reading from the practice CubeSat and read it aloud with its unit.' },
+  { title: 'Bring back a picture.', text: 'Start the test camera and count how many frames make it through both relays.' },
+  { title: 'Lose the signal on purpose.', text: 'Pause contact, restore it, and see what a real ground crew has to handle.' },
+  { title: 'Teach the next crew.', text: 'Export a crew log, review it with your teacher, and share what you would test next.' },
+];
 const labs = [
   { icon: 'station', name: 'Ground station', description: 'Request a sensor reading and watch practice video. Start with a simulated CubeSat.', action: 'Run the station', href: '#start' },
   { icon: 'balloon', name: 'Balloon lab', description: 'Log pressure and temperature in class, then compare your measurements with real flight data.', action: 'Open the lesson', href: repo + '/blob/main/docs/balloon-lab.md' },
@@ -16,9 +24,15 @@ const labs = [
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="An open space lab for K–12 for K–12. Run a practice CubeSat ground station, print a satellite model, and teach the next crew.">
+    <meta name="description" content="An open space lab for K–12. Run a practice CubeSat ground station, print a satellite model, and teach the next crew.">
     <meta name="theme-color" content="#10264a">
     <link rel="icon" type="image/svg+xml" href={base + '/mark.svg'}>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="CubeSat Classroom: build a CubeSat, run the mission">
+    <meta property="og:description" content="A free, open volunteer space lab. Run a practice ground station, bring back a measurement, and teach the next crew.">
+    <meta property="og:url" content={site + '/'}>
+    <meta property="og:image" content={site + rail.src.replace(base, '')}>
+    <meta name="twitter:card" content="summary_large_image">
     <title>CubeSat Classroom</title>
   </head>
   <body>
@@ -31,7 +45,9 @@ const labs = [
         </a>
         <nav class="flex flex-wrap items-center gap-x-6 gap-y-2" aria-label="Main">
           <a href="#labs">Classroom</a>
+          <a href="#how">How it works</a>
           <a href="#quests">Quests</a>
+          <a href="#next">What's next</a>
           <a href="#support">Donate</a>
         </nav>
       </div>
@@ -42,7 +58,7 @@ const labs = [
           <div>
             <p class="eyebrow">An open space lab for K–12</p>
             <h1>Build a CubeSat.<br><em>Run the mission.</em></h1>
-            <p class="intro mt-5">Run a practice ground station, bring back a measurement, and teach the next crew what you learned.</p>
+            <p class="intro mt-5">Run a practice ground station, bring back a measurement, and teach the next crew what you learned. No radio license, no hardware and no cost to start.</p>
             <div class="mt-7 flex flex-wrap items-center gap-5">
               <a class="button launch" href="#start">Start the ground station <span aria-hidden="true">↓</span></a>
               <a class="light-link" href="#labs">Explore the labs</a>
@@ -72,6 +88,18 @@ const labs = [
             ))}
           </div>
         </section>
+        <section id="how" class="pb-12" aria-labelledby="how-title">
+          <h2 id="how-title">A mission your class can run this afternoon</h2>
+          <div class="mt-6 grid items-center gap-8 lg:grid-cols-[1fr_1.15fr]">
+            <ol class="steps">
+              {steps.map(step => <li><strong>{step.title}</strong> {step.text}</li>)}
+            </ol>
+            <figure class="shot">
+              <img src={station.src} width={station.width} height={station.height} loading="lazy" alt="The ground station console showing temperature, voltage and light readings, a test camera frame, and relay status">
+              <figcaption>The classroom ground station runs locally in any browser.</figcaption>
+            </figure>
+          </div>
+        </section>
         <div id="get-started"></div>
         <section id="start" class="start" aria-labelledby="start-title">
           <h2 id="start-title">One command to start</h2>
@@ -80,7 +108,7 @@ const labs = [
             <code id="command">{command}</code>
             <button id="copy" type="button" hidden>Copy command</button>
           </div>
-          <p class="mt-3 text-sm">macOS, Linux or WSL. The station uses simulated sensors and video.</p>
+          <p class="mt-3 text-sm">macOS, Linux or WSL. The first run installs Rust if needed. The station uses simulated sensors and video.</p>
           <p id="copy-status" class="sr-only" role="status"></p>
           <a class="mt-4 inline-block" href={repo + '/blob/main/output/pdf/cubesat-classroom-quick-start.pdf'}>Print the one-page quick start <span aria-hidden="true">↗</span></a>
         </section>
@@ -88,7 +116,7 @@ const labs = [
           <section id="quests" aria-labelledby="quests-title">
             <div id="contribute"></div>
             <h2 id="quests-title">Help the next crew</h2>
-            <p class="mt-2 mb-4">Try a lesson, record a bench test, or improve a part. Share the steps so another group can repeat your work.</p>
+            <p class="mt-2 mb-4">The project is open for contributions. Try a lesson, record a bench test, or improve a part. Share the steps so another group can repeat your work. AI tools are welcome; a person owns each result and an independent reviewer checks it.</p>
             <a href={repo + '/tree/main/quest'}>Pick a quest <span aria-hidden="true">↗</span></a>
             <a class="ml-3" href={repo + '/blob/main/CONTRIBUTING.md'}>How to contribute <span aria-hidden="true">↗</span></a>
           </section>
@@ -98,6 +126,13 @@ const labs = [
             <a href={fundraiser}>Donate to Teachers in Space <span aria-hidden="true">↗</span></a>
           </section>
         </div>
+        <section id="next" class="proposal mt-12" aria-labelledby="next-title">
+          <p class="tag">Open proposal · reviewers wanted</p>
+          <h2 id="next-title">Next idea: a microscope collection plate</h2>
+          <p class="mt-2 mb-5">Point a small microscope camera at an exposed collection plate and send each image to the ground. Schools with receive stations compare passes and log what changed. The same loop works on the bench, on a balloon and, after review, in orbit. It also builds the skills a future lunar project would need.</p>
+          <a href={repo + '/blob/main/docs/micro-collection-plate.md'}>Read and review the proposal <span aria-hidden="true">↗</span></a>
+        </section>
+        <p class="credits mt-10">Networking runs on the open-source Media over QUIC libraries and IETF work from <a href="https://moq.dev">moq.dev</a>. Quests are organized with tools from <a href="https://kixel.ai">kixel.ai</a>.</p>
       </div>
     </main>
     <footer>

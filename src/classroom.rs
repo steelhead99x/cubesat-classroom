@@ -380,13 +380,25 @@ async fn jpeg(State(station): State<Arc<Station>>) -> Response {
         .into_response()
 }
 
-async fn local_only(State(host): State<String>, request: Request, next: Next) -> Response {
+/// Accept only the loopback host names this server is reachable at. Rejecting other
+/// Host values blocks DNS-rebinding; checking Origin on POST blocks cross-site requests.
+fn allowed_host(port: u16, host: &str) -> bool {
+    host == format!("127.0.0.1:{port}") || host == format!("localhost:{port}")
+}
+
+async fn local_only(State(port): State<u16>, request: Request, next: Next) -> Response {
     let heads: &HeaderMap = request.headers();
+    let host = heads.get(header::HOST).and_then(|v| v.to_str().ok());
+    let Some(host) = host.filter(|host| allowed_host(port, host)) else {
+        return (
+            StatusCode::FORBIDDEN,
+            format!("Open the station at http://127.0.0.1:{port}"),
+        )
+            .into_response();
+    };
     let expected_origin = format!("http://{host}");
-    if heads.get(header::HOST).and_then(|v| v.to_str().ok()) != Some(host.as_str())
-        || (request.method() == axum::http::Method::POST
-            && heads.get(header::ORIGIN).and_then(|v| v.to_str().ok())
-                != Some(expected_origin.as_str()))
+    if request.method() == axum::http::Method::POST
+        && heads.get(header::ORIGIN).and_then(|v| v.to_str().ok()) != Some(expected_origin.as_str())
     {
         return StatusCode::FORBIDDEN.into_response();
     }
@@ -444,7 +456,8 @@ pub(crate) async fn run(port: u16, sensor_dir: Option<PathBuf>) -> Result<()> {
 
     let listener =
         tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], port))).await?;
-    let addr = listener.local_addr()?.to_string();
+    let local = listener.local_addr()?;
+    let addr = local.to_string();
     let app = Router::new()
         .route(
             "/",
@@ -473,7 +486,7 @@ pub(crate) async fn run(port: u16, sensor_dir: Option<PathBuf>) -> Result<()> {
         .route("/api/request", post(action))
         .route("/api/contact", post(contact))
         .layer(DefaultBodyLimit::max(1024))
-        .layer(middleware::from_fn_with_state(addr.clone(), local_only))
+        .layer(middleware::from_fn_with_state(local.port(), local_only))
         .with_state(state);
     println!("Classroom ground station: http://{addr}");
     axum::serve(listener, app)
@@ -482,4 +495,27 @@ pub(crate) async fn run(port: u16, sensor_dir: Option<PathBuf>) -> Result<()> {
         })
         .await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepts_only_loopback_host_names() {
+        assert!(allowed_host(8080, "127.0.0.1:8080"));
+        assert!(allowed_host(8080, "localhost:8080"));
+        assert!(!allowed_host(8080, "localhost:8081"));
+        assert!(!allowed_host(8080, "evil.example:8080"));
+        assert!(!allowed_host(8080, "127.0.0.1"));
+    }
+
+    #[test]
+    fn test_frames_are_jpeg_and_bounded() {
+        for frame in 0..FRAME_COUNT {
+            let jpeg = test_frame(frame).unwrap();
+            assert!(jpeg.starts_with(&[0xff, 0xd8]));
+            assert!(bounded(&jpeg, 64 * 1024).is_ok());
+        }
+    }
 }
