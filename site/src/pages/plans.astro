@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import PageHero from '../components/PageHero.astro';
-import { classroomHost, repo } from '../hubs.mjs';
+import { publicSite, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const feedback = (topic: string) => `${repo}/issues/new?template=feedback.yml&labels=feedback,plans&title=${encodeURIComponent('Plans feedback: ' + topic)}`;
@@ -51,7 +51,7 @@ const guardrails = [
   'Built to Anthropic’s safeguards for products used by minors, with a COPPA review before launch.',
 ];
 ---
-<Base title="Plans | CubeSat Classroom" description="A draft for discussion: try it free in the browser, run it yourself free, or a proposed $9.99 Crew Plus plan with a guarded quest guide." canonical={'https://' + classroomHost + '/plans/'}>
+<Base title="Plans | CubeSat Classroom" description="A draft for discussion: try it free in the browser, run it yourself free, or a proposed $9.99 Crew Plus plan with a guarded quest guide." canonical={'https://' + publicSite + '/plans/'}>
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Home', href: base + '/' },
     { label: 'Quests', href: base + '/quests/' },

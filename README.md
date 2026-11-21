@@ -6,7 +6,7 @@ It is a starting kit, not a competitor to other space education projects: fork i
 
 ## Who it's for
 
-CubeSat Classroom is written for learners 13 and up, and for the teachers, guardians and mentors who guide them.
+CubeSat Classroom is written for learners 13 and up, and for the teachers, guardians and mentors who guide them. Every level of learning and experience is welcome, from a first question to decades of engineering, teaching or radio work.
 
 - **No account is needed** for the browser lessons, the mobile app or the local ground station.
 - **To join the project** (comment, share a crew log, propose a change), use an account on a hosted Git service: GitHub, GitLab.com or Codeberg. Self-hosted Git servers are not supported. The main repository is on GitHub today, but you are not locked in to it. Work from a fork or mirror on the host you prefer and send a link to your branch, or a patch.
