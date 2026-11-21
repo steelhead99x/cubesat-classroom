@@ -1,6 +1,6 @@
 # CubeSat Classroom website
 
-The public site connects K–12 classrooms and volunteer mentors to the ground station, balloon lesson, 3D-print files, and contribution quests. The Astro pages and Tailwind styles live in `src/`. The CubeSat mark lives in `public/mark.svg`. The banner uses the project's Rev B CAD preview.
+The public site connects learners 13 and up, their teachers and guardians, and volunteer mentors to the ground station, balloon lesson, 3D-print files, and contribution quests. The Astro pages and Tailwind styles live in `src/`. The CubeSat mark lives in `public/mark.svg`. The banner uses the project's Rev B CAD preview.
 
 ## Preview locally
 

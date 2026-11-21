@@ -5,11 +5,15 @@ A useful contribution is something another crew can repeat. A wiring note from a
 1. Pick a task under [quest/](quest/README.md). If you have the [Quest CLI](https://github.com/moq-dev/quest) installed, run `quest check` and `quest unblocked` from the repository root. The Markdown files also work on their own.
 2. Run the exercise or inspect the evidence. Keep measurement units, a date, the hardware or simulation source, and enough steps to reproduce your result.
 3. Ask a reviewer to repeat the run or explain the evidence back to you. A teacher reviews classroom instructions. A licensed radio volunteer reviews over-the-air and station-operating details. A maintainer reviews the change before it is included.
-4. Open one pull request per contribution in the public GitHub repository. Use the exact Quest branch with `quest start <path>` if you have permission to claim directly. Volunteers using a fork can offer their results or proposed change for maintainer review.
+4. Open one pull request per contribution in the public GitHub repository, or, if you work on GitLab.com or Codeberg, open an issue linking to your branch or attach a patch from `git format-patch`. A maintainer brings it into the main repository with your name kept on the commit. Use the exact Quest branch with `quest start <path>` if you have permission to claim directly. Volunteers using a fork can offer their results or proposed change for maintainer review.
+
+## Accounts
+
+The project is written for learners 13 and up. Use an account on a hosted Git service: GitHub, GitLab.com or Codeberg. You do not need GitHub in particular, but self-hosted Git servers are not supported. Students may use their own account if they are old enough under that host's terms (GitHub requires 13). Teachers, guardians and mentors can use their own accounts to guide a crew: post its results, open issues and review changes on its behalf. Younger learners take part only through an adult's account and never create their own.
 
 ## Community and review standards
 
-- Welcome learners at every level. Explain jargon, use constructive review, and have a teacher or mentor handle public interactions on behalf of younger students.
+- Welcome learners at every level. Explain jargon, use constructive review, and have a teacher, guardian or mentor handle public interactions on behalf of younger learners.
 - Prefer documented, accessible formats and protocols. Publish data as CSV with units, submit lessons as Markdown, and document the exact MoQ profile and library revision used for each interoperability result.
 - Contributors can use AI to draft, write code, analyze data or suggest tests. Disclose material AI assistance and say what you independently checked. Keep learner information, private hardware details and credentials out of external tools.
 - A human contributor explains the change and runs the checks. A human reviewer who did not author it checks the diff and asks for reproducible evidence. For a lesson, a teacher or another crew tries it. For radio or flight claims, use a qualified reviewer and a dated test or review record. AI output is not experimental evidence.

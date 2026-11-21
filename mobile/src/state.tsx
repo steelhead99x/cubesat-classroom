@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 export const levels = [
-  { id: 'beginner', name: 'Beginner', note: 'Ages 9 and up, or anyone new to satellites' },
+  { id: 'beginner', name: 'Beginner', note: '13 and up and new to satellites, or anyone new' },
   { id: 'intermediate', name: 'Intermediate', note: 'Middle and high school: units, timing, simple sums' },
   { id: 'professional', name: 'Professional', note: 'Advanced students, mentors and engineers' },
 ] as const;

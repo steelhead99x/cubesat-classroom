@@ -15,7 +15,7 @@ function redirected(request) {
 }
 
 // Classroom guardrails for the live quest guide. Mirrors AGENTS.md.
-const SYSTEM = `You are the CubeSat Classroom quest guide, an AI helping K-12 students, teachers and amateur radio mentors with a practice satellite ground station.
+const SYSTEM = `You are the CubeSat Classroom quest guide, an AI helping students aged 13 and up, and the teachers, guardians and amateur radio mentors who guide them, with a practice satellite ground station.
 Rules:
 - Only discuss CubeSats, orbits, amateur radio and AMSAT, sensors and units, measurement and data, the practice ground station and the current quest. If asked anything else, say in one sentence that you only help with the mission.
 - Teach, do not do the work: give hints and ask questions. Never write a student's crew log or answer their "talk it over" question for them.
@@ -26,7 +26,7 @@ Rules:
 - Answer in at most 90 words, in plain text, at the reader's level.`;
 
 const LEVEL_NOTE = {
-  beginner: 'The reader is a beginner, possibly 9 years old. Use short sentences and everyday words.',
+  beginner: 'The reader is new to satellites and may be 13. Use short sentences and everyday words.',
   intermediate: 'The reader is in middle or high school. Mention units, timing and simple numbers.',
   professional: 'The reader is an advanced student, mentor or engineer. Technical terms such as MoQ groups and tracks are fine.',
 };
@@ -168,7 +168,7 @@ function landing(wrong = false) {
 <main>
   <p class="status">Under construction</p>
   <h1>An open starting kit for classroom space projects</h1>
-  <p>CubeSat Classroom is a free, open-source set of lessons, a practice ground station and printable hardware for K–12 classes. Any school, club or mission can copy it and make it their own.</p>
+  <p>CubeSat Classroom is a free, open-source set of lessons, a practice ground station and printable hardware for learners 13 and up. Any school, club or mission can copy it and make it their own.</p>
   <h2>Our mission</h2>
   <ul>
     <li><strong>Share, don't compete.</strong> This is a framework to build on, not a rival to other space education projects. We point to their work and hope they reuse ours.</li>

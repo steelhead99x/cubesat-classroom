@@ -2,7 +2,7 @@ export const levels = [
   {
     id: 'beginner',
     name: 'Beginner',
-    who: 'Ages 9 and up, or anyone new to satellites',
+    who: '13 and up and new to satellites, or anyone new',
     intro: 'A ground station is a computer on Earth that talks to a satellite. You ask a question, wait, and read the answer. Plain words, hints along the way.',
   },
   {

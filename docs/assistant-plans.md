@@ -15,7 +15,7 @@ The website is the introduction: anyone can try the practice ground station and 
 | | Try it | Run it yourself | Crew Plus (proposed) |
 | --- | --- | --- | --- |
 | Price | Free | Free, open source | $9.99 per month per teacher or mentor |
-| Account | None | None | One adult account holder; students join with a class code |
+| Account | None | None | One adult account holder (teacher, guardian or mentor); students join with a class code |
 | What you get | Browser station, 5 example quests at 3 levels, mission patches | Real Rust station over two MoQ relays, full quest board, balloon lab, CAD, hardware quests | Everything in "Run it yourself", plus a hosted quest guide with classroom guardrails |
 | AI | None | Your own assistant, using [AGENTS.md](../AGENTS.md) | Hosted guide on Claude Sonnet 5.5 through the Anthropic API |
 | Data kept | Patches in your browser only | Whatever you keep locally | Minimal; see "Privacy" |
@@ -95,7 +95,7 @@ The same rules apply to the hosted guide and to [AGENTS.md](../AGENTS.md) for pe
 
 - **API, not a personal subscription.** The hosted guide must use an Anthropic API key from the Claude Console under Anthropic's commercial terms. Personal Claude subscriptions cannot be used to serve other people.
 - **Minors.** Anthropic's guidelines for organizations whose products let minors use its models require several safeguards: age verification, content filtering, monitoring and reporting, educational resources on safe use, an AI disclosure, compliance with laws such as COPPA, and a public statement of that compliance. [Anthropic: guidelines for organizations serving minors](https://support.claude.com/en/articles/9307344-responsible-use-of-anthropic-s-models-guidelines-for-organizations-serving-minors)
-- **Who holds the account.** Paid accounts belong to adults, meaning teachers, mentors or parents. Students use a class code and a nickname. No student email or name is collected.
+- **Who holds the account.** Paid accounts belong to adults, meaning teachers, guardians or mentors. Sign-in should accept hosted Git services through OAuth (GitHub, GitLab.com and Codeberg), not one provider only. Self-hosted Git servers are not supported. Adults without a Git account can sign in with a phone number and a one-time code. Students never give a phone number. Students use a class code and a nickname. No student email or name is collected.
 - **COPPA and school privacy rules** need review by someone qualified before launch, as does a published privacy policy.
 
 ## Open questions for reviewers and the community
