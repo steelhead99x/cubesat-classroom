@@ -5,10 +5,8 @@ import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import LevelPicker from '../../components/LevelPicker.astro';
 import StationDemo from '../../components/StationDemo.astro';
-import Patch from '../../components/Patch.astro';
 import FullExperience from '../../components/FullExperience.astro';
 import QuestGuide from '../../components/QuestGuide.astro';
-import PageHero from '../../components/PageHero.astro';
 import { classroomHost, repo } from '../../hubs.mjs';
 import { levels, inline } from '../../levels';
 
@@ -26,21 +24,23 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
 ---
 <Base title={quest.data.title + ' | Example quest | CubeSat Classroom'} description={quest.data.summary} canonical={`https://${classroomHost}/quests/${quest.id}/`}>
   <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Home', href: base + '/' },
-    { label: 'Quests', href: base + '/quests/', current: true },
-    { label: 'Plans', href: base + '/plans/' },
+    { label: 'Lessons', href: base + '/quests/', current: true },
+    { label: 'Simulator', href: base + '/#demo' },
+    { label: 'CAD', href: base + '/hardware/' },
+    { label: 'For teachers', href: base + '/#teachers' },
   ]} />
-  <PageHero class="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
-    <div>
-      <a class="text-sm font-bold text-blue-100 underline underline-offset-4 hover:text-white" href={base + '/quests/'}>All quests</a>
-      <p class="mt-5 font-bold text-horizon">Quest {quest.data.order} of {total}, {quest.data.minutes} minutes, {quest.data.skill.toLowerCase()}</p>
-      <h1 class="mt-2 max-w-3xl">{quest.data.title}</h1>
-      <p class="lede mt-3">{quest.data.summary}</p>
-      <div class="mt-6"><LevelPicker tone="dark" /></div>
+  <div class="section-band">
+    <div class="shell grid items-end gap-5 py-8 sm:py-11 lg:grid-cols-[1fr_auto]">
+      <div>
+        <a class="text-sm font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>All lessons</a>
+        <p class="mt-4 text-sm text-muted">Lesson {quest.data.order} of {total} · {quest.data.minutes} min · {quest.data.skill}</p>
+        <h1 class="mt-2 max-w-3xl">{quest.data.title}</h1>
+        <p class="lede mt-3">{quest.data.summary}</p>
+      </div>
+      <LevelPicker />
     </div>
-    <div class="relative hidden sm:block"><Patch id={quest.id} name={quest.data.title} label={quest.data.patch} size={170} /></div>
-  </PageHero>
-  <div class="shell space-y-16 py-12">
+  </div>
+  <div class="shell space-y-10 py-10">
     <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)]">
       <article class="space-y-6">
         {levels.map(level => {
@@ -51,13 +51,13 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
                 <h2 id={`steps-${level.id}`} class="text-2xl">Steps for {level.name.toLowerCase()} crews</h2>
                 <div class="quest-steps mt-4 text-muted"><ol>{data.steps.map(step => <li set:html={inline(step)} />)}</ol></div>
               </section>
-              <section class="rounded-xl bg-[#e3f6ec] p-4" aria-labelledby={`check-${level.id}`}>
-                <h3 id={`check-${level.id}`} class="text-base text-[#14532d]">Check your work</h3>
-                <p class="mt-1 text-[#14532d]">{data.check}</p>
+              <section class="border-l-2 border-accent bg-ground p-4" aria-labelledby={`check-${level.id}`}>
+                <h3 id={`check-${level.id}`} class="text-base text-ink">Check your work</h3>
+                <p class="mt-1 text-ink">{data.check}</p>
               </section>
-              <section class="rounded-xl bg-[#fff4cc] p-4" aria-labelledby={`discuss-${level.id}`}>
-                <h3 id={`discuss-${level.id}`} class="text-base text-[#713f12]">Talk it over</h3>
-                <p class="mt-1 text-[#713f12]">{data.discuss}</p>
+              <section class="border-l-2 border-line bg-ground p-4" aria-labelledby={`discuss-${level.id}`}>
+                <h3 id={`discuss-${level.id}`} class="text-base text-ink">Talk it over</h3>
+                <p class="mt-1 text-ink">{data.discuss}</p>
               </section>
             </div>
           );
@@ -65,31 +65,33 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
         <div class="flex flex-wrap items-center gap-3">
           <button type="button" data-complete={quest.id} class="button quiet disabled:cursor-default disabled:border-transparent disabled:bg-mint">Mark this quest done</button>
           {next
-            ? <a class="button launch" href={`${base}/quests/${next.id}/`}>Next quest: {next.data.title}</a>
-            : <a class="button launch" href={base + '/quests/'}>See all your patches</a>}
+            ? <a class="button primary" href={`${base}/quests/${next.id}/`}>Next quest: {next.data.title}</a>
+            : <a class="button primary" href={base + '/quests/'}>Back to all lessons</a>}
         </div>
         <p class="text-sm text-faint">Something unclear or wrong? <a class="font-bold text-ink underline underline-offset-4" href={feedback}>Suggest a change on GitHub</a>.</p>
       </article>
       <StationDemo heading={false} />
     </div>
-    <QuestGuide quest={quest.id} title={quest.data.title.toLowerCase()} />
+    <details class="reference-panel">
+      <summary>Get help with this lesson</summary>
+      <div class="mt-5"><QuestGuide quest={quest.id} title={quest.data.title.toLowerCase()} /></div>
+    </details>
     <FullExperience />
   </div>
   <SiteFooter slot="footer" />
 </Base>
 
 <script>
-  import { earn, earned, paint } from '../../patches';
+  import { earn, earned } from '../../patches';
 
   const button = document.querySelector<HTMLButtonElement>('[data-complete]');
-  function sync(just?: string) {
-    paint(just);
+  function sync() {
     if (!button) return;
     const done = earned().has(button.dataset.complete!);
     button.disabled = done;
-    button.textContent = done ? 'Patch earned' : 'Mark this quest done';
+    button.textContent = done ? 'Lesson complete' : 'Mark this quest done';
   }
   button?.addEventListener('click', () => earn(button.dataset.complete!));
-  document.addEventListener('patchearned', event => sync((event as CustomEvent<string>).detail));
+  document.addEventListener('patchearned', sync);
   sync();
 </script>

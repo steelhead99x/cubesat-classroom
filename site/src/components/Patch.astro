@@ -4,12 +4,11 @@ import { patchTones } from '../patches';
 interface Props {
   id: string;
   name: string;   // full quest title, used for the accessible label
-  label: string;  // short text stitched around the rim
+  label: string;
   size?: number;
 }
 
 const { id, name, label, size = 120 } = Astro.props;
-const ring = `ring-${id}`;
 const tone = patchTones[id] ?? '#a4c9ff';
 const icons: Record<string, string> = {
   'first-contact': 'M50 64V46m0 0-7 7m7-7 7 7M40 40a14 14 0 0 1 20 0m-25-6a21 21 0 0 1 30 0',
@@ -21,10 +20,8 @@ const icons: Record<string, string> = {
 ---
 <svg class="patch" data-patch={id} data-name={name} style={`--tone:${tone}`} viewBox="0 0 100 100" width={size} height={size} role="img">
   <title>{name}: not earned yet</title>
-  <defs><path id={ring} d="M15 52a35 35 0 0 1 70 0" /></defs>
-  <circle class="band rim" cx="50" cy="50" r="46" stroke-width="3.5" />
-  <circle class="stitch" cx="50" cy="50" r="42.5" fill="none" stroke-width="1.4" />
-  <circle class="core" cx="50" cy="52" r="20" />
-  <text class="label" font-family="var(--font-display)" font-size="10" font-weight="800" fill="currentColor"><textPath href={'#' + ring} startOffset="50%" text-anchor="middle">{label}</textPath></text>
-  <path class="icon" d={icons[id]} fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+  <path class="band rim" d="M50 5 90 26v41L50 93 10 67V26L50 5Z" stroke-width="2.5" />
+  <path class="core" d="M50 17 78 32v29L50 79 22 61V32L50 17Z" />
+  <text class="label" x="50" y="74" text-anchor="middle" font-family="var(--font-sans)" font-size="8.6" font-weight="700" fill="currentColor">{label}</text>
+  <path class="icon" d={icons[id]} transform="translate(0 -6)" fill="none" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round" />
 </svg>

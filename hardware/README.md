@@ -8,6 +8,8 @@ This set uses one printed frame with four continuous corner rails and two printe
 
 ![Rev B printed rail-fit frame and end plates](rev-b-cad-preview.png)
 
+[Dimensioned Rev B drawing](rev-b-drawing.svg) shows the nominal rail-frame elevation and camera-plate plan from the exported meshes.
+
 | Part | Dimensions (mm) | P1S print and fit check |
 | --- | --- | --- |
 | [Rail corner coupon](stl/rev-b-rail-corner-coupon.stl) | 26 × 26 × 20 | Print first with the rail end down. Check the corner width and whether the recessed walls print cleanly. |
@@ -19,6 +21,8 @@ Start with PLA. Repeat the coupon and fit checks in ASA with the filament manufa
 The STLs passed mesh and nominal size checks, and both end plates passed the CAD interference check. Bambu Studio slicing, physical prints and deployed fit are pending. See the [ISS qualification review](../docs/iss-deployment-review.md#printed-structure-qualification) for flight evidence.
 
 ## Rev A classroom enclosure
+
+[Open the Bambu P1S test plates](p1s/README.md) for the fit coupon, case shell, and camera lid.
 
 ![Rev A CAD preview of the shell, lid and M3 coupon](rev-a-cad-preview.png)
 
@@ -44,4 +48,5 @@ The exported meshes passed size, watertightness, consistent winding and single-s
 python -m venv /tmp/cubesat-cad
 /tmp/cubesat-cad/bin/pip install -r hardware/requirements.txt
 /tmp/cubesat-cad/bin/python hardware/generate.py
+/tmp/cubesat-cad/bin/python hardware/drawing.py
 ```
