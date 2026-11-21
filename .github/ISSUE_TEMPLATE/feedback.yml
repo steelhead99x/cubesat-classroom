@@ -29,10 +29,11 @@ body:
       label: Which best describes you?
       options:
         - Teacher
-        - Student (with an adult's help)
+        - Student, 13 or older
+        - Learner under 13, posted by an adult
         - Amateur radio mentor
         - Builder or developer
-        - Parent
+        - Parent or guardian
         - Other
   - type: markdown
     attributes:

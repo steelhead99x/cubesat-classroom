@@ -11,7 +11,7 @@
 Paste the command. The starter asks which hardware you have, recommends a quest, and explains each download. Press Enter to continue or type `n` at a confirmation to stop.
 
 ```sh
-curl -fsSL https://cubesat.club/start.sh | bash
+curl -fsSL https://cubesatclassroom.org/start.sh | bash
 ```
 
 **Check your work.** You should see a recommended quest path and a local web address.

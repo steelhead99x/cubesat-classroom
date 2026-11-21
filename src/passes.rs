@@ -287,6 +287,12 @@ pub(crate) fn run(args: PassArgs) -> Result<()> {
     let mut passes: Vec<Pass> = Vec::new();
     for s in &sats {
         let age = (now - s.epoch_unix) / 86_400.0;
+        if s.look(o, now).is_none() {
+            eprintln!(
+                "Warning: could not compute where {} is now. Its elements may be too old, or it may have re-entered.",
+                s.name
+            );
+        }
         if age > STALE_DAYS {
             stale.push(format!("{} ({age:.0} days)", s.name));
         }

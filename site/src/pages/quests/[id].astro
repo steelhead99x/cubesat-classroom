@@ -7,7 +7,7 @@ import LevelPicker from '../../components/LevelPicker.astro';
 import StationDemo from '../../components/StationDemo.astro';
 import FullExperience from '../../components/FullExperience.astro';
 import QuestGuide from '../../components/QuestGuide.astro';
-import { classroomHost, repo } from '../../hubs.mjs';
+import { publicSite, repo } from '../../hubs.mjs';
 import { levels, inline } from '../../levels';
 
 export async function getStaticPaths() {
@@ -22,7 +22,7 @@ const { quest, next, total } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title=${encodeURIComponent('Quest feedback: ' + quest.data.title)}`;
 ---
-<Base title={quest.data.title + ' | Example quest | CubeSat Classroom'} description={quest.data.summary} canonical={`https://${classroomHost}/quests/${quest.id}/`}>
+<Base title={quest.data.title + ' | Example quest | CubeSat Classroom'} description={quest.data.summary} canonical={`https://${publicSite}/quests/${quest.id}/`}>
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Mission', href: base + '/mission/' },
     { label: 'Lessons', href: base + '/quests/', current: true },

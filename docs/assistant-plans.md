@@ -15,7 +15,7 @@ The website is the introduction: anyone can try the practice ground station and 
 | | Try it | Run it yourself | Crew Plus (proposed) |
 | --- | --- | --- | --- |
 | Price | Free | Free, open source | $9.99 per month per teacher or mentor |
-| Account | None | None | One adult account holder; students join with a class code |
+| Account | None | None | One adult account holder (teacher, guardian or mentor); students join with a class code |
 | What you get | Browser station, 5 example quests at 3 levels, mission patches | Real Rust station over two MoQ relays, full quest board, balloon lab, CAD, hardware quests | Everything in "Run it yourself", plus a hosted quest guide with classroom guardrails |
 | AI | None | Your own assistant, using [AGENTS.md](../AGENTS.md) | Hosted guide on Claude Sonnet 5.5 through the Anthropic API |
 | Data kept | Patches in your browser only | Whatever you keep locally | Minimal; see "Privacy" |
@@ -95,8 +95,28 @@ The same rules apply to the hosted guide and to [AGENTS.md](../AGENTS.md) for pe
 
 - **API, not a personal subscription.** The hosted guide must use an Anthropic API key from the Claude Console under Anthropic's commercial terms. Personal Claude subscriptions cannot be used to serve other people.
 - **Minors.** Anthropic's guidelines for organizations whose products let minors use its models require several safeguards: age verification, content filtering, monitoring and reporting, educational resources on safe use, an AI disclosure, compliance with laws such as COPPA, and a public statement of that compliance. [Anthropic: guidelines for organizations serving minors](https://support.claude.com/en/articles/9307344-responsible-use-of-anthropic-s-models-guidelines-for-organizations-serving-minors)
-- **Who holds the account.** Paid accounts belong to adults, meaning teachers, mentors or parents. Students use a class code and a nickname. No student email or name is collected.
+- **Who holds the account.** Paid accounts belong to adults, meaning teachers, guardians or mentors. Sign-in should accept hosted Git services through OAuth (GitHub, GitLab.com and Codeberg), not one provider only. Self-hosted Git servers are not supported. Adults without a Git account can sign in with a phone number and a one-time code. Students never give a phone number. Students use a class code and a nickname. No student email or name is collected.
 - **COPPA and school privacy rules** need review by someone qualified before launch, as does a published privacy policy.
+
+## Sign-in and sessions
+
+Two ways to sign in, with different session lengths. Both are planned; none of this exists yet.
+
+| | Git account (GitHub, GitLab.com, Codeberg) | Phone number (adults only) |
+| --- | --- | --- |
+| How | OAuth with the Git host | A 6-digit one-time code sent by text message |
+| Session | Stays signed in while active: expires after 60 days with no activity | Ends 8 hours after sign-in, active or not |
+| Renewal | Automatic and silent; no prompt on each visit | Sign in again with a new code |
+
+**Phone numbers are stored only as a keyed hash.** A phone number has too few possible values for a plain hash to protect it: every number in a country can be hashed and matched in minutes. Store `HMAC-SHA-256(server secret, normalised number)` instead, with the secret kept as a Worker secret and never in the repository. The number itself is held only long enough to send the code, then discarded. The hash is the account's identifier.
+
+**The 6-digit code** is random, used once, and expires after 10 minutes. Store only its hash. A wrong code counts against that number and against the device: after 5 wrong tries the code is cancelled, and a number can request at most 5 codes an hour. Without these limits a 6-digit code can be guessed. Text messages cost money and can be abused to send spam, so add a site-wide daily cap on codes sent.
+
+**Sessions** live in a cookie marked `HttpOnly`, `Secure` and `SameSite=Lax`. The cookie holds a random token. The server stores only the token's hash, with its expiry and sign-in method.
+
+- **Git account sessions** extend their 60-day window on activity. To keep writes low, extend at most once a day, and issue a new token when extending so a copied old cookie stops working. Signing out, or removing the app's access at the Git host, ends the session.
+- **Phone sessions** have a fixed 8-hour end time that activity does not extend.
+- **Signing out ends the session on the server**, not only in the browser. An adult can end all their sessions at once.
 
 ## Open questions for reviewers and the community
 

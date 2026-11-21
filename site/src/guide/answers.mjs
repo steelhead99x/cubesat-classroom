@@ -113,8 +113,8 @@ export function answerFor(quest, questionId, level) {
   if (!levels.includes(level)) return null;
   const g = general.find(q => q.id === questionId);
   if (g) return g.answers[level];
-  const q = byQuest[quest];
-  if (q && q[questionId]) return q[questionId][level];
+  const q = Object.hasOwn(byQuest, quest) ? byQuest[quest] : null;
+  if (q && Object.hasOwn(q, questionId)) return q[questionId][level];
   return null;
 }
 
@@ -123,5 +123,5 @@ export function questionText(quest, questionId) {
   const g = general.find(q => q.id === questionId);
   if (g) return g.question;
   const topic = questTopics.find(t => t.key === questionId);
-  return topic && byQuest[quest] ? topic.question : null;
+  return topic && Object.hasOwn(byQuest, quest) ? topic.question : null;
 }

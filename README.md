@@ -1,8 +1,18 @@
 # CubeSat Classroom
 
-CubeSat Classroom is an open-source K–12 satellite lab. Students request sensor data, receive test video, and see what happens when the link drops.
+CubeSat Classroom is an open-source satellite lab for learners 13 and up. Students request sensor data, receive test video, and see what happens when the link drops.
 
 It is a starting kit, not a competitor to other space education projects: fork it and build your own class, club or mission site. See the [fork guide](docs/fork-guide.md).
+
+## Who it's for
+
+CubeSat Classroom is written for learners 13 and up, and for the teachers, guardians and mentors who guide them. Every level of learning and experience is welcome, from a first question to decades of engineering, teaching or radio work.
+
+- **No account is needed** for the browser lessons, the mobile app or the local ground station.
+- **To join the project** (comment, share a crew log, propose a change), use an account on a hosted Git service: GitHub, GitLab.com or Codeberg. Self-hosted Git servers are not supported. The main repository is on GitHub today, but you are not locked in to it. Work from a fork or mirror on the host you prefer and send a link to your branch, or a patch.
+- **Students** may use their own account if they are old enough under that host's terms. GitHub, for example, requires users to be at least 13.
+- **Teachers, guardians and mentors** can use their own accounts to guide the lessons and the project: they open issues, review changes and share results for their crew. Younger learners take part only alongside one of these adults, who stays for the whole activity and never shares a login with anyone under 13. Younger learners never need an account of their own. The [mentor quests](quest/README.md#mentor-quests) show how.
+- **No Git account?** The planned sign-in for the hosted app will also let teachers, guardians and mentors sign in with a phone number. Students sign in with a Git account or join through an adult; the project does not collect students' phone numbers.
 
 ## Demo
 
@@ -11,7 +21,7 @@ Start with [Make first contact](https://cubesatclass.org/quests/first-contact/).
 To run the Rust ground station on macOS, Linux, or Windows (using WSL, the Windows Subsystem for Linux):
 
 ```sh
-curl -fsSL https://cubesat.club/start.sh | bash
+curl -fsSL https://cubesatclassroom.org/start.sh | bash
 ```
 
 If that address asks for a password, the site is in private preview: clone this repository and run `bash docs/start.sh` instead.
@@ -35,7 +45,7 @@ The [quest board](quest/README.md) includes demo rehearsals, sensor tests, and h
 
 ## Project links
 
-[Classroom site](https://cubesatclass.org/) · [CubeSat Club](https://cubesat.club/) · [Mobile template](mobile/README.md) · [Mission and radio design](docs/mission.md)
+[Classroom site](https://cubesatclass.org/) · [CubeSat Club](https://cubesatclassroom.org/volunteer/) · [Mobile template](mobile/README.md) · [Mission and radio design](docs/mission.md)
 
 ## Credits
 

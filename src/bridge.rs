@@ -16,7 +16,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io::{self, BufRead, BufReader, Read};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -185,8 +185,17 @@ impl Outbox {
     pub fn write(&mut self, field: Field, value: i64, now: Instant) -> Result<()> {
         let target = self.dir.join(field.file);
         let temp = self.dir.join(format!(".{}.tmp", field.file));
-        fs::write(&temp, format!("{value}\n"))
+        // Create the temporary file fresh, never through an existing file or a planted
+        // link, so a shared output folder cannot redirect the write elsewhere.
+        let _ = fs::remove_file(&temp);
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp)
+            .with_context(|| format!("create {}", temp.display()))?;
+        file.write_all(format!("{value}\n").as_bytes())
             .with_context(|| format!("write {}", temp.display()))?;
+        drop(file);
         fs::rename(&temp, &target).with_context(|| format!("replace {}", target.display()))?;
         self.updated.insert(field.file, now);
         Ok(())
@@ -319,16 +328,21 @@ fn spawn_reader(path: PathBuf) -> Result<mpsc::Receiver<io::Result<String>>> {
                 .read_until(b'\n', &mut buf);
             let msg = match result {
                 Ok(0) => Err(io::Error::new(io::ErrorKind::UnexpectedEof, "end of input")),
-                Ok(_) => {
-                    if buf.len() >= MAX_LINE && buf.last() != Some(&b'\n') {
-                        // Discard the rest of an over-long line.
-                        let mut rest = Vec::new();
-                        let _ = reader.read_until(b'\n', &mut rest);
+                Ok(_) if buf.len() >= MAX_LINE && buf.last() != Some(&b'\n') => {
+                    // An over-long line is dropped whole: its cut-off end could turn
+                    // `pressure_pa=101325` into a valid-looking 10132. Skip the rest in
+                    // bounded chunks so a stream with no newlines cannot use up memory.
+                    match skip_line(&mut reader) {
+                        Ok(()) => {
+                            eprintln!("Skipped: a line longer than {MAX_LINE} bytes");
+                            continue;
+                        }
+                        Err(e) => Err(e),
                     }
-                    Ok(String::from_utf8_lossy(&buf)
-                        .trim_end_matches(['\r', '\n'])
-                        .to_string())
                 }
+                Ok(_) => Ok(String::from_utf8_lossy(&buf)
+                    .trim_end_matches(['\r', '\n'])
+                    .to_string()),
                 Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
                 Err(e) => Err(e),
             };
@@ -339,6 +353,22 @@ fn spawn_reader(path: PathBuf) -> Result<mpsc::Receiver<io::Result<String>>> {
         }
     });
     Ok(rx)
+}
+
+/// Read and throw away bytes up to and including the next newline, holding at most
+/// `MAX_LINE` bytes at a time. Reaching the end of input also ends the line.
+fn skip_line(reader: &mut impl BufRead) -> io::Result<()> {
+    let mut chunk = Vec::with_capacity(MAX_LINE);
+    loop {
+        chunk.clear();
+        match reader.take(MAX_LINE as u64).read_until(b'\n', &mut chunk) {
+            Ok(0) => return Ok(()),
+            Ok(_) if chunk.last() == Some(&b'\n') => return Ok(()),
+            Ok(_) => {}
+            Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
+            Err(e) => return Err(e),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -447,6 +477,33 @@ mod tests {
         let ok: Vec<_> = lines.iter().filter_map(|l| l.as_ref().ok()).collect();
         assert_eq!(ok.last().unwrap().as_str(), "CSC1 temp_mc=21500");
         assert!(lines.last().unwrap().is_err(), "ends with end of input");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn never_parses_the_cut_off_start_of_a_long_line() {
+        let dir = std::env::temp_dir().join(format!("csc-bridge-long-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("serial");
+        // The first MAX_LINE bytes end in `pressure_pa=10132`, a valid-looking value.
+        let pad = MAX_LINE - "CSC1 pad=".len() - " pressure_pa=10132".len();
+        let mut data = format!("CSC1 pad={} pressure_pa=101325\n", "x".repeat(pad)).into_bytes();
+        // Then several MAX_LINE chunks with no newline before the next good line.
+        data.extend(vec![b'y'; MAX_LINE * 5]);
+        data.extend(b"\nCSC1 pressure_pa=101325\n");
+        fs::write(&path, data).unwrap();
+        let ok: Vec<String> = spawn_reader(path)
+            .unwrap()
+            .iter()
+            .filter_map(Result::ok)
+            .collect();
+        let values: Vec<i64> = ok
+            .iter()
+            .flat_map(|l| parse_line(l).0)
+            .map(|(_, v)| v)
+            .collect();
+        assert_eq!(values, vec![101_325]);
         let _ = fs::remove_dir_all(&dir);
     }
 }

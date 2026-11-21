@@ -9,10 +9,10 @@ import MissionFanout from '../components/MissionFanout.astro';
 import ProposalCard from '../components/ProposalCard.astro';
 import QuickStart from '../components/QuickStart.astro';
 import rail from '../../../docs/assets/rail-fit.png';
-import { classroomHost, fundraiser, repo } from '../hubs.mjs';
+import { publicSite, fundraiser, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const site = 'https://' + classroomHost;
+const site = 'https://' + publicSite;
 const labs = [
   { name: 'Ground station', text: 'Run the Rust station locally and see how commands and data move through two Media over QUIC relays.', href: '#start', action: 'Install the station' },
   { name: 'Balloon lab', text: 'Log pressure and temperature, then compare your measurements with data from a balloon flight.', href: repo + '/blob/main/docs/balloon-lab.md', action: 'Open the lab' },
@@ -20,7 +20,7 @@ const labs = [
 ];
 ---
 <Base
-  title="CubeSat Classroom | Satellite operations for K–12"
+  title="CubeSat Classroom | Satellite operations for ages 13 and up"
   description="Teach satellite operations with a browser simulator, five guided lessons, and open-source bench labs."
   canonical={site + '/'}
   image={site + rail.src.replace(base, '')}
@@ -44,7 +44,7 @@ const labs = [
           <a class="button primary" href={base + '/quests/first-contact/'}>Start the first lesson</a>
           <a class="font-bold text-accent underline decoration-line underline-offset-4 hover:decoration-current" href={base + '/mission/'}>See the flight, minute by minute</a>
         </div>
-        <p class="mt-5 text-sm text-muted">For K–12 classrooms. The browser lessons need no account or equipment. Built by volunteers.</p>
+        <p class="mt-5 text-sm text-muted">For learners 13 and up, guided by teachers, guardians and mentors. The browser lessons need no account or equipment. Built by volunteers.</p>
       </div>
       <figure class="bench-figure m-0">
         <Image src={rail} alt="Exploded CAD view of the CubeSat chassis, camera cover, and base plate" widths={[360, 540, 720]} sizes="(min-width: 1024px) 34rem, 100vw" priority />
@@ -109,6 +109,7 @@ const labs = [
           <li><span>03</span><div><strong class="text-ink">Add your mission</strong><p>Write quests for your balloon, rocket, glider or satellite. Share improvements back if you like.</p></div></li>
         </ul>
         <a class="mt-5 inline-block font-bold text-accent underline underline-offset-4" href={repo + '/blob/main/docs/fork-guide.md'}>Read the fork guide</a>
+          <a class="mt-3 block text-accent" href={base + '/open-source/'}>Open-source neighbours: projects with and without AI, both respected</a>
       </div>
     </div>
   </section>
@@ -125,7 +126,7 @@ const labs = [
         <h3>Volunteer and contribute</h3>
         <p class="mt-3 max-w-lg text-muted">Help review a lesson, run a bench test, or make plans for a workshop with CubeSat Club.</p>
         <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-          <a class="text-accent" href="https://cubesat.club/#volunteer">Volunteer with CubeSat Club</a>
+          <a class="text-accent" href={base + '/volunteer/'}>Volunteer with CubeSat Club</a>
           <a class="text-accent" href={repo + '/blob/main/CONTRIBUTING.md'}>Contribution guide</a>
         </div>
         <p class="mt-4 text-sm text-muted">Give directly to <a class="text-accent" href={fundraiser}>Teachers in Space</a> to support its teacher training and flight program.</p>

@@ -20,6 +20,16 @@ Write down the equipment you have, including the board or printer model, availab
 | Any computer, no extra hardware | [Predict a satellite pass](/quest/m0/predict-a-pass.md) |
 | Raspberry Pi Pico or another microcontroller | Use a vendor sample for your exact board and follow the [microcontroller quest structure](/quest/m0/arduino-first-reading.md). |
 
+### Mentor quests
+
+Step-by-step, hands-on demos that a teacher, guardian or mentor guides for a small group. Every mentor quest follows the [mentor rules](/quest/m0/mentor-get-ready.md#mentor-rules): the mentor takes part for 100% of the demo and every learner does each step, no login is ever shared with anyone under 13, and the mentor checks safety before anything is powered.
+
+1. [Get ready to guide a demo](/quest/m0/mentor-get-ready.md)
+2. [Guide a first ground station demo](/quest/m0/mentor-ground-station-demo.md)
+3. [Guide a first sensor reading](/quest/m0/mentor-first-sensor-demo.md)
+4. [Guide a satellite pass prediction](/quest/m0/mentor-satellite-pass-demo.md)
+5. [Help a learner lead the next demo](/quest/m0/mentor-pass-it-on.md)
+
 ### Teacher pilot
 
 Start in M0. After a run, tell us which steps the class completed, which instruction they got stuck on, and one change you would make. Share a redacted note through the [contribution guide](../CONTRIBUTING.md). Teachers can pilot and review lessons before any flight work.
