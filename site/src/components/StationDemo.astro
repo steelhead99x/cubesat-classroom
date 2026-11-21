@@ -16,10 +16,10 @@ const { heading = true } = Astro.props;
     </div>
   )}
 
-  <div class="overflow-hidden rounded-[1.5rem] bg-night text-white shadow-[0_24px_60px_-20px_rgb(16_38_74/0.55)] ring-1 ring-night">
+  <div class="night overflow-hidden rounded-[1.5rem] bg-night text-white shadow-[0_24px_60px_-20px_rgb(16_38_74/0.55)] ring-1 ring-night">
     <div class="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-3 text-sm">
       <p class="flex items-center gap-2 font-bold"><span data-led class="size-2.5 rounded-full bg-mint shadow-[0_0_0_3px_rgb(111_211_160/0.25)]" aria-hidden="true"></span><span data-link-status id="demo-link-status">Connected to the practice CubeSat</span></p>
-      <p class="hidden text-blue-100/70 sm:block"><span data-show="beginner">Practice mode</span><span data-show="intermediate">Two relays, simulated</span><span data-show="professional">moqt://localhost, 2 relays</span></p>
+      <p class="hidden text-blue-100/70 sm:block"><span data-show="beginner">Practice mode</span><span data-show="intermediate">Two relays, simulated</span><span data-show="professional">Simulated, 2 relays, telemetry.v1</span></p>
     </div>
 
     <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
@@ -48,7 +48,7 @@ const { heading = true } = Astro.props;
           <button data-action="video" type="button" aria-describedby="demo-link-status" class="rounded-xl bg-solar px-4 py-2.5 font-bold text-night shadow-[0_3px_0_#c9a21a] hover:bg-yellow-200 active:translate-y-0.5 active:shadow-none aria-disabled:cursor-not-allowed aria-disabled:opacity-45 aria-disabled:shadow-none">
             <span data-show="beginner">Take pictures</span><span data-show="intermediate professional">Start video</span>
           </button>
-          <button data-contact type="button" aria-pressed="false" class="rounded-xl border-2 border-white/35 px-4 py-2 font-bold text-white hover:border-white hover:bg-white/10">Pause contact</button>
+          <button data-contact type="button" class="rounded-xl border-2 border-white/35 px-4 py-2 font-bold text-white hover:border-white hover:bg-white/10">Pause contact</button>
         </div>
 
         <dl class="grid grid-cols-3 gap-2">
@@ -56,10 +56,10 @@ const { heading = true } = Astro.props;
           <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80"><span data-show="beginner">Battery</span><span data-show="intermediate professional">Bus voltage</span></dt><dd data-volt class="mt-1 font-display text-xl font-bold whitespace-nowrap sm:text-2xl">--</dd></div>
           <div class="min-w-0 rounded-xl bg-white/[0.06] p-3"><dt class="text-xs text-blue-100/80">Light</dt><dd data-light class="mt-1 font-display text-xl font-bold whitespace-nowrap sm:text-2xl">--</dd></div>
         </dl>
-        <p data-fresh role="status" class="-mt-2 text-sm text-blue-100/80">No reading yet.</p>
+        <p data-fresh class="-mt-2 text-sm text-blue-100/80">No reading yet.</p>
 
         <details data-show="professional" class="rounded-xl bg-black/25 p-3 text-sm">
-          <summary class="cursor-pointer font-bold text-blue-100">Raw telemetry</summary>
+          <summary class="cursor-pointer font-bold text-blue-100">Raw telemetry (last reply)</summary>
           <pre data-raw class="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-mint">No sample yet.</pre>
         </details>
 
@@ -69,10 +69,10 @@ const { heading = true } = Astro.props;
       <div class="flex flex-col gap-4 border-t border-white/10 bg-navy p-5 sm:p-6 lg:border-t-0 lg:border-l">
         <figure class="m-0">
           <canvas data-screen width="320" height="240" class="block aspect-[4/3] w-full rounded-xl bg-[#0b1a33]" role="img" aria-label="Test camera: waiting"></canvas>
-          <figcaption data-frames role="status" class="mt-2 text-sm text-blue-100/80">0 of 8 frames</figcaption>
+          <figcaption data-frames class="mt-2 text-sm text-blue-100/80">0 of 8 frames</figcaption>
         </figure>
         <div class="min-h-0">
-          <h3 class="text-base text-white">Mission log</h3>
+          <p class="font-display text-base font-bold text-white">Mission log</p>
           <ol data-log class="mt-2 space-y-1.5 text-sm text-blue-100/90" aria-live="polite">
             <li class="text-blue-100/60">Station ready.</li>
           </ol>
@@ -113,6 +113,7 @@ const { heading = true } = Astro.props;
     let generation = 0; // bumped on every contact change so pending waits end early
     let requestId = Date.now();
     let group = 0;
+    let wasFresh: boolean | null = null;
 
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     const legDelay = () => 180 + Math.random() * 260;
@@ -127,7 +128,7 @@ const { heading = true } = Astro.props;
       if (lvl !== 'beginner') item.className = 'font-mono text-xs';
       if (quiet) item.classList.add('text-blue-100/60');
       log.prepend(item);
-      while (log.children.length > 7) log.lastElementChild?.remove();
+      while (log.children.length > 14) log.lastElementChild?.remove();
     }
 
     function synthetic(seq: number) {
@@ -173,7 +174,6 @@ const { heading = true } = Astro.props;
       const blocked = busy || !online;
       for (const button of [sensorsBtn, videoBtn]) button.setAttribute('aria-disabled', String(blocked));
       contactBtn.textContent = online ? 'Pause contact' : 'Restore contact';
-      contactBtn.setAttribute('aria-pressed', String(!online));
       for (const line of root!.querySelectorAll('[data-link]')) {
         line.className = 'h-1 rounded-full ' + (online ? (busy ? 'bg-sky motion-safe:animate-pulse' : 'bg-sky/50') : 'bg-signal');
       }
@@ -189,8 +189,10 @@ const { heading = true } = Astro.props;
         const fresh = online && age <= MAX_AGE_MS;
         const seconds = Math.floor(age / 1000);
         const text = level() === 'beginner'
-          ? (fresh ? `New reading, ${seconds} s old.` : `Old reading, ${seconds} s old. Ask again for a new one.`)
+          ? (fresh ? `Fresh: this reading is ${seconds} s old.` : `Historical: this reading is ${seconds} s old.${online ? ' Ask again for a fresh one.' : ''}`)
           : `${fresh ? 'Fresh' : 'Historical'}, captured ${level() === 'professional' ? age + ' ms' : seconds + ' s'} ago`;
+        if (wasFresh !== null && wasFresh !== fresh) note({ beginner: fresh ? 'The reading is fresh.' : 'The reading is now historical, more than 5 seconds old.', intermediate: 'Reading is now historical (older than 5 s).', professional: 'sample age > MAX_AGE (5000 ms): historical' });
+        wasFresh = fresh;
         const line = $('[data-fresh]');
         if (line.textContent !== text) line.textContent = text;
       }
@@ -199,7 +201,9 @@ const { heading = true } = Astro.props;
     // Wait for one leg of the round trip, or fail if contact is paused.
     async function leg(): Promise<boolean> {
       const until = performance.now() + legDelay();
+      const startGen = generation;
       while (performance.now() < until) {
+        if (generation !== startGen && online) { lossTried = true; return false; }
         if (!online) {
           const started = generation;
           const deadline = performance.now() + TIMEOUT_MS;
@@ -209,11 +213,12 @@ const { heading = true } = Astro.props;
         }
         await sleep(40);
       }
+      if (generation !== startGen) { lossTried = true; return false; }
       return online;
     }
 
     const noReply: Record<Level, string> = {
-      beginner: 'No answer. The satellite could not hear us. Restore contact and try again.',
+      beginner: 'No answer. The satellite could not hear us. Try again when contact is on.',
       intermediate: 'No complete reply. Check contact and try again.',
       professional: 'timeout: no group on exchange.v1 for this request id',
     };
@@ -222,19 +227,21 @@ const { heading = true } = Astro.props;
       busy = true; render();
       const id = ++requestId;
       const sent = performance.now();
-      note({ beginner: 'You asked the satellite for a reading.', intermediate: 'Command sent: read sensors', professional: `PUB classroom/commands  {"id":${id},"action":"sensors"}` });
+      note({ beginner: 'You asked the satellite for a reading.', intermediate: 'Command sent: read sensors', professional: `PUB classroom/commands  {"id":${id},"issued_ms":${Date.now()},"action":"sensors"}` });
       const ok = (await leg()) && (await leg());
       if (ok) {
-        // The simulator publishes once per second, so the sequence follows the clock.
+        // The demo's sequence follows the clock (seconds), like the station's
+        // `simulate` command. The installed classroom path counts requests instead.
         sample = synthetic(Math.floor(Date.now() / 1000));
         const rtt = Math.round(performance.now() - sent);
-        const bytes = JSON.stringify({ id, sample, error: null }).length;
+        const reply = { id, sample, error: null };
+        const bytes = JSON.stringify(reply).length;
         note({
           beginner: `The satellite answered: ${sample.temperature_c.toFixed(1)} °C, ${sample.bus_voltage_v.toFixed(3)} V, ${sample.light_lux} lx.`,
           intermediate: `Reply in ${rtt} ms, sample #${sample.sequence}: ${sample.temperature_c.toFixed(1)} °C, ${sample.bus_voltage_v.toFixed(3)} V, ${sample.light_lux} lx`,
-          professional: `SUB classroom/payload exchange.v1  group ${++group}, 1 frame, ${bytes} B, rtt ${rtt} ms`,
+          professional: `SUB classroom/payload exchange.v1  reply id ${id}, group ${++group}, ${bytes} B, rtt ${rtt} ms`,
         });
-        $('[data-raw]').textContent = JSON.stringify(sample, null, 2);
+        $('[data-raw]').textContent = JSON.stringify(reply, null, 2);
         earn('first-contact');
         if (lossTried) earn('lose-the-signal');
       } else {
@@ -246,31 +253,35 @@ const { heading = true } = Astro.props;
     async function requestVideo() {
       busy = true; frames = 0; render();
       const id = ++requestId;
-      note({ beginner: 'You asked the camera for pictures.', intermediate: 'Command sent: start test camera', professional: `PUB classroom/commands  {"id":${id},"action":"video"}` });
+      note({ beginner: 'You asked the camera for pictures.', intermediate: 'Command sent: start test camera', professional: `PUB classroom/commands  {"id":${id},"issued_ms":${Date.now()},"action":"video"}` });
       drawIdle('Waiting for the first frame');
       $('[data-frames]').textContent = `0 of ${FRAME_COUNT} frames`;
       if (!(await leg())) {
         note(noReply);
+        drawIdle('No reply from the camera');
+        canvas.setAttribute('aria-label', 'Test camera: no reply');
         busy = false; render(); return;
       }
       const g = ++group;
+      const burstGen = generation;
+      const sizes: number[] = [];
       let total = 0;
       const burstStart = performance.now();
       for (let frame = 0; frame < FRAME_COUNT; frame++) {
         if (frame > 0) await sleep(FRAME_INTERVAL_MS);
-        if (!online) break;
+        if (!online || generation !== burstGen) break;
         const size = drawFrame(frame);
+        sizes.push(size);
         total += size;
         frames = frame + 1;
         $('[data-frames]').textContent = `${frames} of ${FRAME_COUNT} frames`;
-        note({ beginner: '', intermediate: '', professional: `group ${g} frame ${frames}: image/jpeg ${size} B` }, true);
       }
       const seconds = (performance.now() - burstStart) / 1000;
       if (frames === FRAME_COUNT) {
         note({
           beginner: 'All 8 pictures made it down.',
           intermediate: `Received all 8 frames in ${seconds.toFixed(1)} s, one every 0.5 s.`,
-          professional: `group ${g} complete: 8 frames, ${total} B, ${Math.round((total * 8) / 1000 / seconds)} kbit/s`,
+          professional: `reply id ${id}, group ${g} complete: 8 JPEG frames of ~${sizes.join(', ')} B (browser-encoded estimate), ${total} B total, ${Math.round((total * 8) / 1000 / seconds)} kbit/s`,
         });
         earn('bring-back-a-picture');
         if (lossTried) earn('lose-the-signal');
@@ -280,7 +291,7 @@ const { heading = true } = Astro.props;
         note({
           beginner: `Contact lost. Only ${frames} of 8 pictures made it.`,
           intermediate: `Contact lost after ${frames} of 8 frames. The burst is marked incomplete.`,
-          professional: `group ${g} stalled after frame ${frames}; marked incomplete`,
+          professional: `reply id ${id}, group ${g} stalled after frame ${frames} (~${sizes.join(', ')} B); marked incomplete`,
         });
       }
       busy = false; render();

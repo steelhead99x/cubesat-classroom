@@ -47,7 +47,7 @@ const guardrails = [
   'Says it is an AI and never asks for names, schools, locations or contact details.',
   'Sends unsafe topics to a trusted adult and flags them to the teacher.',
   'Uses the Anthropic API under commercial terms, never a personal subscription.',
-  'Follows Anthropic’s safeguards for products used by minors, and COPPA.',
+  'Built to Anthropic’s safeguards for products used by minors, with a COPPA review before launch.',
 ];
 ---
 <Base title="Plans | CubeSat Classroom" description="A draft for discussion: try it free in the browser, run it yourself free, or a proposed $9.99 Crew Plus plan with a guarded quest guide." canonical={'https://' + classroomHost + '/plans/'}>
@@ -99,7 +99,7 @@ const guardrails = [
       <div>
         <h2 id="guard-title">Guardrails come first</h2>
         <p class="mt-3 text-muted">The hosted guide and the instructions for your own assistant follow the same rules. Students should leave a session knowing more about satellites, not distracted.</p>
-        <p class="mt-4 text-sm text-faint">A free preview with menu questions only, no typing, is also on the table. It would allow about 10 questions per device per day, counted with a hashed identifier that changes daily.</p>
+        <p class="mt-4 text-sm text-faint">You can try a demo of the guide with prewritten answers on the home page and on every quest page. A free preview with menu questions only, no typing, is also on the table. It would allow about 10 questions per device per day, counted with a hashed identifier that changes daily.</p>
       </div>
       <ul class="space-y-3">
         {guardrails.map(rule => (

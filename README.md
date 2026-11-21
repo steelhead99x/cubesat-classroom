@@ -8,7 +8,7 @@ No radio license, hardware or account is needed to start.
 
 1. **Try it in your browser.** Open the [practice ground station and example quests](https://cubesatclass.org/quests/). Pick Beginner if you are new.
 2. **Follow the quick start guide.** The [quick start guide](docs/quick-start.md) shows how to run the real station on a computer, step by step. You can also [print the one-page version](output/pdf/cubesat-classroom-quick-start.pdf).
-3. **Come to a workshop.** Three in-person workshops a year bring teachers, students and radio mentors together with real parts.
+3. **Come to a workshop.** We are planning three in-person workshops a year, bringing teachers, students and radio mentors together with real parts.
 
 Want to see the code run right away? On macOS, Linux or Windows (WSL), paste this into a terminal and follow the prompts:
 

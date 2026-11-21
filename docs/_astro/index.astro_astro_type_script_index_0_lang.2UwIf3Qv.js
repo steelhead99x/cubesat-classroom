@@ -1,0 +1,1 @@
+import{r as e}from"./patches.BSFqJLIJ.js";e();

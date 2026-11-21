@@ -1,1 +1,0 @@
-import{n as e,r as t,t as n}from"./patches.C4m_0cCW.js";var r=document.querySelector(`[data-complete]`);function i(n){if(t(n),!r)return;let i=e().has(r.dataset.complete);r.setAttribute(`aria-pressed`,String(i)),r.textContent=i?`Patch earned`:`Mark this quest done`}r?.addEventListener(`click`,()=>n(r.dataset.complete)),document.addEventListener(`patchearned`,e=>i(e.detail)),i();

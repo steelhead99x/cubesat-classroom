@@ -18,10 +18,10 @@ These figures are from the moq-subghz bench, described in [Broadcast over MoQ, s
 
 | Measurement | Result |
 | --- | --- |
-| Video | 320×240 at 15 fps, a test pattern, from a 2015 Raspberry Pi 2 |
+| Video | 320×240 at 15 fps, a test pattern rather than a camera, from a 2015 Raspberry Pi 2 |
 | Radio | Semtech SX1276 in FSK mode at 300 kbit/s, 255 bytes per transmission, no LoRaWAN |
-| Camera to screen | About 132 ms typical, encrypted; 123 to 139 ms across four 300 kbit/s runs |
-| Frames shown | About 96.5% in the best encrypted run |
+| Capture to screen | 123 to 139 ms across four 300 kbit/s runs, across a desk. About 132 ms typical in an encrypted 350 kbit/s run, which is above the chip's datasheet rate |
+| Frames shown | About 95% Pi to laptop and about 90% laptop to Pi; about 96.5% in the best encrypted run |
 | Frame repair | At 1% radio loss in replay, 42.4% of frames were never shown without repair, and 1.8% with one spare frame per eight |
 | Encryption cost | 20 bytes per frame, about 95 µs of work per frame on the Pi 2 |
 | Factory software | About 550 bit/s, against about 160 kbit/s for the live path |
@@ -33,7 +33,7 @@ The classroom station in this repository runs the relay path on one computer: br
 The article is explicit about its limits, and so is this project:
 
 - The radio receiver has been passed to a MoQ relay **with recordings, not yet with the radios live**.
-- Relay fan-out to many viewers is only lightly tested. A mesh of relays between schools has not been built or tested.
+- Fan-out to many viewers has not been measured yet. A mesh of relays between schools has not been built or tested.
 - Neither bench is a broadcast product. Real distance, two lost frames in a row, and long runs still need work.
 - Nothing has flown. Flight use needs spectrum authorization and the reviews in [mission.md](mission.md) and [iss-deployment-review.md](iss-deployment-review.md).
 

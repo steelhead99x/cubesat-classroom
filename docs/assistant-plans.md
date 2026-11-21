@@ -4,7 +4,7 @@
 
 ## The goal
 
-Everything builds toward **three in-person workshops a year**, where teachers, students and licensed radio mentors work with real parts. The website, the quests and any paid plan exist to prepare people for those days and to help fund them.
+Everything builds toward **three in-person workshops a year** (planned), where teachers, students and licensed radio mentors work with real parts. The website, the quests and any paid plan exist to prepare people for those days and to help fund them.
 
 ## The idea in one paragraph
 
@@ -98,7 +98,7 @@ The same rules apply to the hosted guide and to [AGENTS.md](../AGENTS.md) for pe
 - **Who holds the account.** Paid accounts belong to adults, meaning teachers, mentors or parents. Students use a class code and a nickname. No student email or name is collected.
 - **COPPA and school privacy rules** need review by someone qualified before launch, as does a published privacy policy.
 
-## Open questions for Jim and the community
+## Open questions for reviewers and the community
 
 1. Is $9.99 per month per teacher right, or should it be per class, per school, or free for Title I schools?
 2. Which three benefits matter most to teachers?

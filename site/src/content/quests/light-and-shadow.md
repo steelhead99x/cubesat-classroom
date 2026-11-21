@@ -8,7 +8,7 @@ skill: Patterns in data
 beginner:
   steps:
     - Make a table with two columns, time and light.
-    - Get a reading every 10 seconds for one minute.
+    - Ask for a reading every 10 seconds for one minute.
     - Circle the rows where light is 0 lx.
   check: Your table has at least six rows, and you circled the zeros.
   discuss: Where could a satellite go that would make its light sensor read zero?
@@ -22,7 +22,7 @@ intermediate:
 professional:
   steps:
     - Sample once per second for 40 s and record `sequence`, light and temperature.
-    - Derive the light rule from the sequence numbers and confirm it against `Sample::synthetic` in the station source.
+    - Derive the light rule from the sequence numbers and confirm it against `Sample::synthetic` in the station source. In this demo the sequence is the time in seconds, like the station's `simulate` command; the installed classroom station counts requests instead.
     - Describe how you would replace the synthetic eclipse with one computed from an orbit model.
   check: You stated the rule (lit when sequence mod 30 is below 20) and verified it against the data.
   discuss: What inputs would an eclipse model need, and where would you get them for a real satellite?

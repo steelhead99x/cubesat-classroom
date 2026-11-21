@@ -7,7 +7,7 @@ minutes: 5
 skill: Data quality
 beginner:
   steps:
-    - Get a sensor reading and look at the line under the numbers.
+    - Press **Ask for a reading** and look at the line under the numbers.
     - Wait and watch. When does **Fresh** change to **Historical**?
     - Pause contact. What does the line say now?
   check: You found how many seconds a reading stays fresh.
@@ -23,7 +23,7 @@ professional:
   steps:
     - Get a reading and compare `captured_unix_ms` in **Raw telemetry** with the moment the label changes.
     - Confirm the threshold matches `MAX_AGE` in the station source (5000 ms).
-    - Describe what the station does with a sample whose capture time is ahead of the receiver clock.
+    - Read `Sample::age_ms` in `src/main.rs` and describe what the station does with a sample whose capture time is ahead of the receiver clock.
   check: You confirmed the threshold and explained the future-timestamp rejection.
   discuss: How would you add clock uncertainty to the sample format so the ground can reason about it?
 ---

@@ -9,17 +9,29 @@ export const patchTones: Record<string, string> = {
 };
 
 const KEY = 'cubesat.patches';
+// Kept in memory too, so patches still work for this visit if storage is blocked.
+const session = new Set<string>();
 
 export function earned(): Set<string> {
-  try { return new Set(JSON.parse(localStorage.getItem(KEY) ?? '[]')); } catch { return new Set(); }
+  let stored: string[] = [];
+  try { stored = JSON.parse(localStorage.getItem(KEY) ?? '[]'); } catch {}
+  return new Set([...stored, ...session]);
 }
 
 export function earn(id: string) {
   const set = earned();
   if (set.has(id)) return;
+  session.add(id);
   set.add(id);
   try { localStorage.setItem(KEY, JSON.stringify([...set])); } catch {}
   document.dispatchEvent(new CustomEvent('patchearned', { detail: id }));
+}
+
+// Keep other open tabs in step (browser only; this module is also used at build time).
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', event => {
+    if (event.key === KEY) document.dispatchEvent(new CustomEvent('patchearned', { detail: '' }));
+  });
 }
 
 export function paint(justEarned?: string) {

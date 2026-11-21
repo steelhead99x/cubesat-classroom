@@ -7,7 +7,7 @@ minutes: 5
 skill: Measurement and units
 beginner:
   steps:
-    - Press **Get sensor reading**.
+    - Press **Ask for a reading**.
     - Watch the mission log. Your question goes up to the satellite, and its answer comes back down.
     - Write down the three numbers you get. Copy the little letters after each number too, like °C or V.
   check: You have three numbers, and each one has its unit next to it.

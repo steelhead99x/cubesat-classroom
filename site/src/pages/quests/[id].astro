@@ -7,6 +7,7 @@ import LevelPicker from '../../components/LevelPicker.astro';
 import StationDemo from '../../components/StationDemo.astro';
 import Patch from '../../components/Patch.astro';
 import FullExperience from '../../components/FullExperience.astro';
+import QuestGuide from '../../components/QuestGuide.astro';
 import { classroomHost, repo } from '../../hubs.mjs';
 import { levels, inline } from '../../levels';
 
@@ -20,7 +21,7 @@ export async function getStaticPaths() {
 
 const { quest, next, total } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const feedback = `${repo}/issues/new?labels=feedback&title=${encodeURIComponent('Quest feedback: ' + quest.data.title)}`;
+const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title=${encodeURIComponent('Quest feedback: ' + quest.data.title)}`;
 ---
 <Base title={quest.data.title + ' | Example quest | CubeSat Classroom'} description={quest.data.summary} canonical={`https://${classroomHost}/quests/${quest.id}/`}>
   <SiteHeader slot="header" home={base + '/'} links={[
@@ -63,7 +64,7 @@ const feedback = `${repo}/issues/new?labels=feedback&title=${encodeURIComponent(
           );
         })}
         <div class="flex flex-wrap items-center gap-3">
-          <button type="button" data-complete={quest.id} class="button quiet aria-pressed:border-transparent aria-pressed:bg-mint" aria-pressed="false">Mark this quest done</button>
+          <button type="button" data-complete={quest.id} class="button quiet disabled:cursor-default disabled:border-transparent disabled:bg-mint">Mark this quest done</button>
           {next
             ? <a class="button launch" href={`${base}/quests/${next.id}/`}>Next quest: {next.data.title}</a>
             : <a class="button launch" href={base + '/quests/'}>See all your patches</a>}
@@ -72,6 +73,7 @@ const feedback = `${repo}/issues/new?labels=feedback&title=${encodeURIComponent(
       </article>
       <StationDemo heading={false} />
     </div>
+    <QuestGuide quest={quest.id} title={quest.data.title.toLowerCase()} />
     <FullExperience />
   </div>
   <SiteFooter slot="footer" />
@@ -85,7 +87,7 @@ const feedback = `${repo}/issues/new?labels=feedback&title=${encodeURIComponent(
     paint(just);
     if (!button) return;
     const done = earned().has(button.dataset.complete!);
-    button.setAttribute('aria-pressed', String(done));
+    button.disabled = done;
     button.textContent = done ? 'Patch earned' : 'Mark this quest done';
   }
   button?.addEventListener('click', () => earn(button.dataset.complete!));
