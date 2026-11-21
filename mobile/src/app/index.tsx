@@ -11,11 +11,11 @@ export default function Mission() {
   return (
     <Screen title={appName} summary="Get your class ready for spaceflight. Practise with a ground station, predict the flight, then compare.">
       <Card tone="night">
-        <Text style={styles.nightLabel}>Expected in 2027</Text>
+        <Text style={styles.nightLabel}>Flight preparation</Text>
         <Text accessibilityRole="header" style={styles.nightHeading}>A classroom experiment on a research spaceflight</Text>
-        <Text style={styles.nightBody}>Teachers in Space plans to fly two teachers and a small sensor kit on a Virgin Galactic research flight. See the ride, minute by minute.</Text>
+        <Text style={styles.nightBody}>What would a small sensor kit record on a suborbital research flight? See the ride, minute by minute.</Text>
         <Button label="Explore the flight" kind="light" onPress={() => router.navigate('/flight')} />
-        <Text style={styles.nightSmall}>An independent volunteer project. Teachers in Space and Virgin Galactic decide what flies.</Text>
+        <Text style={styles.nightSmall}>An independent volunteer project. The flight host decides what flies.</Text>
       </Card>
 
       <Card>

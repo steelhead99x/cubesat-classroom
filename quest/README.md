@@ -86,7 +86,7 @@ The ISS hardware work is listed in review priority. Start the provider inquiry a
 
 ### Flight heritage and the suborbital research flight
 
-These quests follow the vehicles the project's mentors have flown experiments on, and the Virgin Galactic research flight the classroom kit is designed around. See the [suborbital flight plan](/docs/suborbital-flight-plan.md).
+These quests cover three rides for a classroom sensor kit: a glider, a suborbital research flight and the ISS. See the [suborbital flight plan](/docs/suborbital-flight-plan.md).
 
 - [Fly with Perlan 2](/quest/m0/perlan-stratosphere.md)
 - [Find the ISS: orbit, passes and deployment](/quest/m0/iss-orbit.md)

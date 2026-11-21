@@ -164,7 +164,7 @@ function landing(wrong = false) {
     <li><strong>Make starting easy.</strong> Fork the code, change one settings file, and you have a site for your own club or project.</li>
     <li><strong>Be ready for the next flight.</strong> The same lessons and tools can serve balloons, gliders, research spaceflights and satellites to come.</li>
   </ul>
-  <p>The website is private while a volunteer reviews it with educators, including Teachers in Space. The code is already public.</p>
+  <p>The website is private while it is being reviewed. The code is already public.</p>
   <p><a href="https://github.com/steelhead99x/cubesat-classroom">See the project on GitHub</a></p>
   <form method="post" action="/preview-unlock">
     <label for="password">Preview password</label>
@@ -174,7 +174,7 @@ function landing(wrong = false) {
     </div>
     ${wrong ? '<p class="error" role="alert">That password did not match. Check it and try again.</p>' : ''}
   </form>
-  <footer><p>An independent volunteer project. It does not speak for Teachers in Space, AMSAT or any flight provider.</p></footer>
+  <footer><p>An independent volunteer project.</p></footer>
 </main>
 </body>
 </html>`;

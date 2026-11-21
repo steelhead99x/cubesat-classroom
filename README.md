@@ -27,7 +27,7 @@ The starter walks you through setup. Open the loopback address it prints. The st
 | [Browser lessons](https://cubesatclass.org/quests/) | Five lessons cover measurement, pictures, link loss, reading age, and light levels. |
 | [Ground station build guide](docs/ground-station.md) | Connect classroom sensors, predict a pass, or plan a receive-only station. |
 | [P1S case files](hardware/p1s/README.md) | Slice the PLA coupon first, then print and measure the case. Follow the [print and fit quests](quest/README.md#bambu-p1s-case-test-track). |
-| [Suborbital flight plan](docs/suborbital-flight-plan.md) | Get a classroom sensor kit ready for a research spaceflight, using the public plans for the Teachers in Space flight on Virgin Galactic expected in 2027. Predict the flight with `flight-profile`. |
+| [Suborbital flight plan](docs/suborbital-flight-plan.md) | Get a classroom sensor kit ready for a suborbital research flight, using public information. Predict the flight with `flight-profile`. |
 | [Flight heritage quests](quest/README.md#flight-heritage-and-the-suborbital-research-flight) | Learn from the Perlan 2 glider and the ISS, then compare all three rides. |
 | [Balloon lab](docs/balloon-lab.md) | Compare classroom pressure and temperature with archived flight data. |
 

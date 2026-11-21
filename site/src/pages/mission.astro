@@ -3,14 +3,13 @@ import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import FlightChart from '../components/FlightChart.astro';
-import { classroomHost, fundraiser, repo } from '../hubs.mjs';
+import { classroomHost, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const doc = (path: string) => repo + '/blob/main/' + path;
-const announcement = 'https://www.virgingalactic.com/news/teachers-in-space-plans-to-send-two-educators-on-2027-research-flight-with-virgin-galactic';
 const rides = [
-  { name: 'Perlan 2 glider', height: 'Up to 23 km (76,124 ft record)', air: 'Open science bay: sensors sit in outside air', float: 'None', text: 'An engineless glider that rides mountain waves over the Andes. Teachers in Space flew student CubeSat experiments in its science bay.', href: doc('quest/m0/perlan-stratosphere.md'), action: 'Open the Perlan 2 quest' },
-  { name: 'Research spaceship', height: 'About 87 km', air: 'Pressurised cabin: pressure stays nearly flat', float: 'About 3 minutes', text: 'Carried to about 13.6 km by an aircraft, then a one-minute rocket burn. The classroom sensor kit is designed around this ride.', href: doc('quest/m0/predict-the-spaceflight.md'), action: 'Predict the spaceflight' },
+  { name: 'Perlan 2 glider', height: 'Up to 23 km (76,124 ft record)', air: 'Open science bay: sensors sit in outside air', float: 'None', text: 'An engineless glider that rides mountain waves over the Andes. Student CubeSat experiments have flown in its science bay.', href: doc('quest/m0/perlan-stratosphere.md'), action: 'Open the Perlan 2 quest' },
+  { name: 'Research spaceship', height: 'About 87 km', air: 'Pressurised cabin: pressure stays nearly flat', float: 'About 3 minutes', text: 'Carried to about 13.6 km by an aircraft, then a one-minute rocket burn.', href: doc('quest/m0/predict-the-spaceflight.md'), action: 'Predict the spaceflight' },
   { name: 'International Space Station', height: 'About 400 km', air: 'Pressurised station; CubeSats are released outside', float: 'Continuous', text: 'Circles Earth about every 90 minutes. CubeSats ride up as cargo and are released into their own orbit.', href: doc('quest/m0/iss-orbit.md'), action: 'Find the ISS' },
 ];
 const gates = [
@@ -18,12 +17,12 @@ const gates = [
   ['Bench', 'Log for the full length of a flight on a desk, with a deliberate gap.'],
   ['Compare', 'Explain the same sensors on a glider, a spaceship and the ISS.'],
   ['Package', 'Draft the payload paperwork and list every open question.'],
-  ['Host review', 'Get written answers from Teachers in Space or the flight provider.'],
+  ['Host review', 'Get written answers from the flight host.'],
   ['Rehearse', 'Time the switch-on, logging, switch-off and data hand-back.'],
   ['Fly and share', 'Publish the measurements next to the predictions.'],
 ];
 ---
-<Base title="The research flight | CubeSat Classroom" description="How classrooms can prepare a sensor kit for the Teachers in Space research flight on Virgin Galactic, expected in 2027." canonical={'https://' + classroomHost + '/mission/'}>
+<Base title="The research flight | CubeSat Classroom" description="How a classroom can prepare a sensor kit for a suborbital research flight." canonical={'https://' + classroomHost + '/mission/'}>
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Mission', href: base + '/mission/', current: true },
     { label: 'Lessons', href: base + '/quests/' },
@@ -33,15 +32,13 @@ const gates = [
 
   <section class="classroom-hero">
     <div class="shell py-11 sm:py-16">
-      <p class="field-label">Expected in 2027</p>
+      <p class="field-label">Flight preparation</p>
       <h1 class="mt-3 max-w-3xl">A classroom experiment on a research spaceflight</h1>
-      <p class="lede mt-5">Teachers in Space plans to send two teachers and a small sensor kit on a Virgin Galactic research flight. The readings come back to the classrooms that designed the experiments. This page helps a class get ready.</p>
+      <p class="lede mt-5">What would a small sensor kit record on a suborbital research flight? This page helps a class predict it.</p>
       <div class="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
         <a class="button primary" href={doc('docs/suborbital-flight-plan.md')}>Read the flight plan</a>
-        <a class="font-bold text-accent underline decoration-line underline-offset-4 hover:decoration-current" href={announcement}>Read the announcement</a>
       </div>
-      <p class="mt-5 max-w-2xl text-sm text-muted">CubeSat Classroom is an independent volunteer project. Flight details here come from public sources. Teachers in Space and Virgin Galactic decide what flies and when.</p>
-      <p class="mt-3 max-w-2xl text-sm text-muted">Keep exploring with the <a class="text-accent underline underline-offset-4" href={doc('quest/m0/moon-relay.md')}>Moon relay simulation</a>. Try getting a reading back to Earth after a link goes quiet.</p>
+      <p class="mt-5 max-w-2xl text-sm text-muted">An independent volunteer project. Flight details come from public sources. The flight host decides what flies and when.</p>
     </div>
   </section>
 
@@ -60,7 +57,7 @@ const gates = [
   <div class="section-band">
     <section class="shell py-12 sm:py-16" aria-labelledby="kit-title">
       <h2 id="kit-title">What the kit measures</h2>
-      <p class="mt-3 max-w-2xl text-muted">The announced kit is a 3D-printed CubeSat about 3.5 inches across with an Arduino, a rechargeable battery and a clock that time-stamps every reading.</p>
+      <p class="mt-3 max-w-2xl text-muted">A small printed CubeSat with an Arduino, a rechargeable battery and a clock that time-stamps every reading.</p>
       <ul class="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
         {['Temperature', 'Pressure', 'Acceleration', 'Rotation', 'Magnetic field', 'Carbon dioxide', 'Humidity', 'Light'].map(s => <li class="resource font-semibold text-ink">{s}</li>)}
       </ul>
@@ -69,7 +66,7 @@ const gates = [
 
   <section class="shell py-12 sm:py-16" aria-labelledby="rides-title">
     <h2 id="rides-title">Three rides, one set of sensors</h2>
-    <p class="mt-3 max-w-2xl text-muted">The project's mentors began with the Perlan 2 glider and the International Space Station. Each ride teaches something different about the same measurements.</p>
+    <p class="mt-3 max-w-2xl text-muted">Each ride teaches something different about the same measurements.</p>
     <div class="mt-6 grid gap-x-8 gap-y-8 md:grid-cols-3">
       {rides.map(r => (
         <article class="resource">
@@ -92,7 +89,6 @@ const gates = [
       <div>
         <h2 id="gates-title">Seven steps to flight-ready</h2>
         <p class="mt-3 text-muted">Each step ends with something a reviewer can check. Following the public guide does not earn a place on the flight; the host decides.</p>
-        <p class="mt-4 text-sm text-muted">Support <a class="text-accent" href={fundraiser}>Teachers in Space</a> directly.</p>
       </div>
       <ol class="lesson-outline">
         {gates.map(([name, text], i) => <li><span>{String(i + 1).padStart(2, '0')}</span><div><strong class="text-ink">{name}</strong><p>{text}</p></div></li>)}
