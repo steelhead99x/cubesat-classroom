@@ -1,5 +1,4 @@
-import { cp, rm, writeFile } from 'node:fs/promises';
-import { publicSite } from '../src/hubs.mjs';
+import { cp, rm } from 'node:fs/promises';
 
 const build = new URL('../dist/', import.meta.url);
 const pages = new URL('../../docs/', import.meta.url);
@@ -14,5 +13,5 @@ await rm(new URL('open-source', pages), { recursive: true, force: true });
 for (const file of ['index.html', 'mark.svg', 'club-mark.svg', '_astro', 'quests', 'plans', 'hardware', 'mission', 'volunteer', 'open-source']) {
   await cp(new URL(file, build), new URL(file, pages), { recursive: true });
 }
-// GitHub Pages serves docs/ at this custom domain.
-await writeFile(new URL('CNAME', pages), publicSite + '\n');
+// docs/CNAME is managed by hand (or in the repository's Pages settings), not by this build:
+// add it only once the custom domain's DNS points at GitHub Pages.
