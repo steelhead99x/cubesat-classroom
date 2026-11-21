@@ -21,6 +21,7 @@ The starter walks you through setup. Open the loopback address it prints. The st
 | Start with | What to do |
 | --- | --- |
 | [Browser lessons](https://cubesatclass.org/quests/) | Five lessons cover measurement, pictures, link loss, reading age, and light levels. |
+| [Ground station build guide](docs/ground-station.md) | Connect classroom sensors, predict a pass, or plan a receive-only station. |
 | [P1S case files](hardware/p1s/README.md) | Slice the PLA coupon first, then print and measure the case. Follow the [print and fit quests](quest/README.md#bambu-p1s-case-test-track). |
 | [Balloon lab](docs/balloon-lab.md) | Compare classroom pressure and temperature with archived flight data. |
 
