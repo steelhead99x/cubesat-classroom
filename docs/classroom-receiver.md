@@ -2,7 +2,7 @@
 
 Start with a laptop, a USB radio and two antenna rods. The phone app is the first classroom demo. The finished station has its own screen, speaker, volume and mute so the class can use it with phones put away.
 
-After the bench test, try receiving a CubeSat in Earth orbit. For the future lunar experiment, simulate gaps in contact and deliver saved readings when the link returns. [Mission roadmap](mission.md#from-the-classroom-to-the-moon)
+After the bench test, use a pass prediction to plan when to listen for a CubeSat in Earth orbit. [Ground station guide](ground-station.md)
 
 ```text
 2 m antenna ── coax ── USB SDR ── station ── built-in speaker
