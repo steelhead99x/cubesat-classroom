@@ -1,24 +1,30 @@
 @import "tailwindcss";
 
-/* Brand tokens, available as Tailwind utilities (bg-night, text-sky, border-line...).
-   Navy, sky and signal come from the CubeSat mark. Solar, mint and violet are only
-   for mission patches and status, so colour always means something. */
+/* "Ground pass" theme.
+   Everything on the site follows one satellite pass: the sky above the horizon
+   (night, orbit, mission) and the classroom below it (quests, workshops, people).
+   Navy, sky and signal come from the CubeSat mark. Horizon amber is the dawn line
+   and the main call to action. Mint, violet and solar are only for status and
+   mission patches, so colour always means something. */
 @theme {
-  --color-night: #10264a;
-  --color-navy: #18335d;
-  --color-paper: #f3f6fb;
-  --color-grid: #dfe7f3;
-  --color-ink: #152a50;
+  --color-night: #0b1d3a;
+  --color-dusk: #17325e;
+  --color-navy: #17325e;
+  --color-paper: #f4f6fa;
+  --color-ground: #e9eef6;
+  --color-ink: #13243f;
   --color-sky: #a4c9ff;
+  --color-horizon: #ffb547;
+  --color-horizon-deep: #a35f00;
   --color-signal: #ef6b6c;
   --color-signal-deep: #a7283a;
   --color-solar: #ffd23f;
   --color-mint: #6fd3a0;
   --color-violet: #b9a4ff;
-  --color-line: #d6e0f1;
-  --color-muted: #3f5573;
-  --color-faint: #5a6e88;
-  --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --color-line: #d5deeb;
+  --color-muted: #3d5372;
+  --color-faint: #56698a;
+  --font-display: "Fraunces Variable", Georgia, serif;
   --font-sans: "Atkinson Hyperlegible", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
@@ -27,7 +33,7 @@
   :root {
     color-scheme: light;
     --night: var(--color-night);
-    --navy: var(--color-navy);
+    --navy: var(--color-dusk);
     --paper: var(--color-paper);
     --ink: var(--color-ink);
     --sky: var(--color-sky);
@@ -35,16 +41,16 @@
   }
 
   html { scroll-behavior: smooth; }
-  body { color: var(--ink); background: var(--paper); line-height: 1.6; font-size: 1.0625rem; }
-  nav a { color: #d4e1eb; text-decoration: none; }
-  nav a:hover { color: var(--sky); }
-  nav [aria-current="page"] { color: #fff; text-decoration: underline; text-decoration-color: var(--color-solar); text-decoration-thickness: 3px; text-underline-offset: .4em; }
+  body { color: var(--ink); background: var(--paper); line-height: 1.62; font-size: 1.0625rem; }
+  nav a { color: #cfdcef; text-decoration: none; }
+  nav a:hover { color: #fff; }
+  nav [aria-current="page"] { color: #fff; text-decoration: underline; text-decoration-color: var(--color-horizon); text-decoration-thickness: 2px; text-underline-offset: .45em; }
 
   :focus-visible { outline: 3px solid #2563c9; outline-offset: 3px; border-radius: 4px; }
-  h1, h2, h3 { font-family: var(--font-display); line-height: 1.04; font-weight: 750; }
-  h1 { font-size: clamp(2.5rem, 5.4vw, 4.25rem); letter-spacing: -.025em; font-variation-settings: "wdth" 92; }
-  h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); letter-spacing: -.015em; font-variation-settings: "wdth" 95; }
-  h3 { font-size: 1.25rem; letter-spacing: -.01em; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 650; line-height: 1.06; font-variation-settings: "SOFT" 60, "opsz" 96; }
+  h1 { font-size: clamp(2.6rem, 6vw, 4.7rem); letter-spacing: -.025em; }
+  h2 { font-size: clamp(1.75rem, 3.6vw, 2.6rem); letter-spacing: -.018em; }
+  h3 { font-size: 1.3rem; letter-spacing: -.005em; font-variation-settings: "SOFT" 40, "opsz" 24; }
   button { cursor: pointer; }
   a { text-underline-offset: .22em; }
   code { font-family: var(--font-mono); }
@@ -52,42 +58,63 @@
 
 @layer components {
   .shell { width: min(100% - 2rem, 72rem); margin-inline: auto; }
-  .night { background: var(--night); color: #fff; }
-  .graph { background-color: var(--color-paper); background-image: linear-gradient(var(--color-grid) 1px, transparent 1px), linear-gradient(90deg, var(--color-grid) 1px, transparent 1px); background-size: 24px 24px; background-position: -1px -1px; }
-  .brand { color: inherit; font-family: var(--font-display); font-size: 1.12rem; font-weight: 750; text-decoration: none; }
+  .brand { color: inherit; font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; text-decoration: none; font-variation-settings: "SOFT" 60, "opsz" 30; }
   .skip { position: fixed; z-index: 10; left: 1rem; top: -5rem; padding: .55rem .85rem; background: #fff; color: var(--ink); border-radius: .5rem; }
   .skip:focus { top: 1rem; }
-  .night :focus-visible, .terminal :focus-visible { outline-color: var(--color-solar); }
   .shell section a:not(.button), footer a { text-decoration: underline; font-weight: 700; }
 
-  /* A short sentence-case lead-in above a page title, only where it carries information. */
+  /* The sky: deep night with a sparse, fixed star field. */
+  .night { color: #fff; background-color: var(--color-night); }
+  .sky {
+    color: #fff;
+    background-color: var(--color-night);
+    background-image:
+      radial-gradient(1px 1px at 12% 22%, #ffffffb0 50%, transparent 51%),
+      radial-gradient(1px 1px at 27% 64%, #ffffff80 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 41% 18%, #ffffffc0 50%, transparent 51%),
+      radial-gradient(1px 1px at 58% 41%, #ffffff70 50%, transparent 51%),
+      radial-gradient(1px 1px at 69% 12%, #ffffffa0 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 83% 33%, #ffffffb0 50%, transparent 51%),
+      radial-gradient(1px 1px at 91% 70%, #ffffff70 50%, transparent 51%),
+      radial-gradient(1px 1px at 6% 78%, #ffffff60 50%, transparent 51%),
+      linear-gradient(180deg, var(--color-night) 0%, var(--color-night) 60%, #15305a 100%);
+    background-size: 640px 420px, 640px 420px, 640px 420px, 640px 420px, 640px 420px, 640px 420px, 640px 420px, 640px 420px, 100% 100%;
+  }
+  .night :focus-visible, .sky :focus-visible, .terminal :focus-visible { outline-color: var(--color-horizon); }
+
+  /* The horizon: a thin dawn line where sky meets ground. */
+  .horizon { position: relative; height: 3px; background: linear-gradient(90deg, transparent, var(--color-horizon) 15%, var(--color-horizon) 85%, transparent); box-shadow: 0 0 22px 1px rgb(255 181 71 / .5); }
+
   .kicker { margin-bottom: .75rem; color: #c9d8ee; font-weight: 700; }
-  .intro { max-width: 34rem; color: #dbe6f5; font-size: clamp(1.05rem, 2vw, 1.25rem); }
-  .lede { max-width: 36rem; color: var(--color-muted); font-size: clamp(1.05rem, 2vw, 1.22rem); }
+  .sky .lede { color: #d7e3f4; }
+  .intro { max-width: 36rem; color: #d7e3f4; font-size: clamp(1.05rem, 2vw, 1.25rem); }
+  .lede { max-width: 38rem; color: var(--color-muted); font-size: clamp(1.05rem, 2vw, 1.22rem); }
 
-  .button { display: inline-flex; align-items: center; gap: .6rem; border-radius: .7rem; padding: .75rem 1.1rem; font-weight: 700; text-decoration: none; }
-  .launch { background: var(--color-solar); color: var(--night); box-shadow: 0 3px 0 #c9a21a; }
-  .launch:hover { background: #ffdc66; }
-  .launch:active { transform: translateY(2px); box-shadow: 0 1px 0 #c9a21a; }
-  .quiet { color: var(--ink); border: 2px solid var(--ink); }
+  .button { display: inline-flex; align-items: center; gap: .6rem; border-radius: 999px; padding: .78rem 1.35rem; font-weight: 700; text-decoration: none; }
+  .launch { background: var(--color-horizon); color: var(--color-night); box-shadow: 0 8px 22px -10px rgb(255 181 71 / .95); }
+  .launch:hover { background: #ffc46e; }
+  .launch:active { transform: translateY(1px); }
+  .quiet { color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
   .quiet:hover { background: #fff; }
+  .ghost { color: #fff; box-shadow: inset 0 0 0 2px #ffffff66; }
+  .ghost:hover { box-shadow: inset 0 0 0 2px #fff; }
 
-  .chassis { overflow: hidden; position: relative; border-radius: 1.25rem; background-color: #173660; background-image: linear-gradient(#506a8424 1px, transparent 1px), linear-gradient(90deg, #506a8424 1px, transparent 1px); background-size: 1.5rem 1.5rem; }
-  .chassis img { width: 100%; height: clamp(13rem, 42vw, 22rem); object-fit: contain; }
-  .chassis figcaption { border-top: 1px solid #364f65; padding: .75rem 1rem; background: var(--navy); color: #e1eaf1; font-size: .9rem; }
+  .chassis { overflow: hidden; position: relative; border-radius: 1.5rem; background: radial-gradient(circle at 50% 45%, #1d3d70 0, var(--color-night) 72%); }
+  .chassis img { width: 100%; height: clamp(13rem, 40vw, 22rem); object-fit: contain; }
+  .chassis figcaption { border-top: 1px solid #ffffff1f; padding: .8rem 1.1rem; color: #d7e3f4; font-size: .92rem; }
 
-  .start { min-width: 0; padding: clamp(1.2rem, 3vw, 1.8rem); border-radius: 1.25rem; background: #fff; box-shadow: 0 0 0 1px var(--color-line); }
+  .start { min-width: 0; padding: clamp(1.3rem, 3vw, 2rem); border-radius: 1.5rem; background: #fff; box-shadow: 0 0 0 1px var(--color-line); }
   .start p { color: var(--color-muted); }
-  .terminal { border-radius: .7rem; background: var(--night); color: #eaf5ed; padding: .85rem 1rem; }
-  .terminal code { min-width: 0; overflow-wrap: anywhere; font-size: .9rem; }
-  .terminal button { border: 1px solid #698dbb; border-radius: .45rem; padding: .3rem .6rem; color: var(--color-solar); font-weight: 700; font-size: .85rem; white-space: nowrap; }
-  .terminal button:hover { background: #234574; }
+  .terminal { border-radius: 1rem; background: var(--night); color: #eaf2fd; padding: .9rem 1.1rem; }
+  .terminal code { min-width: 0; overflow-wrap: anywhere; font-size: .92rem; }
+  .terminal button { border: 1px solid #6b8fc4; border-radius: 999px; padding: .32rem .8rem; color: var(--color-horizon); font-weight: 700; font-size: .85rem; white-space: nowrap; }
+  .terminal button:hover { background: #1d3a68; }
 
-  .quest-steps ol { display: grid; gap: .8rem; padding-left: 1.5rem; list-style: decimal; }
-  .quest-steps li { padding-left: .25rem; }
-  .quest-steps li::marker { color: var(--color-night); font-family: var(--font-display); font-weight: 800; }
+  .quest-steps ol { display: grid; gap: .85rem; padding-left: 1.6rem; list-style: decimal; }
+  .quest-steps li { padding-left: .3rem; }
+  .quest-steps li::marker { color: var(--color-horizon-deep); font-family: var(--font-display); font-weight: 800; }
   .quest-steps strong { color: var(--color-ink); }
-  .quest-steps code { font-size: .88em; padding: .05rem .3rem; border-radius: .3rem; background: #e3ecfb; color: var(--color-ink); }
+  .quest-steps code { font-size: .88em; padding: .05rem .3rem; border-radius: .3rem; background: var(--color-ground); color: var(--color-ink); }
 
   /* Level-specific content: data-show="beginner intermediate" hides an element unless
      the chosen level is listed. Without JavaScript the beginner level shows. */
@@ -108,10 +135,15 @@
   .patch[data-earned] .core { fill: #fff; }
   .patch[data-earned] .icon { stroke: var(--color-night); }
   .patch-just-earned { animation: stamp .45s cubic-bezier(.2, 1.4, .4, 1); }
-  @keyframes stamp { 0% { transform: scale(1.25) rotate(-8deg); } 100% { transform: scale(1) rotate(0); } }
+
+  /* The one orchestrated motion: the satellite crosses its arc once, rise to set. */
+  .pass-sat { offset-path: var(--arc); offset-rotate: 0deg; offset-distance: 50%; animation: pass 3.4s cubic-bezier(.45, .05, .35, 1) .4s both; }
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .patch-just-earned { animation: none; }
+    .patch-just-earned, .pass-sat { animation: none; }
   }
 }
+
+@keyframes stamp { 0% { transform: scale(1.25) rotate(-8deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes pass { from { offset-distance: 8%; opacity: 0; } 12% { opacity: 1; } to { offset-distance: 70%; opacity: 1; } }

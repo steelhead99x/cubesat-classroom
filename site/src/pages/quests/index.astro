@@ -6,6 +6,7 @@ import SiteFooter from '../../components/SiteFooter.astro';
 import LevelPicker from '../../components/LevelPicker.astro';
 import Patch from '../../components/Patch.astro';
 import FullExperience from '../../components/FullExperience.astro';
+import PageHero from '../../components/PageHero.astro';
 import { classroomHost } from '../../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -18,13 +19,11 @@ const total = quests.reduce((sum, quest) => sum + quest.data.minutes, 0);
     { label: 'Quests', href: base + '/quests/', current: true },
     { label: 'Plans', href: base + '/plans/' },
   ]} />
-  <div class="graph border-b border-line">
-    <div class="shell py-12 lg:py-16">
-      <h1 class="max-w-3xl">Five quests. Five patches. About {total} minutes.</h1>
-      <p class="lede mt-5">Every quest runs in the practice ground station, so all you need is this page. Pick a level first. You can change it any time.</p>
-      <div class="mt-8"><LevelPicker showIntro /></div>
-    </div>
-  </div>
+  <PageHero>
+    <h1 class="max-w-3xl">Five quests. Five patches. About {total} minutes.</h1>
+    <p class="lede mt-5">Every quest runs in the practice ground station, so all you need is this page. Pick a level first. You can change it any time.</p>
+    <div class="mt-8 max-w-4xl"><LevelPicker showIntro tone="dark" /></div>
+  </PageHero>
   <div class="shell space-y-16 py-14">
     <ol class="space-y-4">
       {quests.map(quest => (

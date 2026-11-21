@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import PageHero from '../components/PageHero.astro';
 import { classroomHost, repo } from '../hubs.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -57,14 +58,12 @@ const guardrails = [
     { label: 'Plans', href: base + '/plans/', current: true },
   ]} />
 
-  <div class="graph border-b border-line">
-    <div class="shell py-12 lg:py-16">
-      <p class="inline-block rounded-full bg-solar px-3 py-1 text-sm font-bold text-night">Draft for discussion. Nothing is for sale yet.</p>
-      <h1 class="mt-5 max-w-3xl">Three ways to run a mission</h1>
-      <p class="lede mt-5">Try it in the browser, run the real station yourself, or let us host the guided version for your class. Every number on this page is a starting point, and we want your view on all of it.</p>
-      <a class="button quiet mt-7" href={feedback('General')}>Comment on this proposal</a>
-    </div>
-  </div>
+  <PageHero>
+    <p class="inline-block rounded-full bg-horizon px-3 py-1 text-sm font-bold text-night">Draft for discussion. Nothing is for sale yet.</p>
+    <h1 class="mt-5 max-w-3xl">Three ways to run a mission</h1>
+    <p class="lede mt-5">Try it in the browser, run the real station yourself, or let us host the guided version for your class. Every number on this page is a starting point, and we want your view on all of it.</p>
+    <a class="button ghost mt-7" href={feedback('General')}>Comment on this proposal</a>
+  </PageHero>
 
   <div class="shell space-y-20 py-14">
     <section aria-label="Plans">

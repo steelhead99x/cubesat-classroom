@@ -11,6 +11,8 @@ import RelatedProjects from '../components/RelatedProjects.astro';
 import QuickStart from '../components/QuickStart.astro';
 import Workshops from '../components/Workshops.astro';
 import QuestGuide from '../components/QuestGuide.astro';
+import { Image } from 'astro:assets';
+import PageHero from '../components/PageHero.astro';
 import rail from '../../../docs/assets/rail-fit.png';
 import { classroomHost, fundraiser, repo } from '../hubs.mjs';
 
@@ -37,20 +39,22 @@ const labs = [
     { label: 'Workshops', href: '#workshops' },
   ]} />
 
-  <div class="graph border-b border-line">
-    <section class="shell grid items-start gap-10 py-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)] lg:gap-12 lg:py-16">
-      <div class="lg:pt-6">
-        <h1>Run a satellite mission from your classroom.</h1>
-        <p class="lede mt-5">Send a command, wait for the reply, and see what makes it back to Earth. Try it right here, then earn a patch for every quest you finish.</p>
-        <div class="mt-7"><LevelPicker describe /></div>
-        <div class="mt-8 flex flex-wrap items-center gap-3">
-          <a class="button launch" href={base + '/quests/'}>Start the first quest</a>
-          <a class="button quiet" href="#start">Install the real station</a>
-        </div>
-        <p class="mt-4 max-w-md text-sm text-faint">Teachers: the browser quests need no setup, no accounts and no technical background. Start on Beginner.</p>
+  <PageHero size="large" labels>
+    <div class="max-w-[38rem]">
+      <h1>Run a satellite mission from your classroom.</h1>
+      <p class="lede mt-5">A satellite rises, passes overhead and sets. In those few minutes your crew sends a command, waits for the reply, and finds out what made it back to Earth. Practise right here, then earn a patch for every quest you finish.</p>
+      <div class="mt-7"><LevelPicker describe tone="dark" /></div>
+      <div class="mt-8 flex flex-wrap items-center gap-3">
+        <a class="button launch" href={base + '/quests/'}>Start the first quest</a>
+        <a class="button ghost" href="#start">Install the real station</a>
       </div>
-      <StationDemo heading={false} />
-    </section>
+      <p class="mt-4 max-w-md text-sm text-blue-100/85">Teachers: the browser quests need no setup, no accounts and no technical background. Start on Beginner.</p>
+    </div>
+  </PageHero>
+
+  <div class="shell relative z-10 -mt-24 max-w-[64rem] sm:-mt-32">
+    <StationDemo heading={false} />
+    <p class="mt-3 text-center text-sm text-faint">The practice ground station sits on the horizon, like a real one. Nothing is transmitted.</p>
   </div>
 
   <div class="shell space-y-20 py-16">
@@ -68,10 +72,10 @@ const labs = [
     <MissionFanout />
   </div>
 
-  <section id="labs" class="night scroll-mt-0" aria-labelledby="labs-title">
+  <section id="labs" class="sky scroll-mt-0" aria-labelledby="labs-title">
     <div class="shell grid gap-10 py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center">
       <figure class="chassis m-0">
-        <img src={rail.src} width={rail.width} height={rail.height} alt="Exploded CAD view of the printed CubeSat chassis, camera cover and base plate" loading="lazy">
+        <Image src={rail} alt="Exploded CAD view of the printed CubeSat chassis, camera cover and base plate" widths={[360, 720]} sizes="(min-width: 1024px) 36rem, 100vw" loading="lazy" />
         <figcaption>Rev B, the 3D-printable 1U bench model. Ten centimetres on each side.</figcaption>
       </figure>
       <div>
@@ -83,7 +87,7 @@ const labs = [
               <h3 class="text-white">{lab.name}</h3>
               <div>
                 <p class="text-blue-100">{lab.text}</p>
-                <a class="mt-2 inline-block font-bold text-solar underline underline-offset-4" href={lab.href}>{lab.action}</a>
+                <a class="mt-2 inline-block font-bold text-horizon underline underline-offset-4" href={lab.href}>{lab.action}</a>
               </div>
             </li>
           ))}
