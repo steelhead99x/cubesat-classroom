@@ -29,5 +29,8 @@
     "typecheck": "tsc --noEmit",
     "sync:quests": "node scripts/sync-quests.mjs"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "minimatch": "^11.0.1"
+  }
 }

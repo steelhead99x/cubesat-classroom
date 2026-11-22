@@ -98,13 +98,15 @@ async function guide(request, env) {
     // keyed on the connecting address, which a visitor cannot pick, and is set high enough
     // for a whole class behind one school network. Workers KV is not transactional, so
     // requests that arrive together can each slip past a limit: treat all three as soft.
+    // KV has no atomic increment and a Durable Object would be new infrastructure, so the
+    // default caps are kept low to bound what a burst of parallel requests can overshoot by.
     const client = (request.headers.get('x-guide-client') ?? '').slice(0, 64) || 'anonymous';
     const address = request.headers.get('cf-connecting-ip') ?? 'unknown';
     const device = await sha256(`${env.GUIDE_SALT}:${day}:${client}`);
     const network = await sha256(`${env.GUIDE_SALT}:${day}:net:${address}`);
     const perDevice = Number(env.GUIDE_DAILY_LIMIT ?? 10);
-    const perNetwork = Number(env.GUIDE_NETWORK_LIMIT ?? 300);
-    const perSite = Number(env.GUIDE_GLOBAL_LIMIT ?? 2000);
+    const perNetwork = Number(env.GUIDE_NETWORK_LIMIT ?? 150);
+    const perSite = Number(env.GUIDE_GLOBAL_LIMIT ?? 1000);
     if (!(await bump(kv, `device:${device}`, perDevice))) {
       return json({ message: 'That is all the questions for today. Keep going with the quest steps, and come back tomorrow.' }, 429);
     }
@@ -240,6 +242,27 @@ function landing(wrong = false, unconfigured = false, limited = false) {
   });
 }
 
+// Wrong passwords, from the form and from Basic auth alike, are counted under one key per
+// network address and day, when the KV store is bound.
+async function unlockKey(request, env) {
+  if (!env.GUIDE_LIMITS || !env.GUIDE_SALT) return null;
+  const day = new Date().toISOString().slice(0, 10);
+  return 'unlock:' + (await sha256(`${env.GUIDE_SALT}:${day}:${request.headers.get('cf-connecting-ip') ?? 'unknown'}`));
+}
+
+async function tooManyGuesses(request, env) {
+  const key = await unlockKey(request, env);
+  if (!key) return false;
+  return Number((await env.GUIDE_LIMITS.get(key)) ?? 0) >= Number(env.PREVIEW_UNLOCK_LIMIT ?? 20);
+}
+
+async function countWrongGuess(request, env) {
+  const key = await unlockKey(request, env);
+  if (!key) return;
+  const wrong = Number((await env.GUIDE_LIMITS.get(key)) ?? 0);
+  await env.GUIDE_LIMITS.put(key, String(wrong + 1), { expirationTtl: 60 * 60 * 25 });
+}
+
 async function locked(request, env) {
   if (!env.SITE_PASSWORD) return null;
   const url = new URL(request.url);
@@ -247,16 +270,11 @@ async function locked(request, env) {
   const hasCookie = await validCookie(request, env);
 
   if (url.pathname === '/preview-unlock' && request.method === 'POST') {
-    // Wrong guesses are limited per network address and day when the KV store is bound.
-    const kv = env.GUIDE_LIMITS && env.GUIDE_SALT ? env.GUIDE_LIMITS : null;
-    const day = new Date().toISOString().slice(0, 10);
-    const tries = kv ? 'unlock:' + (await sha256(`${env.GUIDE_SALT}:${day}:${request.headers.get('cf-connecting-ip') ?? 'unknown'}`)) : '';
-    const wrong = kv ? Number((await kv.get(tries)) ?? 0) : 0;
-    if (wrong >= Number(env.PREVIEW_UNLOCK_LIMIT ?? 20)) return landing(false, false, true);
+    if (await tooManyGuesses(request, env)) return landing(false, false, true);
     const form = await request.formData().catch(() => null);
     const given = String(form?.get('password') ?? '').slice(0, 200);
     if (!sameText(await passToken(given), good)) {
-      if (kv) await kv.put(tries, String(wrong + 1), { expirationTtl: 60 * 60 * 25 });
+      await countWrongGuess(request, env);
       return hasCookie ? Response.redirect(new URL('/', url), 303) : landing(true);
     }
     if (!env.PREVIEW_COOKIE_SECRET) {
@@ -285,7 +303,9 @@ async function locked(request, env) {
     } catch {
       given = '';
     }
+    if (await tooManyGuesses(request, env)) return landing(false, false, true);
     if (sameText(await passToken(given), good)) return null;
+    await countWrongGuess(request, env);
   }
   return landing();
 }
@@ -301,12 +321,12 @@ async function privately(response, env) {
   return out;
 }
 
-// Defence in depth for every response. Pages use small inline scripts, so the policy limits
-// framing, plugins, base URLs and form targets rather than scripts.
+// Defence in depth for every response. The site's scripts are all files on its own origin
+// (no inline scripts), so scripts may load only from 'self'.
 function secured(response) {
   const out = new Response(response.body, response);
-  out.headers.set('content-security-policy', "frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'");
-  out.headers.set('strict-transport-security', 'max-age=31536000');
+  out.headers.set('content-security-policy', "script-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'");
+  out.headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   out.headers.set('x-content-type-options', 'nosniff');
   out.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
   out.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
