@@ -111,6 +111,10 @@ Short examples of what small satellites, radio and sustainable materials do for 
 - [Track a pet by its collar](/quest/m0/pet-collar-tracking.md)
 - [Wool, fibre and static: what should cover the kit?](/quest/m0/wool-fiber-static.md)
 
+### Public site and CI
+
+- [Replace GitHub Actions workflows with PrairieDog CI and approval-gated deploy](/quest/m0/replace-github-actions-with-prairiedog.md)
+
 ### Parallel classroom, balloon and radio work
 
 - [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md)
