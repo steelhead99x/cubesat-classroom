@@ -1,1 +1,0 @@
-import{n as e,t}from"./patches.BSFqJLIJ.js";var n=document.querySelector(`[data-complete]`);function r(){if(!n)return;let t=e().has(n.dataset.complete);n.disabled=t,n.textContent=t?`Lesson complete`:`Mark this quest done`}n?.addEventListener(`click`,()=>t(n.dataset.complete)),document.addEventListener(`patchearned`,r),r();

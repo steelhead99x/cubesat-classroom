@@ -90,7 +90,7 @@ export default function Station() {
         </View>
         <Button label={w.read} onPress={ask} />
         <Button label={w.pics} kind="light" onPress={pictures} disabled={sending} />
-        <Button label={contact ? 'Pause contact' : 'Resume contact'} kind="light" onPress={toggle} />
+        <Button label={contact ? 'Pause contact' : 'Restore contact'} kind="light" onPress={toggle} />
       </Card>
 
       <Card>

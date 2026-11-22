@@ -3,10 +3,11 @@
 export const repo = 'https://github.com/steelhead99x/cubesat-classroom';
 export const fundraiser = 'https://givebutter.com/fund-stem-training-for-100-educators-s14sb0';
 export const classroomHost = 'cubesatclass.org';
-// The public site: the GitHub Pages build of this repository (docs/), served at this domain.
-export const publicSite = 'cubesatclassroom.org';
-// Domains the Worker answers only with a permanent redirect to the same path on another host.
-export const redirects = { 'cubesat.club': publicSite, 'cubesatclass.com': classroomHost };
+// The public site. Canonical URLs, the installer address and redirects all point here.
+export const publicOrigin = 'https://' + classroomHost;
+export const installer = publicOrigin + '/start.sh';
+// Domains the Worker answers only with a permanent redirect to the same path on the public site.
+export const redirects = { 'cubesat.club': publicOrigin, 'cubesatclass.com': publicOrigin };
 
 export const hubs = [
   {
@@ -66,7 +67,7 @@ export const hubs = [
   },
   {
     slug: 'volunteer',
-    host: publicSite,
+    host: classroomHost,
     path: '/volunteer/',
     name: 'Volunteer',
     heading: 'Help the next crew',

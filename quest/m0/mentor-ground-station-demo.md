@@ -21,7 +21,7 @@ Follow the [mentor rules](/quest/m0/mentor-get-ready.md#mentor-rules): stay the 
 
 - **Beginner:** the reading, the unit and "old or new?"
 - **Intermediate:** time three readings and compare round trips.
-- **Professional:** repeat the steps in the [browser practice station](https://cubesatclassroom.org/#demo), open **Raw telemetry** and match `sequence` and `captured_unix_ms` to the mission log.
+- **Professional:** repeat the steps in the [browser practice station](https://cubesatclass.org/#demo), open **Raw telemetry** and match `sequence` and `captured_unix_ms` to the mission log.
 
 ### Check your work
 

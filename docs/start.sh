@@ -102,8 +102,8 @@ main() {
     fi
   fi
 
-  if [[ ! -O "$project" ]]; then
-    printf 'The folder %s belongs to another user. Run this command from your own folder, such as your home folder.\n' "$project" >&2
+  if [[ ! -O "$project" ]] || [[ -n "$(find "$project" ! -user "$(id -u)" -print -quit 2>/dev/null)" ]]; then
+    printf 'The folder %s, or a file inside it, belongs to another user. Run this command from your own folder, such as your home folder.\n' "$project" >&2
     return 1
   fi
   if [[ ! -f "$project/Cargo.toml" || ! -f "$project/docs/start.sh" || ! -d "$project/quest" ]]; then

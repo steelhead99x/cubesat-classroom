@@ -9,10 +9,11 @@ import MissionFanout from '../components/MissionFanout.astro';
 import ProposalCard from '../components/ProposalCard.astro';
 import QuickStart from '../components/QuickStart.astro';
 import rail from '../../../docs/assets/rail-fit.png';
-import { publicSite, fundraiser, repo } from '../hubs.mjs';
+import { fundraiser, repo } from '../hubs.mjs';
+import { siteOrigin } from '../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const site = 'https://' + publicSite;
+const site = siteOrigin;
 const labs = [
   { name: 'Ground station', text: 'Run the Rust station locally and see how commands and data move through two Media over QUIC relays.', href: '#start', action: 'Install the station' },
   { name: 'Balloon lab', text: 'Log pressure and temperature, then compare your measurements with data from a balloon flight.', href: repo + '/blob/main/docs/balloon-lab.md', action: 'Open the lab' },

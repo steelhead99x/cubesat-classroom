@@ -13,9 +13,12 @@ const KEY = 'cubesat.patches';
 const session = new Set<string>();
 
 export function earned(): Set<string> {
-  let stored: string[] = [];
+  // Count only known patches, so an old or damaged saved value cannot break the shelf
+  // or inflate the total.
+  let stored: unknown = [];
   try { stored = JSON.parse(localStorage.getItem(KEY) ?? '[]'); } catch {}
-  return new Set([...stored, ...session]);
+  const saved = Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string' && id in patchTones) : [];
+  return new Set([...saved, ...session]);
 }
 
 export function earn(id: string) {

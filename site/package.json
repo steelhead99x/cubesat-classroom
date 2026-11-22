@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "astro build",
-    "build:github": "astro build && node scripts/publish-github.mjs",
+    "build:github": "node scripts/build-github.mjs",
     "dev": "astro dev"
   },
   "dependencies": {

@@ -21,14 +21,14 @@ Start with [Make first contact](https://cubesatclass.org/quests/first-contact/).
 To run the Rust ground station on macOS, Linux, or Windows (using WSL, the Windows Subsystem for Linux):
 
 ```sh
-curl -fsSL https://cubesatclassroom.org/start.sh | bash
+curl -fsSL https://cubesatclass.org/start.sh | bash
 ```
 
 If that address asks for a password, the site is in private preview: clone this repository and run `bash docs/start.sh` instead.
 
 The starter walks you through setup. Open the loopback address it prints. The station uses two local Media over QUIC relays to send commands and return readings and video.
 
-[Five-minute demo run sheet](docs/demo-run-sheet.md) · [Printable quick start](output/pdf/cubesat-classroom-quick-start.pdf)
+[Five-minute demo run sheet](docs/demo-run-sheet.md) · [Printable quick start](output/pdf/cubesat-classroom-quick-start.pdf) (rebuild with `python3 scripts/quick_start_pdf.py`)
 
 ## Labs and quests
 
@@ -45,7 +45,7 @@ The [quest board](quest/README.md) includes demo rehearsals, sensor tests, and h
 
 ## Project links
 
-[Classroom site](https://cubesatclass.org/) · [CubeSat Club](https://cubesatclassroom.org/volunteer/) · [Mobile template](mobile/README.md) · [Mission and radio design](docs/mission.md)
+[Classroom site](https://cubesatclass.org/) · [CubeSat Club](https://cubesatclass.org/volunteer/) · [Mobile template](mobile/README.md) · [Mission and radio design](docs/mission.md)
 
 ## Credits
 

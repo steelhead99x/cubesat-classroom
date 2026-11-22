@@ -14,10 +14,10 @@ Follow the [mentor rules](/quest/m0/mentor-get-ready.md#mentor-rules). Use the t
 2. **Predict (learners take turns, 10 min).** One learner types:
 
    ```sh
-   cargo run --locked -- passes --tle amateur.tle --satellite ISS --lat 39.95 --lon -75.16 --hours 24
+   cargo run --locked -- passes --tle amateur.tle --satellite ISS --lat 39.95 --lon -75.16 --hours 24 --min-elevation 0
    ```
 
-   using the town's latitude and longitude. Each learner reads one row aloud: rise time, direction and highest point.
+   using the town's latitude and longitude. `--min-elevation 0` lists passes from the horizon up, to match the tracker in step 4. Each learner reads one row aloud: rise time, direction and highest point.
 3. **Convert (everyone, 5 min).** Each learner turns one UTC time into local time and points the compass where the satellite will rise.
 4. **Check (everyone, 10 min).** Compare one pass with another tracker set to the same place and a 0° horizon. Each learner writes down the difference in seconds and one reason it might differ.
 5. **Optional watch.** If the pass is after dark and high, go outside together at the time. The mentor stays with the group the whole time.

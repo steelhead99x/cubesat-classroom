@@ -5,13 +5,16 @@ import { answerFor, byQuest, questionText } from './guide/answers.mjs';
 const homeByHost = new Map(hubs.filter(hub => !hub.path).map(({ host, slug }) => [host, '/hub/' + slug + '/']));
 
 // Redirect domains (see `redirects` in hubs.mjs) keep the path and query, so old links and
-// `curl -fsSL https://cubesat.club/start.sh | bash` keep working. Checked before the preview
+// the old `curl -fsSL https://cubesat.club/start.sh | bash` keep working. Checked before the preview
 // password, so a redirect domain never shows the password page.
 function redirected(request) {
   const url = new URL(request.url);
   const target = redirects[url.hostname] ?? redirects[url.hostname.replace(/^www\./, '')];
   if (!target) return null;
-  return new Response(null, { status: 301, headers: { location: `https://${target}${url.pathname}${url.search}`, 'cache-control': 'public, max-age=3600' } });
+  return new Response(null, {
+    status: 301,
+    headers: { location: `${target}${url.pathname}${url.search}`, 'cache-control': 'public, max-age=3600' },
+  });
 }
 
 // Classroom guardrails for the live quest guide. Mirrors AGENTS.md.
@@ -59,8 +62,9 @@ async function guide(request, env) {
 
   // Only fixed ids are accepted. `quest` is checked on its own because general questions
   // ignore it, and it goes into the prompt and the cache key.
+  if (Number(request.headers.get('content-length') ?? 0) > 1024) return json({ error: 'Request too large.' }, 413);
   const text = await request.text().catch(() => '');
-  if (text.length > 1024) return json({ error: 'Request too large.' }, 413);
+  if (new TextEncoder().encode(text).length > 1024) return json({ error: 'Request too large.' }, 413);
   let body = null;
   try { body = JSON.parse(text); } catch { body = null; }
   const { quest = '', question = '', level = '' } = body ?? {};
@@ -160,7 +164,7 @@ async function validCookie(request, env) {
   return sameText(mac, await sign(expiry, env));
 }
 
-function landing(wrong = false, unconfigured = false) {
+function landing(wrong = false, unconfigured = false, limited = false) {
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -212,6 +216,7 @@ function landing(wrong = false, unconfigured = false) {
     </div>
     ${wrong ? '<p class="error" role="alert">That password did not match. Check it and try again.</p>' : ''}
     ${unconfigured ? '<p class="error" role="alert">The password is right, but the preview is not fully set up yet. Ask the site owner to finish the setup.</p>' : ''}
+    ${limited ? '<p class="error" role="alert">Too many wrong passwords from this network today. Try again tomorrow.</p>' : ''}
   </form>
   <footer><p>An independent volunteer project.</p></footer>
 </main>
@@ -230,9 +235,18 @@ async function locked(request, env) {
   const hasCookie = await validCookie(request, env);
 
   if (url.pathname === '/preview-unlock' && request.method === 'POST') {
+    // Wrong guesses are limited per network address and day when the KV store is bound.
+    const kv = env.GUIDE_LIMITS && env.GUIDE_SALT ? env.GUIDE_LIMITS : null;
+    const day = new Date().toISOString().slice(0, 10);
+    const tries = kv ? 'unlock:' + (await sha256(`${env.GUIDE_SALT}:${day}:${request.headers.get('cf-connecting-ip') ?? 'unknown'}`)) : '';
+    const wrong = kv ? Number((await kv.get(tries)) ?? 0) : 0;
+    if (wrong >= Number(env.PREVIEW_UNLOCK_LIMIT ?? 20)) return landing(false, false, true);
     const form = await request.formData().catch(() => null);
     const given = String(form?.get('password') ?? '').slice(0, 200);
-    if (!sameText(await passToken(given), good)) return hasCookie ? Response.redirect(new URL('/', url), 303) : landing(true);
+    if (!sameText(await passToken(given), good)) {
+      if (kv) await kv.put(tries, String(wrong + 1), { expirationTtl: 60 * 60 * 25 });
+      return hasCookie ? Response.redirect(new URL('/', url), 303) : landing(true);
+    }
     if (!env.PREVIEW_COOKIE_SECRET) {
       console.error('Preview: set PREVIEW_COOKIE_SECRET (npx wrangler secret put PREVIEW_COOKIE_SECRET) before the password form can sign anyone in.');
       return landing(false, true);

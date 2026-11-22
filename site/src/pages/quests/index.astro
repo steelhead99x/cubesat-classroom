@@ -7,13 +7,13 @@ import LevelPicker from '../../components/LevelPicker.astro';
 import PatchShelf from '../../components/PatchShelf.astro';
 import QuestGuide from '../../components/QuestGuide.astro';
 import FullExperience from '../../components/FullExperience.astro';
-import { publicSite } from '../../hubs.mjs';
+import { siteOrigin } from '../../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const quests = (await getCollection('quests')).sort((a, b) => a.data.order - b.data.order);
 const total = quests.reduce((sum, quest) => sum + quest.data.minutes, 0);
 ---
-<Base title="Classroom lessons | CubeSat Classroom" description="Five browser lessons on satellite operations, each available at three levels." canonical={'https://' + publicSite + '/quests/'}>
+<Base title="Classroom lessons | CubeSat Classroom" description="Five browser lessons on satellite operations, each available at three levels." canonical={siteOrigin + '/quests/'}>
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Mission', href: base + '/mission/' },
     { label: 'Lessons', href: base + '/quests/', current: true },

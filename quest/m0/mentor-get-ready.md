@@ -19,7 +19,7 @@ These apply to every mentor quest.
 ### Steps
 
 1. Read the five rules above out loud to yourself or a co-mentor. Write "I agree" and your nickname in your mentor log.
-2. Run the [practice ground station](https://cubesatclassroom.org/#demo) in a browser. Ask for a reading, take pictures and pause contact.
+2. Run the [practice ground station](https://cubesatclass.org/#demo) in a browser. Ask for a reading, take pictures and pause contact.
 3. Install the local station with `bash docs/start.sh` and open the address it prints. Check that the reading, video and contact buttons work.
 4. Read the mentor demos you plan to run, from start to finish, and gather what each one lists under **Bring**.
 5. Note one step you think learners will find hard, and how you will explain it.
