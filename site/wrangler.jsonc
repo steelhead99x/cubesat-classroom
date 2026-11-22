@@ -8,6 +8,7 @@
 // to cubesatclass.org. Omitting them would risk dropping dashboard-managed domains.
 {
   "name": "cubesat-classroom",
+  "workers_dev": true,
   "main": "src/worker.mjs",
   "compatibility_date": "2026-11-01",
   "assets": {
