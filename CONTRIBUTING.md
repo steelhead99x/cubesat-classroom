@@ -33,7 +33,7 @@ Label every result as desk simulation, hardware bench, received RF, balloon flig
 - Evidence with units and provenance
 - One thing the next crew should check
 
-This is an independent volunteer effort inspired by Teachers in Space and AMSAT.
+This is an independent volunteer open-source space education effort.
 
 ## License
 

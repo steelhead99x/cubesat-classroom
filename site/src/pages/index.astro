@@ -9,7 +9,7 @@ import MissionFanout from '../components/MissionFanout.astro';
 import ProposalCard from '../components/ProposalCard.astro';
 import QuickStart from '../components/QuickStart.astro';
 import rail from '../../../docs/assets/rail-fit.png';
-import { fundraiser, repo } from '../hubs.mjs';
+import { repo } from '../hubs.mjs';
 import { siteOrigin } from '../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -130,7 +130,6 @@ const labs = [
           <a class="text-accent" href={base + '/volunteer/'}>Volunteer with CubeSat Club</a>
           <a class="text-accent" href={repo + '/blob/main/CONTRIBUTING.md'}>Contribution guide</a>
         </div>
-        <p class="mt-4 text-sm text-muted">Give directly to <a class="text-accent" href={fundraiser}>Teachers in Space</a> to support its teacher training and flight program.</p>
       </div>
     </section>
   </div>

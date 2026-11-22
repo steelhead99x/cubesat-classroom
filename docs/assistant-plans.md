@@ -4,7 +4,7 @@
 
 ## The goal
 
-Everything builds toward **three in-person workshops a year** (planned), where teachers, students and licensed radio mentors work with real parts. The website, the quests and any paid plan exist to prepare people for those days and to help fund them.
+Everything builds toward **proposed in-person workshops** (if partners agree), where teachers, students and licensed radio mentors work with real parts. The website, the quests and any paid plan exist to prepare people for those days and to help fund them.
 
 ## The idea in one paragraph
 
@@ -14,7 +14,7 @@ The website is the introduction: anyone can try the practice ground station and 
 
 | | Try it | Run it yourself | Crew Plus (proposed) |
 | --- | --- | --- | --- |
-| Price | Free | Free, open source | $19.99 per month per teacher or mentor |
+| Price | Free | Free, open source | TBD (to be decided; not priced yet) |
 | Account | None | None | One adult account holder (teacher, guardian or mentor); students join with a class code |
 | What you get | Browser station, 5 example quests at 3 levels, mission patches | Real Rust station over two MoQ relays, full quest board, balloon lab, CAD, hardware quests | Everything in "Run it yourself", plus a hosted quest guide with classroom guardrails |
 | AI | None | Your own assistant, using [AGENTS.md](../AGENTS.md) | Hosted guide on Claude Sonnet 5.5 through the Anthropic API |
@@ -25,14 +25,13 @@ The website is the introduction: anyone can try the practice ground station and 
 These are candidates. We want teachers and mentors to choose.
 
 1. **Early access to beta releases** of the station, new demo features and the mobile app.
-2. **New quest packs first**, including hardware quests for Arduino, Seeed XIAO and Raspberry Pi.
 3. **Class progress view** showing patches by student nickname, with no names or emails.
 4. **Crew log export** to PDF or CSV for grading and portfolios.
 5. **Teacher controls** for the guide: level, daily limits, topics turned on or off.
 6. **Mentor office hours** once a month, if volunteers can staff them.
-7. **Workshop seats first.** Early registration for the three in-person workshops each year.
+7. **Workshop seats.** Early notice when partner workshops are scheduled.
 8. **A vote on the roadmap**, such as which quest or lab comes next.
-9. **Funding the workshops.** Revenue first covers API and hosting costs. The proposal is that the rest funds the three in-person workshops each year.
+9. **Funding the workshops.** Revenue first covers API and hosting costs. The proposal is that the rest helps fund proposed in-person workshops.
 
 ### A free guided preview (needs careful review)
 
@@ -60,7 +59,7 @@ Free and paid limits are separate, so heavy paid use never eats into the free pr
 - **Paid seats:** the hash is built from the class code and the seat number.
 - **Storage:** only counters are kept. There are no IP logs beyond what abuse prevention requires.
 
-Before setting final caps, price them against current Anthropic API pricing for the chosen model and effort setting. The proposed $19.99 price has not yet been checked against these caps.
+Before setting final caps, price them against current Anthropic API pricing for the chosen model and effort setting. Pricing is not set yet and must be checked against these caps before launch.
 
 ## Guardrails
 
@@ -120,10 +119,10 @@ Two ways to sign in, with different session lengths. Both are planned; none of t
 
 ## Open questions for reviewers and the community
 
-1. Is $19.99 per month per teacher right, or should it be per class, per school, or free for Title I schools?
+1. What should the hosted Crew Plus price be (per teacher, per class, per school, or free for Title I schools)?
 2. Which three benefits matter most to teachers?
 3. Should the free preview exist at all, or should the free path be "Try it" plus "Run it yourself" only?
-4. Who operates the paid service: Teachers in Space, a new nonprofit, or a volunteer team? Is directing surplus to the three yearly workshops the right policy, and who approves the workshop budget?
+4. Who operates the paid service: Teachers in Space, a new nonprofit, or a volunteer team? Is directing surplus to proposed partner workshops the right policy, and who approves the workshop budget?
 5. Which daily limits fit a 45-minute class period?
 6. Who reviews the guardrails and privacy plan before launch: a teacher, a licensed radio mentor, and a privacy reviewer?
 7. Should the guide support languages other than English from the start?
