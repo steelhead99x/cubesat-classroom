@@ -21,11 +21,17 @@ For Cloudflare, `.github/workflows/deploy-worker.yml` deploys the Worker after C
 | Custom domain | Role |
 | --- | --- |
 | `cubesatclass.org` | Classroom home, curriculum, and teacher pilot |
+| `www.cubesatclass.org` | Permanent redirect to the same path on `cubesatclass.org` |
 | `cubesatclass.com` | Redirect to `cubesatclass.org` |
+| `www.cubesatclass.com` | Permanent redirect to the same path on `cubesatclass.org` |
 | `cubesat.app` | iOS and Android template |
+| `www.cubesat.app` | Permanent redirect to the same path on `cubesat.app` |
 | `cubesatclass.io` | Ground station and radio |
+| `www.cubesatclass.io` | Permanent redirect to the same path on `cubesatclass.io` |
 | `cubesatclass.dev` | Software development and MoQ.pro testing |
+| `www.cubesatclass.dev` | Permanent redirect to the same path on `cubesatclass.dev` |
 | `cubesat.club` | Permanent redirect to the same path on `cubesatclass.org` (set in `redirects` in `src/hubs.mjs`) |
+| `www.cubesat.club` | Permanent redirect to the same path on `cubesatclass.org` |
 
 ## Quest guide
 

@@ -2,13 +2,32 @@
 // through src/worker.mjs, which the preview password and the start.sh headers rely on.
 // Secrets (SITE_PASSWORD, PREVIEW_COOKIE_SECRET, ANTHROPIC_API_KEY) are set with
 // `npx wrangler secret put NAME`, never written here.
+//
+// Custom domains are listed here so `wrangler deploy` keeps the existing apex hostnames
+// and the www hostnames that 301 to the apex or, for cubesat.club and cubesatclass.com,
+// to cubesatclass.org. Omitting them would risk dropping dashboard-managed domains.
 {
   "name": "cubesat-classroom",
+  "workers_dev": true,
   "main": "src/worker.mjs",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
     "run_worker_first": true
-  }
+  },
+  "routes": [
+    { "pattern": "cubesatclass.org", "custom_domain": true },
+    { "pattern": "www.cubesatclass.org", "custom_domain": true },
+    { "pattern": "cubesat.club", "custom_domain": true },
+    { "pattern": "www.cubesat.club", "custom_domain": true },
+    { "pattern": "cubesatclass.com", "custom_domain": true },
+    { "pattern": "www.cubesatclass.com", "custom_domain": true },
+    { "pattern": "cubesat.app", "custom_domain": true },
+    { "pattern": "www.cubesat.app", "custom_domain": true },
+    { "pattern": "cubesatclass.io", "custom_domain": true },
+    { "pattern": "www.cubesatclass.io", "custom_domain": true },
+    { "pattern": "cubesatclass.dev", "custom_domain": true },
+    { "pattern": "www.cubesatclass.dev", "custom_domain": true }
+  ]
 }

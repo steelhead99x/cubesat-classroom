@@ -1,4 +1,4 @@
-import { hubs, redirects } from './hubs.mjs';
+import { classroomHost, hubs, redirects } from './hubs.mjs';
 import { answerFor, byQuest, questionText } from './guide/answers.mjs';
 
 // Hubs with their own `path` live on another host (GitHub Pages or the classroom home), not here.
@@ -7,14 +7,26 @@ const homeByHost = new Map(hubs.filter(hub => !hub.path).map(({ host, slug }) =>
 // Redirect domains (see `redirects` in hubs.mjs) keep the path and query, so old links and
 // the old `curl -fsSL https://cubesat.club/start.sh | bash` keep working. Checked before the preview
 // password, so a redirect domain never shows the password page.
+// www on those domains follows the same rule (one hop to the public site). www on the classroom
+// host or a hub host goes to the same path on the apex.
 function redirected(request) {
   const url = new URL(request.url);
-  const target = redirects[url.hostname] ?? redirects[url.hostname.replace(/^www\./, '')];
-  if (!target) return null;
-  return new Response(null, {
-    status: 301,
-    headers: { location: `${target}${url.pathname}${url.search}`, 'cache-control': 'public, max-age=3600' },
-  });
+  const host = url.hostname;
+  const apex = host.replace(/^www\./, '');
+  const target = redirects[host] ?? redirects[apex];
+  if (target) {
+    return new Response(null, {
+      status: 301,
+      headers: { location: `${target}${url.pathname}${url.search}`, 'cache-control': 'public, max-age=3600' },
+    });
+  }
+  if (host !== apex && (apex === classroomHost || hubs.some(hub => hub.host === apex))) {
+    return new Response(null, {
+      status: 301,
+      headers: { location: `https://${apex}${url.pathname}${url.search}`, 'cache-control': 'public, max-age=3600' },
+    });
+  }
+  return null;
 }
 
 // Classroom guardrails for the live quest guide. Mirrors AGENTS.md.
