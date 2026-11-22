@@ -4,7 +4,9 @@
 
 Work out when a fire crew far from phone service could pass a short message through an amateur radio satellite. Label the result a desk simulation.
 
-## Background
+## Plan
+
+### Background
 
 Two kinds of satellite help with wildfires:
 
@@ -13,7 +15,7 @@ Two kinds of satellite help with wildfires:
 
 This quest is the "talking" part. Only a licensed operator may transmit. Students plan and listen.
 
-## Plan
+### Steps
 
 1. Pick a pretend fire camp: a town or park near you. Use the place, not a home address.
 2. Download current orbit data from [CelesTrak's amateur radio group](https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle) and save it as `amateur.tle`.
@@ -27,6 +29,6 @@ This quest is the "talking" part. Only a licensed operator may transmit. Student
 5. Check your work: you have a pass time in UTC and local time, how many minutes it lasts, and a message short enough to say twice in that time.
 6. Share the crew nickname, the camp, the pass and your message.
 
-## Talk it over
+### Talk it over
 
 A pass lasts only a few minutes and the next may be hours away. What should the crew do in between?

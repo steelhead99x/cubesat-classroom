@@ -19,7 +19,7 @@ Use real orbit data to work out how the International Space Station moves, when 
 6. Check your work: one orbit should take a little over 90 minutes, and the tilt should be near 51.6°. If your town's latitude is higher than the tilt, explain why the ISS never passes directly overhead.
 7. Share the crew nickname, the data date, your orbit time and the pass you chose. If someone saw or heard the pass, add that as a separate observation.
 
-## Levels
+### Levels
 
 - **Beginner:** say how many times the ISS circles Earth in one school day.
 - **Intermediate:** explain why passes come in groups about 90 minutes apart, then stop for hours.
