@@ -6,7 +6,7 @@ interface Props {
 }
 
 const { showHubs = true } = Astro.props;
-const homeFor = (hub: typeof hubs[number]) => 'https://' + hub.host + (hub.path ?? '/');
+const homeFor = (hub: typeof hubs[number]) => hub.home ?? 'https://' + hub.host + (hub.path ?? '/');
 ---
 <footer class="border-t border-line text-sm">
   <div class="shell flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-6">

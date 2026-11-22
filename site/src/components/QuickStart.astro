@@ -1,7 +1,7 @@
 ---
-import { repo } from '../hubs.mjs';
+import { installer, repo } from '../hubs.mjs';
 
-const command = 'curl -fsSL https://cubesatclassroom.org/start.sh | bash';
+const command = `curl -fsSL ${installer} | bash`;
 ---
 <section id="start" class="start" aria-labelledby="start-title">
   <h2 id="start-title">One command to start</h2>

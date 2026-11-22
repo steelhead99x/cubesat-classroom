@@ -5,7 +5,8 @@ import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import casePreview from '../../../hardware/rev-a-cad-preview.png';
 import drawing from '../../../hardware/rev-b-drawing.svg?url';
-import { publicSite, repo } from '../hubs.mjs';
+import { repo } from '../hubs.mjs';
+import { siteOrigin } from '../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const cad = repo + '/blob/main/hardware/';
@@ -24,7 +25,7 @@ const parts = [
   { name: 'Camera plate', dimensions: '93.3 × 93.3 × 4.4', file: 'rev-b-camera-plate.stl', print: 'Print the exterior face down. Check the 18 mm opening against the camera’s field of view.' },
 ];
 ---
-<Base title="CAD and print files | CubeSat Classroom" description="Bambu P1S test-print files for the Rev A case, plus Rev B rail-fit drawings, STL meshes, and bench fit requirements." canonical={'https://' + publicSite + '/hardware/'}>
+<Base title="CAD and print files | CubeSat Classroom" description="Bambu P1S test-print files for the Rev A case, plus Rev B rail-fit drawings, STL meshes, and bench fit requirements." canonical={siteOrigin + '/hardware/'}>
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Mission', href: base + '/mission/' },
     { label: 'Lessons', href: base + '/quests/' },
