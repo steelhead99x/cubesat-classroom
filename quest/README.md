@@ -111,6 +111,13 @@ Short examples of what small satellites, radio and sustainable materials do for 
 - [Track a pet by its collar](/quest/m0/pet-collar-tracking.md)
 - [Wool, fibre and static: what should cover the kit?](/quest/m0/wool-fiber-static.md)
 
+### Public site and Worker
+
+Maintainer work for the live classroom site. These quests stay in the log after the pull requests land, so the next crew can re-check the same behavior.
+
+- [Fail the Worker deploy when Cloudflare secrets are missing](/quest/m0/fail-deploy-without-secrets.md)
+- [Redirect www hosts to their apex on the public Worker](/quest/m0/redirect-www-hosts.md)
+
 ### Parallel classroom, balloon and radio work
 
 - [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md)
