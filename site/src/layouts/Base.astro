@@ -19,8 +19,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- GitHub Pages cannot send security headers, so the page sets what a meta tag can. -->
-    <meta http-equiv="Content-Security-Policy" content="base-uri 'none'; object-src 'none'; form-action 'self'">
+    <!-- GitHub Pages cannot send security headers, so the page sets what a meta tag can.
+         All scripts are files on this origin (no inline scripts), so script-src can be 'self'.
+         frame-ancestors, HSTS and nosniff cannot be set from a meta tag; the Cloudflare Worker sends them. -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="description" content={description}>
     <meta name="theme-color" content="#10264a">
@@ -33,13 +35,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     {image && <meta property="og:image" content={image}>}
     {image && <meta name="twitter:card" content="summary_large_image">}
     <title>{title}</title>
-    <script is:inline>
-      // Apply the saved level before first paint so the page doesn't flash beginner text.
-      try {
-        var level = localStorage.getItem('cubesat.level');
-        if (level === 'beginner' || level === 'intermediate' || level === 'professional') document.documentElement.dataset.level = level;
-      } catch (e) {}
-    </script>
+    <script is:inline src={base + '/level.js'}></script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>

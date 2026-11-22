@@ -47,8 +47,8 @@ jobs:
           cache-dependency-path: site/package-lock.json
       - run: npm ci
       - run: npm run build
-      - name: Worker loads
-        run: node --input-type=module -e "await import('./src/worker.mjs')"
+      - name: Worker behaviour tests (redirects, Origin check, preview gate, guide off)
+        run: npm test
       - name: GitHub Pages copy in docs/ is up to date
         working-directory: .
         run: |
