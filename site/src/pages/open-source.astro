@@ -14,8 +14,21 @@ const groups = [
   {
     id: 'with-ai',
     title: 'Projects that welcome AI-assisted work',
-    summary: 'These projects let contributors use AI coding assistants and real-time AI tools, as long as a person takes responsibility for the result and says when a tool helped.',
+    summary: 'These projects work with AI: some let contributors use AI coding assistants, as long as a person takes responsibility for the result and says when a tool helped, and some put real-time AI to work in space itself.',
     projects: [
+      {
+        name: 'KENSAT',
+        policy: 'KENSAT repository',
+        link: 'Explore the',
+        url: 'https://github.com/kenchangh/kensat',
+        note: 'A home-built 2U CubeSat that runs a small language model in orbit on a power-gated NVIDIA Jetson Orin Nano and sends the results to amateur ground stations. Its flight software, payload code, ground-station tools and schematics are published.',
+      },
+      {
+        name: 'F Prime (NASA JPL)',
+        policy: 'AI policy',
+        url: 'https://fprime.jpl.nasa.gov/latest/AI_POLICY/',
+        note: 'Open-source flight software framework from NASA’s Jet Propulsion Laboratory. AI-assisted contributions are allowed when every use is disclosed and the contributor reviews, tests and stands behind the work.',
+      },
       {
         name: 'Linux kernel',
         policy: 'AI coding assistants guide',
@@ -49,6 +62,20 @@ const groups = [
       },
     ],
   },
+  {
+    id: 'more-space',
+    title: 'More orbit and CubeSat projects to explore',
+    summary: 'Open-source space projects worth a look. Check each project’s contribution guide for how it handles AI before you contribute.',
+    projects: [
+      {
+        name: 'OrbitDeck',
+        policy: 'OrbitDeck repository',
+        link: 'Explore the',
+        url: 'https://github.com/prstoetzer/OrbitDeck',
+        note: 'A cross-platform desktop app, written in Python, for tracking satellites and analysing their orbits. MIT licence. A good next step after the pass-prediction quest.',
+      },
+    ],
+  },
 ];
 ---
 <Base title="Open-source neighbours | CubeSat Classroom" description="Open-source projects that welcome AI-assisted work and projects that accept only human-written work. Both choices are respected." canonical={'https://' + publicSite + '/open-source/'}>
@@ -59,7 +86,7 @@ const groups = [
   ]} />
   <PageHero>
     <h1 class="max-w-3xl">Two ways to build in the open, both respected</h1>
-    <p class="lede mt-5">Some open-source projects work with real-time AI assistants. Others accept only code and text written by people. Both are careful choices made by their communities. We learn from both, and we follow each project's own rules when we contribute to it.</p>
+    <p class="lede mt-5">Some open-source projects work with real-time AI assistants, and some even fly AI in orbit. Others accept only code and text written by people. Both are careful choices made by their communities. We learn from both, and we follow each project's own rules when we contribute to it.</p>
   </PageHero>
 
   <div class="shell space-y-14 py-12 sm:py-16">
@@ -82,7 +109,7 @@ const groups = [
             <li class="rounded-[1.25rem] bg-white p-6 ring-1 ring-line">
               <h3>{project.name}</h3>
               <p class="mt-2 text-muted">{project.note}</p>
-              <a class="mt-3 inline-block text-accent" href={project.url}>Read the {project.policy}</a>
+              <a class="mt-3 inline-block text-accent" href={project.url}>{project.link ?? 'Read the'} {project.policy}</a>
             </li>
           ))}
         </ul>
