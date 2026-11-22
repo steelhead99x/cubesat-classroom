@@ -1,4 +1,4 @@
-import { hubs, publicSiteLive, redirects } from './hubs.mjs';
+import { hubs, redirects } from './hubs.mjs';
 import { answerFor, byQuest, questionText } from './guide/answers.mjs';
 
 // Hubs with their own `path` live on another host (GitHub Pages or the classroom home), not here.
@@ -11,12 +11,9 @@ function redirected(request) {
   const url = new URL(request.url);
   const target = redirects[url.hostname] ?? redirects[url.hostname.replace(/^www\./, '')];
   if (!target) return null;
-  // While the public site is still on its interim github.io address, redirect temporarily so
-  // browsers do not remember it once the custom domain goes live.
-  const interim = !publicSiteLive && url.hostname.replace(/^www\./, '') === 'cubesat.club';
   return new Response(null, {
-    status: interim ? 302 : 301,
-    headers: { location: `${target}${url.pathname}${url.search}`, 'cache-control': interim ? 'no-store' : 'public, max-age=3600' },
+    status: 301,
+    headers: { location: `${target}${url.pathname}${url.search}`, 'cache-control': 'public, max-age=3600' },
   });
 }
 

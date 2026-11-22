@@ -3,17 +3,11 @@
 export const repo = 'https://github.com/steelhead99x/cubesat-classroom';
 export const fundraiser = 'https://givebutter.com/fund-stem-training-for-100-educators-s14sb0';
 export const classroomHost = 'cubesatclass.org';
-// The public site: the GitHub Pages build of this repository (docs/), meant to be served at
-// this domain. Until its DNS points at GitHub Pages, keep `publicSiteLive` false: links, the
-// installer address and the cubesat.club redirect then use the github.io address, which keeps
-// working afterwards too. Once the domain loads, add docs/CNAME and set this to true.
-export const publicSite = 'cubesatclassroom.org';
-export const publicSiteLive = false;
-export const pagesAddress = 'https://steelhead99x.github.io/cubesat-classroom';
-export const publicOrigin = publicSiteLive ? 'https://' + publicSite : pagesAddress;
+// The public site. Canonical URLs, the installer address and redirects all point here.
+export const publicOrigin = 'https://' + classroomHost;
 export const installer = publicOrigin + '/start.sh';
-// Domains the Worker answers only with a permanent redirect to the same path under another address.
-export const redirects = { 'cubesat.club': publicOrigin, 'cubesatclass.com': 'https://' + classroomHost };
+// Domains the Worker answers only with a permanent redirect to the same path on the public site.
+export const redirects = { 'cubesat.club': publicOrigin, 'cubesatclass.com': publicOrigin };
 
 export const hubs = [
   {
@@ -73,9 +67,8 @@ export const hubs = [
   },
   {
     slug: 'volunteer',
-    host: publicSite,
+    host: classroomHost,
     path: '/volunteer/',
-    home: publicOrigin + '/volunteer/',
     name: 'Volunteer',
     heading: 'Help the next crew',
     description: 'CubeSat Classroom is a volunteer-built contribution to space education. Teachers, learners, and amateur-radio mentors keep it going by sharing what they tried and what they learned.',
