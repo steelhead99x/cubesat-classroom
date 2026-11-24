@@ -74,7 +74,10 @@ enum Command {
         /// TLE file in three-line format (name line plus two element lines).
         #[arg(long)]
         tle: PathBuf,
-        /// Only satellites whose name contains this text (case-insensitive).
+        /// Only satellites whose name contains this word or phrase.
+        ///
+        /// Matching is case-insensitive and stops at letters and digits, so `ISS`
+        /// selects "ISS (ZARYA)" and not "SWISSCUBE".
         #[arg(long)]
         satellite: Option<String>,
         /// Observer latitude in degrees (north positive).

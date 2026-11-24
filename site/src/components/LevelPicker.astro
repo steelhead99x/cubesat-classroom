@@ -14,7 +14,7 @@ const { describe = false } = Astro.props;
       {levels.map(level => (
         <label class="cursor-pointer">
           <input class="peer sr-only" type="radio" name="level" value={level.id} checked={level.id === 'beginner'}>
-          <span class="block rounded-md px-3 py-1.5 text-sm font-bold text-muted hover:text-ink peer-checked:bg-accent peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2">{level.name}</span>
+          <span class="grid min-h-11 place-items-center rounded-md px-3 py-2 text-sm font-bold text-muted hover:text-ink peer-checked:bg-accent peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2">{level.name}</span>
         </label>
       ))}
     </div>

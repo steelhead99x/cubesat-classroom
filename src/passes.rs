@@ -191,6 +191,38 @@ fn summarise(sat: &Satellite, o: Observer, rise: f64, set: f64, min_el: f64) -> 
     })
 }
 
+/// True when `filter` occurs in `name` on a letter/digit boundary.
+///
+/// An empty filter matches every name. `ISS` matches `ISS (ZARYA)` and does not
+/// match `SWISSCUBE`, which only contains those letters inside another word.
+pub(crate) fn name_matches(name: &str, filter: &str) -> bool {
+    let name = name.to_lowercase();
+    let filter = filter.trim().to_lowercase();
+    if filter.is_empty() {
+        return true;
+    }
+    let name_b = name.as_bytes();
+    let mut from = 0;
+    while from < name_b.len() {
+        let Some(rel) = name[from..].find(&filter) else {
+            return false;
+        };
+        let start = from + rel;
+        let end = start + filter.len();
+        let before_ok = start == 0 || !name_b[start - 1].is_ascii_alphanumeric();
+        let after_ok = end >= name_b.len() || !name_b[end].is_ascii_alphanumeric();
+        if before_ok && after_ok {
+            return true;
+        }
+        let next = end.max(start + 1);
+        if next <= from {
+            return false;
+        }
+        from = next;
+    }
+    false
+}
+
 fn load(tle: &str, filter: Option<&str>) -> Result<Vec<Satellite>> {
     let elements =
         sgp4::parse_3les(tle).context("read TLE file (three-line format: name, line 1, line 2)")?;
@@ -198,7 +230,7 @@ fn load(tle: &str, filter: Option<&str>) -> Result<Vec<Satellite>> {
     elements
         .into_iter()
         .filter(|e| match (&filter, &e.object_name) {
-            (Some(f), Some(name)) => name.to_lowercase().contains(f.as_str()),
+            (Some(f), Some(name)) => name_matches(name, f),
             (Some(_), None) => false,
             (None, _) => true,
         })
@@ -375,6 +407,17 @@ mod tests {
         assert_eq!(utc(1_795_132_800), "2026-11-20 00:00:00");
         assert_eq!(compass(0.0), "N");
         assert_eq!(compass(130.0), "SE");
+    }
+
+    #[test]
+    fn satellite_name_filter_is_a_whole_word() {
+        assert!(name_matches("ISS (ZARYA)", "ISS"));
+        assert!(name_matches("ISS (ZARYA)", "zarya"));
+        assert!(name_matches("ISS (ZARYA)", "ISS (ZARYA)"));
+        assert!(!name_matches("SWISSCUBE", "ISS"));
+        assert!(name_matches("OSCAR 7 (AO-7)", "AO-7"));
+        assert!(name_matches("EYESAT A (AO-27)", "AO"));
+        assert!(name_matches("anything", ""));
     }
 
     #[test]

@@ -353,7 +353,7 @@ async function route(request, env) {
     const home = homeByHost.get(url.hostname);
     if (url.pathname === '/' && home) {
       url.pathname = home;
-      return env.ASSETS.fetch(new Request(url, request));
+      return pageOrMissing(new Request(url, request), env);
     }
     if (url.pathname === '/start.sh') {
       // Show the installer as plain text. Browsers such as Firefox warn about, or download,
@@ -366,6 +366,30 @@ async function route(request, env) {
       out.headers.set('cache-control', 'no-cache');
       return out;
     }
-    return env.ASSETS.fetch(request);
+    return pageOrMissing(request, env);
   }
+}
+
+// Browsers ask for a page with Accept: text/html. A missing stylesheet or script
+// stays a plain 404 so the browser does not treat HTML as code.
+function wantsPage(request) {
+  const path = new URL(request.url).pathname;
+  if (/\.(?:css|gif|ico|jpe?g|js|map|pdf|png|sh|svg|txt|webp|woff2?|xml)$/i.test(path)) return false;
+  const accept = request.headers.get('accept') ?? '';
+  return accept === '' || accept.includes('text/html') || accept.includes('*/*');
+}
+
+async function pageOrMissing(request, env) {
+  const response = await env.ASSETS.fetch(request);
+  if (response.status !== 404 || request.method !== 'GET' || !wantsPage(request)) return response;
+  const missing = new URL(request.url);
+  if (missing.pathname === '/404.html') return response;
+  missing.pathname = '/404.html';
+  missing.search = '';
+  const fallback = await env.ASSETS.fetch(new Request(missing, { headers: request.headers }));
+  if (!fallback.ok) return response;
+  const headers = new Headers(fallback.headers);
+  headers.set('content-type', 'text/html; charset=utf-8');
+  headers.set('cache-control', 'no-store');
+  return new Response(fallback.body, { status: 404, headers });
 }
