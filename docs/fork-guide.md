@@ -2,7 +2,7 @@
 
 CubeSat Classroom is a starting kit. It is not meant to compete with other space education projects. Copy it, rename it and build your own site, club or mission on top. Share improvements back if they would help others, but you don't have to.
 
-Original work is under MIT or Apache 2.0, your choice. Third-party material keeps its own licence.
+Original work is under MIT or Apache 2.0, your choice. Third-party material keeps its own license.
 
 ## What you get
 

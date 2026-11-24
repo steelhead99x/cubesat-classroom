@@ -3,7 +3,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../src/worker.mjs';
 
-const ASSETS = { fetch: async () => new Response('<!doctype html><p>page</p>', { headers: { 'content-type': 'text/html' } }) };
+const ASSETS = {
+  fetch: async (request) => {
+    const { pathname } = new URL(request.url);
+    if (pathname === '/404.html') {
+      return new Response('<!doctype html><title>Not found</title><p>Page not found</p>', {
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+      });
+    }
+    if (pathname === '/missing' || pathname === '/missing.js') {
+      return new Response('nope', { status: 404, headers: { 'content-type': 'text/plain' } });
+    }
+    return new Response('<!doctype html><p>page</p>', { headers: { 'content-type': 'text/html' } });
+  },
+};
 const call = (url, init = {}, env = {}) => worker.fetch(new Request(url, init), { ASSETS, ...env });
 
 function fakeKv() {
@@ -27,6 +40,16 @@ test('redirect domains and their www go to cubesatclass.org in one hop', async (
     assert.equal(res.status, 301);
     assert.equal(res.headers.get('location'), 'https://cubesatclass.org/start.sh?x=1');
   }
+});
+
+test('a missing page is the site 404, and a missing script stays a plain 404', async () => {
+  const page = await call('https://cubesatclass.org/missing', { headers: { accept: 'text/html' } });
+  assert.equal(page.status, 404);
+  assert.match(page.headers.get('content-type'), /text\/html/);
+  assert.match(await page.text(), /Page not found/);
+  const script = await call('https://cubesatclass.org/missing.js', { headers: { accept: '*/*' } });
+  assert.equal(script.status, 404);
+  assert.equal(await script.text(), 'nope');
 });
 
 test('apex hosts are served, with security headers', async () => {

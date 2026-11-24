@@ -18,10 +18,13 @@
 //     A1 to GND. The divider halves the voltage, so the most it can measure is
 //     twice the board's reference: 10 V on an Uno, 6.6 V on a 3.3 V board.
 //     Never connect a higher voltage than that.
-//   BH1750 light sensor: VCC to 3V3, GND, SDA, SCL (address 0x23)
+//   BH1750 light sensor: VCC to 3V3, GND, SDA, SCL (address 0x23).
+//     Uno and Nano SDA/SCL are 5 V. Use a 5 V-tolerant module or a level
+//     shifter. A 3.3 V XIAO can connect SDA and SCL directly. A mentor checks.
 //
-// Status: NOT yet compiled or tested on hardware. Check readings against a
-// thermometer and a meter, and label them "hardware bench".
+// Status: compiles for the boards named above (arduino-cli, 24 Nov 2026).
+// Not yet run on hardware. Check readings against a thermometer and a meter,
+// and label them "hardware bench".
 
 #include <Wire.h>
 
@@ -66,7 +69,8 @@ bool startLight() {
 
 // Returns lux, or -1 if the sensor did not answer.
 long readLux() {
-  if (Wire.requestFrom((int)BH1750_ADDR, 2) != 2) return -1;
+  // uint8_t sizes avoid an ambiguous requestFrom() on ESP32 core 3.
+  if (Wire.requestFrom(BH1750_ADDR, (uint8_t)2) != 2) return -1;
   uint16_t hi = Wire.read();  // read high byte first, as two statements
   uint16_t lo = Wire.read();
   uint16_t raw = (hi << 8) | lo;
@@ -78,6 +82,8 @@ void setup() {
   if (USE_BH1750) {
     Wire.begin();
     lightReady = startLight();
+    // High-resolution mode needs about 180 ms before the first sample is real.
+    if (lightReady) delay(180);
   }
 }
 

@@ -70,7 +70,7 @@ export const byQuest = {
       professional: 'Pause mid-group and note the stall point. After restoring, check that the next reply carries a new request id.',
     },
     why: {
-      beginner: 'A real satellite flies out of sight after a few minutes. Ground crews practise what to do when the signal goes away.',
+      beginner: 'A real satellite flies out of sight after a few minutes. Ground crews practice what to do when the signal goes away.',
       intermediate: 'Every pass ends with loss of signal. Planning what to ask for first, when the next pass starts, saves precious minutes.',
       professional: 'Short commanding windows make idempotency and expiry essential. A command that arrives late must not run twice or run stale.',
     },
