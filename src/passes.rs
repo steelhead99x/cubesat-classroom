@@ -23,14 +23,34 @@ const STALE_DAYS: f64 = 14.0;
 /// elements describe a different orbit, so the passes should not be used at all.
 const UNUSABLE_DAYS: f64 = 60.0;
 
+#[derive(clap::Args)]
 pub(crate) struct PassArgs {
+    /// TLE file in three-line format (name line plus two element lines).
+    #[arg(long)]
     pub tle: PathBuf,
+    /// Only satellites whose name contains this word or phrase.
+    ///
+    /// Matching is case-insensitive and stops at letters and digits, so `ISS`
+    /// selects "ISS (ZARYA)" and not "SWISSCUBE".
+    #[arg(long)]
     pub satellite: Option<String>,
+    /// Observer latitude in degrees (north positive).
+    #[arg(long, allow_hyphen_values = true)]
     pub lat: f64,
+    /// Observer longitude in degrees (east positive).
+    #[arg(long, allow_hyphen_values = true)]
     pub lon: f64,
+    /// Observer altitude in metres.
+    #[arg(long, default_value_t = 0.0, allow_hyphen_values = true)]
     pub alt_m: f64,
+    /// Hours ahead to search.
+    #[arg(long, default_value_t = 24.0)]
     pub hours: f64,
+    /// Ignore passes whose highest point is below this elevation, in degrees.
+    #[arg(long, default_value_t = 10.0, allow_hyphen_values = true)]
     pub min_elevation: f64,
+    /// Print JSON instead of a table.
+    #[arg(long)]
     pub json: bool,
 }
 
