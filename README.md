@@ -1,8 +1,13 @@
 # CubeSat Classroom
 
-CubeSat Classroom is an open-source satellite lab for learners 13 and up. Students request sensor data, receive test video, and see what happens when the link drops.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cubesat-classroom-wordmark-reversed.svg">
+  <img src="docs/assets/cubesat-classroom-wordmark.svg" alt="CubeSat Classroom" width="300">
+</picture>
 
-It is a starting kit, not a competitor to other space education projects: fork it and build your own class, club or mission site. See the [fork guide](docs/fork-guide.md).
+CubeSat Classroom helps teachers bring space science into the classroom through free, open-source quests. Learners request a sensor reading, receive test video, and see what happens when the link drops. The browser simulator gives every crew a place to start.
+
+The Summer 2027 briefing describes the project’s goals for teacher training and classroom access. The [fork guide](docs/fork-guide.md) shows how to adapt the kit for a class, club, or mission. [Mission briefing](https://hikd.ai/tis/) · [Brand kit (review access)](https://hikd.ai/tis/brand/)
 
 ## Who it's for
 
@@ -18,7 +23,10 @@ CubeSat Classroom is written for learners 13 and up, and for the teachers, guard
 
 Start with [Make first contact](https://cubesatclass.org/quests/first-contact/). The browser exercise uses simulated data and needs no account or hardware.
 
-To run the Rust ground station on macOS, Linux, or Windows (using WSL, the Windows Subsystem for Linux):
+The Rust ground station runs on macOS, Linux, and Windows via WSL (Windows Subsystem for Linux).
+
+- [Start with Claude, Codex, Grok, or another AI assistant](docs/quick-start.md#with-an-ai-assistant).
+- Or run the guided installer in your terminal.
 
 ```sh
 curl -fsSL https://cubesatclass.org/start.sh | bash
@@ -49,7 +57,7 @@ The [quest board](quest/README.md) includes demo rehearsals, sensor tests, and h
 
 ## Credits
 
-Networking uses open-source Media over QUIC libraries from [moq.dev](https://moq.dev/). Volunteer site work by [hikd.ai](https://hikd.ai/). CubeSat Classroom is an independent project inspired by Teachers in Space and AMSAT.
+CubeSat Classroom is an independent volunteer project inspired by Teachers in Space and AMSAT. Volunteer site work and mission briefing by [hikd.ai](https://hikd.ai/). The ground station uses open-source Media over QUIC libraries from [moq.dev](https://moq.dev/).
 
 ## License
 

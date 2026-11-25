@@ -41,51 +41,55 @@ export default function Station() {
   const [log, setLog] = useState<{ id: number; text: string }[]>([{ id: 0, text: 'Station ready.' }]);
   const contactRef = useRef(true);
   const framesRef = useRef(0);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cameraTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const readingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const note = (text: string) => setLog(lines => [{ id: ++lineId.current, text }, ...lines].slice(0, 12));
-  const stopTimer = () => {
-    if (timer.current) clearInterval(timer.current);
-    timer.current = null;
+  const stopCamera = () => {
+    if (cameraTimer.current !== null) clearInterval(cameraTimer.current);
+    cameraTimer.current = null;
   };
-  useEffect(() => () => stopTimer(), []);
+  const cancelReading = () => {
+    if (readingTimer.current !== null) clearTimeout(readingTimer.current);
+    readingTimer.current = null;
+  };
+  useEffect(() => () => {
+    stopCamera();
+    cancelReading();
+  }, []);
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(tick);
   }, []);
 
-  const ask = async () => {
-    if (!contactRef.current || sending) return;
+  const ask = () => {
+    if (!contactRef.current || readingTimer.current !== null || cameraTimer.current !== null) return;
     setSending(true);
     const started = Date.now();
     const delay = 280 + Math.floor(Math.random() * 280);
-    await new Promise(resolve => setTimeout(resolve, delay));
-    if (!contactRef.current) {
-      note('No answer. The satellite could not hear us. Try again when contact is on.');
+    readingTimer.current = setTimeout(() => {
+      readingTimer.current = null;
+      const captured = Date.now();
+      const s = sample(Math.floor(captured / 1000), captured);
+      setReading(s);
+      const rtt = captured - started;
+      note(level === 'beginner'
+        ? `The satellite answered: ${s.temperature.toFixed(1)} °C, ${s.voltage.toFixed(3)} V, ${s.light} lx.`
+        : `Reply in ${rtt} ms, sample #${s.sequence}: ${s.temperature.toFixed(1)} °C, ${s.voltage.toFixed(3)} V, ${s.light} lx`);
       setSending(false);
-      return;
-    }
-    const captured = Date.now();
-    const s = sample(Math.floor(captured / 1000), captured);
-    setReading(s);
-    const rtt = Date.now() - started;
-    note(level === 'beginner'
-      ? `The satellite answered: ${s.temperature.toFixed(1)} °C, ${s.voltage.toFixed(3)} V, ${s.light} lx.`
-      : `Reply in ${rtt} ms, sample #${s.sequence}: ${s.temperature.toFixed(1)} °C, ${s.voltage.toFixed(3)} V, ${s.light} lx`);
-    setSending(false);
+    }, delay);
   };
 
   const pictures = () => {
-    if (!contactRef.current || sending) return;
-    stopTimer();
+    if (!contactRef.current || readingTimer.current !== null || cameraTimer.current !== null) return;
     framesRef.current = 0;
     setFrames(0);
     setIncomplete(false);
     setSending(true);
     note(level === 'beginner' ? 'You asked the camera for pictures.' : 'Command sent: start test camera');
-    timer.current = setInterval(() => {
+    cameraTimer.current = setInterval(() => {
       if (!contactRef.current) {
-        stopTimer();
+        stopCamera();
         setSending(false);
         setIncomplete(true);
         note(`Contact lost. Only ${framesRef.current} of ${FRAMES} pictures made it.`);
@@ -94,7 +98,7 @@ export default function Station() {
       framesRef.current += 1;
       setFrames(framesRef.current);
       if (framesRef.current === FRAMES) {
-        stopTimer();
+        stopCamera();
         setSending(false);
         note(level === 'beginner' ? 'All 8 pictures made it down.' : 'Received all 8 frames, one every 0.5 s.');
       }
@@ -103,15 +107,19 @@ export default function Station() {
 
   const toggle = () => {
     if (contactRef.current) {
-      const wasSending = timer.current !== null;
+      const wasSending = cameraTimer.current !== null;
+      const wasReading = readingTimer.current !== null;
       const got = framesRef.current;
       contactRef.current = false;
-      stopTimer();
+      stopCamera();
+      cancelReading();
       setSending(false);
       setContact(false);
       if (wasSending) {
         setIncomplete(true);
         note(`Contact lost. Only ${got} of ${FRAMES} pictures made it.`);
+      } else if (wasReading) {
+        note('No answer. Contact was lost before the reading arrived.');
       } else {
         note('Contact paused. The last readings are historical.');
       }
