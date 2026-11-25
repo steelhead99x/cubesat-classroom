@@ -242,6 +242,23 @@ async fn payload(
 }
 
 impl Station {
+    /// Lock the console state. `Display` is plain data that is always valid, so a
+    /// panic in another handler while it held the lock must not take down every later
+    /// request: recover the guard instead of propagating the poison.
+    fn display(&self) -> std::sync::RwLockWriteGuard<'_, Display> {
+        self.display
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// A copy of the console state, taken under a shared lock.
+    fn display_snapshot(&self) -> Display {
+        self.display
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+    }
+
     async fn exchange(&self, command: Command) -> Result<()> {
         let mut replies = subscribe(&self.origin, REPLIES).await?;
         let mut group = self.commands.append_group()?;
@@ -264,20 +281,20 @@ impl Station {
                 Action::Sensors => {
                     let sample = reply.sample.context("missing sensor readings")?;
                     sample.age_ms(unix_ms()?)?;
-                    self.display.write().expect("display lock").sample = Some(sample);
+                    self.display().sample = Some(sample);
                 }
                 Action::Video => {
                     for index in 1..=FRAME_COUNT {
                         let frame = group.read_frame().await?.context("video ended early")?;
                         bounded(&frame.payload, 64 * 1024)?;
                         ensure!(frame.payload.starts_with(&[0xff, 0xd8]), "invalid JPEG");
-                        let mut display = self.display.write().expect("display lock");
+                        let mut display = self.display();
                         display.jpeg = frame.payload;
                         display.frame_id += 1;
                         display.frame_count = index;
                     }
                     ensure!(group.read_frame().await?.is_none(), "too many video frames");
-                    self.display.write().expect("display lock").video_received = true;
+                    self.display().video_received = true;
                 }
             }
             return Ok(());
@@ -306,7 +323,7 @@ async fn action(State(station): State<Arc<Station>>, Json(action): Json<Action>)
             .into_response();
     };
     {
-        let mut display = station.display.write().expect("display lock");
+        let mut display = station.display();
         display.event = match action {
             Action::Sensors => "Waiting for a new sensor reading.",
             Action::Video => {
@@ -326,7 +343,7 @@ async fn action(State(station): State<Arc<Station>>, Json(action): Json<Action>)
         }),
     )
     .await;
-    let mut display = station.display.write().expect("display lock");
+    let mut display = station.display();
     match result {
         Ok(Ok(())) => {
             display.recovery_seen |= display.loss_tried;
@@ -350,7 +367,7 @@ async fn action(State(station): State<Arc<Station>>, Json(action): Json<Action>)
 
 async fn contact(State(station): State<Arc<Station>>, Json(online): Json<bool>) -> StatusCode {
     station.contact.send_replace(online);
-    let mut display = station.display.write().expect("display lock");
+    let mut display = station.display();
     display.loss_tried |= !online;
     display.event = if online {
         "Contact restored. Try a new request."
@@ -362,7 +379,7 @@ async fn contact(State(station): State<Arc<Station>>, Json(online): Json<bool>) 
 }
 
 async fn status(State(station): State<Arc<Station>>) -> impl IntoResponse {
-    let display = station.display.read().expect("display lock").clone();
+    let display = station.display_snapshot();
     let online = *station.contact.borrow();
     let fresh = online
         && display
@@ -373,7 +390,7 @@ async fn status(State(station): State<Arc<Station>>) -> impl IntoResponse {
 }
 
 async fn jpeg(State(station): State<Arc<Station>>) -> Response {
-    let jpeg = station.display.read().expect("display lock").jpeg.clone();
+    let jpeg = station.display_snapshot().jpeg;
     if jpeg.is_empty() {
         return StatusCode::NOT_FOUND.into_response();
     }

@@ -257,8 +257,10 @@ pub(crate) fn run(args: FlightArgs) -> Result<()> {
         if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
             std::fs::create_dir_all(dir).with_context(|| format!("create {}", dir.display()))?;
         }
-        let mut f =
+        let file =
             std::fs::File::create(path).with_context(|| format!("create {}", path.display()))?;
+        // One write per row on an unbuffered file is slow at small steps (42,000 rows at 0.1 s).
+        let mut f = std::io::BufWriter::new(file);
         writeln!(
             f,
             "elapsed_s,phase,altitude_m,felt_g,cabin_pressure_pa,source"
@@ -276,6 +278,9 @@ pub(crate) fn run(args: FlightArgs) -> Result<()> {
                 pt.cabin_pressure_pa
             )?;
         }
+        // Flush explicitly: an error while dropping a BufWriter would be silently lost.
+        f.flush()
+            .with_context(|| format!("write {}", path.display()))?;
         println!("Wrote {} rows to {}", points.len(), path.display());
     }
 

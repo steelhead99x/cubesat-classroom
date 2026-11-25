@@ -1,0 +1,44 @@
+
+Ground station: Pi 4 + RTL-SDR, decoding at full CPU load
+  Raspberry Pi 4, full CPU load (pidramble 6.4 W)         6.40 W
+  RTL-SDR Blog V4                                         1.35 W
+  Total                                                   7.75 W
+  Energy for 6 h with 2x margin: 93.0 Wh
+  A 12 V 20 Ah battery stores 240 Wh before converter losses.
+
+Ground station: Pi Zero 2 W + RTL-SDR (runs this project's station, not SatNOGS)
+  Raspberry Pi Zero 2 W (0.6-1.2 W, use top)              1.20 W
+  RTL-SDR Blog V4                                         1.35 W
+  Total                                                   2.55 W
+  Energy for 6 h with 2x margin: 30.6 Wh
+
+Classroom sensors: Arduino Uno (about 40 mA at 5 V) from USB
+  Arduino Uno with TMP36 and BH1750                       0.20 W
+  Total                                                   0.20 W
+  Energy for 6 h with 2x margin: 2.4 Wh
+
+Balloon payload A: XIAO logger with GPS
+  XIAO ESP32-C3, Wi-Fi off (25 mA modem-sleep at 3.3 V)   0.08 W
+  u-blox MAX-M10S GPS (under 25 mW tracking)              0.03 W
+  BME280 pressure + temperature (estimate)                0.00 W
+  microSD writes, average (estimate)                      0.07 W
+  Total                                                   0.18 W
+  Energy for 6 h with 2x margin: 2.1 Wh
+  4 lithium AA after derating: 10.7 Wh, about 61 h of run time
+  OK
+
+Balloon payload B: Pi Zero 2 W camera logger
+  Raspberry Pi Zero 2 W (0.6-1.2 W, use top)              1.20 W
+  Camera module (estimate)                                0.30 W
+  Total                                                   1.50 W
+  Energy for 6 h with 2x margin: 18.0 Wh
+  4 lithium AA after derating: 10.7 Wh, about 7 h of run time
+  NOT ENOUGH: add cells or cut the load
+
+Balloon payload B with eight cells
+  Raspberry Pi Zero 2 W (0.6-1.2 W, use top)              1.20 W
+  Camera module (estimate)                                0.30 W
+  Total                                                   1.50 W
+  Energy for 6 h with 2x margin: 18.0 Wh
+  8 lithium AA after derating: 21.4 Wh, about 14 h of run time
+  OK

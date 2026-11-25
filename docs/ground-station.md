@@ -117,7 +117,7 @@ The [AMSAT CubeSatSim](https://cubesatsim.org) is a working satellite model with
 
 ## Power budget
 
-Run `python3 tools/energy_budget.py` to recompute these numbers. Replace each estimate with your own USB power meter reading.
+Run `cargo run --locked -- energy-budget` to recompute these numbers. Replace each estimate with your own USB power meter reading.
 
 | Setup | Draw | 6 hours with 2× margin |
 | --- | --- | --- |

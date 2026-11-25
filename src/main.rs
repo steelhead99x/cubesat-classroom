@@ -11,6 +11,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
+use mission_budget::{energy, link};
 use moq_tokio::moq_net::{self, Timestamp};
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -129,6 +130,36 @@ enum Command {
         #[arg(long, default_value_t = 1.0)]
         step_s: f64,
         /// Print JSON instead of a summary.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Static downlink sensitivity exercise for design review (illustrative, not a prediction).
+    ///
+    /// Spherical Earth slant range, free-space loss, TX power/gain/feed loss, receive G/T,
+    /// one aggregate loss, information bit rate and modem threshold on the same Eb/N0 basis.
+    /// Doppler is driven independently by the assumed radial speed. See docs/mission.md.
+    LinkBudget {
+        /// Scenario JSON file, such as hardware/rf-example.json.
+        profile: PathBuf,
+        /// Spacecraft altitude in kilometres.
+        #[arg(long, default_value_t = 550.0, allow_hyphen_values = true)]
+        altitude_km: f64,
+        /// Elevation above the horizon in degrees (0–90).
+        #[arg(long, default_value_t = 15.0, allow_hyphen_values = true)]
+        elevation_deg: f64,
+        /// Assumed radial speed for the Doppler column, in km/s.
+        #[arg(long, default_value_t = 7.0, allow_hyphen_values = true)]
+        radial_speed_km_s: f64,
+        /// Print JSON instead of a table.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Battery energy budgets for the ground station and balloon payloads (planning numbers).
+    ///
+    /// Figures marked "estimate" have no measurement behind them yet. See
+    /// docs/ground-station.md and docs/balloon-lab.md.
+    EnergyBudget {
+        /// Print JSON instead of a report.
         #[arg(long)]
         json: bool,
     },
@@ -594,6 +625,36 @@ async fn main() -> Result<()> {
                 step_s,
                 json,
             })?;
+        }
+        Command::LinkBudget {
+            profile,
+            altitude_km,
+            elevation_deg,
+            radial_speed_km_s,
+            json,
+        } => {
+            // Check the geometry before reading the file, like the Python tool did.
+            let geometry = link::Geometry::new(altitude_km, elevation_deg, radial_speed_km_s)?;
+            let text = std::fs::read_to_string(&profile)
+                .with_context(|| format!("read {}", profile.display()))?;
+            let scenario = link::Scenario::from_json(&text)
+                .with_context(|| format!("load {}", profile.display()))?;
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&scenario.evaluate(&geometry))?
+                );
+            } else {
+                print!("{}", scenario.report(&geometry));
+            }
+        }
+        Command::EnergyBudget { json: false } => print!("{}", energy::report()),
+        Command::EnergyBudget { json: true } => {
+            let budgets: Vec<_> = energy::classroom_budgets()
+                .iter()
+                .map(energy::Budget::summary)
+                .collect();
+            println!("{}", serde_json::to_string_pretty(&budgets)?);
         }
         Command::Relay { port } => relay(port).await?,
         Command::Simulate { link } => publish(link, Sample::synthetic).await?,

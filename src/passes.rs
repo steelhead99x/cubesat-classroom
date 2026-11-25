@@ -19,6 +19,9 @@ const WGS84_A_KM: f64 = 6378.137;
 const WGS84_F: f64 = 1.0 / 298.257_223_563;
 const COARSE_STEP_S: f64 = 10.0;
 const STALE_DAYS: f64 = 14.0;
+/// Past this age SGP4 errors grow to many minutes and reboosts or decay make the
+/// elements describe a different orbit, so the passes should not be used at all.
+const UNUSABLE_DAYS: f64 = 60.0;
 
 pub(crate) struct PassArgs {
     pub tle: PathBuf,
@@ -316,6 +319,7 @@ pub(crate) fn run(args: PassArgs) -> Result<()> {
         alt_km: args.alt_m / 1000.0,
     };
     let mut stale = Vec::new();
+    let mut unusable = Vec::new();
     let mut passes: Vec<Pass> = Vec::new();
     for s in &sats {
         let age = (now - s.epoch_unix) / 86_400.0;
@@ -325,7 +329,9 @@ pub(crate) fn run(args: PassArgs) -> Result<()> {
                 s.name
             );
         }
-        if age > STALE_DAYS {
+        if age > UNUSABLE_DAYS {
+            unusable.push(format!("{} ({age:.0} days)", s.name));
+        } else if age > STALE_DAYS {
             stale.push(format!("{} ({age:.0} days)", s.name));
         }
         for mut p in find_passes(s, o, now, now + args.hours * 3600.0, args.min_elevation) {
@@ -333,12 +339,20 @@ pub(crate) fn run(args: PassArgs) -> Result<()> {
             passes.push(p);
         }
     }
-    let warning = (!stale.is_empty()).then(|| {
-        format!(
+    let mut warnings = Vec::new();
+    if !unusable.is_empty() {
+        warnings.push(format!(
+            "Warning: orbital elements for {} are more than {UNUSABLE_DAYS:.0} days old. These passes are not usable predictions. Download fresh elements.",
+            unusable.join(", ")
+        ));
+    }
+    if !stale.is_empty() {
+        warnings.push(format!(
             "Warning: old orbital elements for {}. Times may be wrong by minutes or more. Download fresh elements.",
             stale.join(", ")
-        )
-    });
+        ));
+    }
+    let warning = (!warnings.is_empty()).then(|| warnings.join("\n"));
     passes.sort_by_key(|p| p.rise_unix);
 
     if args.json {

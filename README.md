@@ -70,6 +70,24 @@ cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo
 
 The [quest board](quest/README.md) includes demo rehearsals, sensor tests, and hardware reviews. Share settings, measurements, and what another crew should check next. [Contribution guide](CONTRIBUTING.md)
 
+## Rust tools
+
+The ground station (`src/`) and the design-review budgets (`crates/mission-budget/`) are one Cargo workspace. Still in progress: the budgets are planning numbers for review, not measurements or flight predictions.
+
+```sh
+cargo run --locked -- link-budget hardware/rf-example.json   # downlink sensitivity exercise
+cargo run --locked -- energy-budget                          # battery budgets for the station and balloon payloads
+cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked
+```
+
+Run `cargo run --locked -- --help` to list every subcommand. They fall into three groups:
+
+- **Offline calculators:** `passes` (SGP4 pass prediction from a TLE file), `flight-profile`, `link-budget` and `energy-budget`. Each has `--json`.
+- **Local station:** `classroom`, `relay`, `simulate`, `publish-sensors`, `read-telemetry` and `verify-video`. The `classroom` and `relay` servers listen on loopback only.
+- **Sensors:** `sensor-bridge` and `balloon-log`.
+
+None of them transmit on radio. The website and Worker (`site/`), the mobile app (`mobile/`) and the CAD and PDF generators stay in their own languages for now.
+
 ## Project links
 
 [Classroom site](https://cubesatclass.org/) · [CubeSat Club](https://cubesatclass.org/volunteer/) · [Mobile template](mobile/README.md) · [Mission and radio design](docs/mission.md)
