@@ -1,0 +1,29 @@
+[package]
+name = "nano33-cubesat"
+version = "0.1.0"
+description = "Bench CubeSat firmware for the Arduino Nano 33 BLE Sense Rev2, in Rust"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# Its own workspace: this builds for the nRF52840, not the computer.
+[workspace]
+
+[dependencies]
+cubesat-mission = { path = "../../crates/cubesat-mission" }
+cortex-m = { version = "0.7.10", features = ["critical-section-single-core", "inline-asm"] }
+cortex-m-rt = "0.7.7"
+embassy-executor = { version = "0.10.0", features = ["platform-cortex-m", "executor-thread"] }
+embassy-futures = "0.1.2"
+embassy-nrf = { version = "0.11.0", features = ["nrf52840", "time-driver-rtc1", "gpiote"] }
+embassy-sync = "0.8.0"
+embassy-time = "0.5.1"
+embassy-usb = "0.6.0"
+panic-halt = "1.0.0"
+static_cell = "2.1.1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+debug = false
