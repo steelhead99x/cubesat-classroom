@@ -21,12 +21,12 @@ Use the P1S profile for your nozzle (0.20mm Standard for 0.4 mm, 0.30mm Standard
 | --- | --- | --- |
 | [01-snap-test](p1s/01-snap-test.3mf) | Short snap column and a tab with the snap hole | 5 min, 2 g |
 | [02-sides](p1s/02-sides.3mf) | AMSAT side and side with camera hole | 1 h 40 min, 58 g |
-| [03-top-and-bottom](p1s/03-top-and-bottom.3mf) | AMSAT top (unchanged) and bottom with snap columns | 1 h 20 min, 48 g |
-| [04-payload-plate](p1s/04-payload-plate.3mf) | Payload plate and Nano strap | 47 min, 32 g |
+| [03-top-and-bottom](p1s/03-top-and-bottom.3mf) | AMSAT top (unchanged) and bottom with snap columns | 1 h 18 min, 48 g |
+| [04-payload-plate](p1s/04-payload-plate.3mf) | Payload plate and Nano strap | 50 min, 33 g |
 
 The whole kit is about 3 h 50 min and 140 g of PLA. The times are slicer estimates.
 
-**Print the snap test first.** Push the peg into the tab. It should click in with a firm push and not fall out. If it's too tight or too loose, change `SNAP_HOLE` in [generate.py](generate.py) by 0.1 mm and regenerate (see below). The payload plate and the Nano strap use the same snap.
+**Print the snap test first.** Push the peg into the tab. It should click in with a firm push and not fall out. If it's too tight or too loose, change `SNAP_HOLE` in [generate.py](generate.py) by 0.1 mm and regenerate (see below). The payload plate and the Nano strap use the same snap. The first test print on a P1S with a 0.6 mm nozzle snapped well at the default size.
 
 ## Assemble
 
@@ -44,13 +44,21 @@ The Nano's pins hang 20 mm above the plate, so there's room for female jumper wi
 | Plate | 88 × 88 × 3 mm with 8 mm corner chamfers (AMSAT's boards are 90.5 mm) |
 | Plate position | 15 mm inside the bottom face, below AMSAT's 12 mm snap tabs |
 | Snap peg | 5.0 mm shank, 5.7 mm barb, 1.4 mm split, into a 5.2 mm hole |
-| Uno R3 | 4 locating pins (2.9 mm) on 6 mm posts, 2 edge clips |
+| Uno R3 | 4 locating pins (2.9 mm) on 10 mm posts, 2 edge clips (1.8 mm arm, 0.7 mm lip) |
 | Nano 33 BLE Sense | PCB on rails at 20 mm, end stop, strap with feet on the pin rows |
 | Above the plate | 30 mm to the top of the strap, leaving room for a battery and sensors |
+| Bending strain | Uno clips 1.4%, snap pegs 0.8%, under a 2% limit for PLA |
 
-[generate.py](generate.py) seats the plate on the columns in frame coordinates and fails if anything collides with the AMSAT piece or the snap tabs. Every part was sliced with a P1S-style 0.6 mm profile to confirm it prints without supports.
+[generate.py](generate.py) assembles the parts in frame coordinates and fails if:
 
-Not yet checked on a real print: the snap force, the Uno clip grip, and the Nano strap pressure. The Nano's PCB thickness and header height vary by batch, so expect to tune `PCB_NANO` or `STRAP_FOOT_ABOVE_PCB`. Report what you measure with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
+- the plate holes don't line up with the columns, or the plate hits the AMSAT piece or its snap tabs
+- a plate feature passes through either board, sits under the Uno's solder joints, or blocks a snap barb
+- a Nano rail hits the header pins, or the strap presses into the Nano
+- a clip or peg would bend more than PLA can take over and over
+
+Every part was sliced with a P1S-style 0.6 mm profile to confirm it prints without supports.
+
+Not yet checked on a real print: the Uno clip grip and the Nano strap pressure. The Nano's PCB thickness and header height vary by batch, so expect to tune `PCB_NANO` or `STRAP_FOOT_ABOVE_PCB`. Report what you measure with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
 
 ## Regenerate
 
@@ -60,6 +68,8 @@ python3 -m venv /tmp/cubesat-cad
 /tmp/cubesat-cad/bin/python hardware/amsat-cubesatsim/generate.py
 /tmp/cubesat-cad/bin/python hardware/amsat-cubesatsim/prepare.py
 ```
+
+To redraw the layout image, install `matplotlib` too and run `python layout.py` from this folder.
 
 Upstream checksums (SHA-256):
 

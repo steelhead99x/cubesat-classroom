@@ -28,6 +28,7 @@ EPS = 0.05
 # frame interior towards -z). Stack mounting holes measured from the v2.0 STL.
 STACK_HOLES = [(-32.99, 32.99), (-32.71, -25.01), (29.0, -38.99), (29.0, 31.51)]
 FACE_INNER_Z = 0.0
+FACE_T = 3.0
 SNAP_TABS_REACH = 12.0          # AMSAT snap tabs extend this far below the face
 
 # Snap peg, shared by the columns, the strap posts and the test piece.
@@ -51,13 +52,15 @@ PLATE_T = 3.0
 UNO = (68.58, 53.34)
 UNO_HOLES = [(13.97, 2.54), (15.24, 50.80), (66.04, 7.62), (66.04, 35.56)]
 UNO_ORIGIN = (-UNO[0] / 2, PLATE / 2 - 1.0 - UNO[1])
-UNO_POST_H = 6.0
+UNO_POST_H = 10.0               # also sets the clip arm length, see clip_strain()
 UNO_PIN = 2.9
+UNO_POST_TOP = 4.4              # the hole at (15.24, 50.8) sits beside the header pins
 PCB_UNO = 1.6
-CLIP_T = 2.4
+CLIP_T = 1.8                    # three lines with a 0.6 mm nozzle
 CLIP_W = 8.0
 CLIP_GAP = 0.3
-CLIP_LIP = 1.0
+CLIP_LIP = 0.7
+PLA_STRAIN_LIMIT = 0.02         # keep repeated flexing well under PLA's ~3% yield
 
 # Arduino Nano 33 BLE Sense: 43.18 x 17.78 mm PCB, pin rows 15.24 mm apart.
 NANO = (43.18, 17.78)
@@ -116,7 +119,7 @@ def bottom_with_columns():
     slots = []
     for x, y in STACK_HOLES:
         z0 = FACE_INNER_Z - COLUMN_LENGTH
-        column = cyl(COLUMN_OD, COLUMN_LENGTH + 1.5, x, y, z0)   # fills the 3.2 mm hole
+        column = cyl(COLUMN_OD, COLUMN_LENGTH + FACE_T, x, y, z0)   # fills the 3.2 mm hole flush
         # Peg points away from the face (towards -z): build upward, then mirror in z.
         body, slot = peg(0.0, PLATE_T)
         body = body.mirror((0, 0, 1)).translate((x, y, z0))
@@ -147,8 +150,8 @@ def payload_plate():
     pcb_bottom = top + UNO_POST_H
     for ux, uy in UNO_HOLES:
         x, y = uno_in_plate(ux, uy)
-        part += cyl(7.0, UNO_POST_H - 2.0 + EPS, x, y, top - EPS)       # wide base
-        part += cyl(5.0, 2.0 + EPS, x, y, pcb_bottom - 2.0 - EPS)       # clears solder joints
+        part += cyl(7.0, UNO_POST_H - 2.5 + EPS, x, y, top - EPS)       # wide base
+        part += cyl(UNO_POST_TOP, 2.5 + EPS, x, y, pcb_bottom - 2.5 - EPS)  # clears solder joints
         part += cyl(UNO_PIN, PCB_UNO + 0.9, x, y, pcb_bottom - EPS)
         part += cyl(UNO_PIN, 0.5 + EPS, x, y, pcb_bottom + PCB_UNO + 0.9 - EPS, d2=UNO_PIN - 0.8)
     catch = pcb_bottom + PCB_UNO + 0.1
@@ -219,26 +222,74 @@ def check(name, solid):
     return mesh
 
 
-def verify(bottom, plate):
-    """Seat the plate on the columns in frame coordinates and check for collisions."""
+def clip_strain():
+    """Bending strain of an Uno clip as the board pushes it out by the lip depth."""
+    arm = PLATE_T + UNO_POST_H + PCB_UNO + 0.1 - PLATE_T     # plate surface to the lip
+    return 1.5 * CLIP_T * CLIP_LIP / arm ** 2
+
+
+def peg_strain():
+    """Bending strain of one peg half as the barb passes through the hole."""
+    half = (PEG_SHANK - PEG_SLOT) / 2
+    arm = PLATE_T + 0.2 + PEG_LIP + PEG_LEAD + SLOT_INTO_BODY
+    return 1.5 * half * (PEG_BARB - SNAP_HOLE) / 2 / arm ** 2
+
+
+def require(ok, message):
+    if not ok:
+        raise ValueError(message)
+
+
+def overlap(a, b):
+    return (a ^ b).volume()
+
+
+def verify(bottom, plate, strap):
+    """Assemble the parts in frame coordinates and check fit, clearances and strain."""
+    require(clip_strain() < PLA_STRAIN_LIMIT, f"Uno clip strain {clip_strain():.1%} is too high for PLA")
+    require(peg_strain() < PLA_STRAIN_LIMIT, f"snap peg strain {peg_strain():.1%} is too high for PLA")
+
+    # Plate on the columns: holes line up, nothing collides, plate clears the snap tabs.
     seated = plate.rotate((180, 0, 0)).translate((0, 0, FACE_INNER_Z - COLUMN_LENGTH))
-    columns_only = bottom ^ box(-46, -46, -COLUMN_LENGTH - 10, 46, 46, FACE_INNER_Z - SNAP_TABS_REACH - 0.5)
-    overlap = (seated ^ (bottom - columns_only)).volume()
-    if overlap > 1e-3:
-        raise ValueError(f"payload plate collides with the AMSAT end piece ({overlap:.3f} mm3)")
-    lo = np.array(seated.bounding_box()[:3])
-    if lo[2] > FACE_INNER_Z - SNAP_TABS_REACH:
-        raise ValueError("payload plate does not clear the AMSAT snap tabs")
-    nx, ny = NANO_CENTER
+    for (x, y), (px, py) in zip(STACK_HOLES, plate_holes()):
+        require(np.allclose((px, -py), (x, y)), "plate holes do not line up with the columns")
+    require(overlap(seated, bottom) < 1e-3, "payload plate collides with the AMSAT end piece")
+    require(seated.bounding_box()[5] <= FACE_INNER_Z - SNAP_TABS_REACH,
+            "payload plate does not clear the AMSAT snap tabs")
+
+    # Board side of the plate, in plate coordinates.
+    top = PLATE_T
+    features = plate - box(-PLATE, -PLATE, -1, PLATE, PLATE, top)
+    barb_h = 0.2 + PEG_LIP + PEG_LEAD
     for x, y in plate_holes():
-        ux0, uy0 = UNO_ORIGIN
-        for ux, uy in UNO_HOLES:
-            if np.hypot(ux0 + ux - x, uy0 + uy - y) < 7.0:
-                raise ValueError("an Uno post sits on a snap column")
-        if abs(x - nx) < NANO[0] / 2 + 3 and abs(y - ny) < STRAP_POST + 4.5:
-            # Column barbs sit 1.5 mm above the plate; only the Nano rails and posts matter.
-            if abs(x - nx) < 15 + 3.5 and abs(y - ny) < 5 + 3.5:
-                raise ValueError("a snap column sits under the Nano rails")
+        room = cyl(PEG_BARB + 2.0, barb_h + 1.0, x, y, top)
+        require(overlap(features, room) < 1e-3, "a plate feature sits where a snap barb comes through")
+
+    ux, uy = UNO_ORIGIN
+    pcb_bottom = top + UNO_POST_H
+    uno = box(ux, uy, pcb_bottom, ux + UNO[0], uy + UNO[1], pcb_bottom + PCB_UNO)
+    posts = cad.Manifold()
+    for hx, hy in UNO_HOLES:
+        uno -= cyl(3.2, PCB_UNO + 2, ux + hx, uy + hy, pcb_bottom - 1)
+        posts += cyl(7.0, UNO_POST_H + PCB_UNO + 2, ux + hx, uy + hy, top - 1)
+    require(overlap(features, uno) < 1e-3, "a plate feature passes through the Uno board")
+    underside = box(ux, uy, pcb_bottom - 2.0, ux + UNO[0], uy + UNO[1], pcb_bottom) - posts
+    require(overlap(features, underside) < 1e-3, "something under the Uno would hit its solder joints")
+
+    nx, ny = NANO_CENTER
+    rail_top = top + NANO_RAIL_H
+    nano = box(nx - NANO[0] / 2, ny - NANO[1] / 2, rail_top, nx + NANO[0] / 2, ny + NANO[1] / 2, rail_top + PCB_NANO)
+    require(overlap(features, nano) < 1e-3, "a plate feature passes through the Nano board")
+    for side in (-1, 1):                      # header strips and pins hang below the PCB
+        row = ny + side * NANO_ROW / 2
+        pins = box(nx - 19.1, row - 1.3, rail_top - 8.5, nx + 19.1, row + 1.3, rail_top)
+        require(overlap(features, pins) < 1e-3, "a Nano rail hits the header pins")
+
+    # Strap on its posts, feet down, resting on the pin rows above the Nano.
+    strap_bottom = rail_top + PCB_NANO + STRAP_ARCH
+    seated_strap = strap.rotate((180, 0, 0)).translate((nx, ny, strap_bottom + STRAP_T))
+    require(overlap(seated_strap, plate) < 1e-3, "the strap collides with its posts or the plate")
+    require(overlap(seated_strap, nano) < 1e-3, "the strap feet press into the Nano board")
 
 
 def export(name, solid):
@@ -255,11 +306,13 @@ def export(name, solid):
 if __name__ == "__main__":
     bottom = bottom_with_columns()
     plate = payload_plate()
-    verify(bottom, plate)
+    strap = nano_strap()
+    verify(bottom, plate, strap)
+    print(f"checks passed: Uno clip strain {clip_strain():.1%}, peg strain {peg_strain():.1%}")
     # The end piece prints face down, so its columns point up.
     export("bottom-with-columns", bottom.rotate((180, 0, 0)))
     export("payload-plate", plate)
-    export("nano-strap", nano_strap())
+    export("nano-strap", strap)
     peg_part, tab_part = snap_test()
     export("snap-test-peg", peg_part)
     export("snap-test-tab", tab_part)
