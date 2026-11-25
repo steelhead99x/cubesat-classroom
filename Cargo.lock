@@ -516,6 +516,7 @@ dependencies = [
  "clap",
  "hang",
  "image",
+ "mission-budget",
  "moq-tokio",
  "serde",
  "serde_json",
@@ -1555,6 +1556,14 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "mission-budget"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

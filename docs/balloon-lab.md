@@ -58,7 +58,7 @@ Ready-made kits exist: one supplier sells a 600 g package with balloon, cords, i
 
 ### Power budget
 
-Run `python3 tools/energy_budget.py` to recompute. One lithium AA is rated 3500 mAh at 100 mA; the budget counts 3000 mAh at 1.4 V, then keeps 25% back for cold and 15% for regulator losses (both estimates). Plan for six hours (preparation, about three hours of flight, recovery), then double it.
+Run `cargo run --locked -- energy-budget` to recompute. One lithium AA is rated 3500 mAh at 100 mA; the budget counts 3000 mAh at 1.4 V, then keeps 25% back for cold and 15% for regulator losses (both estimates). Plan for six hours (preparation, about three hours of flight, recovery), then double it.
 
 How to wire the cells: four in series give about 6 V fresh, which is too much for the boards directly. A small buck-boost regulator turns it into a steady 3.3 V for payload A or 5 V for payload B. Eight cells are two strings of four connected in parallel, which keeps 6 V and doubles the capacity. A mentor checks battery wiring and polarity before every power-up.
 
