@@ -18,7 +18,7 @@ Before the flight, write down what each sensor in the kit should record in each 
 5. Check your work: the default run should give about 193 seconds of microgravity and a highest point of 87.5 km.
 6. Share the crew nickname, your chart and your predictions. Keep them: after the flight they are compared with the real data.
 
-## Levels
+### Levels
 
 - **Beginner:** colour the chart by phase and say when things would float.
 - **Intermediate:** work out how many readings a once-a-second logger gets in the boost and in microgravity. Is that enough for each?
