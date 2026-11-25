@@ -158,7 +158,11 @@ enum Command {
     ///
     /// Figures marked "estimate" have no measurement behind them yet. See
     /// docs/ground-station.md and docs/balloon-lab.md.
-    EnergyBudget,
+    EnergyBudget {
+        /// Print JSON instead of a report.
+        #[arg(long)]
+        json: bool,
+    },
     /// Start a loopback-only QUIC relay and print its URL and certificate pin.
     Relay {
         #[arg(long, default_value_t = 4443)]
@@ -644,7 +648,14 @@ async fn main() -> Result<()> {
                 print!("{}", scenario.report(&geometry));
             }
         }
-        Command::EnergyBudget => print!("{}", energy::report()),
+        Command::EnergyBudget { json: false } => print!("{}", energy::report()),
+        Command::EnergyBudget { json: true } => {
+            let budgets: Vec<_> = energy::classroom_budgets()
+                .iter()
+                .map(energy::Budget::summary)
+                .collect();
+            println!("{}", serde_json::to_string_pretty(&budgets)?);
+        }
         Command::Relay { port } => relay(port).await?,
         Command::Simulate { link } => publish(link, Sample::synthetic).await?,
         Command::PublishSensors { link, inputs } => {

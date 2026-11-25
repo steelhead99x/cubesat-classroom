@@ -100,3 +100,24 @@ fn energy_budget_report() {
     let out = station(&["energy-budget"]);
     assert_eq!(stdout(&out), golden("energy-budget.txt"));
 }
+
+#[test]
+fn energy_budget_json_flags_the_camera_payload() {
+    let out = station(&["energy-budget", "--json"]);
+    let value: serde_json::Value = serde_json::from_str(&stdout(&out)).unwrap();
+    let budgets = value.as_array().unwrap();
+    assert_eq!(budgets.len(), 6);
+    let enough: Vec<_> = budgets.iter().map(|b| b["enough"].clone()).collect();
+    assert_eq!(
+        enough,
+        [
+            serde_json::Value::Null,
+            serde_json::Value::Null,
+            serde_json::Value::Null,
+            true.into(),
+            false.into(),
+            true.into()
+        ]
+    );
+    assert_eq!(budgets[4]["cells"], 4);
+}

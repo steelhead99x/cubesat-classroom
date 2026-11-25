@@ -14,6 +14,8 @@
 
 use std::fmt::Write as _;
 
+use serde::Serialize;
+
 use crate::general;
 
 /// Usable energy in one lithium AA: 3000 mAh at 1.4 V.
@@ -30,18 +32,22 @@ pub const HOURS: f64 = 6.0;
 pub const RTL_SDR_W: f64 = 0.27 * 5.0;
 
 /// Energy left in `cells` lithium AA cells after regulator losses and cold derating.
+#[must_use]
 pub fn usable_wh(cells: u32) -> f64 {
     f64::from(cells) * AA_LITHIUM_WH * REGULATOR_EFFICIENCY * COLD_DERATE
 }
 
 /// One electrical load and where its figure comes from (in the name).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Load {
+    /// What the load is, with the source of its figure.
     pub name: String,
+    /// Average power draw, W.
     pub watts: f64,
 }
 
 impl Load {
+    /// A load drawing `watts` on average.
     pub fn new(name: impl Into<String>, watts: f64) -> Self {
         Self {
             name: name.into(),
@@ -53,8 +59,11 @@ impl Load {
 /// A set of loads run for a number of hours, optionally from a lithium AA pack.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Budget {
+    /// Heading printed above the loads.
     pub title: String,
+    /// Every load that runs at once.
     pub loads: Vec<Load>,
+    /// Planned run time before the margin, h.
     pub hours: f64,
     /// Lithium AA cells in the pack, if this budget runs from one.
     pub cells: Option<u32>,
@@ -62,7 +71,36 @@ pub struct Budget {
     pub note: Option<String>,
 }
 
+/// Machine-readable figures for one [`Budget`], for `energy-budget --json`.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct Summary {
+    /// The budget's heading.
+    pub title: String,
+    /// Every load, in order.
+    pub loads: Vec<Load>,
+    /// Sum of the loads, W.
+    pub total_w: f64,
+    /// Planned run time before the margin, h.
+    pub hours: f64,
+    /// Run-time margin factor.
+    pub margin: f64,
+    /// Energy needed including the margin, Wh.
+    pub need_wh: f64,
+    /// Lithium AA cells in the pack, if any.
+    pub cells: Option<u32>,
+    /// Usable pack energy after derating, Wh.
+    pub usable_wh: Option<f64>,
+    /// Expected run time on the pack, h.
+    pub run_time_h: Option<f64>,
+    /// Whether the pack covers `need_wh`.
+    pub enough: Option<bool>,
+    /// The note printed after the budget, if any.
+    pub note: Option<String>,
+}
+
 impl Budget {
+    /// A budget with no battery pack and no note.
+    #[must_use]
     pub fn new(title: impl Into<String>, loads: Vec<Load>, hours: f64) -> Self {
         Self {
             title: title.into(),
@@ -73,37 +111,73 @@ impl Budget {
         }
     }
 
+    /// Run this budget from a pack of `cells` lithium AA cells.
+    #[must_use]
     pub fn with_cells(mut self, cells: u32) -> Self {
         self.cells = Some(cells);
         self
     }
 
+    /// Print `note` after this budget.
+    #[must_use]
     pub fn with_note(mut self, note: impl Into<String>) -> Self {
         self.note = Some(note.into());
         self
     }
 
     /// Total load, watts.
+    #[must_use]
     pub fn total_w(&self) -> f64 {
         self.loads.iter().map(|load| load.watts).sum()
     }
 
     /// Energy needed for the run time with the planning margin, watt-hours.
+    #[must_use]
     pub fn need_wh(&self) -> f64 {
         self.total_w() * self.hours * MARGIN
     }
 
     /// Usable pack energy, if this budget has a pack (zero cells counts as no pack).
+    #[must_use]
     pub fn usable_wh(&self) -> Option<f64> {
         self.cells.filter(|&cells| cells > 0).map(usable_wh)
     }
 
     /// Whether the pack covers [`Budget::need_wh`], if this budget has a pack.
+    #[must_use]
     pub fn enough(&self) -> Option<bool> {
         self.usable_wh().map(|have| have >= self.need_wh())
     }
 
+    /// Expected run time on the pack, hours. `None` without a pack or with no load.
+    #[must_use]
+    pub fn run_time_h(&self) -> Option<f64> {
+        let watts = self.total_w();
+        self.usable_wh()
+            .filter(|_| watts > 0.0)
+            .map(|have| have / watts)
+    }
+
+    /// The figures behind [`Budget::render`], for JSON output.
+    #[must_use]
+    pub fn summary(&self) -> Summary {
+        Summary {
+            title: self.title.clone(),
+            loads: self.loads.clone(),
+            total_w: self.total_w(),
+            hours: self.hours,
+            margin: MARGIN,
+            need_wh: self.need_wh(),
+            cells: self.cells.filter(|&cells| cells > 0),
+            usable_wh: self.usable_wh(),
+            run_time_h: self.run_time_h(),
+            enough: self.enough(),
+            note: self.note.clone(),
+        }
+    }
+
     /// The text block printed for this budget, starting with a blank line.
+    #[must_use]
     pub fn render(&self) -> String {
         let watts = self.total_w();
         let need = self.need_wh();
@@ -121,10 +195,12 @@ impl Budget {
             general(MARGIN)
         );
         if let (Some(cells), Some(have)) = (self.cells, self.usable_wh()) {
+            let run_time = self
+                .run_time_h()
+                .map_or_else(|| "unlimited".to_owned(), |h| format!("{h:.0}"));
             let _ = writeln!(
                 out,
-                "  {cells} lithium AA after derating: {have:.1} Wh, about {:.0} h of run time",
-                have / watts
+                "  {cells} lithium AA after derating: {have:.1} Wh, about {run_time} h of run time"
             );
             let verdict = if have >= need {
                 "  OK"
@@ -141,6 +217,7 @@ impl Budget {
 }
 
 /// The ground station and balloon payload budgets from the build guides.
+#[must_use]
 pub fn classroom_budgets() -> Vec<Budget> {
     let pi_zero = || Load::new("Raspberry Pi Zero 2 W (0.6-1.2 W, use top)", 1.2);
     let rtl_sdr = || Load::new("RTL-SDR Blog V4", RTL_SDR_W);
@@ -193,6 +270,7 @@ pub fn classroom_budgets() -> Vec<Budget> {
 }
 
 /// The full report printed by `cubesat-classroom energy-budget`.
+#[must_use]
 pub fn report() -> String {
     classroom_budgets().iter().map(Budget::render).collect()
 }
@@ -215,6 +293,25 @@ mod tests {
             verdicts,
             [None, None, None, Some(true), Some(false), Some(true)]
         );
+    }
+
+    #[test]
+    fn summary_matches_the_rendered_figures() {
+        let budgets = classroom_budgets();
+        let a = budgets[3].summary();
+        assert_eq!(a.cells, Some(4));
+        assert_eq!(a.enough, Some(true));
+        assert!((a.need_wh - a.total_w * HOURS * MARGIN).abs() < 1e-12);
+        assert!((a.run_time_h.unwrap() - a.usable_wh.unwrap() / a.total_w).abs() < 1e-12);
+        assert_eq!(budgets[0].summary().run_time_h, None);
+    }
+
+    #[test]
+    fn a_pack_with_no_load_never_runs_out() {
+        let budget = Budget::new("idle", Vec::new(), 6.0).with_cells(4);
+        assert_eq!(budget.run_time_h(), None);
+        assert_eq!(budget.enough(), Some(true));
+        assert!(budget.render().contains("about unlimited h"));
     }
 
     #[test]

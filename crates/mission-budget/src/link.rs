@@ -26,20 +26,30 @@ pub const BOLTZMANN_DBW_K_HZ: f64 = -228.599;
 pub struct Scenario {
     /// Caveat printed above the table.
     pub label: String,
+    /// The downlinks to evaluate, in table order.
     pub profiles: Vec<Profile>,
 }
 
 /// One downlink: transmitter, path losses, receiver and modem threshold.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Profile {
+    /// Short band name for the table, such as `SubGHz`.
     pub name: String,
+    /// Carrier centre frequency, MHz.
     pub center_mhz: f64,
+    /// Power amplifier output, dBW.
     pub pa_dbw: f64,
+    /// Transmit antenna gain, dBi.
     pub tx_gain_dbi: f64,
+    /// Loss between the amplifier and the transmit antenna, dB.
     pub tx_feed_loss_db: f64,
+    /// Receive figure of merit G/T, dB/K.
     pub rx_gt_db_per_k: f64,
+    /// Every other loss in one explicit number (pointing, polarisation, atmosphere), dB.
     pub other_losses_db: f64,
+    /// Information bit rate, bit/s.
     pub information_bps: f64,
+    /// Eb/N0 the modem needs at the target error rate, dB.
     pub required_ebn0_db: f64,
 }
 
@@ -54,28 +64,40 @@ pub struct Geometry {
 /// One row of the budget table.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 pub struct Budget {
+    /// Slant range used, km.
     pub slant_km: f64,
+    /// Free-space path loss, dB.
     pub fspl_db: f64,
+    /// Carrier-to-noise-density ratio, dB·Hz.
     pub cn0_dbhz: f64,
+    /// Energy per information bit over noise density, dB.
     pub ebn0_db: f64,
+    /// Eb/N0 above the modem threshold, dB. Negative means the link does not close.
     pub margin_db: f64,
+    /// Doppler shift magnitude for the assumed radial speed, kHz.
     pub abs_doppler_khz: f64,
 }
 
 /// A whole evaluated scenario, for JSON output.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Evaluation {
+    /// The scenario's caveat.
     pub label: String,
+    /// The geometry evaluated (flattened into the JSON object).
     #[serde(flatten)]
     pub geometry: Geometry,
+    /// Slant range for that geometry, km.
     pub slant_km: f64,
+    /// One row per profile, in scenario order.
     pub rows: Vec<Row>,
 }
 
 /// A named budget row in an [`Evaluation`].
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Row {
+    /// The profile's band name.
     pub name: String,
+    /// The profile's budget (flattened into the JSON object).
     #[serde(flatten)]
     pub budget: Budget,
 }
@@ -88,7 +110,12 @@ pub enum Error {
     /// The scenario file is not valid JSON in the expected shape.
     Parse(serde_json::Error),
     /// A profile value would make a logarithm undefined.
-    Profile { name: String, field: &'static str },
+    Profile {
+        /// The profile's band name.
+        name: String,
+        /// The offending field.
+        field: &'static str,
+    },
 }
 
 impl fmt::Display for Error {
@@ -117,6 +144,10 @@ impl std::error::Error for Error {
 impl Geometry {
     /// Validate a pass geometry: positive finite altitude, elevation 0–90° and a
     /// nonnegative radial speed below the speed of light.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::Geometry`] when any value is out of range or NaN.
     pub fn new(
         altitude_km: f64,
         elevation_deg: f64,
@@ -138,19 +169,26 @@ impl Geometry {
         }
     }
 
+    /// Spacecraft altitude, km.
+    #[must_use]
     pub fn altitude_km(&self) -> f64 {
         self.altitude_km
     }
 
+    /// Elevation above the horizon, degrees.
+    #[must_use]
     pub fn elevation_deg(&self) -> f64 {
         self.elevation_deg
     }
 
+    /// Radial speed assumed for Doppler, km/s.
+    #[must_use]
     pub fn radial_speed_km_s(&self) -> f64 {
         self.radial_speed_km_s
     }
 
     /// Slant range to the spacecraft for this geometry, kilometres.
+    #[must_use]
     pub fn slant_km(&self) -> f64 {
         slant_km(self.altitude_km, self.elevation_deg)
     }
@@ -169,6 +207,13 @@ impl Default for Geometry {
 
 impl Scenario {
     /// Parse and check a scenario file.
+    ///
+    /// Unknown keys are ignored, as the Python tool ignored them.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::Parse`] for malformed JSON or a missing field, and [`Error::Profile`]
+    /// when a frequency or bit rate is not positive and finite.
     pub fn from_json(text: &str) -> Result<Self, Error> {
         let scenario: Self = serde_json::from_str(text).map_err(Error::Parse)?;
         for profile in &scenario.profiles {
@@ -188,6 +233,7 @@ impl Scenario {
     }
 
     /// Evaluate every profile at one geometry.
+    #[must_use]
     pub fn evaluate(&self, geometry: &Geometry) -> Evaluation {
         let distance = geometry.slant_km();
         Evaluation {
@@ -206,6 +252,7 @@ impl Scenario {
     }
 
     /// The plain-text table printed by `cubesat-classroom link-budget`.
+    #[must_use]
     pub fn report(&self, geometry: &Geometry) -> String {
         let evaluation = self.evaluate(geometry);
         let mut out = String::new();
@@ -235,6 +282,7 @@ impl Scenario {
 
 /// Slant range from a ground station to a spacecraft at `altitude_km`, seen at
 /// `elevation_deg` above the horizon, on a spherical Earth.
+#[must_use]
 pub fn slant_km(altitude_km: f64, elevation_deg: f64) -> f64 {
     let r = EARTH_RADIUS_KM;
     let projection = r * elevation_deg.to_radians().sin();
@@ -243,6 +291,7 @@ pub fn slant_km(altitude_km: f64, elevation_deg: f64) -> f64 {
 
 /// First-order budget for one profile at `distance_km`, with Doppler from an assumed
 /// radial speed.
+#[must_use]
 pub fn budget(profile: &Profile, distance_km: f64, radial_speed_km_s: f64) -> Budget {
     let frequency_hz = profile.center_mhz * 1e6;
     let fspl_db =
