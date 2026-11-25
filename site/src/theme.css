@@ -3,7 +3,7 @@
 /* "Ground pass" theme.
    Everything on the site follows one satellite pass: the sky above the horizon
    (night, orbit, mission) and the classroom below it (quests, workshops, people).
-   Navy, sky and signal come from the CubeSat mark. Horizon amber is the dawn line
+   Navy and Orbit Blue come from the CubeSat Classroom brand kit. Horizon amber is the dawn line
    and the main call to action. Mint, violet and solar are only for status and
    mission patches, so colour always means something. */
 @theme {
@@ -13,7 +13,7 @@
   --color-paper: #ffffff;
   --color-ground: #eff3f8;
   --color-ink: #172b43;
-  --color-accent: #214da5;
+  --color-accent: #2f3fbf;
   --color-sky: #a4c9ff;
   --color-horizon: #ffb547;
   --color-horizon-deep: #a35f00;
@@ -108,9 +108,10 @@
   .start p { color: var(--color-muted); }
   .terminal { border-radius: 1rem; background: var(--night); color: #eaf2fd; padding: .9rem 1.1rem; }
   .primary { background: var(--color-accent); color: #fff; }
-  .primary:hover { background: #193d86; }
+  .primary:hover { background: #01017f; }
 
   .site-header { background: #fff; color: var(--ink); border-bottom: 1px solid var(--color-line); }
+  .site-header .brand { color: #03038c; }
   .site-header nav a { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--color-muted); }
   .site-header nav a:hover, .site-header nav [aria-current="page"] { color: var(--color-accent); }
   footer nav a { display: inline-flex; align-items: center; min-height: 2.75rem; }

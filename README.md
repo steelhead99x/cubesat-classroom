@@ -1,32 +1,15 @@
 # CubeSat Classroom
 
-An open-source practice satellite lab for classrooms: a Rust ground station, browser lessons and printable hardware for learners 13 and up.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cubesat-classroom-wordmark-reversed.svg">
+  <img src="docs/assets/cubesat-classroom-wordmark.svg" alt="CubeSat Classroom" width="300">
+</picture>
+
+CubeSat Classroom helps teachers bring space science into the classroom through free, open-source quests. Learners request a sensor reading, receive test video, and see what happens when the link drops. The browser simulator gives every crew a place to start.
+
+The Summer 2027 briefing describes the project’s goals for teacher training and classroom access. The [fork guide](docs/fork-guide.md) shows how to adapt the kit for a class, club, or mission. [Mission briefing](https://hikd.ai/tis/) · [Brand kit (review access)](https://hikd.ai/tis/brand/)
 
 > **Status: work in progress.** This is an early, volunteer-run project. Everything here runs as a desk simulation or a bench test. Nothing has flown, no flight is booked, and no radio hardware in this repository has been reviewed for on-air use. Expect breaking changes.
-
-Project overview: [hikd.ai/tis](https://hikd.ai/tis/)
-
-## Quick start
-
-Requires Rust (stable) on macOS, Linux or Windows (WSL).
-
-```sh
-git clone https://github.com/steelhead99x/cubesat-classroom.git
-cd cubesat-classroom
-bash docs/start.sh                   # guided setup
-# or
-cargo run --locked -- classroom      # two loopback MoQ relays + ground console on localhost
-```
-
-Open the loopback address it prints. No account or hardware is needed. The browser lessons are at [cubesatclass.org/quests](https://cubesatclass.org/quests/).
-
-Run the checks (the same ones CI runs):
-
-```sh
-cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked
-(cd site && npm ci && npm run build && npm test)
-(cd mobile && npm ci && npm run typecheck && npm run lint)
-```
 
 ## What works today, and what is planned
 
@@ -37,19 +20,59 @@ cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo
 | Sensor bridge for Arduino, XIAO and Raspberry Pi readings | Classroom fan-out and relay mesh between schools (not measured) |
 | Five browser lessons, Expo mobile app (offline), printable P1S case files | Hosted AI quest guide, adult sign-in and paid plans (proposals only) |
 
-## Repository layout
+## Who it's for
 
-| Path | Contents |
+CubeSat Classroom is written for learners 13 and up, and for the teachers, guardians and mentors who guide them. Every level of learning and experience is welcome, from a first question to decades of engineering, teaching or radio work.
+
+- **No account is needed** for the browser lessons, the mobile app or the local ground station.
+- **To join the project** (comment, share a crew log, propose a change), use an account on a hosted Git service: GitHub, GitLab.com or Codeberg. Self-hosted Git servers are not supported. The main repository is on GitHub today, but you are not locked in to it. Work from a fork or mirror on the host you prefer and send a link to your branch, or a patch.
+- **Students** may use their own account if they are old enough under that host's terms. GitHub, for example, requires users to be at least 13.
+- **Teachers, guardians and mentors** can use their own accounts to guide the lessons and the project: they open issues, review changes and share results for their crew. Younger learners take part only alongside one of these adults, who stays for the whole activity and never shares a login with anyone under 13. Younger learners never need an account of their own. The [mentor quests](quest/README.md#mentor-quests) show how.
+- **No Git account?** The planned sign-in for the hosted app will also let teachers, guardians and mentors sign in with a phone number. Students sign in with a Git account or join through an adult; the project does not collect students' phone numbers.
+
+## Demo
+
+Start with [Make first contact](https://cubesatclass.org/quests/first-contact/). The browser exercise uses simulated data and needs no account or hardware.
+
+The Rust ground station runs on macOS, Linux, and Windows via WSL (Windows Subsystem for Linux).
+
+- [Start with Claude, Codex, Grok, or another AI assistant](docs/quick-start.md#with-an-ai-assistant).
+- Or run the guided installer in your terminal.
+
+```sh
+curl -fsSL https://cubesatclass.org/start.sh | bash
+```
+
+If that address asks for a password, the site is in private preview: clone this repository and run `bash docs/start.sh` instead.
+
+The starter walks you through setup. Open the loopback address it prints. The station uses two local Media over QUIC relays to send commands and return readings and video.
+
+To run the same checks as CI from a clone:
+
+```sh
+cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked
+(cd site && npm ci && npm run build && npm test)
+(cd mobile && npm ci && npm run typecheck && npm run lint)
+```
+
+[Five-minute demo run sheet](docs/demo-run-sheet.md) · [Printable quick start](output/pdf/cubesat-classroom-quick-start.pdf) (rebuild with `python3 scripts/quick_start_pdf.py`)
+
+## Labs and quests
+
+| Start with | What to do |
 | --- | --- |
-| `src/` | Rust ground station (`cubesat-classroom` CLI) |
-| `site/` | Astro website and Cloudflare Worker (`docs/` is its generated GitHub Pages copy) |
-| `mobile/` | Expo / React Native app |
-| `web/` | Ground console served by the station |
-| `firmware/` | Arduino classroom sensor sketch |
-| `hardware/` | CAD generators, STL and P1S print files, example RF link budget |
-| `quest/` | Quest board: lessons, tests and review tasks |
-| `docs/` | Design notes, guides and the generated site |
-| `scripts/`, `tools/` | Installer, demo, PDF and budget helpers |
+| [Browser lessons](https://cubesatclass.org/quests/) | Five lessons cover measurement, pictures, link loss, reading age, and light levels. |
+| [Ground station build guide](docs/ground-station.md) | Connect classroom sensors, predict a pass, or plan a receive-only station. |
+| [P1S case files](hardware/p1s/README.md) | Slice the PLA coupon first, then print and measure the case. Follow the [print and fit quests](quest/README.md#bambu-p1s-case-test-track). |
+| [Suborbital flight plan](docs/suborbital-flight-plan.md) | Get a classroom sensor kit ready for a suborbital research flight, using public information. Predict the flight with `flight-profile`. |
+| [Flight heritage quests](quest/README.md#flight-heritage-and-the-suborbital-research-flight) | Learn from the Perlan 2 glider and the ISS, then compare all three rides. |
+| [Balloon lab](docs/balloon-lab.md) | Compare classroom pressure and temperature with archived flight data. |
+
+The [quest board](quest/README.md) includes demo rehearsals, sensor tests, and hardware reviews. Share settings, measurements, and what another crew should check next. [Contribution guide](CONTRIBUTING.md)
+
+## Project links
+
+[Classroom site](https://cubesatclass.org/) · [CubeSat Club](https://cubesatclass.org/volunteer/) · [Mobile template](mobile/README.md) · [Mission and radio design](docs/mission.md)
 
 ## Radio and safety
 
@@ -63,8 +86,10 @@ cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
+## Credits
+
+CubeSat Classroom is an independent volunteer project inspired by Teachers in Space and AMSAT. It is not affiliated with or endorsed by NASA, AMSAT, Teachers in Space or any launch provider. Volunteer site work and mission briefing by [hikd.ai](https://hikd.ai/). The ground station uses open-source Media over QUIC (MoQ) libraries.
+
 ## License
 
 Original work is dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE), at your option. Third-party material keeps its own license (for example, `mobile/LICENSE` covers the Expo template the app started from).
-
-CubeSat Classroom is an independent project inspired by Teachers in Space and AMSAT. It is not affiliated with or endorsed by NASA, AMSAT, Teachers in Space or any launch provider. Networking uses open-source Media over QUIC (MoQ) libraries.
