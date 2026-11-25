@@ -69,9 +69,12 @@ MIN_SNAP_OVERLAP = 0.2          # barb diameter minus hole diameter that still h
 MIN_CLIP_REACH = 0.3            # how far a clip lip must reach over the Uno's edge
 TOLERANCE = 1e-6                # mm of floating-point noise to ignore; far below print resolution
 
-# Arduino Nano 33 BLE Sense: 43.18 x 17.78 mm PCB, pin rows 15.24 mm apart.
-NANO = (43.18, 17.78)
-NANO_CENTER = (-2.0, -28.0)     # USB end towards -x
+# Arduino Nano 33 BLE Sense: 45 x 18 mm PCB (Arduino's figure; the older 43.18 x 17.78
+# is the classic Nano and left too little room), pin rows 15.24 mm apart.
+NANO = (45.0, 18.0)
+NANO_CENTER = (-2.0, -26.5)     # USB end towards -x
+NANO_SIDE_CLEARANCE = 0.8       # per side, as the board drops past the strap posts (0.6 mm nozzle)
+JUMPER_HOUSING = 2.54           # female Dupont housing on each header pin
 NANO_ROW = 15.24
 NANO_RAIL_H = 20.0              # room for header pins and female jumper wires below
 PCB_NANO = 1.6
@@ -79,7 +82,7 @@ STRAP_ARCH = 3.0                # clearance over the parts between the pin rows
 STRAP_FOOT_ABOVE_PCB = 1.0      # feet bear on the soldered header pin tips
 STRAP_T = 3.0
 STRAP_W = 7.0
-STRAP_POST = 12.0               # posts at +/- this from the Nano centre line
+STRAP_POST = 13.5               # posts at +/- this from the Nano centre line
 
 
 def cyl(d, h, x=0.0, y=0.0, z=0.0, d2=None):
@@ -315,6 +318,13 @@ def verify(bottom, plate, strap):
         row = ny + side * NANO_ROW / 2
         pins = box(nx - 19.1, row - 1.3, rail_top - 8.5, nx + 19.1, row + 1.3, rail_top)
         require(overlap(features, pins) < 1e-3, "a Nano rail hits the header pins")
+        housings = box(nx - 19.1, row - JUMPER_HOUSING / 2, top + 1.0, nx + 19.1, row + JUMPER_HOUSING / 2, rail_top)
+        require(overlap(features, housings) < 1e-3, "a plate feature blocks the jumper wires on the Nano's pins")
+    # The board is lowered onto the rails from above, past the strap posts and their barbs.
+    c = NANO_SIDE_CLEARANCE
+    path = box(nx - NANO[0] / 2, ny - NANO[1] / 2 - c, rail_top, nx + NANO[0] / 2, ny + NANO[1] / 2 + c, rail_top + 40)
+    require(overlap(features, path) < 1e-3,
+            f"the Nano can't drop onto its rails: less than {c} mm per side between it and the strap posts")
 
     # Strap on its posts, feet down, resting on the pin rows above the Nano.
     strap_bottom = rail_top + PCB_NANO + STRAP_ARCH
@@ -343,6 +353,7 @@ BROKEN_DESIGNS = {
     "Nano rails on the pin rows": {"NANO_ROW": 8.0},
     "strap feet pressing into the Nano": {"STRAP_FOOT_ABOVE_PCB": -0.5},
     "Nano over a snap column": {"NANO_CENTER": (25.0, -28.0)},
+    "strap posts too close to drop the Nano in (first print)": {"STRAP_POST": 12.0},
 }
 
 

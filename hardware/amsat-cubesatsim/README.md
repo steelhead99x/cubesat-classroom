@@ -53,7 +53,8 @@ The Nano's pins hang 20 mm above the plate, so there's room for female jumper wi
 
 - the plate holes don't line up with the columns, or the plate hits the AMSAT piece or its snap tabs
 - a plate feature passes through either board, sits under the Uno's solder joints, or blocks a snap barb
-- a Nano rail hits the header pins, or the strap presses into the Nano
+- a Nano rail hits the header pins, the strap presses into the Nano, or the posts block the jumper wires
+- the Nano can't be lowered onto its rails with at least 0.8 mm to spare on each side of the strap posts (the first print had 0.15 mm and the board wouldn't go in)
 - a clip or peg would bend more than PLA can take over and over
 
 Every part was sliced with a P1S-style 0.6 mm profile to confirm it prints without supports.
