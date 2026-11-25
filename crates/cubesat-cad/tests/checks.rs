@@ -106,6 +106,12 @@ fn strap_presses_into_the_nano() {
 }
 
 #[test]
+fn nano_cannot_drop_past_the_strap_posts() {
+    // The first AMSAT-kit print: posts 12 mm off the centre line left 0.15 mm a side.
+    rejects("FIT-boards", |d| d.strap_post = 12.0);
+}
+
+#[test]
 fn uno_hits_the_frame() {
     rejects("FIT-boards", |d| d.uno_top_margin = -8.0);
 }

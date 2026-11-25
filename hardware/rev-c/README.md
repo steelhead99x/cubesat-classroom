@@ -63,7 +63,7 @@ That's about 3 hours and 150 g for the whole frame. **Print the snap test first:
 - **Latching:** barb overlap, clip reach, and clip and peg bending strain against PLA
 - **Printing:** each part is one closed solid, fits the P1S, and has no overhang that needs support
 
-`cargo test -p cubesat-cad --release` also breaks the design 15 ways on purpose and confirms each check catches its fault.
+`cargo test -p cubesat-cad --release` also breaks the design 16 ways on purpose and confirms each check catches its fault.
 
 ## Where it comes from
 
