@@ -13,7 +13,7 @@ Checked against the CubeSat Design Specification (CDS) Rev 14.1 (Cal Poly, 2022-
 | CDS-2.2.8 | Rail ends give at least 6.5 x 6.5 mm contact on the ±Z faces; nothing else reaches the ends | CDS Rev 14.1 §2.2.8 | pass | 7.0 x 7.0 mm flat on each rail end; end plates 1.5 mm below the rail ends |
 | CDS-2.2.9 | At least 75% of each rail contacts the deployer rails (should) | CDS Rev 14.1 §2.2.9 | pass | worst rail face is 100% solid along its length |
 | CDS-2.2.10 | Mass within the 1U limit of 2.00 kg | CDS Rev 14.1 §2.2.10, Table 1 | pass | about 210 g with solid PLA and both boards (the slicer's figure at 20% infill is lower) |
-| CDS-2.2.11 | Centre of mass within ±2 cm of the geometric centre in X, Y and Z | CDS Rev 14.1 §2.2.11 | pass | X -0.1, Y +0.5, Z -9.4 mm (estimate; weigh and balance the build) |
+| CDS-2.2.11 | Centre of mass within ±2 cm of the geometric centre in X, Y and Z | CDS Rev 14.1 §2.2.11 | pass | X -0.1, Y +0.6, Z -9.4 mm (estimate; weigh and balance the build) |
 | CDS-2.2.6 | Rail surface roughness below 1.6 µm Ra (should) | CDS Rev 14.1 §2.2.6 | deviation | printed layers are much rougher; a flight frame needs machined or finished rails |
 | CDS-2.2.12/13 | Aluminium structure; hard-anodised rails and standoffs | CDS Rev 14.1 §2.2.12, §2.2.13 | deviation | PLA classroom frame; any printed flight structure needs the launch provider's approval |
 | CDS-2.1.7 | Low-outgassing materials (TML ≤ 1.0%, CVCM ≤ 0.1%) | CDS Rev 14.1 §2.1.7 | deviation | PLA is not outgassing-qualified; see quest m2/material-outgassing |
@@ -27,5 +27,5 @@ Checked against the CubeSat Design Specification (CDS) Rev 14.1 (Cal Poly, 2022-
 | FIT-strain | Clip and peg bending strain within the PLA limit | PLA yield about 3% | pass | clip 1.4%, peg 0.8% (limit 2%) |
 | FIT-parts | Assembled parts do not overlap | CAD assembly | pass | 6 parts, 15 pairs checked |
 | FIT-align | Every snap peg passes through its hole | CAD assembly | pass | 8 end-plate snaps and 4 payload-column snaps |
-| FIT-boards | Uno R3 and Nano 33 BLE Sense fit with clearance | board outlines | pass | posts, clips, rails, strap, solder-joint zone, header pins, frame |
+| FIT-boards | Uno R3 and Nano 33 BLE Sense fit with clearance | board outlines | pass | posts, clips, rails, strap, drop-in path, solder-joint zone, header pins, frame; 0.25 mm clearance |
 | PRINT | Every part is one closed solid that prints on a P1S without supports | Bambu Lab P1S, 256 mm build volume | pass | largest overhang 62 mm2 (side-panel) |

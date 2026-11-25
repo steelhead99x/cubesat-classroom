@@ -140,9 +140,11 @@ impl Boards {
     pub fn new(d: &Design) -> Self {
         let o = d.uno_origin();
         let pcb = d.uno_pcb_bottom_z();
+        // The board plus a clearance margin in X and Y.
+        let m = d.min_board_clearance;
         let mut uno_pcb = cuboid(
-            [o[0], o[1], pcb],
-            [o[0] + d.uno[0], o[1] + d.uno[1], pcb + d.pcb_uno],
+            [o[0] - m, o[1] - m, pcb],
+            [o[0] + d.uno[0] + m, o[1] + d.uno[1] + m, pcb + d.pcb_uno],
         );
         let mut posts = Vec::new();
         for i in 0..4 {
@@ -552,6 +554,25 @@ pub fn verify(d: &Design) -> Report {
     if overlap(&a.strap, &boards.nano_pcb) > 1e-3 {
         board_issues.push("the strap presses into the Nano");
     }
+    // The Nano goes in from above, so its outline swept down from above the posts
+    // to the rails must be clear of everything on the plate.
+    let [nx, ny] = d.nano_center;
+    let m = d.min_board_clearance;
+    let drop_path = cuboid(
+        [
+            nx - d.nano[0] / 2.0 - m,
+            ny - d.nano[1] / 2.0 - m,
+            d.nano_pcb_bottom_z(),
+        ],
+        [
+            nx + d.nano[0] / 2.0 + m,
+            ny + d.nano[1] / 2.0 + m,
+            d.strap_bottom_z() + d.strap_t + 10.0,
+        ],
+    );
+    if overlap(&features, &drop_path) > 1e-3 {
+        board_issues.push("the Nano can't drop past the strap posts onto its rails");
+    }
     let board_set = union_all(&[
         boards.uno_pcb.clone(),
         boards.uno_usb.clone(),
@@ -567,7 +588,10 @@ pub fn verify(d: &Design) -> Report {
         "board outlines",
         board_issues.is_empty(),
         if board_issues.is_empty() {
-            "posts, clips, rails, strap, solder-joint zone, header pins, frame".into()
+            format!(
+                "posts, clips, rails, strap, drop-in path, solder-joint zone, header pins, frame; {:.2} mm clearance",
+                d.min_board_clearance
+            )
         } else {
             board_issues.join("; ")
         },

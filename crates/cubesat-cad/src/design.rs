@@ -64,7 +64,8 @@ pub struct Design {
     pub clip_gap: f64,
     pub clip_lip: f64,
 
-    // Arduino Nano 33 BLE Sense Rev2 with headers, pins down.
+    // Arduino Nano 33 BLE Sense Rev2 with headers, pins down. 45 x 18 mm: the classic
+    // Nano's 43.18 x 17.78 mm left too little room past the strap posts on a real print.
     pub nano: [f64; 2],
     pub nano_center: [f64; 2],
     pub nano_row: f64,
@@ -80,6 +81,7 @@ pub struct Design {
     pub pla_strain_limit: f64,
     pub min_snap_overlap: f64,
     pub min_clip_reach: f64,
+    pub min_board_clearance: f64,
 }
 
 impl Default for Design {
@@ -116,7 +118,7 @@ impl Default for Design {
             plate_t: 3.0,
             uno: [68.58, 53.34],
             uno_holes: [[13.97, 2.54], [15.24, 50.80], [66.04, 7.62], [66.04, 35.56]],
-            uno_top_margin: 1.0,
+            uno_top_margin: 0.5,
             uno_post_h: 10.0,
             uno_post_top: 4.4,
             uno_pin: 2.9,
@@ -125,8 +127,8 @@ impl Default for Design {
             clip_w: 8.0,
             clip_gap: 0.3,
             clip_lip: 0.7,
-            nano: [43.18, 17.78],
-            nano_center: [-2.0, -28.0],
+            nano: [45.0, 18.0],
+            nano_center: [-2.0, -26.5],
             nano_row: 15.24,
             nano_rail_h: 20.0,
             pcb_nano: 1.6,
@@ -134,10 +136,11 @@ impl Default for Design {
             strap_foot_above_pcb: 1.0,
             strap_t: 3.0,
             strap_w: 7.0,
-            strap_post: 12.0,
+            strap_post: 13.5,
             pla_strain_limit: 0.02,
             min_snap_overlap: 0.2,
             min_clip_reach: 0.3,
+            min_board_clearance: 0.25,
         }
     }
 }
