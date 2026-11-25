@@ -12,7 +12,7 @@ Write down the equipment you have, including the board or printer model, availab
 
 | Your setup | First quest |
 | --- | --- |
-| Bambu Lab P1S | [Validate the Rev A case slice](/quest/m0/slice-p1s-case.md) |
+| Bambu Lab P1S | [Print the Rev A case](/hardware/p1s/README.md), then [validate the slice](/quest/m0/slice-p1s-case.md) |
 | Computer only or unsure | [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md) |
 | Arduino, such as an Uno | [Read one Arduino sample](/quest/m0/arduino-first-reading.md) |
 | Seeed XIAO, such as ESP32-C3 or RP2040 | [Record a XIAO bench sample](/quest/m0/xiao-first-reading.md) |
@@ -38,7 +38,7 @@ Start in M0. After a run, tell us which steps the class completed, which instruc
 
 ### Bambu P1S case test track
 
-Use the enclosed Rev A case for these bench quests. Start with PLA and move through the steps in order. The Rev B rail-fit and ISS work has its own review path below.
+Print the Rev A case with the [P1S print guide](/hardware/p1s/README.md), then use these quests to record what you measured so another crew can repeat it. Start with PLA and go in order. The Rev B rail-fit and ISS work has its own path below.
 
 1. [Validate the slice in Bambu Studio](/quest/m0/slice-p1s-case.md)
 2. [Print and measure the PLA fastener coupon](/quest/m0/print-p1s-case-coupon.md)

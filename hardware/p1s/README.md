@@ -1,21 +1,86 @@
-# Bambu P1S Rev A bench case
+# Print the CubeSat case on a Bambu Lab P1S
 
-Follow the [P1S case test quests](../../quest/README.md#bambu-p1s-case-test-track) to validate the slice, print the parts, record fit, and retest improvements.
+A 1U-sized bench case in three prints: a small screw-fit coupon, the case shell and a lid with a camera hole. PLA, stock settings, no supports.
 
-Use the **Bambu Lab P1S 0.4 mm nozzle** preset, the actual build plate and filament preset, and **0.20 mm Standard** as a starting process. Start with PLA. The [P1S specification](https://cdn1.bambulab.com/documentation/quick-start-59b0cefdc0fc4/P1S/English%20version-Quick%20Start%20Guide%20for%20P1S.pdf) lists a 256 × 256 × 256 mm build volume and support for PLA and ASA.
+![Shell, lid and coupon](../rev-a-cad-preview.png)
 
-Each 3MF is a millimetre-scale model centered on its own plate. Import one at a time. Keep its exported orientation, check the dimensions, and slice locally with your profile. The package does not contain G-code, filament temperatures, or a printer connection.
+## What you need
 
-| Print order | Model | STL fallback | Orientation and first check |
-| --- | --- | --- | --- |
-| 1 | [M3 fit coupon](01-m3-fit-coupon.3mf) | [STL](../stl/m3-fit-coupon.stl) | 48 × 14 × 10 mm. Flat on the bed. Starting at the notch, holes are 2.6, 2.8, 3.0, 3.2, 3.5, and 3.8 mm. Test the intended screw by hand. |
-| 2 | [Case shell](02-case-shell.3mf) | [STL](../stl/bench-shell.stl) | 100 × 100 × 109.5 mm. Closed floor down, opening up. Inspect the four 2.8 mm blind pilots and the open cable slot in the layer preview. |
-| 3 | [Camera lid](03-camera-lid.3mf) | [STL](../stl/camera-lid.stl) | 100 × 100 × 6 mm including tabs. Exterior face down, tabs up. Check four 3.5 mm clearance holes and the 18 mm camera opening. |
+- Bambu Lab P1S with the 0.4 mm nozzle, and Bambu Studio
+- About 170 g of PLA
+- 4 × **M3 × 12 mm** screws, socket or pan head (M3 × 10 also works; do not go longer than 14 mm or they bottom out)
+- A matching hex key or screwdriver, and calipers or a ruler if you have them
 
-Start with supports disabled. In Bambu Studio, inspect layer 1, the pilot holes, and each tab, then review any overhang warnings before printing. For ASA repeat the coupon before committing to the full shell, use the filament supplier’s profile and follow its ventilation guidance.
+## Slicer settings
 
-Measure the assembled case against its nominal **100 × 100 × 113.5 mm** envelope. The lid should seat without force. Check for corner lift, cable clearance, and camera sightline. Check screw engagement against the 10 mm blind pilot depth. Record filament, nozzle, layer height, plate, and any measured changes so another crew can repeat the print.
+| Setting | Use |
+| --- | --- |
+| Printer | Bambu Lab P1S 0.4 nozzle |
+| Process | 0.20mm Standard |
+| Filament | Your PLA preset |
+| Plate | The one installed (Textured PEI or Cool Plate) |
+| Supports | Off |
 
-This is a bench enclosure for test fitting. The [Rev B rail-fit kit](../README.md#rev-b-rail-fit-set) is a separate experiment. Neither has completed flight qualification.
+Leave everything else at the defaults. Each 3MF opens already centered and in the right orientation, so don't rotate it.
 
-Regenerate after rebuilding the original CAD meshes by running `python hardware/p1s/prepare.py` with the [CAD dependencies](../requirements.txt).
+## Print 1: fit coupon
+
+[01-m3-fit-coupon.3mf](01-m3-fit-coupon.3mf) · about 20 min · 4 g
+
+A 48 × 14 × 10 mm bar with six holes. Starting at the notched end they are **2.6, 2.8, 3.0, 3.2, 3.5 and 3.8 mm**.
+
+Test it with one of your screws before printing the case:
+
+- **2.8 mm hole:** the screw should thread in with firm resistance and not crack the plastic. The shell uses this size.
+- **3.5 mm hole:** the screw should slide through freely. The lid uses this size.
+
+If either one fails, see [If the screw doesn't fit](#if-the-screw-doesnt-fit) before you print the shell.
+
+## Print 2: case shell
+
+[02-case-shell.3mf](02-case-shell.3mf) · about 4 h · 135 g
+
+100 × 100 × 109.5 mm, prints floor down and open end up. In the Preview tab, check that the four corner screw holes and the cable slot at the top of one wall look clean.
+
+## Print 3: camera lid
+
+[03-camera-lid.3mf](03-camera-lid.3mf) · about 45 min · 26 g
+
+100 × 100 × 6 mm, prints flat face down with the four small tabs pointing up.
+
+To print the shell and lid in one job, import both files into one Bambu Studio project and press **Arrange**. They fit together on the 256 mm plate.
+
+The times above are estimates at P1S speeds. Bambu Studio's own estimate is the one to plan around.
+
+## Assemble
+
+1. Let the parts cool before you take them off the plate.
+2. Set the lid on the shell with the tabs facing down into the opening. It fits in any of the four rotations.
+3. Drive in the four screws until they're snug. PLA strips easily, so stop as soon as the lid stops moving.
+
+The lid should sit flat without forcing, and the closed case should measure about **100 × 100 × 113.5 mm**.
+
+Inside there's about 94 × 94 mm of floor and 105 mm of height, with a 7 mm square screw post in each corner. Run cables through the 30 × 18 mm slot. A camera looks out through the 18 mm hole in the lid.
+
+## If the screw doesn't fit
+
+The hole sizes are set in [generate.py](../generate.py). Change `M3_PILOT` (shell, default 2.8) or `M3_CLEARANCE` (lid, default 3.5) to the coupon hole that worked, then rebuild the files:
+
+```sh
+python3 -m venv /tmp/cubesat-cad
+/tmp/cubesat-cad/bin/pip install -r hardware/requirements.txt
+/tmp/cubesat-cad/bin/python hardware/generate.py
+/tmp/cubesat-cad/bin/python hardware/p1s/prepare.py
+```
+
+Reprint the part you changed.
+
+## Next
+
+- Put a sensor inside. The [first reading quests](../../quest/README.md#start-with-what-you-have) cover Arduino, XIAO and Raspberry Pi.
+- Share your print. The [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track) say what to measure so another crew can repeat it.
+- ASA: print the coupon again with the filament maker's profile and ventilation advice before trying a full shell.
+
+The plain STLs are in [../stl](../stl) ([coupon](../stl/m3-fit-coupon.stl), [shell](../stl/bench-shell.stl), [lid](../stl/camera-lid.stl)) for other slicers.
+
+This is a bench case for learning and fit tests, not flight hardware. The [Rev B rail-fit set](../README.md#rev-b-rail-fit-set) is the separate flight-structure experiment.

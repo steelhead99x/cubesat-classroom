@@ -37,7 +37,7 @@ const parts = [
       <div>
         <p class="field-label">Bambu Lab P1S mechanical kit</p>
         <h1 class="mt-3">CubeSat CAD and print files</h1>
-        <p class="lede mt-4">Start with the Rev A case on a Bambu P1S. Print the fit coupon in PLA, then check the shell and lid. The Rev B rail-fit set is a separate bench experiment.</p>
+        <p class="lede mt-4">Start with the Rev A case on a Bambu P1S: three PLA prints, no supports, and four M3 × 12 screws. Print the 20-minute fit coupon first, then the shell and lid. The Rev B rail-fit set is a separate experiment.</p>
         <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
           <a class="button primary" href={raw + 'p1s/' + caseFiles[0].file}>Download the case fit coupon</a>
           <a class="font-bold text-accent underline underline-offset-4" href={cad + 'generate.py'}>Open the parametric CAD source</a>
@@ -52,7 +52,7 @@ const parts = [
   <div class="shell space-y-12 py-12">
     <section aria-labelledby="p1s-title">
       <h2 id="p1s-title">P1S case test prints</h2>
-      <p class="mt-2 text-muted">Choose the P1S profile for your installed nozzle and slice each millimetre-scale model in Bambu Studio. Start with PLA and a 0.4 mm nozzle.</p>
+      <p class="mt-2 text-muted">Use the P1S 0.4 nozzle profile, 0.20mm Standard, your PLA preset and supports off. Each file opens centered and in print orientation.</p>
       <dl class="mt-5 divide-y divide-line border-y border-line">
         {caseFiles.map(part => (
           <div class="grid gap-2 py-4 sm:grid-cols-[13rem_1fr] sm:gap-6">
@@ -61,7 +61,7 @@ const parts = [
           </div>
         ))}
       </dl>
-      <a class="mt-4 inline-block text-accent" href={cad + 'p1s/README.md'}>P1S settings and fit checklist</a>
+      <a class="mt-4 inline-block text-accent" href={cad + 'p1s/README.md'}>P1S print guide</a>
       <a class="mt-4 ml-4 inline-block text-accent" href={caseQuests}>Follow the P1S print and test quests</a>
     </section>
     <section class="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-8" aria-labelledby="rail-title">

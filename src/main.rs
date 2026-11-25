@@ -50,89 +50,17 @@ enum Command {
         samples: u32,
     },
     /// Turn Arduino, XIAO or Raspberry Pi readings into sensor files for the station.
-    SensorBridge {
-        /// Folder to write temperature_mc, voltage_mv, light_lux and pressure_pa into.
-        #[arg(long, default_value = "run/sensors")]
-        out: PathBuf,
-        /// Serial device, file or `-` (standard input) carrying `CSC1 key=value` lines.
-        #[arg(long)]
-        input: Option<PathBuf>,
-        /// Read a Linux file as a sensor: name=path[*scale]. Repeat for each sensor.
-        #[arg(long = "map")]
-        maps: Vec<String>,
-        /// Remove a value if no new reading arrives within this many seconds.
-        #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u64).range(1..=3600))]
-        stale_secs: u64,
-        /// How often to read mapped files, in milliseconds.
-        #[arg(long, default_value_t = 1000, value_parser = clap::value_parser!(u64).range(100..=60_000))]
-        poll_ms: u64,
-    },
+    SensorBridge(bridge::BridgeArgs),
     /// Predict when satellites pass over a location, from a TLE file.
     ///
     /// Elements older than 14 days are flagged in the output. A pass already under way
     /// starts "now"; one still under way at the end of the window is left out.
-    Passes {
-        /// TLE file in three-line format (name line plus two element lines).
-        #[arg(long)]
-        tle: PathBuf,
-        /// Only satellites whose name contains this word or phrase.
-        ///
-        /// Matching is case-insensitive and stops at letters and digits, so `ISS`
-        /// selects "ISS (ZARYA)" and not "SWISSCUBE".
-        #[arg(long)]
-        satellite: Option<String>,
-        /// Observer latitude in degrees (north positive).
-        #[arg(long, allow_hyphen_values = true)]
-        lat: f64,
-        /// Observer longitude in degrees (east positive).
-        #[arg(long, allow_hyphen_values = true)]
-        lon: f64,
-        /// Observer altitude in metres.
-        #[arg(long, default_value_t = 0.0, allow_hyphen_values = true)]
-        alt_m: f64,
-        /// Hours ahead to search.
-        #[arg(long, default_value_t = 24.0)]
-        hours: f64,
-        /// Ignore passes whose highest point is below this elevation, in degrees.
-        #[arg(long, default_value_t = 10.0, allow_hyphen_values = true)]
-        min_elevation: f64,
-        /// Print JSON instead of a table.
-        #[arg(long)]
-        json: bool,
-    },
+    Passes(passes::PassArgs),
     /// Desk simulation of a suborbital research flight: phases, height and what a logger should see.
     ///
     /// Defaults use public Virgin Galactic figures (Payload User's Guide, 'Galactic 07' flight facts).
     /// The output is a classroom prediction, not flight data.
-    FlightProfile {
-        /// Write a CSV timeline to this file.
-        #[arg(long, conflicts_with = "json")]
-        output: Option<PathBuf>,
-        /// Height at release from the carrier aircraft, in feet.
-        #[arg(long, default_value_t = 44_562.0)]
-        release_ft: f64,
-        /// Highest point, in miles.
-        #[arg(long, default_value_t = 54.4)]
-        apogee_miles: f64,
-        /// Rocket burn, in seconds.
-        #[arg(long, default_value_t = 60.0)]
-        burn_s: f64,
-        /// Minutes from take-off to release (an assumption; ask the provider).
-        #[arg(long, default_value_t = 50.0)]
-        climb_min: f64,
-        /// Minutes from take-off to landing.
-        #[arg(long, default_value_t = 70.0)]
-        total_min: f64,
-        /// Cabin pressure as an equivalent height, in feet.
-        #[arg(long, default_value_t = 5_500.0)]
-        cabin_ft: f64,
-        /// Seconds between rows.
-        #[arg(long, default_value_t = 1.0)]
-        step_s: f64,
-        /// Print JSON instead of a summary.
-        #[arg(long)]
-        json: bool,
-    },
+    FlightProfile(flight::FlightArgs),
     /// Static downlink sensitivity exercise for design review (illustrative, not a prediction).
     ///
     /// Spherical Earth slant range, free-space loss, TX power/gain/feed loss, receive G/T,
@@ -559,13 +487,7 @@ async fn main() -> Result<()> {
         } => {
             balloon::log(sensor_dir, output, samples).await?;
         }
-        Command::SensorBridge {
-            out,
-            input,
-            maps,
-            stale_secs,
-            poll_ms,
-        } => {
+        Command::SensorBridge(args) => {
             let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
             let flag = stop.clone();
             tokio::spawn(async move {
@@ -573,59 +495,10 @@ async fn main() -> Result<()> {
                     flag.store(true, std::sync::atomic::Ordering::Relaxed);
                 }
             });
-            let args = bridge::BridgeArgs {
-                out,
-                input,
-                maps,
-                stale_secs,
-                poll_ms,
-            };
             tokio::task::spawn_blocking(move || bridge::run(args, &stop)).await??;
         }
-        Command::Passes {
-            tle,
-            satellite,
-            lat,
-            lon,
-            alt_m,
-            hours,
-            min_elevation,
-            json,
-        } => {
-            passes::run(passes::PassArgs {
-                tle,
-                satellite,
-                lat,
-                lon,
-                alt_m,
-                hours,
-                min_elevation,
-                json,
-            })?;
-        }
-        Command::FlightProfile {
-            output,
-            release_ft,
-            apogee_miles,
-            burn_s,
-            climb_min,
-            total_min,
-            cabin_ft,
-            step_s,
-            json,
-        } => {
-            flight::run(flight::FlightArgs {
-                output,
-                release_ft,
-                apogee_miles,
-                burn_s,
-                climb_min,
-                total_min,
-                cabin_ft,
-                step_s,
-                json,
-            })?;
-        }
+        Command::Passes(args) => passes::run(args)?,
+        Command::FlightProfile(args) => flight::run(args)?,
         Command::LinkBudget {
             profile,
             altitude_km,

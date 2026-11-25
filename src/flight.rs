@@ -28,15 +28,34 @@ const G0: f64 = 9.806_65;
 const FT: f64 = 0.3048;
 const MILE: f64 = 1609.344;
 
+#[derive(clap::Args)]
 pub(crate) struct FlightArgs {
+    /// Write a CSV timeline to this file.
+    #[arg(long, conflicts_with = "json")]
     pub output: Option<PathBuf>,
+    /// Height at release from the carrier aircraft, in feet.
+    #[arg(long, default_value_t = 44_562.0)]
     pub release_ft: f64,
+    /// Highest point, in miles.
+    #[arg(long, default_value_t = 54.4)]
     pub apogee_miles: f64,
+    /// Rocket burn, in seconds.
+    #[arg(long, default_value_t = 60.0)]
     pub burn_s: f64,
+    /// Minutes from take-off to release (an assumption; ask the provider).
+    #[arg(long, default_value_t = 50.0)]
     pub climb_min: f64,
+    /// Minutes from take-off to landing.
+    #[arg(long, default_value_t = 70.0)]
     pub total_min: f64,
+    /// Cabin pressure as an equivalent height, in feet.
+    #[arg(long, default_value_t = 5_500.0)]
     pub cabin_ft: f64,
+    /// Seconds between rows.
+    #[arg(long, default_value_t = 1.0)]
     pub step_s: f64,
+    /// Print JSON instead of a summary.
+    #[arg(long)]
     pub json: bool,
 }
 
