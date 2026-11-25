@@ -5,7 +5,9 @@
 # Repository secrets (Settings > Secrets and variables > Actions > Secrets):
 #   CLOUDFLARE_API_TOKEN   an API token from the "Edit Cloudflare Workers" template
 #   CLOUDFLARE_ACCOUNT_ID  the account that owns the cubesat-classroom Worker
-# Until both are set, the deploy step is skipped and the run still passes.
+# Until both are set, this job fails on purpose, so a missing secret is never mistaken for a
+# successful deploy. It only runs for pushes to main (after CI) or a manual start, never for
+# pull requests or forks, so those are unaffected.
 #
 # Repository variable (Settings > Secrets and variables > Actions > Variables):
 #   GUIDE_LIMITS_KV_ID     the id of the KV namespace bound as GUIDE_LIMITS, if the live quest
@@ -44,7 +46,9 @@ jobs:
       - name: Cloudflare secrets missing
         if: env.HAS_CLOUDFLARE != 'true'
         working-directory: .
-        run: echo "::notice::Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID to deploy the Worker. Skipping."
+        run: |
+          echo "::error::CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are not both set, so the Worker was NOT deployed. Add them under Settings > Secrets and variables > Actions, then re-run."
+          exit 1
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         if: env.HAS_CLOUDFLARE == 'true'
         with:

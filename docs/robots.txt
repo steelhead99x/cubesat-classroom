@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cubesatclass.org/sitemap.xml

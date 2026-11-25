@@ -1,6 +1,7 @@
 // Settings for this site. A fork changes these three lines and the `hubs` list below.
 // See docs/fork-guide.md.
 export const repo = 'https://github.com/steelhead99x/cubesat-classroom';
+export const missionBriefing = 'https://hikd.ai/tis/';
 export const classroomHost = 'cubesatclass.org';
 // The public site. Canonical URLs, the installer address and redirects all point here.
 export const publicOrigin = 'https://' + classroomHost;

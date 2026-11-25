@@ -15,7 +15,7 @@ Plan for two measurement questions. One is likely to show a result. The other mi
 1. **Surface change (expected result).** In low Earth orbit, atomic oxygen erodes polymers, and NASA has measured this for decades on the MISSE experiments outside the ISS. Mount small witness coupons next to the plate, including a printed ASA coupon cut from the project's own rail material. A microscope can track texture and color change over weeks. This also feeds the [printed structure qualification](iss-deployment-review.md#printed-structure-qualification) work. [MISSE polymer erosion results (NASA NTRS)](https://ntrs.nasa.gov/citations/20240009151)
 2. **Particle capture (rare event).** Micrometeoroid and debris impacts big enough for a small optic to resolve are uncommon. Before choosing plate area and optics, estimate the expected count for the actual orbit and pointing with NASA's ORDEM and MEM models. Treat "no impacts seen" as a valid, publishable result. [NASA ORDEM 3.2](https://www.orbitaldebris.jsc.nasa.gov/modeling/ordem.html)
 
-On a balloon, the plate can collect stratospheric aerosols and dust instead. On the bench, students can collect classroom dust, pollen or salt and practise the imaging and logging workflow.
+On a balloon, the plate can collect stratospheric aerosols and dust instead. On the bench, students can collect classroom dust, pollen or salt and practice the imaging and logging workflow.
 
 ## Streaming it back
 

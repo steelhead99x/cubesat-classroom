@@ -8,7 +8,7 @@ The ground lab uses the same timestamped file format the proposed balloon experi
 
 Give the class four jobs: payload lead, station operator, data recorder and reviewer. For younger grades, read values and units aloud and mark what changed. For older grades, graph both series against elapsed time and explain timing, units, calibration and missing points.
 
-1. Start the [classroom ground station](../README.md). Get a reading, start the video, then practise a contact interruption and download the crew log. The station demonstrates communications and separately labels its simulated camera.
+1. Start the [classroom ground station](../README.md). Get a reading, start the video, then practice a contact interruption and download the crew log. The station demonstrates communications and separately labels its simulated camera.
 2. Connect an instructor-approved pressure sensor and thermometer using their supplied adapter or driver. Expose current integer values in two files, `pressure_pa` and `temperature_mc`, in one folder. Pressure is in pascals and temperature is in millidegrees Celsius. Check units against the instrument documentation. A local reference reading and a note on placement help the next group interpret the data.
 3. Run the logger for one minute. It writes once per second, with a sequence, local UTC timestamp, elapsed time and data status. Observe the live instrument while it records. If one reading fails, its cell stays empty and the other reading remains available.
 
@@ -58,7 +58,7 @@ Ready-made kits exist: one supplier sells a 600 g package with balloon, cords, i
 
 ### Power budget
 
-Run `python3 tools/energy_budget.py` to recompute. One lithium AA is rated 3500 mAh at 100 mA; the budget counts 3000 mAh at 1.4 V, then keeps 25% back for cold and 15% for regulator losses (both estimates). Plan for six hours (preparation, about three hours of flight, recovery), then double it.
+Run `cargo run --locked -- energy-budget` to recompute. One lithium AA is rated 3500 mAh at 100 mA; the budget counts 3000 mAh at 1.4 V, then keeps 25% back for cold and 15% for regulator losses (both estimates). Plan for six hours (preparation, about three hours of flight, recovery), then double it.
 
 How to wire the cells: four in series give about 6 V fresh, which is too much for the boards directly. A small buck-boost regulator turns it into a steady 3.3 V for payload A or 5 V for payload B. Eight cells are two strings of four connected in parallel, which keeps 6 V and doubles the capacity. A mentor checks battery wiring and polarity before every power-up.
 
@@ -95,5 +95,5 @@ The PLA and ASA parts supplied here are desktop mockups. An actual balloon paylo
 - Balloon size, payload range, burst altitude and helium volume: [The Rocketman balloons](https://www.the-rocketman.com/products/high-altitude-weather-balloons-hab), [Rocketman 600 g package](https://www.the-rocketman.com/products/hab-kit-complete-package), [High Altitude Science 600 g](https://highaltitudescience.com/products/600-g-near-space-balloon), [High Altitude Science on helium](https://highaltitudescience.com/pages/helium)
 - Batteries: [Energizer L91 datasheet](https://data.energizer.com/pdfs/L91.pdf), [Energizer L91 capacity ratings](https://data.energizer.com/pdfs/lithiumintrinsicsafety.pdf)
 - Power: [Seeed XIAO ESP32-C3](https://wiki.seeedstudio.com/XIAO_ESP32C3_Getting_Started/), [u-blox MAX-M10](https://content.u-blox.com/sites/default/files/MAX-M10_ProductSummary_UBX-20017987.pdf), [Raspberry Pi power by model](https://pip-assets.raspberrypi.com/categories/685-app-notes-guides-whitepapers/documents/RP-010139-WP-1-Use-case-specific%20thermal%20performance%20of%20Raspberry%20Pi%20SBCs.pdf)
-- Tracker: [LightAPRS at QRP Labs](https://shop.qrp-labs.com/lightaprs), [LightAPRS 2.0 licence note](https://github.com/lightaprs/LightAPRS-2.0)
+- Tracker: [LightAPRS at QRP Labs](https://shop.qrp-labs.com/lightaprs), [LightAPRS 2.0 license note](https://github.com/lightaprs/LightAPRS-2.0)
 - Rules: [14 CFR 101.1](https://www.law.cornell.edu/cfr/text/14/101.1), [14 CFR Part 101](https://www.ecfr.gov/current/title-14/chapter-I/subchapter-F/part-101)

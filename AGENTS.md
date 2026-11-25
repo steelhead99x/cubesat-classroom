@@ -39,6 +39,7 @@ The people you help are learners 13 and up, and the teachers, guardians and amat
 
 - Run the station: `bash docs/start.sh`, or `cargo run --locked -- classroom`.
 - Simulator formulas: `Sample::synthetic` in [src/main.rs](src/main.rs); the test camera is `test_frame` in [src/classroom.rs](src/classroom.rs).
+- Design-review budgets: `cargo run --locked -- link-budget hardware/rf-example.json` and `cargo run --locked -- energy-budget`, in [crates/mission-budget](crates/mission-budget/src).
 - Suborbital flight preparation: [docs/suborbital-flight-plan.md](docs/suborbital-flight-plan.md); the timeline model is `Profile` in [src/flight.rs](src/flight.rs).
 - First quest without hardware: [quest/m0/repeat-the-station-lesson.md](quest/m0/repeat-the-station-lesson.md).
 - Forks and new missions: [docs/fork-guide.md](docs/fork-guide.md). Site settings are at the top of [site/src/hubs.mjs](site/src/hubs.mjs).

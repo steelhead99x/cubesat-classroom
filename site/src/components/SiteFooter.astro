@@ -1,5 +1,5 @@
 ---
-import { hubs, repo } from '../hubs.mjs';
+import { hubs, missionBriefing, repo } from '../hubs.mjs';
 
 interface Props {
   showHubs?: boolean;
@@ -13,6 +13,7 @@ const homeFor = (hub: typeof hubs[number]) => hub.home ?? 'https://' + hub.host 
     <p class="text-muted">An independent volunteer open-source space education project.</p>
     <nav class="flex flex-wrap gap-x-4 gap-y-2" aria-label="Footer">
       {showHubs && hubs.map(hub => <a class="font-semibold text-ink underline underline-offset-4" href={homeFor(hub)}>{hub.name}</a>)}
+      <a class="font-semibold text-ink underline underline-offset-4" href={missionBriefing}>Mission briefing</a>
       <a class="font-semibold text-ink underline underline-offset-4" href={repo}>GitHub</a>
     </nav>
   </div>

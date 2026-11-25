@@ -28,15 +28,34 @@ const G0: f64 = 9.806_65;
 const FT: f64 = 0.3048;
 const MILE: f64 = 1609.344;
 
+#[derive(clap::Args)]
 pub(crate) struct FlightArgs {
+    /// Write a CSV timeline to this file.
+    #[arg(long, conflicts_with = "json")]
     pub output: Option<PathBuf>,
+    /// Height at release from the carrier aircraft, in feet.
+    #[arg(long, default_value_t = 44_562.0)]
     pub release_ft: f64,
+    /// Highest point, in miles.
+    #[arg(long, default_value_t = 54.4)]
     pub apogee_miles: f64,
+    /// Rocket burn, in seconds.
+    #[arg(long, default_value_t = 60.0)]
     pub burn_s: f64,
+    /// Minutes from take-off to release (an assumption; ask the provider).
+    #[arg(long, default_value_t = 50.0)]
     pub climb_min: f64,
+    /// Minutes from take-off to landing.
+    #[arg(long, default_value_t = 70.0)]
     pub total_min: f64,
+    /// Cabin pressure as an equivalent height, in feet.
+    #[arg(long, default_value_t = 5_500.0)]
     pub cabin_ft: f64,
+    /// Seconds between rows.
+    #[arg(long, default_value_t = 1.0)]
     pub step_s: f64,
+    /// Print JSON instead of a summary.
+    #[arg(long)]
     pub json: bool,
 }
 
@@ -257,8 +276,10 @@ pub(crate) fn run(args: FlightArgs) -> Result<()> {
         if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
             std::fs::create_dir_all(dir).with_context(|| format!("create {}", dir.display()))?;
         }
-        let mut f =
+        let file =
             std::fs::File::create(path).with_context(|| format!("create {}", path.display()))?;
+        // One write per row on an unbuffered file is slow at small steps (42,000 rows at 0.1 s).
+        let mut f = std::io::BufWriter::new(file);
         writeln!(
             f,
             "elapsed_s,phase,altitude_m,felt_g,cabin_pressure_pa,source"
@@ -276,6 +297,9 @@ pub(crate) fn run(args: FlightArgs) -> Result<()> {
                 pt.cabin_pressure_pa
             )?;
         }
+        // Flush explicitly: an error while dropping a BufWriter would be silently lost.
+        f.flush()
+            .with_context(|| format!("write {}", path.display()))?;
         println!("Wrote {} rows to {}", points.len(), path.display());
     }
 

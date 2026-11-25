@@ -22,7 +22,7 @@ Explain why the same pressure and temperature sensors tell three different stori
 4. Check your work: one of the three sketches should fall to a few percent of sea-level pressure. The other two should stay nearly flat. Explain which and why.
 5. Share the crew nickname, the table and the sketches. Label them as predictions, not measurements.
 
-## Levels
+### Levels
 
 - **Beginner:** say which ride is the highest, which is the longest and which has outside air on the sensor.
 - **Intermediate:** explain why astronauts float on the ISS for months but spaceship passengers float for about three minutes.

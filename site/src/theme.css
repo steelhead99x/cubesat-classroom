@@ -3,7 +3,7 @@
 /* "Ground pass" theme.
    Everything on the site follows one satellite pass: the sky above the horizon
    (night, orbit, mission) and the classroom below it (quests, workshops, people).
-   Navy, sky and signal come from the CubeSat mark. Horizon amber is the dawn line
+   Navy and Orbit Blue come from the CubeSat Classroom brand kit. Horizon amber is the dawn line
    and the main call to action. Mint, violet and solar are only for status and
    mission patches, so colour always means something. */
 @theme {
@@ -13,7 +13,7 @@
   --color-paper: #ffffff;
   --color-ground: #eff3f8;
   --color-ink: #172b43;
-  --color-accent: #214da5;
+  --color-accent: #2f3fbf;
   --color-sky: #a4c9ff;
   --color-horizon: #ffb547;
   --color-horizon-deep: #a35f00;
@@ -48,7 +48,7 @@
   nav [aria-current="page"] { color: #fff; text-decoration: underline; text-decoration-color: var(--color-horizon); text-decoration-thickness: 2px; text-underline-offset: .45em; }
 
   :focus-visible { outline: 3px solid #2563c9; outline-offset: 3px; border-radius: 4px; }
-  h1, h2, h3 { font-family: var(--font-display); font-weight: 650; line-height: 1.06;  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.06;  }
   h1 { font-size: clamp(2.55rem, 5.8vw, 4.1rem); letter-spacing: -.025em; }
   h2 { font-size: clamp(1.65rem, 3vw, 2.2rem); letter-spacing: -.018em; }
   h3 { font-size: 1.3rem; letter-spacing: -.005em;  }
@@ -91,7 +91,7 @@
   .intro { max-width: 36rem; color: #d7e3f4; font-size: clamp(1.05rem, 2vw, 1.25rem); }
   .lede { max-width: 38rem; color: var(--color-muted); font-size: clamp(1.05rem, 2vw, 1.22rem); }
 
-  .button { display: inline-flex; align-items: center; gap: .6rem; border-radius: .5rem; padding: .68rem 1.1rem; font-weight: 700; text-decoration: none; }
+  .button { display: inline-flex; align-items: center; min-height: 2.75rem; gap: .6rem; border-radius: .5rem; padding: .68rem 1.1rem; font-weight: 700; text-decoration: none; }
   .launch { background: var(--color-horizon); color: var(--color-night); }
   .launch:hover { background: #ffc46e; }
   .launch:active { transform: translateY(1px); }
@@ -108,11 +108,13 @@
   .start p { color: var(--color-muted); }
   .terminal { border-radius: 1rem; background: var(--night); color: #eaf2fd; padding: .9rem 1.1rem; }
   .primary { background: var(--color-accent); color: #fff; }
-  .primary:hover { background: #193d86; }
+  .primary:hover { background: #01017f; }
 
   .site-header { background: #fff; color: var(--ink); border-bottom: 1px solid var(--color-line); }
-  .site-header nav a { color: var(--color-muted); }
+  .site-header .brand { color: #03038c; }
+  .site-header nav a { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--color-muted); }
   .site-header nav a:hover, .site-header nav [aria-current="page"] { color: var(--color-accent); }
+  footer nav a { display: inline-flex; align-items: center; min-height: 2.75rem; }
   .site-header nav [aria-current="page"] { text-decoration-color: var(--color-accent); }
 
   .classroom-hero { border-bottom: 1px solid var(--color-line); }
@@ -130,10 +132,10 @@
   .section-band { background: #f4f7fb; border-block: 1px solid var(--color-line); }
   .resource { border-top: 2px solid var(--color-line); padding-top: 1rem; }
   .reference-panel { border-bottom: 1px solid var(--color-line); padding-bottom: .9rem; }
-  .reference-panel summary { cursor: pointer; font-weight: 700; }
+  .reference-panel summary { cursor: pointer; font-weight: 700; padding-block: .7rem; }
 
   .terminal code { min-width: 0; overflow-wrap: anywhere; font-size: .92rem; }
-  .terminal button { border: 1px solid #6b8fc4; border-radius: 999px; padding: .32rem .8rem; color: var(--color-horizon); font-weight: 700; font-size: .85rem; white-space: nowrap; }
+  .terminal button { min-height: 2.75rem; border: 1px solid #6b8fc4; border-radius: 999px; padding: .32rem .8rem; color: var(--color-horizon); font-weight: 700; font-size: .85rem; white-space: nowrap; }
   .terminal button:hover { background: #1d3a68; }
 
   .quest-steps ol { display: grid; gap: .85rem; padding-left: 1.6rem; list-style: decimal; }

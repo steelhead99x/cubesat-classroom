@@ -1,0 +1,6 @@
+Illustrative only. Inputs are invented for sensitivity studies. No channel assignment, measured performance, or predicted flight availability.
+1518.0 km slant at 15° elevation. Doppler uses a separate assumed radial speed.
+Band       FSPL dB  C/N0 dBHz  Eb/N0 dB  Margin dB  |Doppler| kHz
+SubGHz       148.9       62.7      22.9       13.9           10.2
+S-band       163.1       71.5      17.4       10.4           52.5
+X-band       174.3       74.2       4.2       -2.8          191.5
