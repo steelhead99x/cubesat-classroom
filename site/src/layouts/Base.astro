@@ -2,44 +2,52 @@
 import '@fontsource/atkinson-hyperlegible/400.css';
 import '@fontsource/atkinson-hyperlegible/700.css';
 import '../theme.css';
+import rail from '../../../docs/assets/rail-fit.png';
+import { siteOrigin } from '../origin';
 
 interface Props {
   title: string;
   description: string;
   canonical?: string;
   image?: string;
+  imageAlt?: string;
   mark?: string;
+  robots?: string;
 }
 
-const { title, description, canonical, image, mark = 'mark.svg' } = Astro.props;
+const { title, description, canonical, image, imageAlt = 'Exploded view of the CubeSat Classroom bench model', mark = 'favicon.svg', robots } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const social = image ?? siteOrigin + rail.src.replace(base, '');
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- GitHub Pages cannot send security headers, so the page sets what a meta tag can. -->
-    <meta http-equiv="Content-Security-Policy" content="base-uri 'none'; object-src 'none'; form-action 'self'">
+    <!-- GitHub Pages cannot send security headers, so the page sets what a meta tag can.
+         All scripts are files on this origin (no inline scripts), so script-src can be 'self'.
+         frame-ancestors, HSTS and nosniff cannot be set from a meta tag; the Cloudflare Worker sends them. -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="description" content={description}>
-    <meta name="theme-color" content="#10264a">
+    {robots && <meta name="robots" content={robots}>}
+    <meta name="theme-color" content="#03038c">
     <link rel="icon" type="image/svg+xml" href={base + '/' + mark}>
     {canonical && <link rel="canonical" href={canonical}>}
+    <meta property="og:site_name" content="CubeSat Classroom">
     <meta property="og:type" content="website">
     <meta property="og:title" content={title}>
     <meta property="og:description" content={description}>
     {canonical && <meta property="og:url" content={canonical}>}
-    {image && <meta property="og:image" content={image}>}
-    {image && <meta name="twitter:card" content="summary_large_image">}
+    <meta property="og:image" content={social}>
+    <meta property="og:image:alt" content={imageAlt}>
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content={title}>
+    <meta name="twitter:description" content={description}>
+    <meta name="twitter:image" content={social}>
+    <meta name="twitter:image:alt" content={imageAlt}>
     <title>{title}</title>
-    <script is:inline>
-      // Apply the saved level before first paint so the page doesn't flash beginner text.
-      try {
-        var level = localStorage.getItem('cubesat.level');
-        if (level === 'beginner' || level === 'intermediate' || level === 'professional') document.documentElement.dataset.level = level;
-      } catch (e) {}
-    </script>
+    <script is:inline src={base + '/level.js'}></script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>

@@ -2,12 +2,12 @@
 """Build the one-page printable quick start, output/pdf/cubesat-classroom-quick-start.pdf.
 
 The installer address comes from site/src/hubs.mjs, so the printout always matches the site.
-Needs ReportLab (`pip install reportlab`) and the DejaVu fonts, falling back to ReportLab's
-bundled Vera fonts, which DejaVu is based on.
+Needs ReportLab (`pip install reportlab`). Uses DejaVu fonts when installed.
 
     python3 scripts/quick_start_pdf.py
 """
 import re
+from html import escape
 from pathlib import Path
 
 from reportlab.lib.colors import HexColor
@@ -25,8 +25,8 @@ OUT = ROOT / "output" / "pdf" / "cubesat-classroom-quick-start.pdf"
 REPO = "https://github.com/steelhead99x/cubesat-classroom"
 
 INK = HexColor("#13284a")
-ACCENT = HexColor("#c8102e")
-LINK = HexColor("#1d4ed8")
+ACCENT = HexColor("#ea0303")
+LINK = "#2f3fbf"
 CODE_BG = HexColor("#f2f5fa")
 CODE_EDGE = HexColor("#c9d3e3")
 MUTED = HexColor("#4a5872")
@@ -41,11 +41,20 @@ def installer_url() -> str:
 
 
 def register_fonts() -> tuple[str, str, str]:
-    dejavu = Path("/usr/share/fonts/truetype/dejavu")
-    faces = {"Sans": "DejaVuSans.ttf", "Sans-Bold": "DejaVuSans-Bold.ttf", "Mono": "DejaVuSansMono.ttf"}
-    if all((dejavu / f).exists() for f in faces.values()):
+    fonts = Path("/usr/share/fonts")
+    for sans_dir, mono_dir in [
+        (fonts / "truetype/dejavu", fonts / "truetype/dejavu"),
+        (fonts / "dejavu-sans-fonts", fonts / "dejavu-sans-mono-fonts"),
+    ]:
+        faces = {
+            "Sans": sans_dir / "DejaVuSans.ttf",
+            "Sans-Bold": sans_dir / "DejaVuSans-Bold.ttf",
+            "Mono": mono_dir / "DejaVuSansMono.ttf",
+        }
+        if not all(file.is_file() for file in faces.values()):
+            continue
         for name, file in faces.items():
-            pdfmetrics.registerFont(TTFont(name, str(dejavu / file)))
+            pdfmetrics.registerFont(TTFont(name, str(file)))
         # Let <b> in paragraphs switch to the bold face.
         addMapping("Sans", 0, 0, "Sans")
         addMapping("Sans", 1, 0, "Sans-Bold")
@@ -58,7 +67,7 @@ def register_fonts() -> tuple[str, str, str]:
 def build() -> None:
     sans, bold, mono = register_fonts()
     body = ParagraphStyle("body", fontName=sans, fontSize=9.5, leading=13.2, textColor=INK, alignment=TA_LEFT, spaceAfter=6)
-    title = ParagraphStyle("title", parent=body, fontName=bold, fontSize=22, leading=27, spaceAfter=10)
+    title = ParagraphStyle("title", parent=body, fontName=bold, fontSize=22, leading=27, spaceAfter=10, textColor=HexColor("#03038c"))
     h2 = ParagraphStyle("h2", parent=body, fontName=bold, fontSize=13, leading=17, spaceBefore=6, spaceAfter=4)
     code = ParagraphStyle("code", parent=body, fontName=mono, fontSize=9.5, leading=13, spaceAfter=0)
 
@@ -66,7 +75,7 @@ def build() -> None:
         return f'<font name="{mono}" size="8.5">{text}</font>'
 
     def a(text: str, href: str) -> str:
-        return f'<a href="{href}" color="#1d4ed8"><u>{text}</u></a>'
+        return f'<a href="{href}" color="{LINK}"><u>{text}</u></a>'
 
     def bullets(items: list[str]) -> ListFlowable:
         return ListFlowable(
@@ -84,6 +93,15 @@ def build() -> None:
         ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
     ]))
 
+    guide = (ROOT / "docs" / "quick-start.md").read_text()
+    prompt = re.search(r"^```text\n([\s\S]+?)\n```$", guide, re.MULTILINE)
+    if not prompt:
+        raise SystemExit("could not find the AI setup prompt in docs/quick-start.md")
+    prompt_style = ParagraphStyle(
+        "prompt", parent=body, fontSize=8.5, leading=11, backColor=CODE_BG,
+        borderColor=CODE_EDGE, borderWidth=0.6, borderPadding=6, spaceAfter=10,
+    )
+
     story = [
         Paragraph("CubeSat Classroom Quick Start", title),
         Paragraph("Before you build", h2),
@@ -94,7 +112,10 @@ def build() -> None:
             "<b>Internet.</b> The first run downloads the project and build dependencies. The starter can install Rust and "
             "Cargo. If you already have Rust, use version 1.91 or newer. A computer is enough for the first mission.",
         ]),
-        Paragraph("1. Start the build", h2),
+        Paragraph("1. Start the station", h2),
+        Paragraph("<b>With an AI assistant.</b> Copy this prompt into Claude, Codex, Grok, or another assistant.", body),
+        Paragraph(escape(prompt.group(1)), prompt_style),
+        Paragraph("<b>With your terminal.</b>", body),
         Paragraph("Paste the command. The starter asks which hardware you have, recommends a quest, and explains each "
                   f"download. Press Enter to continue or type {c('n')} at a confirmation to stop.", body),
         command,
@@ -117,8 +138,6 @@ def build() -> None:
         Paragraph(f"The Markdown format comes from {a('moq-dev/quest', 'https://github.com/moq-dev/quest')}, which grew out "
                   f"of MoQ. The CLI is optional. If installed, {c('quest unblocked')} lists ready tasks and {c('quest check')} "
                   "validates the log.", body),
-        Paragraph("<b>With Codex, Claude Code, or another LLM.</b> Open the checkout or share the public quest. Ask it to "
-                  "explain the first step and how to check it, then have it wait before editing files.", body),
     ]
 
     def frame(canvas, doc) -> None:
@@ -138,7 +157,7 @@ def build() -> None:
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     doc = SimpleDocTemplate(
-        str(OUT), pagesize=letter, title="CubeSat Classroom Quick Start", author="CubeSat Classroom",
+        str(OUT), pagesize=letter, title="CubeSat Classroom Quick Start", author="CubeSat Classroom", invariant=True,
         leftMargin=0.75 * inch, rightMargin=0.75 * inch, topMargin=0.7 * inch, bottomMargin=0.8 * inch,
     )
     doc.build(story, onFirstPage=frame, onLaterPages=frame)

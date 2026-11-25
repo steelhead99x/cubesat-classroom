@@ -22,7 +22,7 @@ const labs = [
 ---
 <Base
   title="CubeSat Classroom | Satellite operations for ages 13 and up"
-  description="Teach satellite operations with a browser simulator, five guided lessons, and open-source bench labs."
+  description="Teach space science with free, open-source CubeSat quests, a browser simulator, and hands-on bench labs."
   canonical={site + '/'}
   image={site + rail.src.replace(base, '')}
 >
@@ -40,7 +40,7 @@ const labs = [
       <div>
         <p class="field-label">Open-source space education</p>
         <h1 id="home-title" class="mt-4">Run a ground station in your classroom</h1>
-        <p class="lede mt-5">Receive data from a model CubeSat and learn how a ground station tracks satellites around Earth.</p>
+        <p class="lede mt-5">Teach space science one quest at a time. Request a reading from a model CubeSat, receive a picture, and see what happens when the link drops.</p>
         <div class="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
           <a class="button primary" href={base + '/quests/first-contact/'}>Start the first lesson</a>
           <a class="font-bold text-accent underline decoration-line underline-offset-4 hover:decoration-current" href={base + '/mission/'}>See the flight, minute by minute</a>
@@ -58,13 +58,15 @@ const labs = [
     <div class="grid gap-6 lg:grid-cols-[.8fr_1.2fr] lg:gap-16">
       <div>
         <h2 id="lessons-title">Classroom lessons</h2>
-        <p class="mt-3 max-w-md text-muted">Five short exercises cover sensor readings, camera frames, and what happens when contact is lost.</p>
+        <p class="mt-3 max-w-md text-muted">Five short exercises, about 35 minutes. Take a reading, bring back a picture, lose the signal, decide when data is old, and watch the light change.</p>
         <a class="mt-4 inline-block text-accent" href={base + '/quests/'}>View the lesson sequence</a>
       </div>
       <ol class="lesson-outline">
         <li><span>01</span><div><a class="text-ink hover:text-accent" href={base + '/quests/first-contact/'}>Request a reading</a><p>Record a value and its unit.</p></div></li>
         <li><span>02</span><div><a class="text-ink hover:text-accent" href={base + '/quests/bring-back-a-picture/'}>Receive a picture</a><p>Count the frames that reach the station.</p></div></li>
         <li><span>03</span><div><a class="text-ink hover:text-accent" href={base + '/quests/lose-the-signal/'}>Investigate a signal loss</a><p>Pause contact and check which data still arrives.</p></div></li>
+        <li><span>04</span><div><a class="text-ink hover:text-accent" href={base + '/quests/fresh-or-historical/'}>Decide if a reading is fresh</a><p>Wait until the station calls it historical.</p></div></li>
+        <li><span>05</span><div><a class="text-ink hover:text-accent" href={base + '/quests/light-and-shadow/'}>Watch the light level</a><p>See why it sometimes drops to zero.</p></div></li>
       </ol>
     </div>
   </section>

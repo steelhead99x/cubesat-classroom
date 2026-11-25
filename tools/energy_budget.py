@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Battery energy budgets for the ground station and balloon payloads.
 
+Superseded by the Rust port: run `cargo run --locked -- energy-budget`. The figures
+now live in crates/mission-budget/src/energy.rs; edit them there. This copy stays only
+until CI's `py_compile tools/*.py` step is updated, then it can be deleted.
+
 Run: python3 tools/energy_budget.py
 
 Every power figure below names its source in docs/ground-station.md or

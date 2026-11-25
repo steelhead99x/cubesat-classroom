@@ -1,6 +1,8 @@
 # CubeSat Classroom website
 
-The public site connects learners 13 and up, their teachers and guardians, and volunteer mentors to the ground station, balloon lesson, 3D-print files, and contribution quests. The Astro pages and Tailwind styles live in `src/`. The CubeSat mark lives in `public/mark.svg`. The banner uses the project's Rev B CAD preview.
+The public site connects learners 13 and up, their teachers and guardians, and volunteer mentors to the ground station, balloon lesson, 3D-print files, and contribution quests. The Astro pages and Tailwind styles live in `src/`. The banner uses the project's Rev B CAD preview.
+
+The classroom mark and favicon in `public/` and the README wordmarks in `../docs/assets/` come from the CubeSat Classroom v1.1 brand kit. The web theme uses its navy and Orbit Blue alongside the lesson and simulator status colors. [Mission briefing](https://hikd.ai/tis/) · [Brand kit (review access)](https://hikd.ai/tis/brand/)
 
 ## Preview locally
 
@@ -45,7 +47,7 @@ To switch on the live guide (Claude Sonnet 5.5 through the Anthropic API) on Clo
 4. Run the Worker first for `/api/*` as well as `/`.
 5. Rebuild the site with `PUBLIC_GUIDE_ENDPOINT=/api/guide npm run build` and deploy.
 
-Optional settings: `GUIDE_MODEL` (default `claude-sonnet-5-5`), `GUIDE_EFFORT` (default `low`), `GUIDE_DAILY_LIMIT` (default 10 per device), `GUIDE_NETWORK_LIMIT` (default 300 a day per network address, so a changed device id cannot get around the device limit), `GUIDE_GLOBAL_LIMIT` (default 2000 a day for the site), `GUIDE_ALLOWED_ORIGINS` (comma-separated; by default only the site's own origin may call the guide). If the API fails, or the network or site-wide limit is reached, visitors get the prewritten answer. A device that reaches its own daily limit is asked to come back tomorrow. The guide's rules mirror [AGENTS.md](../AGENTS.md); review them with a teacher before switching it on for students.
+Optional settings: `GUIDE_MODEL` (default `claude-sonnet-5-5`), `GUIDE_EFFORT` (default `low`), `GUIDE_DAILY_LIMIT` (default 10 per device), `GUIDE_NETWORK_LIMIT` (default 150 a day per network address, so a changed device id cannot get around the device limit), `GUIDE_GLOBAL_LIMIT` (default 1000 a day for the site), `GUIDE_ALLOWED_ORIGINS` (comma-separated; by default only the site's own origin may call the guide). If the API fails, or the network or site-wide limit is reached, visitors get the prewritten answer. A device that reaches its own daily limit is asked to come back tomorrow. Workers KV has no atomic counter, so requests that arrive at the same moment can each slip past a limit; the defaults are kept low to bound that overshoot, and a Durable Object would be needed to close it. The guide's rules mirror [AGENTS.md](../AGENTS.md); review them with a teacher before switching it on for students.
 
 The [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) share one build. The guided installer is served by the Worker at the `installer` address in `src/hubs.mjs` (`https://cubesatclass.org/start.sh`); the old `https://cubesat.club/start.sh` address redirects there, and GitHub Pages mirrors it at `https://steelhead99x.github.io/cubesat-classroom/start.sh`. The Rust station and its MoQ/QUIC relays run locally during the lesson.
 

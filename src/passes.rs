@@ -19,15 +19,38 @@ const WGS84_A_KM: f64 = 6378.137;
 const WGS84_F: f64 = 1.0 / 298.257_223_563;
 const COARSE_STEP_S: f64 = 10.0;
 const STALE_DAYS: f64 = 14.0;
+/// Past this age SGP4 errors grow to many minutes and reboosts or decay make the
+/// elements describe a different orbit, so the passes should not be used at all.
+const UNUSABLE_DAYS: f64 = 60.0;
 
+#[derive(clap::Args)]
 pub(crate) struct PassArgs {
+    /// TLE file in three-line format (name line plus two element lines).
+    #[arg(long)]
     pub tle: PathBuf,
+    /// Only satellites whose name contains this word or phrase.
+    ///
+    /// Matching is case-insensitive and stops at letters and digits, so `ISS`
+    /// selects "ISS (ZARYA)" and not "SWISSCUBE".
+    #[arg(long)]
     pub satellite: Option<String>,
+    /// Observer latitude in degrees (north positive).
+    #[arg(long, allow_hyphen_values = true)]
     pub lat: f64,
+    /// Observer longitude in degrees (east positive).
+    #[arg(long, allow_hyphen_values = true)]
     pub lon: f64,
+    /// Observer altitude in metres.
+    #[arg(long, default_value_t = 0.0, allow_hyphen_values = true)]
     pub alt_m: f64,
+    /// Hours ahead to search.
+    #[arg(long, default_value_t = 24.0)]
     pub hours: f64,
+    /// Ignore passes whose highest point is below this elevation, in degrees.
+    #[arg(long, default_value_t = 10.0, allow_hyphen_values = true)]
     pub min_elevation: f64,
+    /// Print JSON instead of a table.
+    #[arg(long)]
     pub json: bool,
 }
 
@@ -191,6 +214,38 @@ fn summarise(sat: &Satellite, o: Observer, rise: f64, set: f64, min_el: f64) -> 
     })
 }
 
+/// True when `filter` occurs in `name` on a letter/digit boundary.
+///
+/// An empty filter matches every name. `ISS` matches `ISS (ZARYA)` and does not
+/// match `SWISSCUBE`, which only contains those letters inside another word.
+pub(crate) fn name_matches(name: &str, filter: &str) -> bool {
+    let name = name.to_lowercase();
+    let filter = filter.trim().to_lowercase();
+    if filter.is_empty() {
+        return true;
+    }
+    let name_b = name.as_bytes();
+    let mut from = 0;
+    while from < name_b.len() {
+        let Some(rel) = name[from..].find(&filter) else {
+            return false;
+        };
+        let start = from + rel;
+        let end = start + filter.len();
+        let before_ok = start == 0 || !name_b[start - 1].is_ascii_alphanumeric();
+        let after_ok = end >= name_b.len() || !name_b[end].is_ascii_alphanumeric();
+        if before_ok && after_ok {
+            return true;
+        }
+        let next = end.max(start + 1);
+        if next <= from {
+            return false;
+        }
+        from = next;
+    }
+    false
+}
+
 fn load(tle: &str, filter: Option<&str>) -> Result<Vec<Satellite>> {
     let elements =
         sgp4::parse_3les(tle).context("read TLE file (three-line format: name, line 1, line 2)")?;
@@ -198,7 +253,7 @@ fn load(tle: &str, filter: Option<&str>) -> Result<Vec<Satellite>> {
     elements
         .into_iter()
         .filter(|e| match (&filter, &e.object_name) {
-            (Some(f), Some(name)) => name.to_lowercase().contains(f.as_str()),
+            (Some(f), Some(name)) => name_matches(name, f),
             (Some(_), None) => false,
             (None, _) => true,
         })
@@ -284,6 +339,7 @@ pub(crate) fn run(args: PassArgs) -> Result<()> {
         alt_km: args.alt_m / 1000.0,
     };
     let mut stale = Vec::new();
+    let mut unusable = Vec::new();
     let mut passes: Vec<Pass> = Vec::new();
     for s in &sats {
         let age = (now - s.epoch_unix) / 86_400.0;
@@ -293,7 +349,9 @@ pub(crate) fn run(args: PassArgs) -> Result<()> {
                 s.name
             );
         }
-        if age > STALE_DAYS {
+        if age > UNUSABLE_DAYS {
+            unusable.push(format!("{} ({age:.0} days)", s.name));
+        } else if age > STALE_DAYS {
             stale.push(format!("{} ({age:.0} days)", s.name));
         }
         for mut p in find_passes(s, o, now, now + args.hours * 3600.0, args.min_elevation) {
@@ -301,12 +359,20 @@ pub(crate) fn run(args: PassArgs) -> Result<()> {
             passes.push(p);
         }
     }
-    let warning = (!stale.is_empty()).then(|| {
-        format!(
+    let mut warnings = Vec::new();
+    if !unusable.is_empty() {
+        warnings.push(format!(
+            "Warning: orbital elements for {} are more than {UNUSABLE_DAYS:.0} days old. These passes are not usable predictions. Download fresh elements.",
+            unusable.join(", ")
+        ));
+    }
+    if !stale.is_empty() {
+        warnings.push(format!(
             "Warning: old orbital elements for {}. Times may be wrong by minutes or more. Download fresh elements.",
             stale.join(", ")
-        )
-    });
+        ));
+    }
+    let warning = (!warnings.is_empty()).then(|| warnings.join("\n"));
     passes.sort_by_key(|p| p.rise_unix);
 
     if args.json {
@@ -375,6 +441,17 @@ mod tests {
         assert_eq!(utc(1_795_132_800), "2026-11-20 00:00:00");
         assert_eq!(compass(0.0), "N");
         assert_eq!(compass(130.0), "SE");
+    }
+
+    #[test]
+    fn satellite_name_filter_is_a_whole_word() {
+        assert!(name_matches("ISS (ZARYA)", "ISS"));
+        assert!(name_matches("ISS (ZARYA)", "zarya"));
+        assert!(name_matches("ISS (ZARYA)", "ISS (ZARYA)"));
+        assert!(!name_matches("SWISSCUBE", "ISS"));
+        assert!(name_matches("OSCAR 7 (AO-7)", "AO-7"));
+        assert!(name_matches("EYESAT A (AO-27)", "AO"));
+        assert!(name_matches("anything", ""));
     }
 
     #[test]

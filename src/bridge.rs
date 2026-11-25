@@ -224,11 +224,22 @@ impl Drop for Outbox {
     }
 }
 
+#[derive(clap::Args)]
 pub(crate) struct BridgeArgs {
+    /// Folder to write temperature_mc, voltage_mv, light_lux and pressure_pa into.
+    #[arg(long, default_value = "run/sensors")]
     pub out: PathBuf,
+    /// Serial device, file or `-` (standard input) carrying `CSC1 key=value` lines.
+    #[arg(long)]
     pub input: Option<PathBuf>,
+    /// Read a Linux file as a sensor: name=path[*scale]. Repeat for each sensor.
+    #[arg(long = "map")]
     pub maps: Vec<String>,
+    /// Remove a value if no new reading arrives within this many seconds.
+    #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u64).range(1..=3600))]
     pub stale_secs: u64,
+    /// How often to read mapped files, in milliseconds.
+    #[arg(long, default_value_t = 1000, value_parser = clap::value_parser!(u64).range(100..=60_000))]
     pub poll_ms: u64,
 }
 

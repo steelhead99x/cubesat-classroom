@@ -12,9 +12,9 @@ Prices are US prices as shown on the pages listed under [Sources](#sources) when
 | 1. Classroom sensors | Real temperature, battery and light readings feed the station | Arduino or Seeed XIAO, three small sensors | $15–40 |
 | 2. Satellite predictions | Know when a satellite will be overhead | Level 0 plus a free orbit file | $0 |
 | 3. Receive-only radio | Hear and decode real satellites and CubeSatSim | Raspberry Pi 4, RTL-SDR, antenna | $150–300 |
-| 4. Classroom satellite | Decode a working satellite model in the room | AMSAT CubeSatSim kit plus level 3 | about $700–850 |
+| 4. Classroom satellite | Decode a working satellite model in the room | AMSAT CubeSatSim kit plus level 3 | about $550–700 |
 
-In the United States, receiving satellites needs no licence; check local rules elsewhere. Transmitting does need one: anything that sends on amateur bands, including the CubeSatSim and APRS balloon trackers, must be run by a licensed operator, and students follow that operator's lead.
+In the United States, receiving satellites needs no license; check local rules elsewhere. Transmitting does need one: anything that sends on amateur bands, including the CubeSatSim and APRS balloon trackers, must be run by a licensed operator, and students follow that operator's lead.
 
 ## Level 1: classroom sensors
 
@@ -31,14 +31,21 @@ The station's `sensor-bridge` command turns those lines into the files the stati
 The classroom station needs all three readings: temperature, voltage and light. If one sensor is missing or fails, the station answers "A sensor input is unavailable" rather than inventing a value.
 
 ```sh
-# Linux (macOS uses `stty -f /dev/cu.usbmodem*`)
+# Linux. If the port says "Permission denied", a mentor adds your user to the dialout group.
 stty -F /dev/ttyACM0 115200 raw -echo
 cargo run --locked -- sensor-bridge --input /dev/ttyACM0 --out run/sensors
-# In a second terminal
+# macOS. Find the name with `ls /dev/cu.usbmodem*`, then use that name in both commands.
+stty -f /dev/cu.usbmodem1101 115200 raw -echo
+cargo run --locked -- sensor-bridge --input /dev/cu.usbmodem1101 --out run/sensors
+# In a second terminal, on either system
 cargo run --locked -- classroom --sensor-dir run/sensors
 ```
 
-The sketch has not yet been compiled or tested on hardware. Label its readings "hardware bench" and check them against a thermometer and a meter before trusting them. An unplugged sensor can still produce a believable number, so that check matters.
+The sketch compiles for those boards. It has not been run on hardware. Label its readings "hardware bench" and check them against a thermometer and a meter before trusting them. An unplugged sensor can still produce a believable number, so that check matters.
+
+To make the board a complete bench CubeSat, with a deploy timer, passes, stored readings and commands, use the [Arduino or Seeed XIAO bench CubeSat](bench-cubesats.md) instead. Both send the same `CSC1` lines to the bridge.
+
+On an Arduino Uno or Nano, SDA and SCL are 5 V signals. A BH1750 board powered from 3.3 V can be damaged by those pins unless the board is 5 V tolerant or a mentor adds a level shifter. Seeed XIAO boards are 3.3 V on both the sensor supply and I2C, which matches the BH1750 directly. A mentor checks the exact module before power is connected.
 
 | Part | Job | Approx. price |
 | --- | --- | --- |
@@ -108,11 +115,11 @@ Keep the RTL-SDR's bias tee turned off unless a powered preamplifier is fitted. 
 
 ## Level 4: a satellite in the classroom
 
-The [AMSAT CubeSatSim](https://cubesatsim.org) is a working satellite model with solar panels, batteries and a UHF telemetry transmitter. The AMSAT store lists a no-solder kit at $550 including US shipping, and blank boards at $35 for groups who build their own. Receive it with the level 3 station and FoxTelem, then compare its telemetry with this project's station. AMSAT also lends CubeSatSims for events. The CubeSatSim transmitter is low power, but it transmits on amateur frequencies, so a licensed operator runs it.
+The [AMSAT CubeSatSim](https://cubesatsim.org) is a working satellite model with solar panels, batteries and a UHF telemetry transmitter. On November 24, 2026 the [AMSAT store](https://www.amsat.org/product/cubesatsim-beta-kit/) listed the Beta kit at $400, including shipping to United States addresses, and it was out of stock. The kit needs a little soldering for the solar-panel wires and the sensor headers. Blank PCB sets were $35 for groups who solder the boards and print the frame. Adding the level 3 station makes the parts budget about $550–700. Check the store again before you buy, including whether it will ship to your address. Receive the model with the level 3 station and FoxTelem, then compare its telemetry with this project's station. AMSAT also lends CubeSatSims for events. The CubeSatSim transmitter is low power, but it transmits on amateur frequencies, so a licensed operator runs it.
 
 ## Power budget
 
-Run `python3 tools/energy_budget.py` to recompute these numbers. Replace each estimate with your own USB power meter reading.
+Run `cargo run --locked -- energy-budget` to recompute these numbers. Replace each estimate with your own USB power meter reading.
 
 | Setup | Draw | 6 hours with 2× margin |
 | --- | --- | --- |

@@ -2,6 +2,7 @@ mod balloon;
 mod bridge;
 mod classroom;
 mod flight;
+mod live;
 mod passes;
 
 use std::io::{self, Write};
@@ -11,6 +12,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
+use mission_budget::{energy, link};
 use moq_tokio::moq_net::{self, Timestamp};
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -49,91 +51,71 @@ enum Command {
         samples: u32,
     },
     /// Turn Arduino, XIAO or Raspberry Pi readings into sensor files for the station.
-    SensorBridge {
-        /// Folder to write temperature_mc, voltage_mv, light_lux and pressure_pa into.
-        #[arg(long, default_value = "run/sensors")]
-        out: PathBuf,
-        /// Serial device, file or `-` (standard input) carrying `CSC1 key=value` lines.
-        #[arg(long)]
-        input: Option<PathBuf>,
-        /// Read a Linux file as a sensor: name=path[*scale]. Repeat for each sensor.
-        #[arg(long = "map")]
-        maps: Vec<String>,
-        /// Remove a value if no new reading arrives within this many seconds.
-        #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u64).range(1..=3600))]
-        stale_secs: u64,
-        /// How often to read mapped files, in milliseconds.
-        #[arg(long, default_value_t = 1000, value_parser = clap::value_parser!(u64).range(100..=60_000))]
-        poll_ms: u64,
-    },
+    SensorBridge(bridge::BridgeArgs),
     /// Predict when satellites pass over a location, from a TLE file.
     ///
     /// Elements older than 14 days are flagged in the output. A pass already under way
     /// starts "now"; one still under way at the end of the window is left out.
-    Passes {
-        /// TLE file in three-line format (name line plus two element lines).
-        #[arg(long)]
-        tle: PathBuf,
-        /// Only satellites whose name contains this text (case-insensitive).
-        #[arg(long)]
-        satellite: Option<String>,
-        /// Observer latitude in degrees (north positive).
-        #[arg(long, allow_hyphen_values = true)]
-        lat: f64,
-        /// Observer longitude in degrees (east positive).
-        #[arg(long, allow_hyphen_values = true)]
-        lon: f64,
-        /// Observer altitude in metres.
-        #[arg(long, default_value_t = 0.0, allow_hyphen_values = true)]
-        alt_m: f64,
-        /// Hours ahead to search.
-        #[arg(long, default_value_t = 24.0)]
-        hours: f64,
-        /// Ignore passes whose highest point is below this elevation, in degrees.
-        #[arg(long, default_value_t = 10.0, allow_hyphen_values = true)]
-        min_elevation: f64,
-        /// Print JSON instead of a table.
-        #[arg(long)]
-        json: bool,
-    },
+    Passes(passes::PassArgs),
     /// Desk simulation of a suborbital research flight: phases, height and what a logger should see.
     ///
     /// Defaults use public Virgin Galactic figures (Payload User's Guide, 'Galactic 07' flight facts).
     /// The output is a classroom prediction, not flight data.
-    FlightProfile {
-        /// Write a CSV timeline to this file.
-        #[arg(long, conflicts_with = "json")]
-        output: Option<PathBuf>,
-        /// Height at release from the carrier aircraft, in feet.
-        #[arg(long, default_value_t = 44_562.0)]
-        release_ft: f64,
-        /// Highest point, in miles.
-        #[arg(long, default_value_t = 54.4)]
-        apogee_miles: f64,
-        /// Rocket burn, in seconds.
-        #[arg(long, default_value_t = 60.0)]
-        burn_s: f64,
-        /// Minutes from take-off to release (an assumption; ask the provider).
-        #[arg(long, default_value_t = 50.0)]
-        climb_min: f64,
-        /// Minutes from take-off to landing.
-        #[arg(long, default_value_t = 70.0)]
-        total_min: f64,
-        /// Cabin pressure as an equivalent height, in feet.
-        #[arg(long, default_value_t = 5_500.0)]
-        cabin_ft: f64,
-        /// Seconds between rows.
-        #[arg(long, default_value_t = 1.0)]
-        step_s: f64,
-        /// Print JSON instead of a summary.
+    FlightProfile(flight::FlightArgs),
+    /// Static downlink sensitivity exercise for design review (illustrative, not a prediction).
+    ///
+    /// Spherical Earth slant range, free-space loss, TX power/gain/feed loss, receive G/T,
+    /// one aggregate loss, information bit rate and modem threshold on the same Eb/N0 basis.
+    /// Doppler is driven independently by the assumed radial speed. See docs/mission.md.
+    LinkBudget {
+        /// Scenario JSON file, such as hardware/rf-example.json.
+        profile: PathBuf,
+        /// Spacecraft altitude in kilometres.
+        #[arg(long, default_value_t = 550.0, allow_hyphen_values = true)]
+        altitude_km: f64,
+        /// Elevation above the horizon in degrees (0–90).
+        #[arg(long, default_value_t = 15.0, allow_hyphen_values = true)]
+        elevation_deg: f64,
+        /// Assumed radial speed for the Doppler column, in km/s.
+        #[arg(long, default_value_t = 7.0, allow_hyphen_values = true)]
+        radial_speed_km_s: f64,
+        /// Print JSON instead of a table.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Battery energy budgets for the ground station and balloon payloads (planning numbers).
+    ///
+    /// Figures marked "estimate" have no measurement behind them yet. See
+    /// docs/ground-station.md and docs/balloon-lab.md.
+    EnergyBudget {
+        /// Print JSON instead of a report.
         #[arg(long)]
         json: bool,
     },
     /// Start a loopback-only QUIC relay and print its URL and certificate pin.
+    ///
+    /// The same UDP port also accepts WebTransport (`https://127.0.0.1:<port>/`).
+    /// The certificate is generated for this process and is not a public web certificate.
     Relay {
         #[arg(long, default_value_t = 4443)]
         port: u16,
     },
+    /// Desk simulation of a cleartext 915 MHz downlink. Does not transmit.
+    DownlinkSim {
+        /// Print JSON instead of a text report.
+        #[arg(long)]
+        json: bool,
+        /// Also time a 10 000-object recovery run.
+        #[arg(long)]
+        bench: bool,
+    },
+    /// Publish recovered downlink snapshots to a Media over QUIC relay.
+    ///
+    /// Desk simulation only. `telemetry` is the core track. Image, audio, and
+    /// video are optional and are dropped first when `--budget-bps` is tight.
+    LiveFeed(live::FeedArgs),
+    /// Subscribe to one live-feed track and print it. Reference reader for the client contract.
+    ReadLive(live::ReadArgs),
     /// Publish synthetic sensor readings at 1 Hz over MoQ.
     Simulate {
         #[command(flatten)]
@@ -163,7 +145,7 @@ enum Command {
     },
 }
 
-#[derive(clap::Args)]
+#[derive(Clone, clap::Args)]
 struct Link {
     #[arg(long, env = "CUBESAT_RELAY")]
     relay: Url,
@@ -321,6 +303,12 @@ fn is_loopback(url: &Url) -> bool {
 async fn relay(port: u16) -> Result<()> {
     let relay = start_relay(port).await?;
     println!("{} {}", relay.url, relay.pin);
+    // Browsers and Chromebooks use WebTransport on this same UDP port. The
+    // certificate is self-signed; native apps pin the fingerprint, and a browser
+    // needs a certificate it trusts. 127.0.0.1 matches the IPv4-only listen socket.
+    if let Some(port) = relay.url.port() {
+        println!("webtransport https://127.0.0.1:{port}/ {}", relay.pin);
+    }
     io::stdout().flush()?;
     tokio::signal::ctrl_c().await?;
     Ok(())
@@ -525,13 +513,7 @@ async fn main() -> Result<()> {
         } => {
             balloon::log(sensor_dir, output, samples).await?;
         }
-        Command::SensorBridge {
-            out,
-            input,
-            maps,
-            stale_secs,
-            poll_ms,
-        } => {
+        Command::SensorBridge(args) => {
             let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
             let flag = stop.clone();
             tokio::spawn(async move {
@@ -539,60 +521,54 @@ async fn main() -> Result<()> {
                     flag.store(true, std::sync::atomic::Ordering::Relaxed);
                 }
             });
-            let args = bridge::BridgeArgs {
-                out,
-                input,
-                maps,
-                stale_secs,
-                poll_ms,
-            };
             tokio::task::spawn_blocking(move || bridge::run(args, &stop)).await??;
         }
-        Command::Passes {
-            tle,
-            satellite,
-            lat,
-            lon,
-            alt_m,
-            hours,
-            min_elevation,
+        Command::Passes(args) => passes::run(args)?,
+        Command::FlightProfile(args) => flight::run(args)?,
+        Command::LinkBudget {
+            profile,
+            altitude_km,
+            elevation_deg,
+            radial_speed_km_s,
             json,
         } => {
-            passes::run(passes::PassArgs {
-                tle,
-                satellite,
-                lat,
-                lon,
-                alt_m,
-                hours,
-                min_elevation,
-                json,
-            })?;
+            // Check the geometry before reading the file, like the Python tool did.
+            let geometry = link::Geometry::new(altitude_km, elevation_deg, radial_speed_km_s)?;
+            let text = std::fs::read_to_string(&profile)
+                .with_context(|| format!("read {}", profile.display()))?;
+            let scenario = link::Scenario::from_json(&text)
+                .with_context(|| format!("load {}", profile.display()))?;
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&scenario.evaluate(&geometry))?
+                );
+            } else {
+                print!("{}", scenario.report(&geometry));
+            }
         }
-        Command::FlightProfile {
-            output,
-            release_ft,
-            apogee_miles,
-            burn_s,
-            climb_min,
-            total_min,
-            cabin_ft,
-            step_s,
-            json,
-        } => {
-            flight::run(flight::FlightArgs {
-                output,
-                release_ft,
-                apogee_miles,
-                burn_s,
-                climb_min,
-                total_min,
-                cabin_ft,
-                step_s,
-                json,
-            })?;
+        Command::EnergyBudget { json: false } => print!("{}", energy::report()),
+        Command::EnergyBudget { json: true } => {
+            let budgets: Vec<_> = energy::classroom_budgets()
+                .iter()
+                .map(energy::Budget::summary)
+                .collect();
+            println!("{}", serde_json::to_string_pretty(&budgets)?);
         }
         Command::Relay { port } => relay(port).await?,
+        Command::DownlinkSim { json, bench } => {
+            let report = downlink::studies();
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", downlink::text_report(&report));
+            }
+            if bench {
+                print!("{}", downlink::bench_text(&downlink::bench()));
+            }
+        }
+        Command::LiveFeed(args) => live::serve(args).await?,
+        Command::ReadLive(args) => live::read(args).await?,
         Command::Simulate { link } => publish(link, Sample::synthetic).await?,
         Command::PublishSensors { link, inputs } => {
             publish(link, |sequence| inputs.sample(sequence)).await?;

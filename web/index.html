@@ -9,6 +9,7 @@
   <script defer src="/station.js"></script>
 </head>
 <body>
+<a class="skip" href="#station">Skip to the station</a>
 <header class="top"><div class="wrap nav">
   <a href="#station" class="brand"><svg class="mark" viewBox="0 0 48 48" width="32" height="32" fill="none" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#10264a" stroke="#a4c9ff" stroke-opacity=".35"/><path d="m24 10 12 7v14l-12 7-12-7V17l12-7Zm-12 7 12 7 12-7M24 24v14" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><path d="m12 24 12 7 12-7M18 13.5l12 7v14" stroke="#8cb9ff" stroke-width="1.4"/><circle cx="38" cy="11" r="3" fill="#ef6b6c"/></svg> CubeSat Classroom</a>
   <nav aria-label="Sections"><a href="#station">Station</a><a href="#quests">Quests</a><a href="#crew">Crew log</a></nav>
@@ -72,7 +73,7 @@
     <p>Use a classroom nickname. A licensed mentor can optionally add their amateur radio call sign; it stays in this browser unless they choose to share the exported log.</p>
     <form id="log">
       <div class="fields">
-        <label>Student or team nickname <input name="alias" maxlength="32" placeholder="Team Comet" required></label>
+        <label>Team nickname <input name="alias" maxlength="32" placeholder="Team Comet" autocomplete="nickname" required></label>
         <label>Mentor call sign <span class="subtle">(optional)</span><input name="call" maxlength="12" autocomplete="off" spellcheck="false"></label>
       </div>
       <label>What did you observe? What would you test next?
