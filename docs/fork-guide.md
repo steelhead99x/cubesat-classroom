@@ -20,7 +20,7 @@ Original work is under MIT or Apache 2.0, your choice. Third-party material keep
 
 1. **Fork** the repository on GitHub and clone your copy.
 2. **Change the settings** at the top of `site/src/hubs.mjs`: `repo` (your fork), `classroomHost` (your web address) and `fundraiser` (your own link, or remove it). Edit the `hubs` list for your domains, or cut it down to one.
-3. **Rename.** Search for "CubeSat Classroom" in `site/src/` and `README.md`, and replace it with your name. Replace `site/public/mark.svg` with your own mark. Please don't present your fork as this project or as Teachers in Space, AMSAT or a flight provider.
+3. **Rename.** Search for "CubeSat Classroom" in `site/src/` and `README.md`, and replace it with your name. Replace the mark and favicon in `site/public/` and the README wordmarks in `docs/assets/`. Set your own briefing link in `site/src/hubs.mjs`. Please don't present your fork as this project or as Teachers in Space, AMSAT or a flight provider.
 4. **Add your mission.** Copy a quest in `site/src/content/quests/` for browser lessons, or one in `quest/m0/` for bench work. For a new vehicle, copy `docs/suborbital-flight-plan.md` and replace the facts with your provider's, with sources.
 5. **Publish.** `cd site && npm install && npm run build` makes a plain static site in `site/dist/` that any web host can serve. See `site/README.md` for Cloudflare, GitHub Pages, the optional preview password and the optional quest guide.
 

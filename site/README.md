@@ -1,6 +1,8 @@
 # CubeSat Classroom website
 
-The public site connects learners 13 and up, their teachers and guardians, and volunteer mentors to the ground station, balloon lesson, 3D-print files, and contribution quests. The Astro pages and Tailwind styles live in `src/`. The CubeSat mark lives in `public/mark.svg`. The banner uses the project's Rev B CAD preview.
+The public site connects learners 13 and up, their teachers and guardians, and volunteer mentors to the ground station, balloon lesson, 3D-print files, and contribution quests. The Astro pages and Tailwind styles live in `src/`. The banner uses the project's Rev B CAD preview.
+
+The classroom mark and favicon in `public/` and the README wordmarks in `../docs/assets/` come from the CubeSat Classroom v1.1 brand kit. The web theme uses its navy and Orbit Blue alongside the lesson and simulator status colors. [Mission briefing](https://hikd.ai/tis/) · [Brand kit (review access)](https://hikd.ai/tis/brand/)
 
 ## Preview locally
 

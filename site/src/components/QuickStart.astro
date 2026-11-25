@@ -1,36 +1,45 @@
 ---
 import { installer, repo } from '../hubs.mjs';
+import guide from '../../../docs/quick-start.md?raw';
 
+const prompt = guide.match(/^```text\r?\n([\s\S]+?)\r?\n```$/m)?.[1];
+if (!prompt) throw new Error('The quick-start guide is missing the AI setup prompt.');
 const command = `curl -fsSL ${installer} | bash`;
 ---
 <section id="start" class="start" aria-labelledby="start-title">
-  <h2 id="start-title">One command to start</h2>
-  <p class="mt-2">Paste this into your terminal and follow the prompts. Open the local address the station prints.</p>
-  <div class="terminal mt-5 flex flex-wrap items-center justify-between gap-3">
-    <code id="command">{command}</code>
-    <button id="copy" type="button" hidden>Copy command</button>
+  <h2 id="start-title">Quick start</h2>
+  <h3 class="mt-4">Start with an AI assistant</h3>
+  <p class="mt-2">Paste this prompt into Claude, Codex, Grok, or another assistant to walk through setup.</p>
+  <div class="terminal mt-3">
+    <blockquote id="setup-prompt" class="m-0 break-words">{prompt}</blockquote>
+    <button class="mt-3" type="button" data-copy="setup-prompt" hidden>Copy prompt</button>
+  </div>
+  <h3 class="mt-6">Start from your terminal</h3>
+  <p class="mt-2">Paste this command and follow the prompts. Open the local address the station prints.</p>
+  <div class="terminal mt-3 flex flex-wrap items-center justify-between gap-3">
+    <code id="setup-command">{command}</code>
+    <button type="button" data-copy="setup-command" hidden>Copy command</button>
   </div>
   <p class="mt-3 text-sm">macOS, Linux, or Windows (using WSL, the Windows Subsystem for Linux). The starter offers to install or update Rust if needed. The station uses simulated sensors and video.</p>
   <p id="copy-status" class="sr-only" role="status"></p>
   <a class="mt-4 inline-block" href={repo + '/blob/main/output/pdf/cubesat-classroom-quick-start.pdf'}>Print the one-page quick start</a>
 </section>
 <script>
-  const button = document.querySelector<HTMLButtonElement>('#copy');
-  const command = document.querySelector('#command');
   const status = document.querySelector('#copy-status');
 
-  if (button && command && status && navigator.clipboard) {
+  for (const button of document.querySelectorAll<HTMLButtonElement>('#start button[data-copy]')) {
+    const target = document.getElementById(button.dataset.copy ?? '');
+    if (!target || !status || !navigator.clipboard) continue;
+    const label = button.textContent?.trim() ?? '';
     button.hidden = false;
     button.addEventListener('click', async () => {
       try {
-        await navigator.clipboard.writeText(command.textContent ?? '');
-        status.textContent = 'Command copied.';
-        button.textContent = 'Copied';
+        await navigator.clipboard.writeText(target.textContent?.trim() ?? '');
+        status.textContent = label.replace('Copy ', 'Copied ') + '.';
       } catch {
-        status.textContent = 'Select and copy the command from the box.';
-        button.textContent = 'Copy manually';
+        status.textContent = 'Text selected. Copy it from the box.';
         const range = document.createRange();
-        range.selectNodeContents(command);
+        range.selectNodeContents(target);
         const selection = window.getSelection();
         selection?.removeAllRanges();
         selection?.addRange(range);
