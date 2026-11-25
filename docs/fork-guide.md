@@ -49,9 +49,9 @@ docs/                Guides: ground station, balloon lab, flight plan, reviews
 quest/               Quest board (m0 classroom, m1 design, m2 verification)
 site/                Website source; builds to site/dist and docs/ (GitHub Pages)
 src/                 Rust ground station and tools
-firmware/            Arduino sketch for classroom sensors
+firmware/            Classroom sensor sketch and the Arduino and XIAO bench CubeSats
 hardware/            CAD and print files
-tools/               Small scripts, such as the energy budget
+tools/               Small scripts, such as the energy budget and photo rebuild
 ```
 
 ## Sharing back

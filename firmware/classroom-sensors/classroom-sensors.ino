@@ -5,7 +5,7 @@
 //   CSC1 temp_mc=21500 volt_mv=3912 light_lux=460
 //
 // The station's `sensor-bridge` command reads these lines and writes the
-// files that `station --sensor-dir` publishes. Every sensor is optional:
+// files that `classroom --sensor-dir` publishes. Every sensor is optional:
 // turn one off below and its field is simply left out.
 //
 // Written for: Arduino Uno R3 and Nano (ATmega328P), and Seeed XIAO SAMD21,

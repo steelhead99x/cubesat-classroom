@@ -12,10 +12,12 @@ Write down the equipment you have, including the board or printer model, availab
 
 | Your setup | First quest |
 | --- | --- |
-| Bambu Lab P1S | [Validate the Rev A case slice](/quest/m0/slice-p1s-case.md) |
+| Bambu Lab P1S | [Print the AMSAT frame and Arduino payload](/hardware/amsat-cubesatsim/README.md), starting with the 5-minute snap test |
 | Computer only or unsure | [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md) |
 | Arduino, such as an Uno | [Read one Arduino sample](/quest/m0/arduino-first-reading.md) |
 | Seeed XIAO, such as ESP32-C3 or RP2040 | [Record a XIAO bench sample](/quest/m0/xiao-first-reading.md) |
+| Arduino Nano 33 BLE Sense Rev2 | [Fly the Arduino bench CubeSat](/quest/m0/arduino-bench-cubesat.md) |
+| Seeed XIAO with the XIAO Expansion Board and Grove sensors | [Fly the Seeed XIAO bench CubeSat](/quest/m0/xiao-bench-cubesat.md) |
 | Raspberry Pi with Raspberry Pi OS | [Log a Pi reading](/quest/m0/pi-first-reading.md) |
 | Any computer, no extra hardware | [Predict a satellite pass](/quest/m0/predict-a-pass.md) |
 | Raspberry Pi Pico or another microcontroller | Use a vendor sample for your exact board and follow the [microcontroller quest structure](/quest/m0/arduino-first-reading.md). |
@@ -36,7 +38,7 @@ Start in M0. After a run, tell us which steps the class completed, which instruc
 
 ### Bambu P1S case test track
 
-Use the enclosed Rev A case for these bench quests. Start with PLA and move through the steps in order. The Rev B rail-fit and ISS work has its own review path below.
+Print the Rev A case with the [P1S print guide](/hardware/p1s/README.md), then use these quests to record what you measured so another crew can repeat it. Start with PLA and go in order. The Rev B rail-fit and ISS work has its own path below.
 
 1. [Validate the slice in Bambu Studio](/quest/m0/slice-p1s-case.md)
 2. [Print and measure the PLA fastener coupon](/quest/m0/print-p1s-case-coupon.md)
@@ -50,6 +52,7 @@ Use the enclosed Rev A case for these bench quests. Start with PLA and move thro
 - [Rehearse the five-minute demo offline](/quest/m0/demo-offline-rehearsal.md) and record a restart procedure.
 - [Trace a sensor value from file to display](/quest/m0/trace-sensor-fixtures.md) and verify what happens when an input is missing.
 - [Measure what the camera lid blocks](/quest/m0/measure-case-camera-view.md) once the P1S case fit has been tested.
+- [Fly the Arduino bench CubeSat](/quest/m0/arduino-bench-cubesat.md) or the [Seeed XIAO bench CubeSat](/quest/m0/xiao-bench-cubesat.md): deploy, lose the signal, recover stored readings, and bring back data. See the [bench CubeSat guide](/docs/bench-cubesats.md).
 
 ### Flight work
 

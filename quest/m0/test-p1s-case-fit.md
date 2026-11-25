@@ -2,12 +2,19 @@
 
 ## Goal
 
-Record whether the printed Rev A case fits together and can hold the intended bench setup.
+Find out whether the printed case goes together and can hold your bench setup.
 
 ## Plan
 
-With electronics unpowered, seat the lid by hand and measure the assembled width, depth, height, and lid gap at the corners. Check for rocking or forced seating. Test fastener engagement without bottoming out in the 10 mm blind pilots. Use the planned cable and camera or representative parts to check access, routing, and sightline. Keep the results tied to the measured shell and lid. Mark each check pass, fail, or not tested and give the measurement or observation behind it. Use the [print and fit guide](/hardware/p1s/README.md) for nominal dimensions.
+With nothing powered, seat the lid by hand and screw it down. Record:
+
+- Whether the lid sits flat or has to be forced, and the gap at each corner
+- The closed size (nominal 100 × 100 × 113.5 mm)
+- Whether the screws hold without stripping or bottoming out
+- Whether your cable fits the slot and your camera can see through the lid hole
+
+Mark each one pass, fail or not tested, with the measurement or observation behind it.
 
 ## Required
 
-- [Printed PLA shell and lid](/quest/m0/print-p1s-case-parts.md) - supplies the paired articles for the bench test.
+- [Printed PLA shell and lid](/quest/m0/print-p1s-case-parts.md) - the parts to test.
