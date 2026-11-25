@@ -11,7 +11,11 @@ No screws, nuts or metal standoffs. Everything is in print orientation, flat
 side down, and needs no supports.
 
 This folder is a derivative of the AMSAT CubeSatSim frame by Alan Johnston,
-KU2Y, and is licensed GPL-3.0 like the original. See LICENSE and README.md.
+KU2Y, and is licensed GPL-3.0 like the original. Modified by CubeSat Classroom
+on 2026-11-25: standoff columns added to the AMSAT top/bottom piece, and new
+payload parts. See LICENSE and README.md.
+
+Run with --self-test to check that verify() rejects deliberately broken designs.
 """
 
 from pathlib import Path
@@ -61,6 +65,8 @@ CLIP_W = 8.0
 CLIP_GAP = 0.3
 CLIP_LIP = 0.7
 PLA_STRAIN_LIMIT = 0.02         # keep repeated flexing well under PLA's ~3% yield
+MIN_SNAP_OVERLAP = 0.2          # barb diameter minus hole diameter that still holds
+MIN_CLIP_REACH = 0.3            # how far a clip lip must reach over the Uno's edge
 
 # Arduino Nano 33 BLE Sense: 43.18 x 17.78 mm PCB, pin rows 15.24 mm apart.
 NANO = (43.18, 17.78)
@@ -235,6 +241,16 @@ def peg_strain():
     return 1.5 * half * (PEG_BARB - SNAP_HOLE) / 2 / arm ** 2
 
 
+def snap_overlap():
+    """How much wider the barb is than the hole it snaps through (diameter)."""
+    return PEG_BARB - SNAP_HOLE
+
+
+def clip_reach():
+    """How far each clip lip reaches over the Uno's edge, after the gap to the board."""
+    return CLIP_LIP - CLIP_GAP
+
+
 def require(ok, message):
     if not ok:
         raise ValueError(message)
@@ -246,6 +262,15 @@ def overlap(a, b):
 
 def verify(bottom, plate, strap):
     """Assemble the parts in frame coordinates and check fit, clearances and strain."""
+    # Retention first: a part that no longer latches also shows a low strain.
+    require(snap_overlap() >= MIN_SNAP_OVERLAP,
+            f"snap barb ({PEG_BARB} mm) overlaps the {SNAP_HOLE} mm hole by {snap_overlap():.2f} mm, "
+            f"less than {MIN_SNAP_OVERLAP} mm, so the peg would not latch")
+    require(SNAP_HOLE > PEG_SHANK, f"snap hole {SNAP_HOLE} mm does not clear the {PEG_SHANK} mm peg shank")
+    require(PEG_SLOT > snap_overlap(), "the peg slot is too narrow for the barb to squeeze through the hole")
+    require(clip_reach() >= MIN_CLIP_REACH,
+            f"Uno clip lip reaches {clip_reach():.2f} mm over the board edge, less than {MIN_CLIP_REACH} mm, "
+            "so the clip would not hold the board")
     require(clip_strain() < PLA_STRAIN_LIMIT, f"Uno clip strain {clip_strain():.1%} is too high for PLA")
     require(peg_strain() < PLA_STRAIN_LIMIT, f"snap peg strain {peg_strain():.1%} is too high for PLA")
 
@@ -303,12 +328,47 @@ def export(name, solid):
     return mesh
 
 
+BROKEN_DESIGNS = {
+    "snap hole wider than the barb": {"SNAP_HOLE": 5.8},
+    "snap hole leaves too little overlap": {"SNAP_HOLE": 5.6},
+    "clip gap wider than the lip": {"CLIP_GAP": 0.8},
+    "plate inside the snap tabs": {"COLUMN_LENGTH": 10.0},
+    "stiff Uno clip (2.4 mm arm, 1.0 mm lip, 6 mm posts)": {"CLIP_T": 2.4, "CLIP_LIP": 1.0, "UNO_POST_H": 6.0},
+    "Nano rails on the pin rows": {"NANO_ROW": 8.0},
+    "strap feet pressing into the Nano": {"STRAP_FOOT_ABOVE_PCB": -0.5},
+    "Nano over a snap column": {"NANO_CENTER": (25.0, -28.0)},
+}
+
+
+def self_test():
+    """Check that verify() rejects each broken design, then restore the real values."""
+    saved = {name: globals()[name] for change in BROKEN_DESIGNS.values() for name in change}
+    missed = []
+    for label, change in BROKEN_DESIGNS.items():
+        globals().update(change)
+        try:
+            verify(bottom_with_columns(), payload_plate(), nano_strap())
+            missed.append(label)
+        except ValueError as error:
+            print(f"rejected {label}: {error}")
+        finally:
+            globals().update(saved)
+    if missed:
+        raise SystemExit(f"verify() accepted broken designs: {', '.join(missed)}")
+
+
 if __name__ == "__main__":
+    import sys
+
+    if "--self-test" in sys.argv:
+        self_test()
+        sys.exit()
     bottom = bottom_with_columns()
     plate = payload_plate()
     strap = nano_strap()
     verify(bottom, plate, strap)
-    print(f"checks passed: Uno clip strain {clip_strain():.1%}, peg strain {peg_strain():.1%}")
+    print(f"checks passed: snap overlap {snap_overlap():.2f} mm, clip reach {clip_reach():.2f} mm, "
+          f"clip strain {clip_strain():.1%}, peg strain {peg_strain():.1%}")
     # The end piece prints face down, so its columns point up.
     export("bottom-with-columns", bottom.rotate((180, 0, 0)))
     export("payload-plate", plate)
