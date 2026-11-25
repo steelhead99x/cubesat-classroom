@@ -211,6 +211,33 @@ def nano_strap():
     return part
 
 
+FIT_BASE_T = 2.0                # thinner, open base for the fit plate
+FIT_PAD = 3.0                   # solid base around every board feature
+FIT_BAR = 5.0                   # width of the ring and the bars joining the pads
+
+
+def fit_plate():
+    """Quick fit test: the payload plate's board features, unchanged and in the same
+    places, on a thin open frame. No snap holes. Print it with the Nano strap."""
+    top = PLATE_T
+    features = payload_plate() - box(-PLATE, -PLATE, -1, PLATE, PLATE, top)
+    pads = features.slice(top + 0.1).offset(FIT_PAD, cad.JoinType.Round, circular_segments=FACETS)
+    h = PLATE / 2
+    outline = chamfered_square(PLATE, PLATE_CHAMFER, 1).slice(0.5)
+    ring = outline - outline.offset(-FIT_BAR, cad.JoinType.Miter)
+    nx, ny = NANO_CENTER
+    _, uy = uno_in_plate(0, UNO[1] / 2)
+    _, lower_posts = uno_in_plate(0, (UNO_HOLES[0][1] + UNO_HOLES[2][1]) / 2)
+    b = FIT_BAR / 2
+    bars = [cad.CrossSection.square((PLATE, FIT_BAR)).translate((-h, y - b)) for y in (ny, uy, lower_posts)]
+    bars.append(cad.CrossSection.square((FIT_BAR, PLATE)).translate((nx - b, -h)))
+    base = pads + ring
+    for bar in bars:
+        base += bar
+    base = (base ^ outline).simplify(0.05).extrude(FIT_BASE_T + EPS).translate((0, 0, top - FIT_BASE_T))
+    return (base + features).translate((0, 0, FIT_BASE_T - top))
+
+
 def snap_test():
     """A short column with a peg, and a tab with the snap hole. Print both together."""
     base = box(-8, -8, 0, 8, 8, 2.0)
@@ -407,6 +434,9 @@ if __name__ == "__main__":
     export("bottom-with-columns", bottom.rotate((180, 0, 0)))
     export("payload-plate", plate)
     export("nano-strap", strap)
+    fit = export("fit-plate", fit_plate())
+    print(f"fit-plate: {fit.volume / 1000:.1f} cm3 against {check('payload-plate', plate).volume / 1000:.1f} cm3 "
+          "for the full payload plate")
     peg_part, tab_part = snap_test()
     export("snap-test-peg", peg_part)
     export("snap-test-tab", tab_part)

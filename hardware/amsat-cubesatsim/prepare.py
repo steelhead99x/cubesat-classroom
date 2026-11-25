@@ -1,4 +1,4 @@
-"""Pack the AMSAT frame and the printed payload kit into four P1S plates (3MF).
+"""Pack the AMSAT frame and the printed payload kit into five P1S plates (3MF).
 
 Run generate.py first. Each plate is centered on the 256 mm bed with every part
 in its print orientation. GPL-3.0, like the rest of this folder.
@@ -26,6 +26,8 @@ PLATES = {
                           ("bottom-with-columns", "stl/bottom-with-columns.stl", None)],
     "04-payload-plate": [("payload-plate", "stl/payload-plate.stl", None),
                          ("nano-strap", "stl/nano-strap.stl", None)],
+    "05-fit-plate": [("fit-plate", "stl/fit-plate.stl", None),
+                     ("nano-strap", "stl/nano-strap.stl", None)],
 }
 
 

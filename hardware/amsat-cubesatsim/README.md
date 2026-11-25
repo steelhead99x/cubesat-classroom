@@ -23,10 +23,13 @@ Use the P1S profile for your nozzle (0.20mm Standard for 0.4 mm, 0.30mm Standard
 | [02-sides](p1s/02-sides.3mf) | AMSAT side and side with camera hole | 1 h 40 min, 58 g |
 | [03-top-and-bottom](p1s/03-top-and-bottom.3mf) | AMSAT top (unchanged) and bottom with snap columns | 1 h 18 min, 48 g |
 | [04-payload-plate](p1s/04-payload-plate.3mf) | Payload plate and Nano strap | 50 min, 33 g |
+| [05-fit-plate](p1s/05-fit-plate.3mf) (optional) | Fit plate and Nano strap: the payload plate's board mounts on an open 2 mm frame, about half the plastic | not yet sliced |
 
 The whole kit is about 3 h 50 min and 140 g of PLA. The times are slicer estimates.
 
 **Print the snap test first.** Push the peg into the tab. It should click in with a firm push and not fall out. If it's too tight or too loose, change `SNAP_HOLE` in [generate.py](generate.py) by 0.1 mm and regenerate (see below). The generator refuses a hole that leaves less than 0.2 mm of barb overlap, because the peg would no longer latch. The payload plate and the Nano strap use the same snap. The first test print on a P1S with a 0.6 mm nozzle snapped well at the default size.
+
+**Then, if you like, print the fit plate.** It has the payload plate's Uno posts and clips, Nano rails, end stop and strap posts, made by the same code and in the same places, on an open frame with no snap holes. Check that both boards drop in and the clips and strap click before you print plate 04. The open base flexes more than the full plate, so judge clip grip on plate 04.
 
 ## Assemble
 
