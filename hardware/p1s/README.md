@@ -6,26 +6,26 @@ A 1U-sized bench case in three prints: a small screw-fit coupon, the case shell 
 
 ## What you need
 
-- Bambu Lab P1S with the 0.4 mm nozzle, and Bambu Studio
-- About 170 g of PLA
+- Bambu Lab P1S with a 0.4 or 0.6 mm nozzle, and Bambu Studio
+- About 170 g of PLA with a 0.4 mm nozzle, or 215 g with a 0.6 mm nozzle
 - 4 × **M3 × 12 mm** screws, socket or pan head (M3 × 10 also works; do not go longer than 14 mm or they bottom out)
 - A matching hex key or screwdriver, and calipers or a ruler if you have them
 
 ## Slicer settings
 
-| Setting | Use |
-| --- | --- |
-| Printer | Bambu Lab P1S 0.4 nozzle |
-| Process | 0.20mm Standard |
-| Filament | Your PLA preset |
-| Plate | The one installed (Textured PEI or Cool Plate) |
-| Supports | Off |
+| Setting | 0.4 mm nozzle | 0.6 mm nozzle |
+| --- | --- | --- |
+| Printer | Bambu Lab P1S 0.4 nozzle | Bambu Lab P1S 0.6 nozzle |
+| Process | 0.20mm Standard | 0.30mm Standard |
+| Filament | Your PLA preset | Your PLA preset |
+| Plate | The one installed | The one installed |
+| Supports | Off | Off |
 
-Leave everything else at the defaults. Each 3MF opens already centered and in the right orientation, so don't rotate it.
+Pick the printer preset that matches the nozzle actually installed, and leave everything else at the defaults. A 0.6 mm nozzle prints small holes slightly undersized, so the coupon test matters more. Each 3MF opens already centered and in the right orientation, so don't rotate it.
 
 ## Print 1: fit coupon
 
-[01-m3-fit-coupon.3mf](01-m3-fit-coupon.3mf) · about 20 min · 4 g
+[01-m3-fit-coupon.3mf](01-m3-fit-coupon.3mf) · about 20 min and 4 g (0.4 mm) · 12 min and 5 g (0.6 mm)
 
 A 48 × 14 × 10 mm bar with six holes. Starting at the notched end they are **2.6, 2.8, 3.0, 3.2, 3.5 and 3.8 mm**.
 
@@ -38,13 +38,13 @@ If either one fails, see [If the screw doesn't fit](#if-the-screw-doesnt-fit) be
 
 ## Print 2: case shell
 
-[02-case-shell.3mf](02-case-shell.3mf) · about 4 h · 135 g
+[02-case-shell.3mf](02-case-shell.3mf) · about 4 h and 135 g (0.4 mm) · 2 h 20 min and 175 g (0.6 mm)
 
 100 × 100 × 109.5 mm, prints floor down and open end up. In the Preview tab, check that the four corner screw holes and the cable slot at the top of one wall look clean.
 
 ## Print 3: camera lid
 
-[03-camera-lid.3mf](03-camera-lid.3mf) · about 45 min · 26 g
+[03-camera-lid.3mf](03-camera-lid.3mf) · about 45 min and 26 g (0.4 mm) · 30 min and 32 g (0.6 mm)
 
 100 × 100 × 6 mm, prints flat face down with the four small tabs pointing up.
 
