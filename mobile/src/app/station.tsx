@@ -157,6 +157,9 @@ export default function Station() {
         <Text accessibilityLiveRegion="polite" style={shared.small}>{ageText}</Text>
         {level === 'professional' && reading ? (
           <View>
+            {/* Practice JSON uses the same field names as the live `telemetry` track.
+                The live object adds schema, evidence, service, and frequency. This screen
+                does not subscribe. See docs/client-contract.md. */}
             <Text style={shared.label}>Raw telemetry</Text>
             <Text style={styles.raw}>{JSON.stringify({
               sequence: reading.sequence,

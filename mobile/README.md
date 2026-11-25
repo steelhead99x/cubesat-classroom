@@ -16,6 +16,8 @@ Lesson text comes from the website's lessons. After editing `site/src/content/qu
 
 See the [classroom receiver design](../docs/classroom-receiver.md) for the proposed live station connection over Media over QUIC.
 
+The practice station does not subscribe yet. A future live view should follow [the client contract](../docs/client-contract.md): broadcast `cubesat/classroom/live`, track `telemetry` (JSON, one full snapshot per group), and optional `image`, `audio`, and `video` tracks that a phone may skip. There is no Media over QUIC client in this app today. A beta LoRa board with an OLED would hear the radio packet instead; that path is not this app.
+
 Use Node.js 24, then run:
 
 ```sh

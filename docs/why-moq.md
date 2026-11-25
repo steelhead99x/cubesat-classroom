@@ -28,6 +28,8 @@ These figures are from the moq-subghz bench, described in [Broadcast over MoQ, s
 
 The classroom station in this repository runs the relay path on one computer: browser, ground station, ground MoQ relay, CubeSat MoQ relay, payload. It shows request and response, contact loss and recovery, but not radio.
 
+`downlink-sim` is a separate desk simulation in this repository: virtual receivers, invented RSSI, and a compact telemetry body sized for a beta LoRa board. Its counts are not the bench rows above. See [downlink.md](downlink.md).
+
 ## What has not been shown yet
 
 The article is explicit about its limits, and so is this project:

@@ -2,6 +2,7 @@ mod balloon;
 mod bridge;
 mod classroom;
 mod flight;
+mod live;
 mod passes;
 
 use std::io::{self, Write};
@@ -164,10 +165,29 @@ enum Command {
         json: bool,
     },
     /// Start a loopback-only QUIC relay and print its URL and certificate pin.
+    ///
+    /// The same UDP port also accepts WebTransport (`https://127.0.0.1:<port>/`).
+    /// The certificate is generated for this process and is not a public web certificate.
     Relay {
         #[arg(long, default_value_t = 4443)]
         port: u16,
     },
+    /// Desk simulation of a cleartext 915 MHz downlink. Does not transmit.
+    DownlinkSim {
+        /// Print JSON instead of a text report.
+        #[arg(long)]
+        json: bool,
+        /// Also time a 10 000-object recovery run.
+        #[arg(long)]
+        bench: bool,
+    },
+    /// Publish recovered downlink snapshots to a Media over QUIC relay.
+    ///
+    /// Desk simulation only. `telemetry` is the core track. Image, audio, and
+    /// video are optional and are dropped first when `--budget-bps` is tight.
+    LiveFeed(live::FeedArgs),
+    /// Subscribe to one live-feed track and print it. Reference reader for the client contract.
+    ReadLive(live::ReadArgs),
     /// Publish synthetic sensor readings at 1 Hz over MoQ.
     Simulate {
         #[command(flatten)]
@@ -197,7 +217,7 @@ enum Command {
     },
 }
 
-#[derive(clap::Args)]
+#[derive(Clone, clap::Args)]
 struct Link {
     #[arg(long, env = "CUBESAT_RELAY")]
     relay: Url,
@@ -355,6 +375,12 @@ fn is_loopback(url: &Url) -> bool {
 async fn relay(port: u16) -> Result<()> {
     let relay = start_relay(port).await?;
     println!("{} {}", relay.url, relay.pin);
+    // Browsers and Chromebooks use WebTransport on this same UDP port. The
+    // certificate is self-signed; native apps pin the fingerprint, and a browser
+    // needs a certificate it trusts. 127.0.0.1 matches the IPv4-only listen socket.
+    if let Some(port) = relay.url.port() {
+        println!("webtransport https://127.0.0.1:{port}/ {}", relay.pin);
+    }
     io::stdout().flush()?;
     tokio::signal::ctrl_c().await?;
     Ok(())
@@ -657,6 +683,19 @@ async fn main() -> Result<()> {
             println!("{}", serde_json::to_string_pretty(&budgets)?);
         }
         Command::Relay { port } => relay(port).await?,
+        Command::DownlinkSim { json, bench } => {
+            let report = downlink::studies();
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", downlink::text_report(&report));
+            }
+            if bench {
+                print!("{}", downlink::bench_text(&downlink::bench()));
+            }
+        }
+        Command::LiveFeed(args) => live::serve(args).await?,
+        Command::ReadLive(args) => live::read(args).await?,
         Command::Simulate { link } => publish(link, Sample::synthetic).await?,
         Command::PublishSensors { link, inputs } => {
             publish(link, |sequence| inputs.sample(sequence)).await?;

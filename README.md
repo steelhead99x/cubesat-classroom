@@ -16,6 +16,7 @@ The Summer 2027 briefing describes the project’s goals for teacher training an
 | Works today (simulation or bench) | Planned, not built or not verified |
 | --- | --- |
 | Ground station on localhost: commands, simulated sensors, test video over Media over QUIC | Over-the-air operation with a licensed station |
+| Desk simulation of a cleartext 915 MHz frame, plus a telemetry-first fan-out on loopback | A beta LoRa OLED board, and any measured classroom fan-out |
 | Pass prediction from TLEs, suborbital flight-profile desk simulation | Any balloon, suborbital or orbital flight |
 | Sensor bridge for Arduino, XIAO and Raspberry Pi readings | Classroom fan-out and relay mesh between schools (not measured) |
 | Five browser lessons, Expo mobile app (offline), printable P1S case files | Hosted AI quest guide, adult sign-in and paid plans (proposals only) |
@@ -82,8 +83,8 @@ cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo
 
 Run `cargo run --locked -- --help` to list every subcommand. They fall into three groups:
 
-- **Offline calculators:** `passes` (SGP4 pass prediction from a TLE file), `flight-profile`, `link-budget` and `energy-budget`. Each has `--json`.
-- **Local station:** `classroom`, `relay`, `simulate`, `publish-sensors`, `read-telemetry` and `verify-video`. The `classroom` and `relay` servers listen on loopback only.
+- **Offline calculators:** `passes` (SGP4 pass prediction from a TLE file), `flight-profile`, `link-budget`, `energy-budget`, and `downlink-sim`. Each has `--json` except where noted. `downlink-sim` is a virtual 915 MHz loss exercise, not a radio test.
+- **Local station:** `classroom`, `relay`, `simulate`, `publish-sensors`, `read-telemetry`, `live-feed`, `read-live`, and `verify-video`. The `classroom` and `relay` servers listen on loopback only. `live-feed` publishes a desk-simulated downlink onto Media over QUIC tracks. The client contract is [docs/client-contract.md](docs/client-contract.md).
 - **Sensors:** `sensor-bridge` and `balloon-log`.
 
 None of them transmit on radio. The website and Worker (`site/`), the mobile app (`mobile/`) and the CAD and PDF generators stay in their own languages for now.
@@ -96,7 +97,7 @@ None of them transmit on radio. The website and Worker (`site/`), the mobile app
 
 - This repository does not transmit on its own. The station and demos use loopback relays and simulated or recorded data.
 - Transmitting on amateur bands requires a licensed control operator. Students take part under that operator.
-- Amateur use stays open: telemetry must be identified with the station call sign, and messages must not be encrypted or obscured (in the US, 47 CFR 97.113(a)(4) and 97.119). The encrypted frame mode in the companion [moq-subghz](https://github.com/steelhead99x/moq-subghz) bench is for non-amateur bench work only and must be off on amateur frequencies.
+- Amateur use stays open: telemetry must be identified with the station call sign, and messages must not be encrypted or obscured (in the US, 47 CFR 97.113(a)(4) and 97.119). The encrypted frame mode in the companion [moq-subghz](https://github.com/steelhead99x/moq-subghz) bench is for non-amateur bench work only and must be off on amateur frequencies. The 915 MHz desk simulation in this repository is cleartext only. A beta LoRa board path is documented in [docs/downlink.md](docs/downlink.md); it does not transmit.
 - Any flight proposal needs an independent spectrum review and authorization. See [docs/mission.md](docs/mission.md).
 - Never publish student names, schools, locations or contact details. See [CONTRIBUTING.md](CONTRIBUTING.md).
 

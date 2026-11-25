@@ -46,6 +46,7 @@ The native relay needs a bidirectional IP bearer. The existing MoQ-inspired SubG
 | --- | --- |
 | Classroom console | A class exercises requests, sees a lost contact and exports a reviewed crew log. |
 | Receive and replay desk | A radio mentor documents a recorder that ingests an approved ground modem or capture with unit, source and timing metadata. |
+| 915 MHz desk simulation | `downlink-sim` reports virtual loss, and `live-feed` publishes recovered snapshots on the tracks in [client-contract.md](client-contract.md). A beta LoRa OLED listener is specified there. Not a radio test. |
 | Pass operations | Compare predicted station visibility with observed acquisition and loss, log elevation mask and clock uncertainty, and replay a missed contact. |
 | Command-capable flight station | Independent review of operator authorization, scoped commands, audit events, session and clock handling, payload health, and radio inhibit interfaces. Verify using the actual host and licensed operating configuration. |
 

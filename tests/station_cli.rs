@@ -142,6 +142,25 @@ fn flight_profile_writes_a_csv_timeline() {
 }
 
 #[test]
+fn downlink_sim_reports_a_desk_simulation() {
+    let out = station(&["downlink-sim", "--json"]);
+    let value: serde_json::Value = serde_json::from_str(&ok_stdout(&out)).unwrap();
+    assert_eq!(value["evidence"], "desk-simulation");
+    assert_eq!(value["transmits"], false);
+    assert_eq!(value["burst"]["recovered_without_interleave"], 3);
+    assert_eq!(value["burst"]["recovered_with_interleave"], 4);
+    let rows = value["scenarios"].as_array().unwrap();
+    let row = |name: &str| rows.iter().find(|row| row["name"] == name).unwrap();
+    assert_eq!(row("ten-percent-no-parity")["recovered"], 364);
+    assert_eq!(row("ten-percent-one-parity")["recovered"], 395);
+    assert_eq!(row("forty-percent-one-receiver")["recovered"], 182);
+    assert_eq!(row("forty-percent-three-receivers")["recovered"], 285);
+    let text = ok_stdout(&station(&["downlink-sim"]));
+    assert!(text.contains("does not transmit"));
+    assert!(text.contains("Beta LoRa board"));
+}
+
+#[test]
 fn flight_profile_rejects_impossible_inputs() {
     fails_with(
         &["flight-profile", "--step-s", "0"],
