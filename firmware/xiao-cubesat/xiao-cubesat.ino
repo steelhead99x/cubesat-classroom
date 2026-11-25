@@ -364,10 +364,21 @@ const char *takePhoto() {
 }
 #endif
 
+// Saves the photo under the first unused name, IMG0001.JPG and up. The photo counter starts
+// again at zero after every reboot, and FILE_WRITE replaces an existing file on ESP32 (and
+// appends to it on SAMD), so never open a name that is already on the card. photoNumber is
+// moved on to match, so the n= in the next IMG BEGIN line is the file's number.
 void savePhoto() {
   if (!hasSd || !photo) return;
   char name[16];
-  snprintf(name, sizeof(name), "/IMG%04u.JPG", photoNumber);
+  uint16_t n = photoNumber < 1 ? 1 : photoNumber;
+  for (;;) {
+    snprintf(name, sizeof(name), "/IMG%04u.JPG", n);
+    if (!SD.exists(name)) break;
+    if (n >= 9999) { sdErrors++; return; }  // card full of photos: keep the old ones
+    n++;
+  }
+  photoNumber = n;
   File f = SD.open(name, FILE_WRITE);
   if (!f) { sdErrors++; return; }
   f.write(photo, photoLen);

@@ -67,6 +67,7 @@ CLIP_LIP = 0.7
 PLA_STRAIN_LIMIT = 0.02         # keep repeated flexing well under PLA's ~3% yield
 MIN_SNAP_OVERLAP = 0.2          # barb diameter minus hole diameter that still holds
 MIN_CLIP_REACH = 0.3            # how far a clip lip must reach over the Uno's edge
+TOLERANCE = 1e-6                # mm of floating-point noise to ignore; far below print resolution
 
 # Arduino Nano 33 BLE Sense: 43.18 x 17.78 mm PCB, pin rows 15.24 mm apart.
 NANO = (43.18, 17.78)
@@ -251,6 +252,11 @@ def clip_reach():
     return CLIP_LIP - CLIP_GAP
 
 
+def at_least(value, minimum):
+    """value >= minimum, ignoring floating-point noise: 0.7 - 0.4 is 0.29999999999999993."""
+    return value >= minimum - TOLERANCE
+
+
 def require(ok, message):
     if not ok:
         raise ValueError(message)
@@ -263,12 +269,12 @@ def overlap(a, b):
 def verify(bottom, plate, strap):
     """Assemble the parts in frame coordinates and check fit, clearances and strain."""
     # Retention first: a part that no longer latches also shows a low strain.
-    require(snap_overlap() >= MIN_SNAP_OVERLAP,
+    require(at_least(snap_overlap(), MIN_SNAP_OVERLAP),
             f"snap barb ({PEG_BARB} mm) overlaps the {SNAP_HOLE} mm hole by {snap_overlap():.2f} mm, "
             f"less than {MIN_SNAP_OVERLAP} mm, so the peg would not latch")
     require(SNAP_HOLE > PEG_SHANK, f"snap hole {SNAP_HOLE} mm does not clear the {PEG_SHANK} mm peg shank")
     require(PEG_SLOT > snap_overlap(), "the peg slot is too narrow for the barb to squeeze through the hole")
-    require(clip_reach() >= MIN_CLIP_REACH,
+    require(at_least(clip_reach(), MIN_CLIP_REACH),
             f"Uno clip lip reaches {clip_reach():.2f} mm over the board edge, less than {MIN_CLIP_REACH} mm, "
             "so the clip would not hold the board")
     require(clip_strain() < PLA_STRAIN_LIMIT, f"Uno clip strain {clip_strain():.1%} is too high for PLA")
@@ -340,8 +346,25 @@ BROKEN_DESIGNS = {
 }
 
 
+# Designs exactly at a limit must pass: the limits are inclusive.
+BOUNDARY_DESIGNS = {
+    "clip reach exactly at the 0.30 mm minimum (0.7 mm lip, 0.4 mm gap)": {"CLIP_LIP": 0.7, "CLIP_GAP": 0.4},
+}
+
+
 def self_test():
-    """Check that verify() rejects each broken design, then restore the real values."""
+    """Check that verify() rejects each broken design and accepts designs exactly at a limit."""
+    assert at_least(0.7 - 0.4, 0.3) and not at_least(0.29, 0.3)
+    saved = {name: globals()[name] for change in BOUNDARY_DESIGNS.values() for name in change}
+    for label, change in BOUNDARY_DESIGNS.items():
+        globals().update(change)
+        try:
+            verify(bottom_with_columns(), payload_plate(), nano_strap())
+            print(f"accepted {label}")
+        except ValueError as error:
+            raise SystemExit(f"verify() rejected a design at the limit, {label}: {error}") from error
+        finally:
+            globals().update(saved)
     saved = {name: globals()[name] for change in BROKEN_DESIGNS.values() for name in change}
     missed = []
     for label, change in BROKEN_DESIGNS.items():

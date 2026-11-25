@@ -24,7 +24,7 @@ Read the [bench CubeSat guide](/docs/bench-cubesats.md#seeed-xiao-cubesat) first
 - Your log has the board model, sketch version, date and the parts found at boot.
 - It has at least one `CSC1` line, one `REC` line and a few rows from `CUBESAT.CSV`, each labelled "hardware bench".
 - You compared `temp_mc`, `pressure_pa` and `light_lux` with a reference and wrote down which reference you used.
-- With an S3 Sense: the script reported a matching CRC-32 for the full capture, and reported the gaps after you deleted lines.
+- With an S3 Sense: the script reported the full capture as intact, and reported the gaps and an incomplete transfer after you deleted lines.
 
 ### Talk it over
 

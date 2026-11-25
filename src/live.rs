@@ -81,7 +81,10 @@ pub(crate) struct FeedArgs {
     /// Milliseconds between snapshots.
     #[arg(long, default_value_t = 1000, value_parser = clap::value_parser!(u64).range(50..=60_000))]
     interval_ms: u64,
-    /// Millidegree Celsius file. Requires `--voltage-mv` and `--light-lux` too.
+    /// Millidegree Celsius file. Requires `--voltage-mv` and `--light-lux` too. Each file must
+    /// be rewritten for every reading (as `sensor-bridge` does): its modification time is the
+    /// capture time, and a file older than 5 s pauses publishing. Values under /sys and /proc
+    /// are read live instead.
     #[arg(long)]
     temperature_mc: Option<std::path::PathBuf>,
     /// Millivolt file.
@@ -510,9 +513,14 @@ fn read_sample(args: &FeedArgs, sequence: u64, now: u64) -> Result<Telemetry> {
         }
         return Ok(Telemetry::synthetic(sequence, now, service, station));
     };
+    // Each value is stamped with its file's last-modified time, never with "now": a file left
+    // behind from an old run must not be published as a fresh reading.
+    let (temperature_mc, t_at) = read_fresh_integer::<i32>(temperature, now)?;
+    let (voltage_mv, v_at) = read_fresh_integer::<u32>(voltage, now)?;
+    let (light_lux, l_at) = read_fresh_integer(light, now)?;
     let pressure = match &args.pressure_pa {
-        Some(path) => match super::read_integer::<u32>(path) {
-            Ok(value) => Some(value),
+        Some(path) => match read_fresh_integer::<u32>(path, now) {
+            Ok((value, _)) => Some(value),
             Err(err) => {
                 eprintln!("Pressure file skipped: {err:#}");
                 None
@@ -520,18 +528,64 @@ fn read_sample(args: &FeedArgs, sequence: u64, now: u64) -> Result<Telemetry> {
         },
         None => None,
     };
+    // The reading is only as fresh as its oldest required value.
+    let captured = t_at.min(v_at).min(l_at);
     Ok(Telemetry::from_sensors(
         sequence,
-        now,
+        captured,
         service,
         station,
         downlink::SensorReading {
-            temperature_c: f64::from(super::read_integer::<i32>(temperature)?) / 1000.0,
-            bus_voltage_v: f64::from(super::read_integer::<u32>(voltage)?) / 1000.0,
-            light_lux: super::read_integer(light)?,
+            temperature_c: f64::from(temperature_mc) / 1000.0,
+            bus_voltage_v: f64::from(voltage_mv) / 1000.0,
+            light_lux,
             pressure_pa: pressure,
         },
     ))
+}
+
+fn is_live_pseudo_file(path: &std::path::Path) -> bool {
+    path.starts_with("/sys") || path.starts_with("/proc")
+}
+
+/// Read an integer sensor file and return it with its capture time: the file's last-modified
+/// time in Unix milliseconds. Fails when the file is older than the station's freshness limit,
+/// or dated further in the future than the allowed clock skew.
+fn read_fresh_integer<T: std::str::FromStr>(path: &std::path::Path, now: u64) -> Result<(T, u64)>
+where
+    T::Err: std::error::Error + Send + Sync + 'static,
+{
+    // Kernel pseudo-files (hwmon, IIO) produce a new value on every read, but their
+    // modification time never changes, so the read itself is the capture time.
+    if is_live_pseudo_file(path) {
+        return Ok((super::read_integer(path)?, now));
+    }
+    let modified = std::fs::metadata(path)
+        .and_then(|meta| meta.modified())
+        .with_context(|| format!("read the modification time of {}", path.display()))?;
+    let at = u64::try_from(
+        modified
+            .duration_since(std::time::UNIX_EPOCH)
+            .context("sensor file is dated before 1970")?
+            .as_millis(),
+    )?;
+    if let Some(age) = now.checked_sub(at) {
+        if u128::from(age) > super::MAX_AGE.as_millis() {
+            bail!(
+                "{} is stale: last written {age} ms ago (limit {} ms)",
+                path.display(),
+                super::MAX_AGE.as_millis()
+            );
+        }
+    } else if u128::from(at - now) > super::MAX_CLOCK_SKEW.as_millis() {
+        bail!(
+            "{} is dated {} ms in the future; check the clock",
+            path.display(),
+            at - now
+        );
+    }
+    let value = super::read_integer(path)?;
+    Ok((value, at.min(now)))
 }
 
 async fn publish_feed(
@@ -635,12 +689,14 @@ fn print_telemetry(bytes: &[u8], cbor: bool, reading: Reading, json: bool) -> Re
     } else {
         Telemetry::from_json(bytes)?
     };
+    // Check freshness before printing anything, JSON included: a stale or future-dated
+    // reading is an error, never output that looks current.
+    let now = unix_ms()?;
+    let age = sample.age_ms(now)?;
     if json {
         println!("{}", serde_json::to_string_pretty(&sample)?);
         return Ok(());
     }
-    let now = unix_ms()?;
-    let age = sample.age_ms(now)?;
     let detail = match reading {
         Reading::Temperature => format!("{:.1} °C payload temperature", sample.temperature_c),
         Reading::Voltage => format!("{:.3} V bus voltage", sample.bus_voltage_v),
@@ -747,6 +803,78 @@ fn station_id(service: Service, text: Option<&str>) -> Result<Option<StationId>>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn sensor_file(name: &str, value: &str, age: Duration, ahead: bool) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("cubesat-live-{}-{name}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(name);
+        std::fs::write(&path, value).unwrap();
+        let now = std::time::SystemTime::now();
+        let when = if ahead { now + age } else { now - age };
+        std::fs::File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_modified(when)
+            .unwrap();
+        path
+    }
+
+    #[test]
+    fn fresh_sensor_file_is_stamped_with_its_write_time() {
+        let path = sensor_file("fresh", "27410\n", Duration::from_millis(1500), false);
+        let now = unix_ms().unwrap();
+        let (value, at) = read_fresh_integer::<i32>(&path, now).unwrap();
+        assert_eq!(value, 27410);
+        let age = now - at;
+        assert!(
+            (1300..=2500).contains(&age),
+            "stamped {age} ms ago, not now"
+        );
+    }
+
+    #[test]
+    fn stale_sensor_file_is_refused() {
+        let path = sensor_file("stale", "3300", Duration::from_secs(3600), false);
+        let err = read_fresh_integer::<u32>(&path, unix_ms().unwrap()).unwrap_err();
+        assert!(format!("{err:#}").contains("stale"), "{err:#}");
+    }
+
+    #[test]
+    fn future_dated_sensor_file_is_refused() {
+        let path = sensor_file("future", "3300", Duration::from_secs(60), true);
+        let err = read_fresh_integer::<u32>(&path, unix_ms().unwrap()).unwrap_err();
+        assert!(format!("{err:#}").contains("future"), "{err:#}");
+        // Within the allowed skew, it counts as just written.
+        let near = sensor_file("near", "3300", Duration::from_millis(500), true);
+        let now = unix_ms().unwrap();
+        assert_eq!(read_fresh_integer::<u32>(&near, now).unwrap().1, now);
+    }
+
+    #[test]
+    fn kernel_pseudo_files_are_read_live() {
+        assert!(is_live_pseudo_file(std::path::Path::new(
+            "/sys/class/hwmon/hwmon0/temp1_input"
+        )));
+        assert!(is_live_pseudo_file(std::path::Path::new("/proc/loadavg")));
+        assert!(!is_live_pseudo_file(std::path::Path::new(
+            "/var/lib/cubesat/temp_mc"
+        )));
+        assert!(!is_live_pseudo_file(std::path::Path::new("/system/temp")));
+    }
+
+    #[test]
+    fn read_live_json_refuses_stale_telemetry() {
+        let old = unix_ms().unwrap() - 60_000;
+        let stale = Telemetry::synthetic(1, old, Service::Simulation, None)
+            .to_json()
+            .unwrap();
+        assert!(print_telemetry(&stale, false, Reading::Status, true).is_err());
+        let fresh = Telemetry::synthetic(2, unix_ms().unwrap(), Service::Simulation, None)
+            .to_json()
+            .unwrap();
+        assert!(print_telemetry(&fresh, false, Reading::Status, true).is_ok());
+    }
 
     fn gateway(parity: u8, loss: u16, budget: Budget) -> Gateway {
         Gateway::new(
