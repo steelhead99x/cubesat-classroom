@@ -28,10 +28,8 @@ PLATES = {
                          ("lower-clamp", "stl/lower-clamp.stl", None)],
     "05-fit-plate": [("fit-plate", "stl/fit-plate.stl", None),
                      ("lower-clamp", "stl/lower-clamp.stl", None)],
-    "06-clamps-and-screws": [("uno-clamp-0", "stl/uno-clamp-0.stl", None),
-                             ("uno-clamp-1", "stl/uno-clamp-1.stl", None),
-                             ("uno-clamp-2", "stl/uno-clamp-2.stl", None)]
-                            + [(f"screw-{i}", "stl/screw.stl", None) for i in range(1, 6)],
+    "06-keys-and-screws": [(f"lock-key-{i}", "stl/lock-key.stl", None) for i in range(1, 5)]
+                          + [(f"screw-{i}", "stl/screw.stl", None) for i in range(1, 3)],
 }
 
 

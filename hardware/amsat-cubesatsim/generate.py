@@ -66,8 +66,6 @@ UNO_PIN = 2.9
 UNO_PIN_ABOVE = -0.3            # pin tip below the board's top face, so clamps press flat
 UNO_POST_TOP = 4.4              # the hole at (15.24, 50.8) sits beside the header pins
 PCB_UNO = 1.6
-UNO_RING = (1.6, 3.2)           # copper keep-out ring around each 3.2 mm hole (radius)
-MIN_RING_CONTACT = 3.0          # mm^2 of each ring a clamp must press on
 # Top-side parts (x0, y0, x1, y1, height above the board) from the Eagle layout. Heights are
 # the parts' catalogue heights, rounded up.
 UNO_PARTS = {
@@ -127,6 +125,36 @@ HEAD_D, HEAD_H = 10.0, 4.0
 MIN_BORE_WALL = 1.2
 PILLAR_OD = 10.0
 CLAMP_T = 4.0
+# Uno snap latches with lock keys. Each latch is a cantilever arm beside a board edge with a
+# hook over the board. Its hook underside is angled, so the arm's spring presses the board
+# down onto its posts. After it clicks in, a printed key drops in behind the arm and clips
+# into place: then the arm can't open, like the secondary lock on an aerospace connector.
+# Latches sit only where Arduino's layout leaves the board edge clear (see UNO_PARTS).
+LATCHES = {                     # name: (board edge, centre along that edge, gusset depth)
+    "left": ("left", 21.0, 1.5),        # between the DC jack and the USB-B
+    "right": ("right", 16.0, 1.5),      # between hole 1 and the ICSP header
+    "top": ("top", 14.5, 1.5),          # between the reset button and the 8-13 header
+    "bottom": ("bottom", 6.0, 0.0),     # beside the DC jack; no gussets, a snap barb is near
+}
+LATCH_W = 8.0
+LATCH_T = 1.8                   # arm thickness: three lines with a 0.6 mm nozzle
+LATCH_GAP = 0.3                 # board edge to arm, relaxed
+LATCH_REACH = 0.8               # how far the hook reaches over the board
+LATCH_ROOT_DEPTH = 1.5          # arm starts in a pocket this deep in the plate: a longer arm bends gentler
+LATCH_STRAIN_LIMIT = 0.015      # stricter than PLA_STRAIN_LIMIT: the arm prints upright, so it bends across layers
+MIN_LATCH_REACH = 0.6
+LATCH_ANGLE = 20.0              # hook underside: inward spring becomes a downward force
+LATCH_PRELOAD = 0.15            # arm stays bent outward this much with the board seated
+LATCH_LIP_T = 1.0               # hook thickness at its tip
+KEY_T, KEY_W = 1.8, 6.0         # lock key thickness (across the slot) and width
+KEY_CLEAR = 0.1                 # each side of the key in its slot
+KEY_SLOT = 1.4                  # split between the key's two detent prongs
+KEY_PRONG = 9.0                 # prong length
+KEY_BUMP = 0.35                 # detent bump on each prong, 45 degree flanks
+KEY_NOTCH_Z = 2.0               # detent height above the plate
+KEY_TAB = 4.5                   # key above the latch, with a hole for a pull ribbon
+CHEEK_T = 1.25
+BACK_T = 2.4                    # backstop wall the key bears on
 HEEL_GAP = 0.3                  # pillar tops sit this far below the clamp, so the screw
                                 # pulls the clamp down onto the board, like a strap clamp
 EDGE_GAP = 0.5                  # board edge to pillar
@@ -142,28 +170,143 @@ def uno_xy(ux, uy):
     return UNO_ORIGIN[0] + ux, UNO_ORIGIN[1] + uy
 
 
-def uno_clamps():
-    """Clamp footprints: (pillar xy, rectangles pressing the hole ring). Pillars sit just off
-    the board edge; each tongue reaches the ring between neighbouring parts."""
-    ux0, uy0 = UNO_ORIGIN
-    right = ux0 + UNO[0] + EDGE_GAP + PILLAR_OD / 2
-    top = uy0 + UNO[1] + EDGE_GAP + PILLAR_OD / 2
-    bottom = uy0 - EDGE_GAP - PILLAR_OD / 2
-    h = [uno_xy(*p) for p in UNO_HOLES]
-    return {
-        "uno-clamp-0": ((right, h[0][1]), (uno_xy(63.0, 33.5), uno_xy(UNO[0], 37.6))),
-        "uno-clamp-1": ((right, h[1][1]), (uno_xy(63.0, 5.5), uno_xy(UNO[0], 9.7))),
-        "uno-clamp-2": ((uno_xy(14.8, 0)[0], top), (uno_xy(12.6, 49.2), uno_xy(17.0, UNO[1]))),
-        "hole-3 leg": ((uno_xy(16.0, 0)[0], bottom), (uno_xy(14.0, 0.3), uno_xy(18.0, 4.3))),
-    }
-
-
 FAR_PILLAR = (34.5, -36.5)
 
 
+def nano_anchor():
+    """Pillar for the lower clamp's arm, beside the Uno's bottom edge."""
+    return uno_xy(16.0, 0)[0], UNO_ORIGIN[1] - EDGE_GAP - PILLAR_OD / 2
+
+
 def pillar_positions():
-    c = uno_clamps()
-    return [c[k][0] for k in ("uno-clamp-0", "uno-clamp-1", "uno-clamp-2", "hole-3 leg")] + [FAR_PILLAR]
+    return [nano_anchor(), FAR_PILLAR]
+
+
+def latch_arm():
+    return UNO_TOP_Z - (PLATE_T - LATCH_ROOT_DEPTH)
+
+
+def latch_pocket(name):
+    """Room in the plate for the lower end of the arm to flex."""
+    floor = PLATE_T - LATCH_ROOT_DEPTH
+    u1 = LATCH_GAP + LATCH_T + LATCH_REACH + 0.2
+    return _place(box(LATCH_GAP - 1.2, -LATCH_W / 2 - 0.4, floor, u1, LATCH_W / 2 + 0.4, PLATE_T + EPS), name)
+
+
+def latch_strain():
+    """Bending strain at the arm root as the hook rides over the board edge."""
+    return 1.5 * LATCH_T * LATCH_REACH / latch_arm() ** 2
+
+
+def key_strain():
+    w = (KEY_W - KEY_SLOT) / 2
+    return 1.5 * w * KEY_BUMP / KEY_PRONG ** 2
+
+
+def latch_preload():
+    """Downward force on the board from one latch, newtons (PLA E = 3.5 GPa, no friction)."""
+    import math
+    stiffness = 3 * 3500 * (LATCH_W * LATCH_T ** 3 / 12) / latch_arm() ** 3
+    return stiffness * LATCH_PRELOAD / math.tan(math.radians(LATCH_ANGLE))
+
+
+def _latch_frame(name):
+    """(angle, origin): latch-local u points out from the board edge, v along it."""
+    edge, along, _ = LATCHES[name]
+    ux0, uy0 = UNO_ORIGIN
+    return {"right": (0, (ux0 + UNO[0], uy0 + along)), "top": (90, (ux0 + along, uy0 + UNO[1])),
+            "left": (180, (ux0, uy0 + along)), "bottom": (270, (ux0 + along, uy0))}[edge]
+
+
+def _place(solid, name):
+    angle, (x, y) = _latch_frame(name)
+    return solid.rotate((0, 0, angle)).translate((x, y, 0))
+
+
+def _poly(points):
+    """Polygon with counter-clockwise winding, whichever way the points were listed."""
+    area = sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1]))
+    return cad.CrossSection([points if area > 0 else points[::-1]])
+
+
+def _uz_prism(points, width):
+    """Extrude a (u, z) profile across v = -width/2 .. width/2."""
+    return _poly(points).extrude(width).rotate((90, 0, 0)).translate((0, width / 2, 0))
+
+
+def _key_slot():
+    """u of the arm's back (seated), the key's inner face, and the backstop's front."""
+    back = LATCH_GAP + LATCH_T + LATCH_PRELOAD
+    return back, back + KEY_CLEAR, back + 2 * KEY_CLEAR + KEY_T
+
+
+def latch_top_z():
+    import math
+    tip = -LATCH_REACH
+    under_tip = UNO_TOP_Z + (-LATCH_PRELOAD - tip) * math.tan(math.radians(LATCH_ANGLE))
+    return under_tip + LATCH_LIP_T + (LATCH_GAP - tip)
+
+
+def latch(name, deflect=0.0):
+    """One latch in plate coordinates. deflect bends the arm outward (approximated as a shift
+    of the hook), for checking the seated position and the snap-in path."""
+    import math
+    top = PLATE_T
+    t = math.tan(math.radians(LATCH_ANGLE))
+    tip = -LATCH_REACH                                      # hook tip, relaxed
+    z_tip_under = UNO_TOP_Z + (-LATCH_PRELOAD - tip) * t
+    z_root_under = UNO_TOP_Z - (LATCH_GAP + LATCH_PRELOAD) * t
+    z_top = latch_top_z()
+    floor = top - LATCH_ROOT_DEPTH
+    arm = box(LATCH_GAP, -LATCH_W / 2, floor - EPS, LATCH_GAP + LATCH_T, LATCH_W / 2, z_top)
+    hook = _uz_prism([(LATCH_GAP + EPS, z_root_under), (tip, z_tip_under), (tip, z_tip_under + LATCH_LIP_T),
+                      (LATCH_GAP + EPS, z_top)], LATCH_W)
+    root = _uz_prism([(LATCH_GAP + EPS, floor - EPS), (LATCH_GAP - 1.0, floor - EPS), (LATCH_GAP + EPS, floor + 1.0)],
+                     LATCH_W)                               # small root fillet on the board side
+    moving = arm + hook
+    if deflect:
+        moving = moving.translate((deflect, 0, 0))
+    _, _, front = _key_slot()
+    cheek_u = LATCH_GAP + LATCH_T + LATCH_REACH + 0.2       # clear of the arm while it snaps
+    bw = KEY_W + 2 * 0.15 + 2 * CHEEK_T
+    fixed = box(front, -bw / 2, top - EPS, front + BACK_T, bw / 2, z_top)
+    for side in (-1, 1):
+        y0, y1 = sorted((side * (KEY_W / 2 + 0.15), side * bw / 2))
+        cheek = box(cheek_u, y0, top - EPS, front + EPS, y1, z_top)
+        notch = cad.Manifold.cube((front - cheek_u + 2, 0.9 / math.sqrt(2), 0.9 / math.sqrt(2)), True)
+        notch = notch.rotate((45, 0, 0)).translate(((cheek_u + front) / 2, side * (KEY_W / 2 + 0.15),
+                                                     top + KEY_NOTCH_Z))
+        fixed += cheek - notch
+    gusset = LATCHES[name][2]
+    if gusset:
+        for v in (-bw / 2 + 0.8, bw / 2 - 0.8):
+            g = _uz_prism([(front + BACK_T - EPS, top - EPS), (front + BACK_T + gusset, top - EPS),
+                           (front + BACK_T - EPS, z_top - 1.0)], 1.6)
+            fixed += g.translate((0, v, 0))
+    return _place(moving + root + fixed, name)
+
+
+def key_flat():
+    """Lock key as printed: lying flat, prongs down the page. x across, y along, z thickness."""
+    length = latch_top_z() - PLATE_T + KEY_TAB
+    w, b = KEY_W / 2, KEY_BUMP
+    body = cad.CrossSection.square((KEY_W, length - KEY_TAB + 0.6)).translate((-w, 0))
+    body -= cad.CrossSection.square((KEY_SLOT, KEY_PRONG)).translate((-KEY_SLOT / 2, -EPS))
+    for side in (-1, 1):
+        body += _poly([(side * w, KEY_NOTCH_Z - b), (side * (w + b), KEY_NOTCH_Z), (side * w, KEY_NOTCH_Z + b)])
+        body -= _poly([(side * (w + 1), -1), (side * (w - 0.5), -1), (side * (w + 1), 0.5)])
+    tab = cad.CrossSection.square((KEY_W + 2.6, KEY_TAB)).translate((-w - 1.3, length - KEY_TAB))
+    tab = tab.offset(-0.8, cad.JoinType.Round, circular_segments=24).offset(0.8, cad.JoinType.Round, circular_segments=24)
+    key = (body + tab) - cad.CrossSection.circle(1.3, 24).translate((0, length - KEY_TAB / 2))
+    return key.extrude(KEY_T)
+
+
+def key_in_place(name):
+    """The key seated in its latch, bottom on the plate."""
+    _, inner, _ = _key_slot()
+    k = key_flat()        # x = v, y = z above the plate, z = u from the key's inner face
+    k = k.transform([[0, 0, 1, inner], [1, 0, 0, 0], [0, 1, 0, PLATE_T]])
+    return _place(k, name)
 
 
 def cyl(d, h, x=0.0, y=0.0, z=0.0, d2=None):
@@ -312,16 +455,17 @@ def payload_plate():
         part += cyl(UNO_PIN, pin_h - 0.4 + 2 * EPS, x, y, pcb_bottom - EPS)
         part += cyl(UNO_PIN, 0.4, x, y, pcb_bottom + pin_h - 0.4, d2=UNO_PIN - 0.6)
 
-    # Pillars for the five printed screws.
+    # Uno snap latches, each rooted in a pocket so its arm is longer.
+    for name in LATCHES:
+        part -= latch_pocket(name)
+        part += latch(name)
+
+    # Pillars for the lower clamp's two printed screws.
     bores = []
-    for name, ((x, y), _) in uno_clamps().items():
-        z = (CAP_MOUTH_Z if name == "hole-3 leg" else UNO_TOP_Z) - HEEL_GAP
+    for x, y in pillar_positions():
+        z = CAP_MOUTH_Z - HEEL_GAP
         part += cyl(PILLAR_OD, z - top + EPS, x, y, top - EPS)
         bores.append(screw_bore(x, y, z))
-    x, y = FAR_PILLAR
-    z = CAP_MOUTH_Z - HEEL_GAP
-    part += cyl(PILLAR_OD, z - top + EPS, x, y, top - EPS)
-    bores.append(screw_bore(x, y, z))
 
     # Nano card cage, lower half: V-groove rail, USB-end corner stop, far-end wall.
     y0, y1 = NY0 - V_WALL, NY0 + NANO_T + V_WALL
@@ -341,32 +485,19 @@ def payload_plate():
     return part
 
 
-def uno_clamp(name):
-    """Flat bar: rests on its pillar and presses one hole ring. Printed flat."""
-    (px, py), ((x0, y0), (x1, y1)) = uno_clamps()[name]
-    z0 = UNO_TOP_Z
-    if name == "uno-clamp-2":   # narrow between the reset button and the header, wider off the board
-        bar = box(x0, y0, z0, x1, py, z0 + CLAMP_T)
-    else:
-        bar = box(x0, y0, z0, px, y1, z0 + CLAMP_T)
-    bar += cyl(HEAD_D, CLAMP_T, px, py, z0)
-    return bar - clearance_hole(px, py, z0 - 1, CLAMP_T + 2)
-
-
 def lower_clamp():
-    """Cap rail over the Nano's upper edge, joined to the leg that presses Uno hole 3.
-    One flat top face, so it prints upside down without supports."""
+    """Cap rail over the Nano's upper edge, screwed down at both ends. One flat top face, so it
+    prints upside down without supports. It doesn't touch the Uno, so either board comes out
+    on its own."""
     zs = CAP_MOUTH_Z
     zt = zs + V_DEPTH + 2.0
-    (hx, hy), ((lx0, ly0), (lx1, ly1)) = uno_clamps()["hole-3 leg"]
+    hx, hy = nano_anchor()
     fx, fy = FAR_PILLAR
     rail = box(NX0 - 2.0, NY0 - V_WALL, zs, fx, NY0 + NANO_T + V_WALL, zt)
     rail += cyl(HEAD_D, zt - zs, fx, fy, zs) + box(fx - 3.0, fy - 3.0, zs, fx + 0.1, NY0 + NANO_T, zt)
     arm = box(hx - 4.0, NY0, zs, hx + 4.5, hy, zt) + cyl(HEAD_D, zt - zs, hx, hy, zs)
-    arm += box(lx0, hy, zs, lx1, ly1, zt)
-    leg = box(lx0, ly0, UNO_TOP_Z, lx1, ly1, zs + EPS)
     stop = box(NX0 - 2.0, NY0 - 1.0, NZ0 + NANO_W - NANO_STOP_REACH, NX0, NY0 + NANO_T + 1.0, zs + EPS)
-    part = rail + arm + leg + stop
+    part = rail + arm + stop
     part -= _groove([(-V_MOUTH / 2, -1), (V_MOUTH / 2, -1), (V_MOUTH / 2, 0),
                      (V_APEX / 2, V_DEPTH), (-V_APEX / 2, V_DEPTH), (-V_MOUTH / 2, 0)],
                     NX0 - EPS, NX0 + NANO_L + NANO_END_PLAY + EPS, zs)
@@ -460,7 +591,14 @@ def fit_plate():
     raised += cad.CrossSection.circle(1.4, 24).translate((ox, oy))
     panel += raised.simplify(0.01).extrude(LETTER_H + EPS).translate((0, 0, FIT_BASE_T - EPS))
 
-    return (panel + features.translate((0, 0, FIT_BASE_T - top)))
+    # Latch pockets and the lower ends of the latch arms, as on the payload plate.
+    dz = FIT_BASE_T - top
+    below = box(-PLATE, -PLATE, -1, PLATE, PLATE, top)
+    for name in LATCHES:
+        panel -= latch_pocket(name).translate((0, 0, dz))
+        panel += (latch(name) ^ below).translate((0, 0, dz))
+    require(FIT_BASE_T - LATCH_ROOT_DEPTH >= 0.6, "the fit plate is too thin under the latch pockets")
+    return panel + features.translate((0, 0, dz))
 
 
 def snap_test():
@@ -526,10 +664,22 @@ def outline_prism(z0, z1):
 def verify(bottom, plate, clamps):
     """Assemble the parts in frame coordinates and check fit, clearances and retention."""
     lower = clamps["lower-clamp"]
-    bars = [clamps[k] for k in ("uno-clamp-0", "uno-clamp-1", "uno-clamp-2")]
+    keys = [key_in_place(name) for name in LATCHES]
 
     # Simple design rules first.
-    require(UNO_PIN_ABOVE < 0, "the Uno's locating pins must stop below its top face so the clamps press flat")
+    require(latch_strain() < LATCH_STRAIN_LIMIT,
+            f"Uno latch arm bends {latch_strain():.1%} snapping in, over the {LATCH_STRAIN_LIMIT:.1%} "
+            "limit for an arm printed upright")
+    require(PLATE_T - LATCH_ROOT_DEPTH >= 1.2, "too little plate left under the latch pockets")
+    require(at_least(LATCH_REACH, MIN_LATCH_REACH),
+            f"Uno latch hooks reach {LATCH_REACH} mm over the board, less than {MIN_LATCH_REACH} mm")
+    free = 2 * KEY_CLEAR
+    require(free < (LATCH_REACH - LATCH_PRELOAD) / 2,
+            f"with its key in, a latch can still open {free:.2f} mm, more than half its "
+            f"{LATCH_REACH - LATCH_PRELOAD:.2f} mm grip, so the key doesn't lock it")
+    require(0 < LATCH_PRELOAD < LATCH_REACH / 2, "latch preload must be positive and well inside the hook's reach")
+    require(key_strain() < PLA_STRAIN_LIMIT, f"lock key prongs bend {key_strain():.1%}, too much for PLA")
+    require(KEY_SLOT >= 2 * KEY_BUMP + 0.2, "the key's slot is too narrow for its prongs to flex past the notches")
     require(at_least(NANO_SEAT, MIN_SEAT), f"the Nano's edges sit {NANO_SEAT:.2f} mm into the V-grooves, "
             f"less than {MIN_SEAT} mm")
     lowest = min(y0 for _, y0, _, _, _ in NANO_PARTS.values() if y0 > 0)
@@ -564,36 +714,49 @@ def verify(bottom, plate, clamps):
     top = PLATE_T
     features = plate - box(-PLATE, -PLATE, -1, PLATE, PLATE, top)
     everything = features + lower
-    for bar in bars:
-        everything += bar
+    for key in keys:
+        everything += key
     for room in barb_rooms():
         require(overlap(everything, room) < 1e-3, "a part sits where a snap barb comes through")
     require(overlap(everything, outline_prism(top, 80) ^ everything) >= everything.volume() - 1e-2,
             "a part reaches outside the plate outline, into the frame's corner rails")
 
-    # Uno R3: board, underside, parts, clamps.
+    # Uno R3: board, underside and parts, with every latch bent to its seated position.
     ux, uy = UNO_ORIGIN
     pcb_bottom = top + UNO_POST_H
+    seated_latches = cad.Manifold()
+    for name in LATCHES:
+        seated_latches += latch(name, LATCH_PRELOAD + 0.01)
+    fixed = features
+    for name in LATCHES:
+        fixed -= latch(name)
+    in_service = fixed + seated_latches + lower
+    for key in keys:
+        in_service += key
     uno = box(ux, uy, pcb_bottom, ux + UNO[0], uy + UNO[1], UNO_TOP_Z)
     posts = cad.Manifold()
     for hx, hy in UNO_HOLES:
         uno -= cyl(3.2, PCB_UNO + 2, ux + hx, uy + hy, pcb_bottom - 1)
         posts += cyl(7.0, UNO_POST_H + PCB_UNO + 2, ux + hx, uy + hy, top - 1)
-    require(overlap(everything, uno) < 1e-3, "a part passes through the Uno board")
+    require(overlap(in_service, uno) < 1e-3, "a latch or part passes through the Uno board")
     underside = box(ux, uy, pcb_bottom - 2.0, ux + UNO[0], uy + UNO[1], pcb_bottom) - posts
-    require(overlap(everything, underside) < 1e-3, "something under the Uno would hit its solder joints")
+    require(overlap(in_service, underside) < 1e-3, "something under the Uno would hit its solder joints")
     for name, body in uno_parts().items():
-        require(overlap(everything, body) < 1e-3, f"a clamp or pillar hits the Uno's {name}")
-    above = box(ux - 7, uy, UNO_TOP_Z + 0.01, ux + UNO[0], uy + UNO[1], 80)
-    require(overlap(features, above) < 1e-3, "something on the plate blocks lowering the Uno onto its posts")
-    contact = box(-PLATE, -PLATE, UNO_TOP_Z, PLATE, PLATE, UNO_TOP_Z + 0.05)
-    clamp_feet = (lower + bars[0] + bars[1] + bars[2]) ^ contact
-    for i, (hx, hy) in enumerate(UNO_HOLES):
-        x, y = uno_xy(hx, hy)
-        ring = cyl(2 * UNO_RING[1], 0.05, x, y, UNO_TOP_Z) - cyl(2 * UNO_RING[0], 1, x, y, UNO_TOP_Z - 0.5)
-        area = overlap(clamp_feet, ring) / 0.05
-        require(area >= MIN_RING_CONTACT, f"Uno hole {i}: the clamp presses {area:.1f} mm^2 of the ring, "
-                f"less than {MIN_RING_CONTACT} mm^2")
+        require(overlap(in_service, body) < 1e-3, f"a latch, key or pillar hits the Uno's {name}")
+    above_board = box(ux, uy, UNO_TOP_Z, ux + UNO[0], uy + UNO[1], UNO_TOP_Z + 3.0)
+    for name in LATCHES:
+        held = overlap(latch(name, LATCH_PRELOAD + 0.01), above_board) / LATCH_W
+        require(held > 0.3, f"the {name} latch's hook doesn't reach over the Uno")
+        for key in keys:
+            require(overlap(key, latch(name)) < 1e-3, f"a lock key doesn't fit the {name} latch")
+        opened = latch(name, LATCH_PRELOAD + 2 * KEY_CLEAR + 0.05)
+        require(sum(overlap(opened, k) for k in keys) > 1e-3,
+                f"the {name} latch can open past its key: the key doesn't lock it")
+    snapping = fixed
+    for name in LATCHES:
+        snapping += latch(name, LATCH_REACH + 0.05)
+    path = box(ux, uy, UNO_TOP_Z + 0.01, ux + UNO[0], uy + UNO[1], 80) + box(ux - 7, uy + 30, UNO_TOP_Z + 0.01, ux, uy + 46, 80)
+    require(overlap(snapping, path) < 1e-3, "the Uno can't be pushed down past its latches")
 
     # Nano 33 BLE Sense card: no collisions, captured in every direction, room for the plug.
     card = nano_card()
@@ -621,10 +784,10 @@ def verify(bottom, plate, clamps):
             f"less than {MIN_PLUG_ROOM} mm for the plug")
 
     # Every pillar has a threaded hole under its clamp's screw hole.
-    for name, ((x, y), _) in uno_clamps().items():
-        z = (CAP_MOUTH_Z if name == "hole-3 leg" else UNO_TOP_Z) - HEEL_GAP
+    for i, (x, y) in enumerate(pillar_positions()):
+        z = CAP_MOUTH_Z - HEEL_GAP
         bore = cyl(2 * (SCREW_R + SCREW_E) - 0.2, 4.0, x, y, z - 4.0)
-        require(overlap(plate, bore) < bore.volume() * 0.9, f"{name}: the pillar has no threaded hole")
+        require(overlap(plate, bore) < bore.volume() * 0.9, f"pillar {i}: no threaded hole")
 
 
 def export(name, solid):
@@ -639,9 +802,7 @@ def export(name, solid):
 
 
 def all_clamps():
-    clamps = {k: uno_clamp(k) for k in ("uno-clamp-0", "uno-clamp-1", "uno-clamp-2")}
-    clamps["lower-clamp"] = lower_clamp()
-    return clamps
+    return {"lower-clamp": lower_clamp()}
 
 
 BROKEN_DESIGNS = {
@@ -649,10 +810,13 @@ BROKEN_DESIGNS = {
     "snap hole leaves too little overlap": {"SNAP_HOLE": 5.6},
     "plate inside the snap tabs": {"COLUMN_LENGTH": 10.0},
     "thin pillar wall around the screw": {"PILLAR_OD": 9.0},
-    "Uno pins standing above the board": {"UNO_PIN_ABOVE": 0.5},
+    "latch hooks too short to hold the Uno": {"LATCH_REACH": 0.4},
+    "stiff latch arm that would crack": {"LATCH_T": 3.0},
+    "lock key too loose to stop a latch opening": {"KEY_CLEAR": 0.3},
+    "left latch moved into the USB-B connector": {"LATCHES": {**LATCHES, "left": ("left", 38.0, 1.5)}},
     "V-grooves too shallow to grip the Nano": {"V_DEPTH": 0.4},
     "Nano too close to the plate edge for its USB plug": {"NX0": -26.0},
-    "Uno moved 2 mm towards the top edge": {"UNO_ORIGIN": (-35.66, -19.34)},
+    "Uno moved 3 mm towards the Nano": {"UNO_ORIGIN": (-35.66, -24.34)},
     "Nano parts against the groove wall": {"V_DEPTH": 4.0},
 }
 
@@ -715,11 +879,13 @@ if __name__ == "__main__":
     verify(bottom, plate, clamps)
     print(f"checks passed: snap overlap {snap_overlap():.2f} mm, peg strain {peg_strain():.1%}, "
           f"pillar wall {bore_wall():.2f} mm, Nano edge in each groove {NANO_SEAT:.2f} mm")
+    print(f"Uno latches: arm strain {latch_strain():.1%}, hook reach {LATCH_REACH} mm, "
+          f"opening with key in {2 * KEY_CLEAR:.2f} mm, preload about {latch_preload():.0f} N each, "
+          f"key prong strain {key_strain():.1%}")
     # The end piece prints face down, so its columns point up.
     export("bottom-with-columns", bottom.rotate((180, 0, 0)))
     export("payload-plate", plate)
-    for name in ("uno-clamp-0", "uno-clamp-1", "uno-clamp-2"):
-        export(name, clamps[name])
+    export("lock-key", key_flat())
     export("lower-clamp", clamps["lower-clamp"].rotate((180, 0, 0)))      # flat top on the bed
     export("screw", screw())
     fit = export("fit-plate", fit_plate())
