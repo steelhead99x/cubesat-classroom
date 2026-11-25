@@ -36,7 +36,7 @@ Open the address. Request a simulated sensor reading, write down its number and 
 
 ## 3. Pick the next quest
 
-- **M0 · Try it now.** Choose computer only, Arduino, Seeed XIAO, or Raspberry Pi. Teachers help test instructions and shape the next lesson.
+- **M0 · Try it now.** Choose computer only, Arduino, Seeed XIAO, or Raspberry Pi. With an Arduino Nano 33 BLE Sense Rev2 or a XIAO and Grove sensors, you can fly a [bench CubeSat](https://github.com/steelhead99x/cubesat-classroom/blob/main/docs/bench-cubesats.md). Teachers help test instructions and shape the next lesson.
 - **M1 · Plan and review.** Close design questions and write test plans with mentors and qualified reviewers.
 - **M2 · Verify.** Run approved tests and record evidence for the exact hardware configuration.
 

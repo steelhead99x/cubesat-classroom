@@ -19,6 +19,7 @@ The Summer 2027 briefing describes the project’s goals for teacher training an
 | Pass prediction from TLEs, suborbital flight-profile desk simulation | Any balloon, suborbital or orbital flight |
 | Sensor bridge for Arduino, XIAO and Raspberry Pi readings | Classroom fan-out and relay mesh between schools (not measured) |
 | Five browser lessons, Expo mobile app (offline), printable P1S case files | Hosted AI quest guide, adult sign-in and paid plans (proposals only) |
+| | [Bench CubeSats](docs/bench-cubesats.md) for Arduino and Seeed XIAO: firmware and guide written, not yet compiled with the board packages or run on hardware |
 
 ## Who it's for
 
@@ -62,6 +63,7 @@ cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo
 | Start with | What to do |
 | --- | --- |
 | [Browser lessons](https://cubesatclass.org/quests/) | Five lessons cover measurement, pictures, link loss, reading age, and light levels. |
+| [Bench CubeSats](docs/bench-cubesats.md) | Build a one-vendor classroom CubeSat from an Arduino Nano 33 BLE Sense Rev2, or from a Seeed XIAO with Grove sensors. Deploy it, lose and regain the signal, and bring back stored readings or a photo. |
 | [Ground station build guide](docs/ground-station.md) | Connect classroom sensors, predict a pass, or plan a receive-only station. |
 | [P1S case files](hardware/p1s/README.md) | Slice the PLA coupon first, then print and measure the case. Follow the [print and fit quests](quest/README.md#bambu-p1s-case-test-track). |
 | [Suborbital flight plan](docs/suborbital-flight-plan.md) | Get a classroom sensor kit ready for a suborbital research flight, using public information. Predict the flight with `flight-profile`. |
