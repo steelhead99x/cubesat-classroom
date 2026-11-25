@@ -67,4 +67,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately as desc
 
 Original work is dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE), at your option. Third-party material keeps its own license (for example, `mobile/LICENSE` covers the Expo template the app started from).
 
-CubeSat Classroom is an independent project inspired by Teachers in Space and AMSAT. It is not affiliated with or endorsed by NASA, AMSAT, Teachers in Space or any launch provider. Networking uses open-source Media over QUIC libraries from [moq.dev](https://moq.dev/).
+CubeSat Classroom is an independent project inspired by Teachers in Space and AMSAT. It is not affiliated with or endorsed by NASA, AMSAT, Teachers in Space or any launch provider. Networking uses open-source Media over QUIC (MoQ) libraries.
