@@ -83,4 +83,4 @@ Reprint the part you changed.
 
 The plain STLs are in [../stl](../stl) ([coupon](../stl/m3-fit-coupon.stl), [shell](../stl/bench-shell.stl), [lid](../stl/camera-lid.stl)) for other slicers.
 
-This is a bench case for learning and fit tests, not flight hardware. The [Rev B rail-fit set](../README.md#rev-b-rail-fit-set) is the separate flight-structure experiment.
+For a real 1U frame that holds an Arduino, build the [AMSAT CubeSatSim frame with the printed payload](../amsat-cubesatsim/README.md). This box is for learning and fit tests, not flight hardware. The [Rev B rail-fit set](../README.md#rev-b-rail-fit-set) is the separate flight-structure experiment.

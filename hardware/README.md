@@ -1,13 +1,15 @@
 # Hardware
 
-Two printed designs, both on the 1U CubeSat footprint (100 × 100 × 113.5 mm) and both printable on a Bambu Lab P1S.
+Printed 1U CubeSat frames (100 × 100 × 113.5 mm) for a Bambu Lab P1S or a similar printer.
 
 | Design | What it is | Start here |
 | --- | --- | --- |
-| **Rev A bench case** | Shell, camera lid and screw-fit coupon. PLA, no supports, four M3 screws. | [Print guide](p1s/README.md) |
+| **AMSAT CubeSatSim frame + Arduino payload** | AMSAT's v2.0 frame with a printed plate for an Uno R3 and a Nano 33 BLE Sense. 100% printed, no supports. | [Build guide](amsat-cubesatsim/README.md) |
+| Teachers in Space frame | The frame TIS uses in its Arduino CubeSat workshops. Files come from TIS. | [Links and comparison](tis/README.md) |
+| Rev A bench box | Closed test box and the M3 screw-fit coupon | [Print guide](p1s/README.md) |
 | Rev B rail-fit set | Printed frame with four corner rails and two end plates. A step toward a printed flight structure. Needs supports. | [Below](#rev-b-rail-fit-set) |
 
-If you're new, print Rev A.
+If you're new, build the AMSAT frame with the Arduino payload.
 
 Every structural part, cover, mount, retainer and fit tool the project designs must have a version that prints on a P1S or similar printer. Electronics, wiring, cells, sensors and RF parts are chosen separately.
 
@@ -27,7 +29,7 @@ Start with PLA, then repeat the coupon in ASA using the filament maker's profile
 
 ## Regenerate the files
 
-All meshes come from [generate.py](generate.py), which also checks that each part is watertight, has the expected size, and that the lids and plates don't collide with their frames. [p1s/prepare.py](p1s/prepare.py) packs the Rev A parts into centered P1S 3MF plates, and [drawing.py](drawing.py) redraws the Rev B drawing.
+The Rev A and Rev B meshes come from [generate.py](generate.py), which also checks that each part is watertight, has the expected size, and that the lids and plates don't collide with their frames. [p1s/prepare.py](p1s/prepare.py) packs the Rev A parts into centered P1S 3MF plates, and [drawing.py](drawing.py) redraws the Rev B drawing.
 
 ```sh
 python3 -m venv /tmp/cubesat-cad
@@ -37,6 +39,6 @@ python3 -m venv /tmp/cubesat-cad
 /tmp/cubesat-cad/bin/python hardware/drawing.py
 ```
 
-CI runs these and fails if the committed files differ from the output.
+The AMSAT kit has its own [generate.py](amsat-cubesatsim/generate.py) and [prepare.py](amsat-cubesatsim/prepare.py). CI runs all of them and fails if the committed files differ from the output.
 
 Printer reference: the P1S has a 256 × 256 × 256 mm build volume and prints PLA and ASA ([Bambu Lab P1S quick start](https://cdn1.bambulab.com/documentation/quick-start-59b0cefdc0fc4/P1S/English%20version-Quick%20Start%20Guide%20for%20P1S.pdf)). For the limits of printed parts in flight, see [NASA CubeSat 101](https://science.nasa.gov/wp-content/uploads/2023/06/nasa_csli_cubesat_101_508.pdf).

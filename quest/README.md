@@ -12,7 +12,7 @@ Write down the equipment you have, including the board or printer model, availab
 
 | Your setup | First quest |
 | --- | --- |
-| Bambu Lab P1S | [Print the Rev A case](/hardware/p1s/README.md), then [validate the slice](/quest/m0/slice-p1s-case.md) |
+| Bambu Lab P1S | [Print the AMSAT frame and Arduino payload](/hardware/amsat-cubesatsim/README.md), starting with the 5-minute snap test |
 | Computer only or unsure | [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md) |
 | Arduino, such as an Uno | [Read one Arduino sample](/quest/m0/arduino-first-reading.md) |
 | Seeed XIAO, such as ESP32-C3 or RP2040 | [Record a XIAO bench sample](/quest/m0/xiao-first-reading.md) |

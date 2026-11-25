@@ -37,9 +37,10 @@ const parts = [
       <div>
         <p class="field-label">Bambu Lab P1S mechanical kit</p>
         <h1 class="mt-3">CubeSat CAD and print files</h1>
-        <p class="lede mt-4">Start with the Rev A case on a Bambu P1S: three PLA prints, no supports, and four M3 × 12 screws. Print the 20-minute fit coupon first, then the shell and lid. The Rev B rail-fit set is a separate experiment.</p>
+        <p class="lede mt-4">Build a real 1U frame: AMSAT's CubeSatSim frame with a printed plate for an Arduino Uno and Nano 33 BLE Sense, 100% printed in about four hours on a P1S. The Rev A test box and coupon below check your printer's fit first. The Rev B rail-fit set is a separate experiment.</p>
         <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
           <a class="button primary" href={raw + 'p1s/' + caseFiles[0].file}>Download the case fit coupon</a>
+          <a class="font-bold text-accent underline underline-offset-4" href={cad + 'amsat-cubesatsim/README.md'}>AMSAT frame build guide</a>
           <a class="font-bold text-accent underline underline-offset-4" href={cad + 'generate.py'}>Open the parametric CAD source</a>
         </div>
       </div>
