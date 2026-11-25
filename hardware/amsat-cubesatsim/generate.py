@@ -375,30 +375,92 @@ def lower_clamp():
     return part
 
 
-FIT_BASE_T = 2.0                # thinner, open base for the fit plate
-FIT_PAD = 3.0                   # solid base around every board feature
-FIT_BAR = 5.0                   # width of the ring and the bars joining the pads
+# Fit plate: the payload plate's mounts on a light isogrid panel, styled like a spacecraft
+# structure for photos and school displays. Raised lettering from label.json (see label.py).
+FIT_BASE_T = 2.4                # rib height; the board mounts sit on top of it
+FIT_SKIN = 0.6                  # floor of each pocket, two 0.3 mm layers
+FIT_PAD = 3.0                   # solid deck around every board feature
+FIT_RIM = 5.0
+FIT_BEVEL = 0.8                 # 45 degree bevel on the outer top edge
+ISO_PITCH = 16.0                # isogrid triangle side
+ISO_RIB = 2.0                   # about three lines with a 0.6 mm nozzle
+ISO_NODE = 5.0                  # boss where three ribs meet
+ISO_MIN_POCKET = 30.0           # mm^2: smaller slivers next to the deck are filled in
+ISO_ROUND = 1.0                 # pocket corner radius
+LETTER_H = 0.6                  # raised lettering: swap filament at this layer for two colours
+NAMEPLATE = (-24.5, -12.0, 24.5, 20.5)
+AXES_PLATE = (1.0, -35.0, 28.0, -20.0)
+AXES_ORIGIN = (4.5, -31.8)
+PLATE_BORDER = 1.0
+
+
+def _label():
+    import json
+    out = cad.CrossSection()
+    for line in json.loads((HERE / "label.json").read_text()):
+        out += cad.CrossSection(line["polygons"], cad.FillRule.EvenOdd)
+    return out
+
+
+def _arrow(x0, y0, x1, y1, w=1.2, head=3.0):
+    """Flat arrow from (x0, y0) to (x1, y1)."""
+    import math
+    length = math.hypot(x1 - x0, y1 - y0)
+    shaft = cad.CrossSection.square((length - head, w)).translate((0, -w / 2))
+    tip = cad.CrossSection([[(length - head, -head * 0.55), (length, 0), (length - head, head * 0.55)]])
+    return (shaft + tip).rotate(math.degrees(math.atan2(y1 - y0, x1 - x0))).translate((x0, y0))
+
+
+def _rect(x0, y0, x1, y1):
+    return cad.CrossSection.square((x1 - x0, y1 - y0)).translate((x0, y0))
 
 
 def fit_plate():
-    """Quick fit test: the payload plate's board features, unchanged and in the same
-    places, on a thin open frame. No snap holes. Print it with the Nano strap."""
+    """Quick fit test and display piece: the payload plate's board features, unchanged and in
+    the same places, on an isogrid panel with a nameplate and a spacecraft axis marker."""
+    import math
     top = PLATE_T
     features = payload_plate() - box(-PLATE, -PLATE, -1, PLATE, PLATE, top)
-    pads = features.slice(top + 0.1).offset(FIT_PAD, cad.JoinType.Round, circular_segments=FACETS)
-    h = PLATE / 2
     outline = chamfered_square(PLATE, PLATE_CHAMFER, 1).slice(0.5)
-    ring = outline - outline.offset(-FIT_BAR, cad.JoinType.Miter)
-    _, uy = uno_xy(0, UNO[1] / 2)
-    _, lower_posts = uno_xy(0, (UNO_HOLES[1][1] + UNO_HOLES[3][1]) / 2)
-    b = FIT_BAR / 2
-    bars = [cad.CrossSection.square((PLATE, FIT_BAR)).translate((-h, y - b)) for y in (NANO_MID_Y, uy, lower_posts)]
-    bars += [cad.CrossSection.square((FIT_BAR, PLATE)).translate((x - b, -h)) for x in (uno_xy(15, 0)[0], 0.0)]
-    base = pads + ring
-    for bar in bars:
-        base += bar
-    base = (base ^ outline).simplify(0.05).extrude(FIT_BASE_T + EPS).translate((0, 0, top - FIT_BASE_T))
-    return (base + features).translate((0, 0, FIT_BASE_T - top))
+
+    # Panel with a bevelled top edge (the outline is convex, so a hull makes the bevel).
+    inner = outline.offset(-FIT_BEVEL, cad.JoinType.Miter)
+    panel = cad.Manifold.hull(outline.extrude(FIT_BASE_T - FIT_BEVEL)
+                              + inner.extrude(EPS).translate((0, 0, FIT_BASE_T - EPS)))
+
+    # Solid deck: rim, pads around the mounts, nameplate and axis plate.
+    solid = outline - outline.offset(-FIT_RIM, cad.JoinType.Miter)
+    solid += features.slice(top + 0.1).offset(FIT_PAD, cad.JoinType.Round, circular_segments=FACETS)
+    for r in (NAMEPLATE, AXES_PLATE):
+        solid += _rect(*r).offset(1.5, cad.JoinType.Round, circular_segments=FACETS).offset(-1.5, cad.JoinType.Round, circular_segments=FACETS)
+
+    # Isogrid ribs in three directions, with nodes where they cross.
+    ribs = cad.CrossSection()
+    h = ISO_PITCH * math.sqrt(3) / 2
+    for angle in (0, 60, 120):
+        for k in range(-12, 13):
+            line = cad.CrossSection.square((3 * PLATE, ISO_RIB)).translate((-1.5 * PLATE, k * h - ISO_RIB / 2))
+            ribs += line.rotate(angle)
+    for j in range(-8, 9):
+        for i in range(-8, 9):
+            x, y = i * ISO_PITCH + (j % 2) * ISO_PITCH / 2, j * h
+            ribs += cad.CrossSection.circle(ISO_NODE / 2, 24).translate((x, y))
+    pockets = (outline - solid - ribs).offset(-ISO_ROUND, cad.JoinType.Round, circular_segments=16)
+    pockets = pockets.offset(ISO_ROUND, cad.JoinType.Round, circular_segments=16).simplify(0.02)
+    pockets = cad.CrossSection([p for p in pockets.to_polygons() if abs(cad.CrossSection([p]).area()) > ISO_MIN_POCKET])
+    panel -= pockets.extrude(FIT_BASE_T).translate((0, 0, FIT_SKIN))
+
+    # Raised nameplate border, lettering and axis arrows.
+    raised = _label()
+    for r in (NAMEPLATE, AXES_PLATE):
+        frame = _rect(*r).offset(1.5, cad.JoinType.Round, circular_segments=FACETS).offset(-1.5, cad.JoinType.Round, circular_segments=FACETS)
+        raised += frame - frame.offset(-PLATE_BORDER, cad.JoinType.Miter)
+    ox, oy = AXES_ORIGIN
+    raised += _arrow(ox, oy, ox + 13.0, oy) + _arrow(ox, oy, ox, oy + 6.5)
+    raised += cad.CrossSection.circle(1.4, 24).translate((ox, oy))
+    panel += raised.simplify(0.01).extrude(LETTER_H + EPS).translate((0, 0, FIT_BASE_T - EPS))
+
+    return (panel + features.translate((0, 0, FIT_BASE_T - top)))
 
 
 def snap_test():

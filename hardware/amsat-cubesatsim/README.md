@@ -29,14 +29,22 @@ Use the P1S profile for your nozzle (0.20mm Standard for 0.4 mm, 0.30mm Standard
 | [02-sides](p1s/02-sides.3mf) | AMSAT side and side with camera hole | 1 h 40 min, 58 g |
 | [03-top-and-bottom](p1s/03-top-and-bottom.3mf) | AMSAT top (unchanged) and bottom with snap columns | 1 h 18 min, 48 g |
 | [04-payload-plate](p1s/04-payload-plate.3mf) | Payload plate and the lower clamp (Nano cap and Uno hole-3 leg) | not yet sliced |
-| [05-fit-plate](p1s/05-fit-plate.3mf) (optional) | Fit plate and lower clamp: the payload plate's mounts on an open 2 mm frame, about half the plastic | not yet sliced |
+| [05-fit-plate](p1s/05-fit-plate.3mf) (optional) | Fit plate and lower clamp: the payload plate's mounts on an isogrid display panel, about 80% of the plastic | not yet sliced |
 | [06-clamps-and-screws](p1s/06-clamps-and-screws.3mf) | Three Uno clamps and five screws | not yet sliced |
 
 Plates 01–03 were sliced with a 0.6 mm nozzle. Plates 04–06 changed on 25 November 2026 and haven't been sliced yet. The lower clamp prints upside down (flat top on the bed), and the screws print head down.
 
 **Print the snap test first.** Push the peg into the tab. It should click in with a firm push and not fall out. If it's too tight or too loose, change `SNAP_HOLE` in [generate.py](generate.py) by 0.1 mm and regenerate (see below). The generator refuses a hole that leaves less than 0.2 mm of barb overlap, because the peg would no longer latch. The payload plate's four snap columns use the same snap. The first test print on a P1S with a 0.6 mm nozzle snapped well at the default size.
 
-**Then, if you like, print the fit plate and plate 06.** The fit plate has the payload plate's posts, pillars and Nano card cage, made by the same code and in the same places, on an open frame with no snap holes. Check that both boards go in and every screw turns in and tightens before you print plate 04.
+**Then, if you like, print the fit plate and plate 06.** The fit plate has the payload plate's posts, pillars and Nano card cage, made by the same code and in the same places, so a fit you check on it holds for plate 04. It has no snap holes. Check that both boards go in and every screw turns in and tightens before you print plate 04.
+
+The fit plate also makes a display piece for photos and school projects. It's a 2.4 mm isogrid panel, the triangular rib pattern used on rocket and satellite structures, with a bevelled rim. It has a raised CUBESAT CLASSROOM nameplate under the Uno and a +X/+Y axis marker like a spacecraft body frame. The lettering, nameplate border and arrows stand 0.6 mm proud, so two colours are easy:
+
+- In Bambu Studio, add a filament change at **2.4 mm** (white) and another at **3.0 mm** (back to the panel colour), so only the lettering is white.
+- With an AMS, Studio does both changes automatically. Without one, the printer pauses for each swap.
+- Dark grey or black for the panel, with white lettering, looks most like flight hardware.
+
+To change the wording, edit `LINES` in [label.py](label.py), run it (it needs `matplotlib` for its bundled DejaVu Sans Bold font), then regenerate. The CAD reads the outlines from `label.json`, so `generate.py` itself doesn't need matplotlib.
 
 **Test one screw first.** It should turn in easily, then get firm over the last 3 mm, where the locking band starts. If it won't go into the band, lower `LOCK_INTERFERENCE` in [generate.py](generate.py) from 0.1 to 0.05. If it spins freely all the way down, raise it to 0.15. Then regenerate.
 
@@ -78,7 +86,7 @@ The Nano's USB plug needs about 28 mm to the left of the board, and it ends abou
 - a pillar wall around a screw is under 1.2 mm, the thread engages less than 1.5 diameters, or the pitch is too fine to print
 - a peg would bend more than PLA can take over and over
 
-`python generate.py --self-test` breaks the design ten ways and checks that each one is caught.
+`python generate.py --self-test` breaks the design nine ways and checks that each one is caught, and that a design exactly at a limit still passes.
 
 Not yet checked on a real print: the screw locking band and the Nano's grip. Report what you find with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
 
