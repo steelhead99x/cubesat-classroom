@@ -185,9 +185,9 @@ async fn payload(
                     continue;
                 };
                 let now = unix_ms()?;
-                if !now
+                if now
                     .checked_sub(command.issued_ms)
-                    .is_some_and(|age| age <= REQUEST_LIFETIME_MS)
+                    .is_none_or(|age| age > REQUEST_LIFETIME_MS)
                     || recent.contains(&command.id)
                 {
                     continue;
