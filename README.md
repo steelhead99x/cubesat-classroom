@@ -11,6 +11,10 @@ The Summer 2027 briefing describes the project’s goals for teacher training an
 
 > **Status: work in progress.** This is an early, volunteer-run project. Everything here runs as a desk simulation or a bench test. Nothing has flown, no flight is booked, and no radio hardware in this repository has been reviewed for on-air use. Expect breaking changes.
 
+[![From a 915 MHz downlink to every student's screen: a CubeSat or sensor sends telemetry, classroom relays hear it, repeats are dropped by sequence number, a MoQ relay fans the telemetry.v1 track out, and phones, browsers and LoRa boards receive it](docs/images/915-to-students.png)](docs/images/915-to-students.svg)
+
+*How CubeSat Classroom telemetry could reach student devices; the steps marked planned are not built or measured yet.*
+
 ## What works today, and what is planned
 
 | Works today (simulation or bench) | Planned, not built or not verified |
