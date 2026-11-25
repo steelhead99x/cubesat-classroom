@@ -183,7 +183,7 @@ The XIAO boards have no built-in way to read a battery voltage. To add `volt_mv`
 
 1. Send `PHOTO`. The reply gives the photo's size and a CRC-32 checksum, and the photo is saved to the card.
 2. Clear the Serial Monitor, send `DOWNLINK`, wait for `IMG END`, then copy all the output into a text file.
-3. Run `python3 tools/serial_image.py capture.txt photo.jpg`. The script puts the chunks back in order and checks the size and checksum. If any lines are missing, it lists the lost byte ranges, and the photo shows the damage.
+3. Run `python3 tools/serial_image.py capture.txt photo.jpg`. The script puts the chunks back in order and checks the size and checksum. It says the photo arrived intact only if every byte arrived and the checksum matches. If any lines are missing, it lists the lost byte ranges, reports the transfer as incomplete (even if the checksum happens to match the zero-filled gap), and the photo shows the damage.
 
 A 320 × 240 JPEG is usually a few kilobytes to a few tens of kilobytes. Sent as hex, every byte becomes two characters, plus line overhead. Ask the class how long the downlink would take at 1200 bits per second, a common amateur packet radio speed, and how many passes it would need.
 

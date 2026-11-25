@@ -198,3 +198,4 @@ jobs:
       - run: bash -n docs/start.sh scripts/*.sh
       - run: shellcheck docs/start.sh scripts/*.sh
       - run: python3 -m py_compile scripts/*.py tools/*.py hardware/*.py hardware/p1s/*.py
+      - run: python3 tools/test_serial_image.py
