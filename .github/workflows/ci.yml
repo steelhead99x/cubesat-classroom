@@ -181,6 +181,7 @@ jobs:
           /tmp/cad/bin/python hardware/generate.py
           /tmp/cad/bin/python hardware/p1s/prepare.py
           /tmp/cad/bin/python hardware/drawing.py
+          /tmp/cad/bin/python hardware/amsat-cubesatsim/generate.py --self-test
           /tmp/cad/bin/python hardware/amsat-cubesatsim/generate.py
           /tmp/cad/bin/python hardware/amsat-cubesatsim/prepare.py
       - name: Committed STL, 3MF, drawing and AMSAT kit are up to date

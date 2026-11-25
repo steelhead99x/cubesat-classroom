@@ -10,7 +10,7 @@ The frame is the [AMSAT CubeSat Simulator](https://cubesatsim.org) v2.0 frame, u
 
 - **Frame:** AMSAT CubeSatSim v2.0 by Alan Johnston, KU2Y, AMSAT VP Educational Relations. Source: [alanbjohnston/CubeSatSim `hardware/frame/v2.0`](https://github.com/alanbjohnston/CubeSatSim/tree/master/hardware/frame/v2.0), commit `1f6a01c4` (2024-10-07), with the [Onshape CAD](https://cad.onshape.com/documents/ba47819ff100597297d1d967/w/f19409ec7cd5459afb429cb9/e/a0e0cc37dee6fb879c4bcc2b) linked from there.
 - **License:** the CubeSatSim repository is GPL-3.0, so everything in this folder is GPL-3.0 too ([LICENSE](LICENSE)). The rest of CubeSat Classroom keeps its MIT or Apache-2.0 terms.
-- **Changes:** `bottom-with-columns` is the AMSAT top/bottom piece with four standoff columns added where the AMSAT board stack normally screws in. The files in [upstream/](upstream/) are AMSAT's, byte for byte (SHA-256 below).
+- **Changes:** modified by CubeSat Classroom on 2026-11-25. `bottom-with-columns` is the AMSAT top/bottom piece with four standoff columns added where the AMSAT board stack normally screws in, filling the four 3.2 mm stack holes. The payload plate, Nano strap and snap test are new parts. The files in [upstream/](upstream/) are AMSAT's, byte for byte (SHA-256 below).
 - This is an independent build. It isn't made or endorsed by AMSAT.
 
 ## What to print
@@ -26,7 +26,7 @@ Use the P1S profile for your nozzle (0.20mm Standard for 0.4 mm, 0.30mm Standard
 
 The whole kit is about 3 h 50 min and 140 g of PLA. The times are slicer estimates.
 
-**Print the snap test first.** Push the peg into the tab. It should click in with a firm push and not fall out. If it's too tight or too loose, change `SNAP_HOLE` in [generate.py](generate.py) by 0.1 mm and regenerate (see below). The payload plate and the Nano strap use the same snap. The first test print on a P1S with a 0.6 mm nozzle snapped well at the default size.
+**Print the snap test first.** Push the peg into the tab. It should click in with a firm push and not fall out. If it's too tight or too loose, change `SNAP_HOLE` in [generate.py](generate.py) by 0.1 mm and regenerate (see below). The generator refuses a hole that leaves less than 0.2 mm of barb overlap, because the peg would no longer latch. The payload plate and the Nano strap use the same snap. The first test print on a P1S with a 0.6 mm nozzle snapped well at the default size.
 
 ## Assemble
 
