@@ -74,6 +74,101 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
 
+  firmware:
+    name: Firmware (${{ matrix.board }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - board: Arduino Nano 33 BLE Sense Rev2
+            fqbn: arduino:mbed_nano:nano33ble
+            platforms: |
+              - name: arduino:mbed_nano
+            libraries: |
+              - name: Arduino_APDS9960
+              - name: Arduino_BMI270_BMM150
+              - name: Arduino_HS300x
+              - name: Arduino_LPS22HB
+            sketches: |
+              - firmware/arduino-cubesat
+          - board: Arduino Uno R3
+            fqbn: arduino:avr:uno
+            platforms: |
+              - name: arduino:avr
+            libraries: "[]"
+            sketches: |
+              - firmware/classroom-sensors
+          - board: XIAO ESP32-S3
+            fqbn: esp32:esp32:XIAO_ESP32S3
+            platforms: |
+              - name: esp32:esp32
+                source-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+            libraries: |
+              - name: Adafruit BME280 Library
+              - name: Adafruit TSL2561
+              - name: Adafruit Unified Sensor
+              - name: Adafruit BusIO
+              - name: U8g2
+            sketches: |
+              - firmware/xiao-cubesat
+              - firmware/classroom-sensors
+          - board: XIAO ESP32-C3
+            fqbn: esp32:esp32:XIAO_ESP32C3
+            platforms: |
+              - name: esp32:esp32
+                source-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+            libraries: |
+              - name: Adafruit BME280 Library
+              - name: Adafruit TSL2561
+              - name: Adafruit Unified Sensor
+              - name: Adafruit BusIO
+              - name: U8g2
+            sketches: |
+              - firmware/xiao-cubesat
+              - firmware/classroom-sensors
+          - board: XIAO RP2040
+            fqbn: rp2040:rp2040:seeed_xiao_rp2040
+            platforms: |
+              - name: rp2040:rp2040
+                source-url: https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+            libraries: |
+              - name: Adafruit BME280 Library
+              - name: Adafruit TSL2561
+              - name: Adafruit Unified Sensor
+              - name: Adafruit BusIO
+              - name: U8g2
+            sketches: |
+              - firmware/xiao-cubesat
+              - firmware/classroom-sensors
+          - board: XIAO SAMD21
+            fqbn: Seeeduino:samd:seeed_XIAO_m0
+            platforms: |
+              - name: Seeeduino:samd
+                source-url: https://files.seeedstudio.com/arduino/package_seeeduino_boards_index.json
+            libraries: |
+              - name: Adafruit BME280 Library
+              - name: Adafruit TSL2561
+              - name: Adafruit Unified Sensor
+              - name: Adafruit BusIO
+              - name: U8g2
+              - name: SD
+            sketches: |
+              - firmware/xiao-cubesat
+              - firmware/classroom-sensors
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: arduino/compile-sketches@3f3921bad94c706a153e6d7294445b49d7f76a63 # v1.1.4
+        with:
+          fqbn: ${{ matrix.fqbn }}
+          platforms: ${{ matrix.platforms }}
+          libraries: ${{ matrix.libraries }}
+          sketch-paths: ${{ matrix.sketches }}
+          enable-deltas-report: false
+          enable-warnings-report: false
+
   scripts:
     name: Installer and scripts
     runs-on: ubuntu-latest
