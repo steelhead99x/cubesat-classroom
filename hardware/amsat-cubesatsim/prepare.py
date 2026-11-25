@@ -1,4 +1,4 @@
-"""Pack the AMSAT frame and the printed payload kit into five P1S plates (3MF).
+"""Pack the AMSAT frame and the printed payload kit into six P1S plates (3MF).
 
 Run generate.py first. Each plate is centered on the 256 mm bed with every part
 in its print orientation. GPL-3.0, like the rest of this folder.
@@ -25,9 +25,13 @@ PLATES = {
     "03-top-and-bottom": [("top", "upstream/cubesatsim_frame_top_bottom.v2.0.stl", FLIP),
                           ("bottom-with-columns", "stl/bottom-with-columns.stl", None)],
     "04-payload-plate": [("payload-plate", "stl/payload-plate.stl", None),
-                         ("nano-strap", "stl/nano-strap.stl", None)],
+                         ("lower-clamp", "stl/lower-clamp.stl", None)],
     "05-fit-plate": [("fit-plate", "stl/fit-plate.stl", None),
-                     ("nano-strap", "stl/nano-strap.stl", None)],
+                     ("lower-clamp", "stl/lower-clamp.stl", None)],
+    "06-clamps-and-screws": [("uno-clamp-0", "stl/uno-clamp-0.stl", None),
+                             ("uno-clamp-1", "stl/uno-clamp-1.stl", None),
+                             ("uno-clamp-2", "stl/uno-clamp-2.stl", None)]
+                            + [(f"screw-{i}", "stl/screw.stl", None) for i in range(1, 6)],
 }
 
 

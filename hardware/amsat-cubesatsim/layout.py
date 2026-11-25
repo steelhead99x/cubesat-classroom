@@ -42,15 +42,25 @@ def main():
 
     ux, uy = g.UNO_ORIGIN
     ax.add_patch(Rectangle((ux, uy), *g.UNO, fill=False, ec="#1f6fb2", lw=2, zorder=50, label="Uno R3"))
-    ax.add_patch(Rectangle((ux - 6.2, uy + 31.8), 16.2, 12.1, fill=False, ec="#1f6fb2", ls="--",
-                           zorder=50, label="Uno USB-B"))
-    ax.add_patch(Rectangle((ux - 1.9, uy + 3.3), 13.7, 8.9, fill=False, ec="#1f6fb2", ls=":",
-                           zorder=50, label="Uno DC jack"))
-    nx, ny = g.NANO_CENTER
-    ax.add_patch(Rectangle((nx - g.NANO[0] / 2, ny - g.NANO[1] / 2), *g.NANO, fill=False,
-                           ec="#0b8f8a", lw=2, zorder=50, label="Nano 33 BLE Sense"))
-    for side in (-1, 1):
-        ax.plot([nx - 19, nx + 19], [ny + side * g.NANO_ROW / 2] * 2, color="#0b8f8a", ls=":", zorder=50)
+    for name, (x0, y0, x1, y1, h) in g.UNO_PARTS.items():
+        if h >= 8:
+            ax.add_patch(Rectangle((ux + x0, uy + y0), x1 - x0, y1 - y0, fill=False, ec="#1f6fb2", ls=":",
+                                   lw=1, zorder=50))
+    ax.plot([], [], color="#1f6fb2", ls=":", label="Uno parts 8 mm or taller")
+    ax.add_patch(Rectangle((g.NX0, g.NY0), g.NANO_L, g.NANO_T, color="#0b8f8a", zorder=51,
+                           label="Nano 33 BLE Sense, on edge"))
+    ax.add_patch(Rectangle((g.NX0, g.NY0 + g.NANO_T), g.NANO_L, 2.8, color="#0b8f8a", alpha=0.3, zorder=51))
+    for name, solid in g.all_clamps().items():
+        data = solid.to_mesh()
+        mesh = trimesh.Trimesh(data.vert_properties[:, :3], data.tri_verts)
+        z = mesh.bounds[1, 2] - 0.5
+        section = mesh.section(plane_origin=[0, 0, z], plane_normal=[0, 0, 1])
+        flat, to_3d = section.to_2D()
+        for poly in flat.polygons_full:
+            xy = np.array(poly.exterior.coords)
+            pts = trimesh.transform_points(np.c_[xy, np.zeros(len(xy))], to_3d)[:, :2]
+            ax.fill(pts[:, 0], pts[:, 1], color="#e39b3b", alpha=0.55, zorder=60)
+    ax.fill([], [], color="#e39b3b", alpha=0.55, label="clamps (screwed down)")
     for x, y in g.plate_holes():
         ax.add_patch(Circle((x, y), g.COLUMN_OD / 2, fill=False, ec="#c9382f", lw=1.5, zorder=50))
     ax.plot([], [], color="#c9382f", label="snap columns from the AMSAT bottom")
