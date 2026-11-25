@@ -122,6 +122,7 @@ Maintainer work for the live classroom site. These quests stay in the log after 
 - [Redirect www hosts to their apex on the public Worker](/quest/m0/redirect-www-hosts.md)
 - [Make classroom quest check pass on the existing lesson files](/quest/m0/classroom-quest-check-headings.md)
 - [Add the Rev C printed 1U frame and Nano 33 firmware, in Rust](/quest/m0/rev-c-printed-frame.md)
+- [Compile the firmware in every build](/quest/m0/compile-firmware-in-builds.md)
 
 ### Parallel classroom, balloon and radio work
 
