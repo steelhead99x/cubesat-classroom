@@ -54,11 +54,8 @@ fi
 
 echo "=== Scripts and Python tools ==="
 bash -n docs/start.sh scripts/*.sh
-if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck docs/start.sh scripts/*.sh
-else
-  echo "note: shellcheck not installed; skipping shellcheck"
-fi
+command -v shellcheck >/dev/null 2>&1 || { echo "error: shellcheck is required" >&2; exit 1; }
+shellcheck docs/start.sh scripts/*.sh
 python3 -m py_compile scripts/*.py tools/*.py hardware/*.py hardware/p1s/*.py
 python3 tools/test_serial_image.py
 
@@ -91,8 +88,5 @@ echo "=== Mobile app ==="
 )
 
 echo "=== Quest check ==="
-if command -v quest >/dev/null 2>&1; then
-  quest --root . check
-else
-  echo "note: quest CLI not installed; skipping quest check"
-fi
+command -v quest >/dev/null 2>&1 || { echo "error: quest binary not found (set QUEST_BIN or install quest 0.23.1)" >&2; exit 1; }
+quest --root . check

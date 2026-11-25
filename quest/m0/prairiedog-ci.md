@@ -13,7 +13,7 @@
 ### How to check
 
 - [ ] `bash scripts/ci.sh` exits 0.
-- [ ] `shellcheck docs/start.sh scripts/*.sh` exits 0.
+- [ ] `shellcheck docs/start.sh scripts/*.sh` exits 0, and `scripts/ci.sh` fails if `shellcheck` or `quest` is missing.
 - [ ] `quest --root . check` prints `documents ok` and exits 0.
 - [ ] `.prairiedog.toml` configures `ci_command = "bash scripts/ci.sh"` on `["ci", "x86_64"]`.
 - [ ] The pull request is open and was not merged automatically.
