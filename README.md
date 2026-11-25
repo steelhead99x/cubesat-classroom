@@ -9,6 +9,17 @@ CubeSat Classroom helps teachers bring space science into the classroom through 
 
 The Summer 2027 briefing describes the project’s goals for teacher training and classroom access. The [fork guide](docs/fork-guide.md) shows how to adapt the kit for a class, club, or mission. [Mission briefing](https://hikd.ai/tis/) · [Brand kit (review access)](https://hikd.ai/tis/brand/)
 
+> **Status: work in progress.** This is an early, volunteer-run project. Everything here runs as a desk simulation or a bench test. Nothing has flown, no flight is booked, and no radio hardware in this repository has been reviewed for on-air use. Expect breaking changes.
+
+## What works today, and what is planned
+
+| Works today (simulation or bench) | Planned, not built or not verified |
+| --- | --- |
+| Ground station on localhost: commands, simulated sensors, test video over Media over QUIC | Over-the-air operation with a licensed station |
+| Pass prediction from TLEs, suborbital flight-profile desk simulation | Any balloon, suborbital or orbital flight |
+| Sensor bridge for Arduino, XIAO and Raspberry Pi readings | Classroom fan-out and relay mesh between schools (not measured) |
+| Five browser lessons, Expo mobile app (offline), printable P1S case files | Hosted AI quest guide, adult sign-in and paid plans (proposals only) |
+
 ## Who it's for
 
 CubeSat Classroom is written for learners 13 and up, and for the teachers, guardians and mentors who guide them. Every level of learning and experience is welcome, from a first question to decades of engineering, teaching or radio work.
@@ -36,6 +47,14 @@ If that address asks for a password, the site is in private preview: clone this 
 
 The starter walks you through setup. Open the loopback address it prints. The station uses two local Media over QUIC relays to send commands and return readings and video.
 
+To run the same checks as CI from a clone:
+
+```sh
+cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked
+(cd site && npm ci && npm run build && npm test)
+(cd mobile && npm ci && npm run typecheck && npm run lint)
+```
+
 [Five-minute demo run sheet](docs/demo-run-sheet.md) · [Printable quick start](output/pdf/cubesat-classroom-quick-start.pdf) (rebuild with `python3 scripts/quick_start_pdf.py`)
 
 ## Labs and quests
@@ -55,10 +74,22 @@ The [quest board](quest/README.md) includes demo rehearsals, sensor tests, and h
 
 [Classroom site](https://cubesatclass.org/) · [CubeSat Club](https://cubesatclass.org/volunteer/) · [Mobile template](mobile/README.md) · [Mission and radio design](docs/mission.md)
 
+## Radio and safety
+
+- This repository does not transmit on its own. The station and demos use loopback relays and simulated or recorded data.
+- Transmitting on amateur bands requires a licensed control operator. Students take part under that operator.
+- Amateur use stays open: telemetry must be identified with the station call sign, and messages must not be encrypted or obscured (in the US, 47 CFR 97.113(a)(4) and 97.119). The encrypted frame mode in the companion [moq-subghz](https://github.com/steelhead99x/moq-subghz) bench is for non-amateur bench work only and must be off on amateur frequencies.
+- Any flight proposal needs an independent spectrum review and authorization. See [docs/mission.md](docs/mission.md).
+- Never publish student names, schools, locations or contact details. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
 ## Credits
 
-CubeSat Classroom is an independent volunteer project inspired by Teachers in Space and AMSAT. Volunteer site work and mission briefing by [hikd.ai](https://hikd.ai/). The ground station uses open-source Media over QUIC libraries from [moq.dev](https://moq.dev/).
+CubeSat Classroom is an independent volunteer project inspired by Teachers in Space and AMSAT. It is not affiliated with or endorsed by NASA, AMSAT, Teachers in Space or any launch provider. Volunteer site work and mission briefing by [hikd.ai](https://hikd.ai/). The ground station uses open-source Media over QUIC (MoQ) libraries.
 
 ## License
 
-Original work is available under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE). Third-party material keeps its own license.
+Original work is dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE), at your option. Third-party material keeps its own license (for example, `mobile/LICENSE` covers the Expo template the app started from).

@@ -1,5 +1,6 @@
 {
   "name": "cubesat-classroom-mobile",
+  "license": "MIT OR Apache-2.0",
   "version": "0.1.0",
   "main": "expo-router/entry",
   "dependencies": {
