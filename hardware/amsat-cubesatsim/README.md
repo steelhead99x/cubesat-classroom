@@ -60,7 +60,7 @@ The Nano's USB plug needs about 28 mm to the left of the board, and it ends abou
 | Plate position | 15 mm inside the bottom face, below AMSAT's 12 mm snap tabs |
 | Snap peg | 5.0 mm shank, 5.7 mm barb, 1.4 mm split, into a 5.2 mm hole |
 | Uno R3 | On 10 mm posts with 2.9 mm locating pins that stop 0.3 mm below its top face. Four clamps press the hole rings: 4.0 mm thick, at least 3 mm² of each ring. |
-| Nano 33 BLE Sense Rev2 | 43.18 × 17.78 × 1.59 mm (from Arduino's CAD), on edge in V-grooves 2.4 mm wide at the mouth, 1.4 mm at the bottom and 2.0 mm deep. Each edge sits 1.62 mm in. 0.2 mm end play between the stops. |
+| Nano 33 BLE Sense Rev2 | 43.18 × 17.78 × 1.59 mm (from Arduino's CAD), on edge in V-grooves 2.4 mm wide at the mouth, 1.4 mm at the bottom and 2.0 mm deep. Each edge sits 1.62 mm in. 0.5 mm end play between the stops (the first fit print at 0.2 mm was a little tight). |
 | Screws | Round thread, 6.5 mm crest, 4.5 mm root, 2.5 mm pitch, 10 mm engaged. 0.25 mm clearance, then a 3 mm band with 0.1 mm interference. Pillars 10 mm, leaving a 1.5 mm wall. |
 | Clamping | Pillar tops sit 0.3 mm below their clamps, so tightening a screw pulls the clamp down onto the board, like a machinist's strap clamp |
 | Snap peg strain | 0.8%, under a 2% limit for PLA |

@@ -106,7 +106,7 @@ NANO_USB_ABOVE = 1.4            # receptacle centre above the top face
 # CubeSat), USB end towards -x. NX0 = USB end, NY0 = back face, NZ0 = lower edge. NANO_PARTS
 # keeps the CAD's own axes; nano_card() turns them into this position.
 NX0, NY0, NZ0 = -14.0, -40.8, 4.5
-NANO_END_PLAY = 0.2             # along the board, between the end stops
+NANO_END_PLAY = 0.5             # along the board, between the end stops (0.2 printed a little tight)
 V_MOUTH, V_APEX, V_DEPTH = 2.4, 1.4, 2.0     # V-groove widths and depth that grip each edge
 V_WALL = 2.6                    # groove wall beside the board
 MIN_SEAT = 1.0                  # how far each Nano edge must sit inside its groove
