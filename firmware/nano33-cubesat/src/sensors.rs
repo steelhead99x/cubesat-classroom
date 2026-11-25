@@ -71,11 +71,13 @@ pub async fn read(
             Ok(Ok(()))
         ) && b[0] >> 6 == 0
         {
-            let hum = i32::from(u16::from_be_bytes([b[0], b[1]]) & 0x3FFF);
-            let temp = i32::from(u16::from_be_bytes([b[2], b[3]]) >> 2);
+            let hum = i64::from(u16::from_be_bytes([b[0], b[1]]) & 0x3FFF);
+            let temp = i64::from(u16::from_be_bytes([b[2], b[3]]) >> 2);
             // Datasheet: RH = raw / (2^14 - 1) x 100; T = raw / (2^14 - 1) x 165 - 40.
-            r.humidity_mpct = Some(hum * 100_000 / 16_383);
-            r.temp_mc = Some(temp * 165_000 / 16_383 - 40_000);
+            // In 64 bits: 16 383 x 165 000 is too big for an i32 (above about 91 °C).
+            // Both results fit an i32 again: 0..=100 000 and -40 000..=125 000.
+            r.humidity_mpct = i32::try_from(hum * 100_000 / 16_383).ok();
+            r.temp_mc = i32::try_from(temp * 165_000 / 16_383 - 40_000).ok();
         }
     }
 

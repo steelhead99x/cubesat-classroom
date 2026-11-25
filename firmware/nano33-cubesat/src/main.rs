@@ -125,13 +125,17 @@ async fn main(spawner: Spawner) {
     let _sensor_power = Output::new(p.P0_22, Level::High, OutputDrive::HighDrive);
     let _pullups = Output::new(p.P1_00, Level::High, OutputDrive::Standard);
     Timer::after_millis(20).await;
+    // The I2C hardware can only send bytes from RAM. Register writes such as
+    // `&[0x80, 0x03]` are constants the compiler keeps in flash, so the driver copies
+    // them into this buffer first. Without it every one of those writes fails.
+    static TWIM_TX: StaticCell<[u8; 16]> = StaticCell::new();
     let bus = Twim::new(
         p.TWISPI0,
         Irqs,
         p.P0_14,
         p.P0_15,
         twim::Config::default(),
-        &mut [],
+        TWIM_TX.init([0; 16]),
     );
     let adc = Saadc::new(
         p.SAADC,
@@ -217,6 +221,11 @@ async fn main(spawner: Spawner) {
                     break;
                 }
                 sent = end;
+            }
+            // A full 64-byte packet tells the computer more is coming, so it may hold
+            // the line back. An empty packet ends the transfer.
+            if sent > 0 && sent == out.len && sent % 64 == 0 {
+                let _ = with_timeout(Duration::from_millis(50), serial.write_packet(&[])).await;
             }
         }
         out.len = 0;

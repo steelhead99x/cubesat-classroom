@@ -275,9 +275,18 @@ pub fn verify(d: &Design) -> Report {
     let rail_end_area =
         d.rail * d.rail - (4.0 - std::f64::consts::PI) * d.rail_radius * d.rail_radius;
     let flat = d.rail - 2.0 * d.rail_radius;
-    let end_slab = cuboid([-h - 1.0, -h - 1.0, hz - 0.5], [h + 1.0, h + 1.0, hz + 1.0]);
-    let end_volume = overlap(&frame, &end_slab);
-    let rails_only = (end_volume - 4.0 * rail_end_area * 0.5).abs() < 0.02 * end_volume;
+    // Both ends: the -Z end plate carries the payload columns, so it is a different part.
+    let rails_only = [1.0, -1.0].iter().all(|&s: &f64| {
+        let (z0, z1) = if s > 0.0 {
+            (hz - 0.5, hz + 1.0)
+        } else {
+            (-hz - 1.0, -hz + 0.5)
+        };
+        let end_slab = cuboid([-h - 1.0, -h - 1.0, z0], [h + 1.0, h + 1.0, z1]);
+        let end_volume = overlap(&frame, &end_slab);
+        let rails = 4.0 * rail_end_area * 0.5;
+        (end_volume - rails).abs() < 0.02 * rails
+    });
     r.add(
         "CDS-2.2.8",
         "Rail ends give at least 6.5 x 6.5 mm contact on the ±Z faces; nothing else reaches the ends",

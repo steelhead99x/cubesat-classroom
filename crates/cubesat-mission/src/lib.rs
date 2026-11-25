@@ -134,6 +134,9 @@ const DEBOUNCE_MS: u32 = 50;
 const STORE: usize = 64;
 const LINE: usize = 72;
 const RECENT: usize = 8;
+/// Brightest reference CAL accepts: full sunlight is about 120 000 lux. The cap also
+/// keeps the fixed-point arithmetic in range.
+const MAX_REFERENCE_MILLI_LUX: u64 = 200_000_000;
 
 #[derive(Clone, Copy, Debug, Default)]
 struct Frame {
@@ -505,7 +508,10 @@ impl Mission {
                 let _ = write!(
                     out,
                     " light_lux={}",
-                    (u64::from(c) * self.lux_per_count_e5 + 50_000) / 100_000
+                    u64::from(c)
+                        .saturating_mul(self.lux_per_count_e5)
+                        .saturating_add(50_000)
+                        / 100_000
                 );
             }
             let _ = write!(
@@ -772,6 +778,10 @@ impl Mission {
             );
             return;
         };
+        if milli_lux > MAX_REFERENCE_MILLI_LUX {
+            nak(out, id, "CAL", "use a reference of 0 to 200000 lux");
+            return;
+        }
         if milli_lux == 0 {
             self.lux_per_count_e5 = 0;
             ack(out, id, "CAL");
@@ -855,7 +865,7 @@ fn parse_milli(s: &str) -> Option<u64> {
     }
     let mut milli = value.checked_mul(1000)?;
     for (i, b) in frac.bytes().take(3).enumerate() {
-        milli += u64::from(b - b'0') * [100, 10, 1][i];
+        milli = milli.checked_add(u64::from(b - b'0') * [100, 10, 1][i])?;
     }
     Some(milli)
 }

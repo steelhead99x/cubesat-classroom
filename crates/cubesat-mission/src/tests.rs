@@ -265,6 +265,25 @@ fn light_calibration_in_fixed_point() {
 }
 
 #[test]
+fn huge_calibration_is_refused_not_overflowed() {
+    // A typo like an extra row of zeros used to overflow the fixed-point maths.
+    let mut b = Bench::new(Timing::Bench, false);
+    b.deploy();
+    b.send("SENSE");
+    assert!(
+        b.send("CAL 200000000000000.999")
+            .contains("NAK - CAL use a reference")
+    );
+    assert!(b.send("CAL 99999999999999999999").contains("NAK"));
+    assert!(
+        b.send("CAL 200000")
+            .contains("ACK - CAL lux_per_count=1000.00000")
+    );
+    assert!(b.send("SENSE").contains("light_lux=200000 light_clear=200"));
+    assert!(b.send("CAL 200000.001").contains("NAK"));
+}
+
+#[test]
 fn refitting_the_jumper_resets_to_pre_launch() {
     // CDS Rev 14.1 §2.3.2.4: toggling the deployment switch resets the timers.
     let mut b = Bench::new(Timing::Bench, false);
