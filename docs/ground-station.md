@@ -43,6 +43,8 @@ cargo run --locked -- classroom --sensor-dir run/sensors
 
 The sketch compiles for those boards. It has not been run on hardware. Label its readings "hardware bench" and check them against a thermometer and a meter before trusting them. An unplugged sensor can still produce a believable number, so that check matters.
 
+To make the board a complete bench CubeSat, with a deploy timer, passes, stored readings and commands, use the [Arduino or Seeed XIAO bench CubeSat](bench-cubesats.md) instead. Both send the same `CSC1` lines to the bridge.
+
 On an Arduino Uno or Nano, SDA and SCL are 5 V signals. A BH1750 board powered from 3.3 V can be damaged by those pins unless the board is 5 V tolerant or a mentor adds a level shifter. Seeed XIAO boards are 3.3 V on both the sensor supply and I2C, which matches the BH1750 directly. A mentor checks the exact module before power is connected.
 
 | Part | Job | Approx. price |
