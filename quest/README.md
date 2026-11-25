@@ -121,6 +121,7 @@ Maintainer work for the live classroom site. These quests stay in the log after 
 - [Fail the Worker deploy when Cloudflare secrets are missing](/quest/m0/fail-deploy-without-secrets.md)
 - [Redirect www hosts to their apex on the public Worker](/quest/m0/redirect-www-hosts.md)
 - [Make classroom quest check pass on the existing lesson files](/quest/m0/classroom-quest-check-headings.md)
+- [Patch the url advisory and add a dependency audit to the classroom Rust workspace](/quest/m0/classroom-rust-advisories.md)
 
 ### Parallel classroom, balloon and radio work
 
