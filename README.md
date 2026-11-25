@@ -22,7 +22,8 @@ The Summer 2027 briefing describes the project’s goals for teacher training an
 | Ground station on localhost: commands, simulated sensors, test video over Media over QUIC | Over-the-air operation with a licensed station |
 | Pass prediction from TLEs, suborbital flight-profile desk simulation | Any balloon, suborbital or orbital flight |
 | Sensor bridge for Arduino, XIAO and Raspberry Pi readings | Classroom fan-out and relay mesh between schools (not measured) |
-| Five browser lessons, Expo mobile app (offline), printable P1S case files | Hosted AI quest guide, adult sign-in and paid plans (proposals only) |
+| Five browser lessons, Expo mobile app (offline) | Hosted AI quest guide, adult sign-in and paid plans (proposals only) |
+| [Printable 1U frame](hardware/amsat-cubesatsim/README.md): AMSAT's CubeSatSim frame with a 100% printed plate for an Arduino Uno R3 and Nano 33 BLE Sense. CAD checks pass and the snap test printed well on a P1S | A fully assembled frame with both boards fitted |
 | | [Bench CubeSats](docs/bench-cubesats.md) for Arduino and Seeed XIAO: firmware and guide written, not yet compiled with the board packages or run on hardware |
 
 ## Who it's for
@@ -69,7 +70,8 @@ cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo
 | [Browser lessons](https://cubesatclass.org/quests/) | Five lessons cover measurement, pictures, link loss, reading age, and light levels. |
 | [Bench CubeSats](docs/bench-cubesats.md) | Build a one-vendor classroom CubeSat from an Arduino Nano 33 BLE Sense Rev2, or from a Seeed XIAO with Grove sensors. Deploy it, lose and regain the signal, and bring back stored readings or a photo. |
 | [Ground station build guide](docs/ground-station.md) | Connect classroom sensors, predict a pass, or plan a receive-only station. |
-| [P1S case files](hardware/p1s/README.md) | Slice the PLA coupon first, then print and measure the case. Follow the [print and fit quests](quest/README.md#bambu-p1s-case-test-track). |
+| [Print a 1U CubeSat](hardware/amsat-cubesatsim/README.md) | AMSAT's CubeSatSim frame with a printed payload plate for an Arduino Uno R3 and Nano 33 BLE Sense. Four P1S plates, about 4 hours, no screws. |
+| [Hardware](hardware/README.md) | The AMSAT and Teachers in Space frames, the Rev A test box and screw-fit coupon, and the Rev B rail frame. |
 | [Suborbital flight plan](docs/suborbital-flight-plan.md) | Get a classroom sensor kit ready for a suborbital research flight, using public information. Predict the flight with `flight-profile`. |
 | [Flight heritage quests](quest/README.md#flight-heritage-and-the-suborbital-research-flight) | Learn from the Perlan 2 glider and the ISS, then compare all three rides. |
 | [Balloon lab](docs/balloon-lab.md) | Compare classroom pressure and temperature with archived flight data. |
@@ -112,8 +114,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately as desc
 
 ## Credits
 
-CubeSat Classroom is an independent volunteer project inspired by Teachers in Space and AMSAT. It is not affiliated with or endorsed by NASA, AMSAT, Teachers in Space or any launch provider. Volunteer site work and mission briefing by [hikd.ai](https://hikd.ai/). The ground station uses open-source Media over QUIC (MoQ) libraries.
+CubeSat Classroom is an independent volunteer project inspired by Teachers in Space and AMSAT. The printed frame is AMSAT's [CubeSatSim](https://cubesatsim.org) frame by Alan Johnston, KU2Y. It is not affiliated with or endorsed by NASA, AMSAT, Teachers in Space or any launch provider. Volunteer site work and mission briefing by [hikd.ai](https://hikd.ai/). The ground station uses open-source Media over QUIC (MoQ) libraries.
 
 ## License
 
-Original work is dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE), at your option. Third-party material keeps its own license (for example, `mobile/LICENSE` covers the Expo template the app started from).
+Original work is dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE), at your option. Third-party material keeps its own license (for example, `mobile/LICENSE` covers the Expo template the app started from). The AMSAT CubeSatSim frame and the parts derived from it in [hardware/amsat-cubesatsim](hardware/amsat-cubesatsim/) are GPL-3.0.

@@ -169,6 +169,24 @@ jobs:
           enable-deltas-report: false
           enable-warnings-report: false
 
+  hardware:
+    name: Print files match the CAD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: python3 -m venv /tmp/cad && /tmp/cad/bin/pip install -r hardware/requirements.txt
+      - run: |
+          /tmp/cad/bin/python hardware/generate.py
+          /tmp/cad/bin/python hardware/p1s/prepare.py
+          /tmp/cad/bin/python hardware/drawing.py
+          /tmp/cad/bin/python hardware/amsat-cubesatsim/generate.py
+          /tmp/cad/bin/python hardware/amsat-cubesatsim/prepare.py
+      - name: Committed STL, 3MF, drawing and AMSAT kit are up to date
+        run: |
+          if [ -n "$(git status --porcelain -- hardware)" ]; then git status --short -- hardware; echo "Regenerate the hardware files (see hardware/README.md) and commit them."; exit 1; fi
+
   scripts:
     name: Installer and scripts
     runs-on: ubuntu-latest

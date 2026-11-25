@@ -16,8 +16,6 @@ Copy this prompt into Claude, Codex, Grok, or another assistant. A chat-only ass
 Help me run the CubeSat Classroom ground station on my computer. Use the quick-start guide and AGENTS.md in https://github.com/steelhead99x/cubesat-classroom. Ask what operating system and experience level I have. Use an existing checkout or guide me to clone it. Walk me through running cargo run --locked -- classroom from the checkout, one step at a time. Ask before running commands that download, install, or change files. If you can't use my terminal, show me what to type. Help me open the local address and request a simulated reading so I can record its value and unit myself.
 ```
 
-In a local checkout, use `$cubesat-quest-coach` in Codex or `/cubesat-quest-coach` in Claude Code for guided learning. Use `$cubesat-station` or `/cubesat-station` to troubleshoot the station. The project also includes `cubesat-hardware-evidence` for test planning and `cubesat-web-mobile` for site and app changes.
-
 ### With your terminal
 
 Paste the command. The starter asks which hardware you have, recommends a quest, and explains each download. Press Enter to continue or type `n` at a confirmation to stop.

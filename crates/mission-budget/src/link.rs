@@ -349,7 +349,7 @@ mod tests {
     fn doppler_is_frequency_times_radial_speed_over_c() {
         let b = budget(&uhf(), 1000.0, 7.0);
         assert!((b.abs_doppler_khz - 436e6 * 7.0 / C_M_S).abs() < 1e-12);
-        assert_eq!(budget(&uhf(), 1000.0, 0.0).abs_doppler_khz, 0.0);
+        assert!(budget(&uhf(), 1000.0, 0.0).abs_doppler_khz.abs() < 1e-12);
     }
 
     #[test]
