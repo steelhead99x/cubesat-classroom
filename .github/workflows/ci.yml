@@ -188,6 +188,46 @@ jobs:
         run: |
           if [ -n "$(git status --porcelain -- hardware)" ]; then git status --short -- hardware; echo "Regenerate the hardware files (see hardware/README.md) and commit them."; exit 1; fi
 
+  cad:
+    name: Rev C CAD and CDS checks (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - run: cargo clippy --locked --release -p cubesat-cad --all-targets -- -D warnings
+      - name: CDS, fit and printability checks, including deliberately broken designs
+        run: cargo test --locked --release -p cubesat-cad
+      - run: cargo run --locked --release -p cubesat-cad -- build hardware/rev-c
+      - name: Committed Rev C files are up to date
+        run: |
+          if [ -n "$(git status --porcelain -- hardware/rev-c)" ]; then git status --short -- hardware/rev-c; echo "Run 'cargo run --release -p cubesat-cad -- build hardware/rev-c' and commit the result."; exit 1; fi
+
+  firmware-rust:
+    name: Nano 33 BLE Sense firmware (Rust)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: firmware/nano33-cubesat
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          targets: thumbv7em-none-eabihf
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: firmware/nano33-cubesat
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --release -- -D warnings
+      - run: cargo build --locked --release
+
   scripts:
     name: Installer and scripts
     runs-on: ubuntu-latest
