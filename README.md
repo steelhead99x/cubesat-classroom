@@ -61,7 +61,7 @@ The website and Worker (`site/`), the mobile app (`mobile/`) and the CAD and PDF
 
 ## Credits
 
-Networking uses open-source Media over QUIC libraries from [moq.dev](https://moq.dev/). Volunteer site work by [hikd.ai](https://hikd.ai/). CubeSat Classroom is an independent project inspired by Teachers in Space and AMSAT.
+Networking uses open-source Media over QUIC (MoQ) libraries. Volunteer site work by [hikd.ai](https://hikd.ai/). CubeSat Classroom is an independent project inspired by Teachers in Space and AMSAT.
 
 ## License
 
