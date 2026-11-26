@@ -1,6 +1,7 @@
-"""Pack the AMSAT frame and the printed payload kit into one Bambu Studio project.
+"""Pack the AMSAT frame and the printed payload kit into Bambu Studio projects.
 
-Writes p1s/cubesat-kit.3mf: three plates for a Bambu Lab printer with a 256 mm bed
+Writes p1s/cubesat-kit.3mf (payload deck and fasteners, frame) and p1s/cubesat-fit-plate.3mf
+(the fit plate with its own clamp and fasteners), for a Bambu Lab printer with a 256 mm bed
 (P1S, P1P, X1C, X1E, A1). Every part is placed in its print orientation, repeated parts
 are copies of one object, small load-carrying parts are set to 100% infill, and each
 plate has a preview picture. The file follows Bambu Studio's own project layout
@@ -23,7 +24,6 @@ import numpy as np
 import trimesh
 
 HERE = Path(__file__).resolve().parent
-OUT = HERE / "p1s" / "cubesat-kit.3mf"
 BED = 256.0                     # Bambu Lab P1S / P1P / X1 / A1 build plate
 PLATE_STRIDE = BED * 1.2        # Bambu Studio lays plates out with a 1/5 plate gap
 GAP, ROW_GAP, MARGIN = 6.0, 8.0, 8.0
@@ -51,12 +51,16 @@ PARTS = {
 
 FASTENER_ROWS = [["Lock key"] * 4, ["Plate stud"] * 4 + ["Clamp stud"] * 2, ["Spring washer"] * 6]
 
-# Plate name: rows of parts, top to bottom.
-PLATES = [
-    ("Payload deck and fasteners", [["Payload plate", "Nano clamp"], ["Load test post", "Load test tab"]] + FASTENER_ROWS),
-    ("Frame", [["Side", "Side with camera hole"], ["Top", "Bottom with columns"]]),
-    ("Display plate (optional)", [["Display plate", "Nano clamp"]] + FASTENER_ROWS),
-]
+# File: (title, plates). Each plate: name and rows of parts, top to bottom.
+PROJECTS = {
+    "cubesat-kit.3mf": ("CubeSat Classroom kit", [
+        ("Payload deck and fasteners", [["Payload plate", "Nano clamp"], ["Load test post", "Load test tab"]] + FASTENER_ROWS),
+        ("Frame", [["Side", "Side with camera hole"], ["Top", "Bottom with columns"]]),
+    ]),
+    "cubesat-fit-plate.3mf": ("CubeSat Classroom fit plate", [
+        ("Fit plate and fasteners", [["Display plate", "Nano clamp"]] + FASTENER_ROWS),
+    ]),
+}
 
 
 def load_parts():
@@ -186,11 +190,11 @@ def png(img):
             + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
 
 
-def place_objects(meshes):
+def place_objects(meshes, plates):
     """One object per placed part, as Bambu Studio saves them: its plate list keeps a single
     instance per object, so copies of one object can't be spread across plates. Repeated parts
     get numbered names. Returns [(label, part, plate, x, y)] with plate-relative x, y."""
-    placed = [(n, p, x, y) for p, (_, rows) in enumerate(PLATES) for n, x, y in layout(rows, meshes)]
+    placed = [(n, p, x, y) for p, (_, rows) in enumerate(plates) for n, x, y in layout(rows, meshes)]
     totals = {n: sum(1 for m, *_ in placed if m == n) for n in PARTS}
     counters = {n: 0 for n in PARTS}
     objects = []
@@ -201,9 +205,8 @@ def place_objects(meshes):
     return objects
 
 
-def main():
-    meshes = load_parts()
-    objects = place_objects(meshes)
+def write_project(out, title, plates, meshes):
+    objects = place_objects(meshes, plates)
     # Bambu numbering: each object's mesh (its one part) takes an id, the object the next one.
     ids = [(2 * i + 1, 2 * i + 2, i + 1) for i in range(len(objects))]   # part id, object id, file number
 
@@ -217,7 +220,7 @@ def main():
                        + " </resources>\n <build/>\n</model>\n")
 
     model = [MODEL_HEAD]
-    meta = {"Application": APP, "BambuStudio:3mfVersion": "1", "Title": "CubeSat Classroom kit",
+    meta = {"Application": APP, "BambuStudio:3mfVersion": "1", "Title": title,
             "Designer": "CubeSat Classroom", "Description": "AMSAT CubeSatSim v2.0 frame with an Arduino Uno R3 and "
             "Nano 33 BLE Sense payload. Frame by Alan Johnston, KU2Y (AMSAT). GPL-3.0.",
             "License": "GPL-3.0", "CreationDate": DATE, "ModificationDate": DATE}
@@ -230,7 +233,7 @@ def main():
                      "   </components>\n  </object>\n")
     model.append(' </resources>\n <build p:UUID="2c7c17d8-22b5-4d84-8835-1976022ea369">\n')
     for (label, n, p, x, y), (_, obj_id, _) in zip(objects, ids):
-        ox, oy = plate_origin(p, len(PLATES))
+        ox, oy = plate_origin(p, len(plates))
         model.append(f'  <item objectid="{obj_id}" p:UUID="{obj_id:08x}-b1ec-4553-aec9-835e5b724bb4" '
                      f'transform="1 0 0 0 1 0 0 0 1 {fmt(ox + x)} {fmt(oy + y)} 0" printable="1"/>\n')
     model.append(" </build>\n</model>\n")
@@ -248,10 +251,10 @@ def main():
                    f'      <mesh_stat face_count="{len(meshes[n].faces)}" edges_fixed="0" degenerate_facets="0" '
                    'facets_removed="0" facets_reversed="0" backwards_edges="0"/>\n'
                    '    </part>\n  </object>\n')
-    for p, (title, _) in enumerate(PLATES):
+    for p, (plate_name, _) in enumerate(plates):
         cfg.append("  <plate>\n"
                    f'    <metadata key="plater_id" value="{p + 1}"/>\n'
-                   f'    <metadata key="plater_name" value="{escape(title)}"/>\n'
+                   f'    <metadata key="plater_name" value="{escape(plate_name)}"/>\n'
                    '    <metadata key="locked" value="false"/>\n'
                    f'    <metadata key="thumbnail_file" value="Metadata/plate_{p + 1}.png"/>\n')
         for (label, n, q, x, y), (_, obj_id, num) in zip(objects, ids):
@@ -266,7 +269,7 @@ def main():
     cfg.append("</config>\n")
     files["Metadata/model_settings.config"] = "".join(cfg)
 
-    for p in range(len(PLATES)):
+    for p in range(len(plates)):
         scene = []
         for label, n, q, x, y in objects:
             if q == p:
@@ -300,23 +303,29 @@ def main():
 
     order = ["[Content_Types].xml", "_rels/.rels", "3D/3dmodel.model", "3D/_rels/3dmodel.model.rels"]
     order += sorted(k for k in files if k not in order)
-    OUT.parent.mkdir(exist_ok=True)
-    with ZipFile(OUT, "w") as archive:
+    out.parent.mkdir(exist_ok=True)
+    with ZipFile(out, "w") as archive:
         for name in order:
             data = files[name]
             archive.writestr(ZipInfo(name), data.encode() if isinstance(data, str) else data,
                              compress_type=ZIP_DEFLATED)
-    check(objects, meshes)
-    for p, (title, _) in enumerate(PLATES):
-        print(f"plate {p + 1}, {title}: {sum(1 for o in objects if o[2] == p)} parts")
-    print(f"wrote {OUT.relative_to(HERE)}")
+    check(out, plates, objects, meshes)
+    print(f"wrote {out.relative_to(HERE)}")
+    for p, (plate_name, _) in enumerate(plates):
+        print(f"  plate {p + 1}, {plate_name}: {sum(1 for o in objects if o[2] == p)} parts")
 
 
-def check(objects, meshes):
+def main():
+    meshes = load_parts()
+    for name, (title, plates) in PROJECTS.items():
+        write_project(HERE / "p1s" / name, title, plates, meshes)
+
+
+def check(out, plates, objects, meshes):
     """Read the project back the way Bambu Studio does and check the plate split: every object
     on exactly one plate, once, with a single instance, lying inside that plate's area."""
     import re
-    with ZipFile(OUT) as archive:
+    with ZipFile(out) as archive:
         model = archive.read("3D/3dmodel.model").decode()
         cfg = archive.read("Metadata/model_settings.config").decode()
     items = re.findall(r'<item objectid="(\d+)"[^>]*transform="([^"]+)"', model)
@@ -329,7 +338,7 @@ def check(objects, meshes):
     names = dict(re.findall(r'<object id="(\d+)">\s*<metadata key="name" value="([^"]+)"', cfg))
     seen = set()
     for p, plate in enumerate(re.findall(r"<plate>(.*?)</plate>", cfg, re.S)):
-        ox, oy = plate_origin(p, len(PLATES))
+        ox, oy = plate_origin(p, len(plates))
         for obj in re.findall(r'key="object_id" value="(\d+)"', plate):
             if obj in seen:
                 raise ValueError(f"{names[obj]} is on more than one plate")
