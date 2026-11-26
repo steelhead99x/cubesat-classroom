@@ -35,7 +35,6 @@ CubeSat Classroom is written for learners 13 and up, and for the teachers, guard
 - **To join the project** (comment, share a crew log, propose a change), use an account on a hosted Git service: GitHub, GitLab.com or Codeberg. Self-hosted Git servers are not supported. The main repository is on GitHub today, but you are not locked in to it. Work from a fork or mirror on the host you prefer and send a link to your branch, or a patch.
 - **Students** may use their own account if they are old enough under that host's terms. GitHub, for example, requires users to be at least 13.
 - **Teachers, guardians and mentors** can use their own accounts to guide the lessons and the project: they open issues, review changes and share results for their crew. Younger learners take part only alongside one of these adults, who stays for the whole activity and never shares a login with anyone under 13. Younger learners never need an account of their own. The [mentor quests](quest/README.md#mentor-quests) show how.
-- **No Git account?** The planned sign-in for the hosted app will also let teachers, guardians and mentors sign in with a phone number. Students sign in with a Git account or join through an adult; the project does not collect students' phone numbers.
 
 ## Demo
 
@@ -116,7 +115,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately as desc
 
 ## Credits
 
-CubeSat Classroom is an independent volunteer project inspired by Teachers in Space and AMSAT. The printed frame is AMSAT's [CubeSatSim](https://cubesatsim.org) frame by Alan Johnston, KU2Y. It is not affiliated with or endorsed by NASA, AMSAT, Teachers in Space or any launch provider. Volunteer site work and mission briefing by [hikd.ai](https://hikd.ai/). The ground station uses open-source Media over QUIC (MoQ) libraries.
+CubeSat Classroom is an independent open-source volunteer space education project. The printed frame is AMSAT's [CubeSatSim](https://cubesatsim.org) frame by Alan Johnston, KU2Y. It is not affiliated with or endorsed by NASA, AMSAT, Teachers in Space or any launch provider. Volunteer site work and mission briefing by [hikd.ai](https://hikd.ai/). The ground station uses open-source Media over QUIC (MoQ) libraries.
 
 ## License
 

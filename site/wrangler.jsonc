@@ -6,6 +6,7 @@
 // Custom domains are listed here so `wrangler deploy` keeps the existing apex hostnames
 // and the www hostnames that 301 to the apex or, for cubesat.club and cubesatclass.com,
 // to cubesatclass.org. Omitting them would risk dropping dashboard-managed domains.
+// cubesat.app is not listed: it belongs to the app's own Worker (cubesat-classroom-app repo).
 {
   "name": "cubesat-classroom",
   "workers_dev": true,
@@ -24,8 +25,6 @@
     { "pattern": "www.cubesat.club", "custom_domain": true },
     { "pattern": "cubesatclass.com", "custom_domain": true },
     { "pattern": "www.cubesatclass.com", "custom_domain": true },
-    { "pattern": "cubesat.app", "custom_domain": true },
-    { "pattern": "www.cubesat.app", "custom_domain": true },
     { "pattern": "cubesatclass.io", "custom_domain": true },
     { "pattern": "www.cubesatclass.io", "custom_domain": true },
     { "pattern": "cubesatclass.dev", "custom_domain": true },

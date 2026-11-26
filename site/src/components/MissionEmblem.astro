@@ -1,0 +1,63 @@
+---
+// Mission emblem for the homepage hero, in the style of the briefing's mission patch:
+// a white band with the name, a Flag ring, and the CubeSat mark in its reversed colours
+// over a ground station dish. Drawn here so no image file is needed.
+interface Props {
+  class?: string;
+}
+const { class: extra = '' } = Astro.props;
+---
+<svg class={`emblem ${extra}`} viewBox="0 0 360 360" role="img" aria-labelledby="emblem-title">
+  <title id="emblem-title">CubeSat Classroom mission emblem: a 1U CubeSat in orbit above a ground station. One small quest at a time.</title>
+  <defs>
+    <path id="emblem-top" d="M 47,180 A 133,133 0 0 1 313,180" />
+    <path id="emblem-bottom" d="M 37,180 A 143,143 0 0 0 323,180" />
+    <clipPath id="emblem-field"><circle cx="180" cy="180" r="118" /></clipPath>
+    <mask id="emblem-k" maskUnits="userSpaceOnUse" x="-10" y="-10" width="140" height="140"><rect x="-10" y="-10" width="140" height="140" fill="#fff"/><path transform="translate(60 60) rotate(-15)" d="M-53,0 A53,15 0 0 0 53,0" fill="none" stroke="#000" stroke-width="9.5" stroke-linecap="round"/></mask>
+    <mask id="emblem-b" maskUnits="userSpaceOnUse" x="-10" y="-10" width="140" height="140"><rect x="-10" y="-10" width="140" height="140" fill="#fff"/><path d="M60,27 L88.58,43.5 L88.58,76.5 L60,93 L31.42,76.5 L31.42,43.5 Z" fill="#000" stroke="#000" stroke-width="5" stroke-linejoin="round"/></mask>
+  </defs>
+
+  <circle cx="180" cy="180" r="176" fill="#fff" />
+  <circle cx="180" cy="180" r="122" fill="#01017f" stroke="#ea0303" stroke-width="5" />
+
+  <text font-family="Inter Variable, Inter, sans-serif" font-weight="800" font-size="27" letter-spacing="3.2" fill="#01017f" text-anchor="middle">
+    <textPath href="#emblem-top" startOffset="50%">CUBESAT CLASSROOM</textPath>
+  </text>
+  <text font-family="Inter Variable, Inter, sans-serif" font-weight="700" font-size="19" letter-spacing="2.6" fill="#01017f" text-anchor="middle" dominant-baseline="hanging">
+    <textPath href="#emblem-bottom" startOffset="50%">ONE SMALL QUEST AT A TIME</textPath>
+  </text>
+  <path d="M28,180 l4.1,8.4 9.2,1.3 -6.7,6.5 1.6,9.2 -8.2,-4.3 -8.2,4.3 1.6,-9.2 -6.7,-6.5 9.2,-1.3 Z" transform="translate(0 -14)" fill="#ea0303" />
+  <path d="M332,180 l4.1,8.4 9.2,1.3 -6.7,6.5 1.6,9.2 -8.2,-4.3 -8.2,4.3 1.6,-9.2 -6.7,-6.5 9.2,-1.3 Z" transform="translate(0 -14)" fill="#ea0303" />
+
+  <g clip-path="url(#emblem-field)">
+    <g fill="#fff">
+      <circle cx="122" cy="118" r="1.6" /><circle cx="236" cy="104" r="1.3" /><circle cx="262" cy="160" r="1.8" />
+      <circle cx="104" cy="182" r="1.2" /><circle cx="214" cy="226" r="1.4" /><circle cx="150" cy="94" r="1" />
+      <circle cx="276" cy="210" r="1.1" /><circle cx="96" cy="140" r="1" />
+    </g>
+    <!-- the Earth's limb and a ground station dish -->
+    <ellipse cx="180" cy="334" rx="168" ry="78" fill="#2f3fbf" />
+    <ellipse cx="180" cy="334" rx="168" ry="78" fill="none" stroke="#9ea6dc" stroke-width="1.5" opacity=".7" />
+    <g transform="translate(152 236) rotate(-28)" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round">
+      <path d="M-15,0 A15,15 0 0 0 15,0 Z" fill="#fff" />
+      <path d="M0,0 L0,-14" /><circle cx="0" cy="-16" r="2.5" fill="#fff" />
+    </g>
+    <path d="M152,246 L146,262 M152,246 L160,262" stroke="#fff" stroke-width="4" stroke-linecap="round" />
+    <g fill="none" stroke="#ea0303" stroke-width="3.5" stroke-linecap="round">
+      <path d="M171,212 a10,10 0 0 0 -7,-9" /><path d="M178,206 a19,19 0 0 0 -13,-15" /><path d="M185,200 a28,28 0 0 0 -19,-22" />
+    </g>
+  </g>
+
+  <!-- the CubeSat mark, reversed colours -->
+  <g transform="translate(111 88) scale(1.15)">
+    <g mask="url(#emblem-b)"><path transform="translate(60 60) rotate(-15)" d="M-53,0 A53,15 0 0 1 53,0" fill="none" stroke="#ea0303" stroke-width="4.6" stroke-linecap="round"/></g>
+    <g mask="url(#emblem-k)">
+      <path d="M60,28.85 L85.38,43.5 L60,58.15 L34.62,43.5 Z" fill="#fff" />
+      <path d="M33.02,46.27 L58.4,60.92 L58.4,90.23 L33.02,75.58 Z" fill="#c9cdea" />
+      <path d="M61.6,60.92 L86.98,46.27 L86.98,75.58 L61.6,90.23 Z" fill="#9ea6dc" />
+      <path d="M74.29,53.6 L74.29,82.9 M61.6,75.58 L86.98,60.92" stroke="#01017f" stroke-width="1.8"/>
+      <g transform="translate(45.71 68.25) matrix(0.866 0.5 0 1 0 0)"><circle r="7.2" fill="none" stroke="#01017f" stroke-width="2.4"/><circle r="2.4" fill="#01017f"/></g>
+    </g>
+    <path transform="translate(60 60) rotate(-15)" d="M-53,0 A53,15 0 0 0 53,0" fill="none" stroke="#ea0303" stroke-width="4.6" stroke-linecap="round"/>
+  </g>
+</svg>

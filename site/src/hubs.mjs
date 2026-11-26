@@ -2,7 +2,6 @@
 // See docs/fork-guide.md.
 export const repo = 'https://github.com/steelhead99x/cubesat-classroom';
 export const missionBriefing = 'https://hikd.ai/tis/';
-export const fundraiser = 'https://givebutter.com/fund-stem-training-for-100-educators-s14sb0';
 export const classroomHost = 'cubesatclass.org';
 // The public site. Canonical URLs, the installer address and redirects all point here.
 export const publicOrigin = 'https://' + classroomHost;
@@ -13,14 +12,18 @@ export const redirects = { 'cubesat.club': publicOrigin, 'cubesatclass.com': pub
 export const hubs = [
   {
     slug: 'mobile',
+    // cubesat.app is served by the app's own Worker, so this hub links out to it.
     host: 'cubesat.app',
-    name: 'Mobile app',
-    heading: 'Practice a mission on your phone',
-    description: 'A practice ground station, the research flight and five lessons on your phone. The open-source Android and iOS app is ready for developer previews.',
+    path: '/',
+    home: 'https://cubesat.app/',
+    name: 'App',
+    heading: 'Follow a ground station from any screen',
+    description: 'See the next satellite pass over your school, watch live readings from a classroom ground station, and learn how the radio spectrum is shared. On phones, in a browser, and at a glance on a watch. A developer preview with a practice station today. It collects no accounts and no personal details.',
     links: [
-      ['Run the mobile template', repo + '/blob/main/mobile/README.md'],
-      ['Browse the mobile source', repo + '/tree/main/mobile'],
-      ['Open the classroom quick start', 'https://' + classroomHost + '/#start'],
+      ['Open cubesat.app', 'https://cubesat.app/'],
+      ['Learn the spectrum, then earn your licence', 'https://cubesat.app/#learn'],
+      ['See how one reading reaches every screen', 'https://cubesat.app/#how'],
+      ['Browse the open-source mobile template', repo + '/tree/main/mobile'],
     ],
   },
   {
@@ -76,7 +79,6 @@ export const hubs = [
     links: [
       ['Pick a contribution quest', repo + '/tree/main/quest'],
       ['Read the volunteer guide', repo + '/blob/main/CONTRIBUTING.md'],
-      ['Donate directly to Teachers in Space', fundraiser],
     ],
   },
 ];

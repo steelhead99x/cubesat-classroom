@@ -121,6 +121,9 @@ Maintainer work for the live classroom site. These quests stay in the log after 
 - [Fail the Worker deploy when Cloudflare secrets are missing](/quest/m0/fail-deploy-without-secrets.md)
 - [Redirect www hosts to their apex on the public Worker](/quest/m0/redirect-www-hosts.md)
 - [Make classroom quest check pass on the existing lesson files](/quest/m0/classroom-quest-check-headings.md)
+- [Move cubesat.app to the app Worker and align site branding](/quest/m0/cubesat-app-hostname-move.md)
+- [Patch the url advisory and add a dependency audit to the classroom Rust workspace](/quest/m0/classroom-rust-advisories.md)
+- [Align the public site copy with the volunteer review](/quest/m0/classroom-public-copy.md)
 - [Add the Rev C printed 1U frame and Nano 33 firmware, in Rust](/quest/m0/rev-c-printed-frame.md)
 - [Compile the firmware in every build](/quest/m0/compile-firmware-in-builds.md)
 
