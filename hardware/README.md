@@ -4,13 +4,15 @@ Printed 1U CubeSat frames (100 × 100 × 113.5 mm) for a Bambu Lab P1S or a simi
 
 | Design | What it is | Start here |
 | --- | --- | --- |
-| **AMSAT CubeSatSim frame + Arduino payload** | AMSAT's v2.0 frame with a printed plate for an Uno R3 and a Nano 33 BLE Sense. 100% printed, no supports. | [Build guide](amsat-cubesatsim/README.md) |
+| **AMSAT CubeSatSim frame + Arduino payload** | AMSAT's v2.0 frame with printed plates for an Uno R3, a Nano 33 BLE Sense and a 3000 mAh battery. No loose parts, 100% printed, no supports. | [Build guide](amsat-cubesatsim/README.md) |
+| Outdoor ground station | The same payload plate in a sealed box with a gasket, cable gland, vent, battery and a 1/4"-20 tripod thread. Design checks only. | [Build guide](outdoor-station/README.md) |
+| Outdoor XIAO station | The outdoor box with a XIAO plate: XIAO ESP32-S3 on Wi-Fi HaLow, XIAO MG24 Sense, battery, two SMA antenna ports. Design checks only. | [Build guide](outdoor-xiao/README.md) |
 | Teachers in Space frame | The frame TIS uses in its Arduino CubeSat workshops. Files come from TIS. | [Links and comparison](tis/README.md) |
 | Rev A bench box | Closed test box and the M3 screw-fit coupon | [Print guide](p1s/README.md) |
 | Rev B rail-fit set | Printed frame with four corner rails and two end plates. A step toward a printed flight structure. Needs supports. | [Below](#rev-b-rail-fit-set) |
 | CSC-R1 receiver dev kit | Receive-only SDR board for the 2 m and 70 cm satellite bands, around a XIAO. Designed and rule-checked; not built or tested. Plus the plan for a pedal-enclosure version with HaLow. | [Design and review](sdr-receiver/README.md) |
 
-If you're new, build the AMSAT frame with the Arduino payload.
+If you're new, build the AMSAT frame with the Arduino payload. Every printed design follows the [design guide](DESIGN-GUIDE.md): no loose pieces where possible, rocket-launch ready and durable, and easy enough for kids.
 
 Every structural part, cover, mount, retainer and fit tool the project designs must have a version that prints on a P1S or similar printer. Electronics, wiring, cells, sensors and RF parts are chosen separately.
 
@@ -40,6 +42,6 @@ python3 -m venv /tmp/cubesat-cad
 /tmp/cubesat-cad/bin/python hardware/drawing.py
 ```
 
-The AMSAT kit is built in Rust: `cargo run --release -p amsat-kit` (see [its README](amsat-cubesatsim/README.md#regenerate)). CI runs all of them and fails if the committed files differ from the output.
+The AMSAT kit and both outdoor cases are built in Rust: `cargo run --release -p amsat-kit` (see [the kit's README](amsat-cubesatsim/README.md#regenerate)). CI runs all of them and fails if the committed files differ from the output.
 
 Printer reference: the P1S has a 256 × 256 × 256 mm build volume and prints PLA and ASA ([Bambu Lab P1S quick start](https://cdn1.bambulab.com/documentation/quick-start-59b0cefdc0fc4/P1S/English%20version-Quick%20Start%20Guide%20for%20P1S.pdf)). For the limits of printed parts in flight, see [NASA CubeSat 101](https://science.nasa.gov/wp-content/uploads/2023/06/nasa_csli_cubesat_101_508.pdf).

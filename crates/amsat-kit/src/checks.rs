@@ -3,6 +3,7 @@
 
 use manifold_csg::Manifold;
 
+use crate::battery;
 use crate::boards::{
     NANO_PARTS, nano_board, nano_parts, nano_plug, uno_board, uno_parts, uno_underside,
 };
@@ -20,9 +21,9 @@ use crate::parts::{
 /// mm of floating-point noise to ignore; far below print resolution.
 const TOLERANCE: f64 = 1e-6;
 
-type Check = Result<(), String>;
+pub(crate) type Check = Result<(), String>;
 
-fn require(ok: bool, message: impl Into<String>) -> Check {
+pub(crate) fn require(ok: bool, message: impl Into<String>) -> Check {
     if ok { Ok(()) } else { Err(message.into()) }
 }
 
@@ -106,13 +107,32 @@ pub fn rules(d: &Design) -> Check {
         d.finger_slit >= finger_pass(d) + 0.3,
         "too little room behind the snap pin fingers for them to bend",
     )?;
+    let tight: Vec<[f64; 2]> = d
+        .snap_columns
+        .iter()
+        .filter(|(c, _)| d.pin_tight.contains(c))
+        .map(|(c, _)| d.plate_holes()[*c])
+        .collect();
     require(
-        d.snap_columns.iter().any(|(c, _)| *c == d.pin_datum),
-        "the datum pin isn't one of the snap pins",
+        tight.len() == d.pin_tight.len() && 2 * tight.len() >= d.snap_columns.len(),
+        "at least half the snap pins must be tight, and every tight pin a snap pin",
+    )?;
+    let opposite = tight.iter().any(|a| {
+        tight
+            .iter()
+            .any(|b| (a[0] - b[0]).abs() > d.plate / 2.0 && (a[1] - b[1]).abs() > d.plate / 2.0)
+    });
+    require(
+        opposite,
+        "two tight snap pins must sit on opposite corners, so the plate can't turn",
+    )?;
+    require(
+        tight.len() < d.snap_columns.len(),
+        "every snap pin is tight: an error in hole spacing could make the plate bind",
     )?;
     require(
         (0.05..=0.3).contains(&d.pin_spacing_allow),
-        "the other snap pins need 0.05 to 0.3 mm more clearance than the datum",
+        "the looser snap pins need 0.05 to 0.3 mm more clearance than the tight ones",
     )?;
     require(
         d.finger_slit_in >= 0.6,
@@ -156,8 +176,15 @@ pub fn rules(d: &Design) -> Check {
     )
 }
 
-fn plate_on_columns(d: &Design, columns: &Manifold, plate: &Manifold) -> Check {
-    let seated = payload_plate(d, Some(contact_r(d) + 0.02), 0.0)?;
+/// A plate on its columns (plate coordinates). `make` builds the plate with its teeth moved.
+pub(crate) fn plate_on_columns(
+    d: &Design,
+    columns: &Manifold,
+    make: &dyn Fn(Option<f64>) -> Result<Manifold, String>,
+    amsat_frame: bool,
+) -> Check {
+    let plate = &make(None)?;
+    let seated = make(Some(contact_r(d) + 0.02))?;
     require(
         overlap(&seated, columns) < 1e-3,
         "the plate collides with the columns or the end piece",
@@ -170,7 +197,7 @@ fn plate_on_columns(d: &Design, columns: &Manifold, plate: &Manifold) -> Check {
         overlap(&seated.translate(0.0, 0.0, 0.3), columns) > 1e-3,
         "nothing holds the plate down on its columns",
     )?;
-    let spread = payload_plate(d, Some(d.pin_head_r + 0.1), 0.0)?;
+    let spread = make(Some(d.pin_head_r + 0.1))?;
     for dz in [0.5, 1.5, 2.5, 3.5, 4.5] {
         require(
             overlap(&spread.translate(0.0, 0.0, dz), columns) < 1e-3,
@@ -185,28 +212,30 @@ fn plate_on_columns(d: &Design, columns: &Manifold, plate: &Manifold) -> Check {
         )?;
     }
     require(
-        bounds(&to_frame(d, plate)).1[2] <= -d.snap_tabs_reach,
+        !amsat_frame || bounds(&to_frame(d, plate)).1[2] <= -d.snap_tabs_reach,
         "the plate doesn't clear the AMSAT snap tabs",
     )
 }
 
-struct Board<'a> {
-    name: &'a str,
-    solid: Manifold,
-    rect: Rect,
-    top: f64,
-    lips: &'a [Edge],
-    hooks: &'a [Edge],
+pub(crate) struct Board<'a> {
+    pub name: &'a str,
+    pub solid: Manifold,
+    pub rect: Rect,
+    pub top: f64,
+    pub lips: &'a [Edge],
+    pub hooks: &'a [Edge],
     /// Axis and point it swings about as it goes in, and which way.
-    axis: char,
-    pivot: [f64; 3],
+    pub axis: char,
+    pub pivot: [f64; 3],
     /// Everything it swings past, with the hooks bent out.
-    spread: Manifold,
+    pub spread: Manifold,
+    /// Which way it tilts up as it goes in: -1 when its lips are on its high-y or low-x edge.
+    pub sign: f64,
 }
 
 /// One board: seated clear of everything, held when pulled, and able to go in by tucking its lip
 /// edge under its lips and swinging down past its hooks.
-fn board_held(d: &Design, b: &Board, seated: &Manifold) -> Check {
+pub(crate) fn board_held(d: &Design, b: &Board, seated: &Manifold) -> Check {
     let name = b.name;
     require(
         overlap(seated, &b.solid) < 1e-3,
@@ -232,7 +261,7 @@ fn board_held(d: &Design, b: &Board, seated: &Manifold) -> Check {
     }
     // Going in: tilted up on its lip edge, the board swings down; the hooks give way.
     for angle in [12.0, 8.0, 4.0, 2.0] {
-        let tilted = rotate_about(&b.solid, b.axis, -angle, b.pivot);
+        let tilted = rotate_about(&b.solid, b.axis, b.sign * angle, b.pivot);
         require(
             overlap(&b.spread, &tilted) < 1e-3,
             format!("the {name} can't swing down into place (blocked at {angle} degrees)"),
@@ -241,11 +270,95 @@ fn board_held(d: &Design, b: &Board, seated: &Manifold) -> Check {
     Ok(())
 }
 
+/// The cell on the battery plate: held by the board joint, clear of the columns and the snap
+/// fingers, strong enough at the launch load.
+fn battery_held(d: &Design, columns: &Manifold) -> Check {
+    let j = battery::joint(d);
+    let cell = battery::cell(d);
+    require(
+        overlap(&cell, columns) < 1e-3,
+        "the battery hits a column or a pin head",
+    )?;
+    let seated = battery::features(d, j.hook_preload + 0.01);
+    require(
+        overlap(&seated, &cell) < 1e-3,
+        "the battery collides with its guides or hooks",
+    )?;
+    let lifted = cell.translate(0.0, 0.0, 0.3);
+    for e in &battery::CELL_HOOKS {
+        require(
+            overlap(
+                &lifted,
+                &hook_post(&j, d.cell_rect(), e, battery::cell_top(d), 0.0),
+            ) > 1e-3,
+            "a snap hook doesn't reach over the battery",
+        )?;
+    }
+    for dy in [battery::GUIDE_GAP + 0.6, -battery::GUIDE_GAP - 0.6] {
+        require(
+            overlap(&seated, &cell.translate(0.0, dy, 0.0)) > 1e-3,
+            "the battery can slide along: the hooks don't stop its ends",
+        )?;
+    }
+    for dx in [battery::GUIDE_GAP + 0.1, -battery::GUIDE_GAP - 0.1] {
+        require(
+            overlap(&seated, &cell.translate(dx, 0.0, 0.0)) > 1e-3,
+            "the battery can slide sideways: the guides don't hold it",
+        )?;
+    }
+    // Going in: pressed straight down, it spreads both hooks with its ends.
+    let spread = battery::features(d, j.hook_reach + 0.05);
+    for dz in [0.5, 2.0, 4.0, 8.0] {
+        require(
+            overlap(&spread, &cell.translate(0.0, 0.0, dz)) < 1e-3,
+            "the battery can't be pressed straight down past its hooks",
+        )?;
+    }
+    let top = d.plate_t;
+    for zone in battery::hook_zones(d, -1.0, top + 2.0) {
+        for (i, [x, y]) in d.plate_holes().into_iter().enumerate() {
+            if let Some(angle) = d.snap_angle(i) {
+                require(
+                    overlap(
+                        &zone,
+                        &finger_zone(d, x, y, angle, d.column_fit(i), -1.0, top + 2.0),
+                    ) < 1e-3,
+                    "a battery hook's finger runs into a snap pin's fingers",
+                )?;
+            }
+        }
+    }
+    // Launch: the cell's weight at the design load, shared by the two hooks, pulls each post
+    // along its layers' weak direction and bends it by the hook's reach.
+    let f = d.cell_mass * 9.81 * d.launch_g * d.launch_fs / 2.0;
+    let worst = f / (j.hook_w * j.hook_post_w)
+        + 6.0 * f * j.hook_reach / (j.hook_post_w * j.hook_w * j.hook_w);
+    require(
+        worst <= d.interlayer_mpa,
+        format!(
+            "a battery post would see {worst:.1} MPa across its layers at {} g (allowed {} MPa)",
+            d.launch_g, d.interlayer_mpa
+        ),
+    )?;
+    let plate_mass = 0.02;
+    let need = (d.cell_mass + plate_mass) * 9.81 * d.launch_g * 1.5;
+    let hold = 3.0 * pin_retention(d, d.plate_t);
+    require(
+        hold >= need,
+        format!(
+            "the battery plate's snap pins hold {hold:.0} N, under 1.5 times its {:.0} N launch load",
+            need / 1.5
+        ),
+    )
+}
+
 pub fn verify(d: &Design) -> Check {
     rules(d)?;
     let columns = to_plate(d, &bottom_with_columns(d)?);
-    let plate = payload_plate(d, None, 0.0)?;
-    plate_on_columns(d, &columns, &plate)?;
+    plate_on_columns(d, &columns, &|t| payload_plate(d, t, 0.0), true)?;
+    // The battery plate snaps onto a second columns piece on the top: the same part.
+    plate_on_columns(d, &columns, &|t| battery::battery_plate(d, t, 0.0), true)?;
+    battery_held(d, &columns)?;
 
     let top = d.plate_t;
     let below = bx(-d.plate, -d.plate, -1.0, d.plate, d.plate, top);
@@ -343,6 +456,7 @@ pub fn verify(d: &Design) -> Check {
         axis: 'y',
         pivot: [x0, 0.0, d.uno_top()],
         spread: board_features(d, d.hook_reach + 0.05),
+        sign: -1.0,
     };
     board_held(d, &board, &seated)?;
     let pcb = bx(x0, y0, d.uno_bottom(), x0 + w, y0 + h, d.uno_top());
@@ -373,6 +487,7 @@ pub fn verify(d: &Design) -> Check {
         axis: 'x',
         pivot: [0.0, ny0 + nh, d.nano_top()],
         spread: board_features(d, d.hook_reach + 0.05),
+        sign: -1.0,
     };
     board_held(d, &board, &seated)?;
     let plug = nano_plug(d);
@@ -494,8 +609,20 @@ pub fn broken_designs() -> Vec<(&'static str, Design)> {
             with(&|d| d.pin_fit = 0.0),
         ),
         (
-            "every snap pin as tight as the datum: the plate could bind",
+            "the looser snap pin as tight as the others: the plate could bind",
             with(&|d| d.pin_spacing_allow = 0.0),
+        ),
+        (
+            "every snap pin tight: the plate could bind",
+            with(&|d| d.pin_tight = vec![0, 1, 2]),
+        ),
+        (
+            "tight pins side by side instead of on opposite corners",
+            with(&|d| d.pin_tight = vec![0, 1]),
+        ),
+        (
+            "only one tight pin: the plate could turn",
+            with(&|d| d.pin_tight = vec![2]),
         ),
         (
             "snap pin turned so its fingers run off the plate",
