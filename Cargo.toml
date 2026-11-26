@@ -1,11 +1,23 @@
 [workspace]
 # The ground station is the root package. Small, dependency-light libraries live in crates/.
 # Both are default members, so `cargo test` and `cargo clippy` at the root cover everything.
-members = ["crates/mission-budget", "crates/downlink", "crates/cubesat-cad", "crates/cubesat-mission"]
+members = [
+    "crates/mission-budget",
+    "crates/downlink",
+    "crates/amsat-kit",
+    "crates/cubesat-cad",
+    "crates/cubesat-mission",
+]
 # The CAD crate builds the Manifold C++ kernel, so it has its own CI job instead of being a default member.
 # The firmware targets the nRF52840 and is its own Cargo project.
 exclude = ["firmware/nano33-cubesat"]
-default-members = [".", "crates/mission-budget", "crates/downlink", "crates/cubesat-mission"]
+default-members = [
+    ".",
+    "crates/mission-budget",
+    "crates/downlink",
+    "crates/amsat-kit",
+    "crates/cubesat-mission",
+]
 resolver = "3"
 
 [workspace.package]

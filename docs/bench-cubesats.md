@@ -158,7 +158,7 @@ Every part is optional. The sketch reports what it finds at boot and leaves out 
 | Flight computer | The XIAO running the sketch | A watchdog, radiation tolerance, flight-qualified firmware |
 | Payload | BME280, TSL2561, camera (S3 Sense) | The mission instrument |
 | Attitude sensors | LSM6DS3 accelerometer and gyroscope | A magnetometer, sun sensors, actuators |
-| Data storage | The last 64 readings in memory. Every reading also goes to `CUBESAT.CSV` on the microSD card, and photos to `IMG0001.JPG` and onward. | Radiation-tolerant storage |
+| Data storage | The last 64 readings in memory. Every reading also goes to `CUBESAT.CSV` on the microSD card (or `CUBE0001.CSV` and up, if the card holds a log with different columns from an older sketch), and photos to `IMG0001.JPG` and onward. | Radiation-tolerant storage |
 | Time | PCF8563 real-time clock, set with `TIME` | Time from GPS or the ground |
 | Communications | USB serial stands in for the radio. Wi-Fi and Bluetooth stay off. | A licensed radio with its own inhibit |
 | Inhibit | Expansion Board button (or D1 touched to GND) | Several independent hardware switches in the power path |
@@ -182,7 +182,7 @@ The XIAO boards have no built-in way to read a battery voltage. To add `volt_mv`
 ### Bring back a picture (XIAO ESP32-S3 Sense)
 
 1. Send `PHOTO`. The reply gives the photo's size and a CRC-32 checksum, and the photo is saved to the card.
-2. Clear the Serial Monitor, send `DOWNLINK`, wait for `IMG END`, then copy all the output into a text file.
+2. Clear the Serial Monitor, send `DOWNLINK`, wait for `IMG END`, then copy all the output into a text file. The CubeSat keeps sampling while it sends, so `CSC1` lines can appear between the `IMG` lines; the script ignores them. `PHOTO` is refused until `IMG END`, because a new photo would replace the bytes being sent.
 3. Run `python3 tools/serial_image.py capture.txt photo.jpg`. The script puts the chunks back in order and checks the size and checksum. It says the photo arrived intact only if every byte arrived and the checksum matches. If any lines are missing, it lists the lost byte ranges, reports the transfer as incomplete (even if the checksum happens to match the zero-filled gap), and the photo shows the damage.
 
 A 320 × 240 JPEG is usually a few kilobytes to a few tens of kilobytes. Sent as hex, every byte becomes two characters, plus line overhead. Ask the class how long the downlink would take at 1200 bits per second, a common amateur packet radio speed, and how many passes it would need.

@@ -15,7 +15,7 @@ A client may use either path. It does not need both. Media (pictures, sound, low
 
 902–928 MHz in the United States is used under FCC Part 15 (unlicensed, with emission limits) or under Part 97 (the 33 cm amateur band). This software does not transmit, and it is not an approval, a certification, or a coordination.
 
-Amateur-mode frames stay readable and carry the control operator's station ID, because a licensed operator has to follow 47 CFR 97.113(a)(4) and 97.119. The CRC and Reed-Solomon parity repair loss. They do not hide the payload. Do not put a student's name or call sign in the station ID. `N0CALL` in examples is a documentation placeholder, not an assigned call sign.
+Amateur-mode frames stay readable, because 47 CFR 97.113(a)(4) forbids messages encoded to obscure their meaning. Each frame carries the station's call sign. That is this design's choice, which makes every frame identifiable on its own: 97.119 itself requires the station's assigned call sign at the end of a communication and at least every 10 minutes during it, not on every frame. Amateurs share 902–928 MHz as a secondary user (97.303) and must accept interference from primary users. The CRC and Reed-Solomon parity repair loss. They do not hide the payload. Do not put a student's name or call sign in the station ID. `N0CALL` in examples is a documentation placeholder, not an assigned call sign.
 
 ## MoQ tracks
 
@@ -51,7 +51,7 @@ The relay command listens on loopback only. It prints a raw QUIC URL (`moqt://�
 | `sequence` | Counts up by one for each snapshot the sender attempted |
 | `captured_unix_ms` | Capture time, Unix milliseconds. After the radio hop this is whole seconds |
 | `source` | `simulation` or `configured sensor inputs` |
-| `evidence` | This program writes `desk-simulation` only |
+| `evidence` | `desk-simulation` for the built-in formula, `hardware-bench` for readings from sensor files. Show any other value as it is |
 | `service` | `simulation`, `part15`, or `part97` |
 | `frequency_hz` | `915000000`, a lab label inside 902–928 MHz, not a channel assignment |
 | `station_id` | Control-operator station ID, or absent |

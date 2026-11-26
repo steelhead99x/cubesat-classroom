@@ -256,7 +256,11 @@ void readRtc(char *out, size_t size) {
 bool setRtc(const char *text) {
   int y, mo, d, h, mi, s;
   if (sscanf(text, "%d-%d-%dT%d:%d:%d", &y, &mo, &d, &h, &mi, &s) != 6) return false;
-  if (y < 2000 || y > 2199 || mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59 || s > 59) return false;
+  if (y < 2000 || y > 2199 || mo < 1 || mo > 12 || h < 0 || h > 23 || mi < 0 || mi > 59 || s < 0 || s > 59) return false;
+  // Days in this month, so 2026-02-31 is refused instead of stored as a date that never was.
+  static const uint8_t DAYS[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  bool leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+  if (d < 1 || d > DAYS[mo - 1] + (mo == 2 && leap ? 1 : 0)) return false;
   Wire.beginTransmission(RTC_ADDR);
   Wire.write(0x02);
   Wire.write(tobcd(s));  // clears the voltage-low flag
@@ -381,29 +385,52 @@ void savePhoto() {
   photoNumber = n;
   File f = SD.open(name, FILE_WRITE);
   if (!f) { sdErrors++; return; }
-  f.write(photo, photoLen);
+  size_t written = f.write(photo, photoLen);
   f.close();
+  // A full card writes short: count it, and remove the cut-off file so it is never mistaken
+  // for a whole photo.
+  if (written != photoLen) {
+    sdErrors++;
+    SD.remove(name);
+  }
 }
 
-void downlinkPhoto(long id) {
+// The photo downlink sends one IMG line per pass through loop(), so sampling, the recorder,
+// the deploy button and commands keep working while a photo goes down (about 3 s for a
+// typical QVGA photo at 115200 baud). Other lines, such as CSC1 readings, can appear between
+// the IMG lines; tools/serial_image.py ignores them.
+const size_t IMG_CHUNK = 48;
+bool downlinkActive = false;
+size_t downlinkOffset = 0;
+
+void startDownlink(long id) {
   Serial.print("IMG BEGIN");
   field("id", id);
   field("n", photoNumber);
   field("bytes", (long)photoLen);
   Serial.print(" crc32=");
   Serial.println(photoCrc, HEX);
-  const size_t CHUNK = 48;
-  for (size_t off = 0; off < photoLen; off += CHUNK) {
-    Serial.print("IMG ");
-    Serial.print((unsigned long)off);
-    Serial.print(' ');
-    for (size_t i = off; i < off + CHUNK && i < photoLen; i++) {
-      if (photo[i] < 16) Serial.print('0');
-      Serial.print(photo[i], HEX);
-    }
-    Serial.println();
+  downlinkOffset = 0;
+  downlinkActive = true;
+}
+
+// Sends the next IMG line, or IMG END after the last one. Called from loop().
+void stepDownlink() {
+  if (!downlinkActive) return;
+  if (downlinkOffset >= photoLen) {
+    Serial.println("IMG END");
+    downlinkActive = false;
+    return;
   }
-  Serial.println("IMG END");
+  Serial.print("IMG ");
+  Serial.print((unsigned long)downlinkOffset);
+  Serial.print(' ');
+  for (size_t i = downlinkOffset; i < downlinkOffset + IMG_CHUNK && i < photoLen; i++) {
+    if (photo[i] < 16) Serial.print('0');
+    Serial.print(photo[i], HEX);
+  }
+  Serial.println();
+  downlinkOffset += IMG_CHUNK;
 }
 
 // ---- Sensors ---------------------------------------------------------------
@@ -468,9 +495,14 @@ void sendLive(const Sample &s) {
 
 // ---- Data recorder (microSD on the Expansion Board) -----------------------
 
+// The recorder file: CUBESAT.CSV, or CUBE0001.CSV and up when startLog() finds an older
+// layout on the card.
+const char LOG_HEADER[] = "seq,t_ms,rtc,mode,in_contact,temp_mc,volt_mv,light_lux,pressure_pa,humidity_mpct,chip_temp_mc,ax_mg,ay_mg,az_mg";
+char logName[16] = "/CUBESAT.CSV";
+
 void logSample(const Sample &s, bool live) {
   if (!hasSd) return;
-  File f = SD.open("/CUBESAT.CSV", LOG_OPEN_MODE);
+  File f = SD.open(logName, LOG_OPEN_MODE);
   if (!f) { sdErrors++; return; }
   // seq,t_ms,rtc,mode,in_contact,temp_mc,volt_mv,light_lux,pressure_pa,humidity_mpct,chip_temp_mc,ax_mg,ay_mg,az_mg
   f.print(s.seq); f.print(',');
@@ -496,12 +528,33 @@ void logSample(const Sample &s, bool live) {
   f.close();
 }
 
-void startLog() {
-  if (!hasSd || SD.exists("/CUBESAT.CSV")) return;
-  File f = SD.open("/CUBESAT.CSV", LOG_OPEN_MODE);
-  if (!f) { hasSd = false; return; }
-  f.println("seq,t_ms,rtc,mode,in_contact,temp_mc,volt_mv,light_lux,pressure_pa,humidity_mpct,chip_temp_mc,ax_mg,ay_mg,az_mg");
+// True when the file's first line is exactly LOG_HEADER.
+bool headerMatches(const char *name) {
+  File f = SD.open(name, FILE_READ);
+  if (!f) return false;
+  String first = f.readStringUntil('\n');
   f.close();
+  first.trim();
+  return first == LOG_HEADER;
+}
+
+// Appends to CUBESAT.CSV when its columns match this sketch. A card from an older sketch
+// with different columns would mix two layouts in one file, so new rows go to the first
+// CUBE0001.CSV, CUBE0002.CSV, ... that is unused or has the same columns.
+void startLog() {
+  if (!hasSd) return;
+  for (uint16_t n = 0; n < 1000; n++) {
+    if (n > 0) snprintf(logName, sizeof(logName), "/CUBE%04u.CSV", n);
+    if (!SD.exists(logName)) {
+      File f = SD.open(logName, LOG_OPEN_MODE);
+      if (!f) { hasSd = false; return; }
+      f.println(LOG_HEADER);
+      f.close();
+      return;
+    }
+    if (headerMatches(logName)) return;
+  }
+  hasSd = false;  // 1000 files with other columns: stop logging rather than mix layouts
 }
 
 // ---- Status screen ---------------------------------------------------------
@@ -681,12 +734,14 @@ bool seenBefore(long id) {
 void handleLine(char *text) {
   unsigned long now = millis();
   // Commands work in any letter case.
-  for (char *p = text; *p; p++) *p = toupper(*p);
+  // Cast to unsigned char: a byte of 0x80 or more is negative as a char, and toupper() of a
+  // negative value is undefined.
+  for (char *p = text; *p; p++) *p = toupper((unsigned char)*p);
 
   char *word = strtok(text, " \t");
   if (!word) return;
   long id = -1;
-  if (isdigit(word[0])) {
+  if (isdigit((unsigned char)word[0])) {
     id = atol(word);
     word = strtok(nullptr, " \t");
     if (!word) return;
@@ -772,6 +827,8 @@ void handleLine(char *text) {
   } else if (strcmp(word, "PHOTO") == 0) {
 #if CAMERA_SUPPORTED
     if (!hasCamera) { nak(id, "PHOTO", "camera not found"); return; }
+    // A new photo would replace the bytes being sent.
+    if (downlinkActive) { nak(id, "PHOTO", "downlink in progress; wait for IMG END"); return; }
     const char *err = takePhoto();
     if (err) { nak(id, "PHOTO", err); return; }
     savePhoto();
@@ -787,7 +844,7 @@ void handleLine(char *text) {
     if (!photo || photoLen == 0) { nak(id, "DOWNLINK", "no photo yet; send PHOTO first"); return; }
     ack(id, "DOWNLINK");
     Serial.println();
-    downlinkPhoto(id);
+    startDownlink(id);  // a DOWNLINK during a downlink starts over; the decoder uses the last block
   } else if (strcmp(word, "HELP") == 0) {
     ack(id, "HELP");
     Serial.println();
@@ -909,6 +966,7 @@ void loop() {
   unsigned long now = millis();
   watchDeploySwitch(now);
   readCommands();
+  stepDownlink();
   updateLed(now);
 
   static unsigned long lastScreen = 0;

@@ -384,12 +384,14 @@ bool seenBefore(long id) {
 
 void handleLine(char *text) {
   unsigned long now = millis();
-  for (char *p = text; *p; p++) *p = toupper(*p);
+  // Cast to unsigned char: a byte of 0x80 or more is negative as a char, and toupper() of a
+  // negative value is undefined.
+  for (char *p = text; *p; p++) *p = toupper((unsigned char)*p);
 
   char *word = strtok(text, " \t");
   if (!word) return;
   long id = -1;
-  if (isdigit(word[0])) {
+  if (isdigit((unsigned char)word[0])) {
     id = atol(word);
     word = strtok(nullptr, " \t");
     if (!word) return;
