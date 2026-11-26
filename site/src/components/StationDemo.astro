@@ -5,10 +5,11 @@
 // (beginner, intermediate, professional) changes how much of the machinery shows.
 interface Props {
   heading?: boolean;
+  anchor?: string;
 }
-const { heading = true } = Astro.props;
+const { heading = true, anchor = "demo" } = Astro.props;
 ---
-<section id="demo" class="scroll-mt-6" aria-labelledby={heading ? 'demo-title' : undefined} aria-label={heading ? undefined : 'Practice ground station'}>
+<section id={anchor} data-station-demo class="scroll-mt-6" aria-labelledby={heading ? 'demo-title' : undefined} aria-label={heading ? undefined : 'Practice ground station'}>
   {heading && (
     <div class="mb-5">
       <h2 id="demo-title">Practice ground station</h2>
@@ -63,7 +64,6 @@ const { heading = true } = Astro.props;
           <pre data-raw class="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-mint">No sample yet.</pre>
         </details>
 
-        <p class="text-sm text-blue-100/80" data-show="beginner">Tip: pause contact while pictures are coming in, then see what made it.</p>
       </div>
 
       <div class="flex flex-col gap-4 border-t border-white/10 bg-navy p-5 sm:p-6 lg:border-t-0 lg:border-l">
@@ -94,7 +94,7 @@ const { heading = true } = Astro.props;
   type Level = 'beginner' | 'intermediate' | 'professional';
   const level = (): Level => (document.documentElement.dataset.level as Level) || 'beginner';
 
-  const root = document.querySelector<HTMLElement>('#demo');
+  const root = document.querySelector<HTMLElement>('[data-station-demo]');
   if (root) {
     const $ = <T extends Element>(sel: string) => root.querySelector<T>(sel)!;
     const sensorsBtn = $<HTMLButtonElement>('[data-action="sensors"]');
@@ -191,7 +191,10 @@ const { heading = true } = Astro.props;
         const text = level() === 'beginner'
           ? (fresh ? `Fresh: this reading is ${seconds} s old.` : `Historical: this reading is ${seconds} s old.${online ? ' Ask again for a fresh one.' : ''}`)
           : `${fresh ? 'Fresh' : 'Historical'}, captured ${level() === 'professional' ? age + ' ms' : seconds + ' s'} ago`;
-        if (wasFresh !== null && wasFresh !== fresh) note({ beginner: fresh ? 'The reading is fresh.' : 'The reading is now historical, more than 5 seconds old.', intermediate: 'Reading is now historical (older than 5 s).', professional: 'sample age > MAX_AGE (5000 ms): historical' });
+        if (wasFresh !== null && wasFresh !== fresh) {
+          const message = fresh ? 'Fresh reading received.' : online ? 'Reading is more than 5 seconds old.' : 'Contact paused. Last reading is historical.';
+          note({ beginner: message, intermediate: message, professional: fresh ? 'sample age <= MAX_AGE (5000 ms): fresh' : `sample age > MAX_AGE (5000 ms): historical${online ? '' : ' (contact paused)'}` });
+        }
         wasFresh = fresh;
         const line = $('[data-fresh]');
         if (line.textContent !== text) line.textContent = text;
