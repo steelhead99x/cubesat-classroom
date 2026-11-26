@@ -40,7 +40,7 @@ Everything is in one Bambu Studio project, **[p1s/cubesat-kit.3mf](p1s/cubesat-k
 Before you slice:
 
 - **Printer and process:** the project keeps whatever printer, process and filament you have selected. Pick your printer and nozzle (for example *Bambu Lab P1S 0.6 nozzle*), the matching *0.30mm Standard* process (or *0.20mm Standard* for a 0.4 mm nozzle), and PLA. Supports stay off.
-- **Already set in the file:** the keys, studs, washers and load-test parts print at 100% infill, since they're small and carry the load. Repeated parts are copies of one object, so a change to one applies to all of its copies.
+- **Already set in the file:** the keys, studs, washers and load-test parts print at 100% infill, since they're small and carry the load. Each part is its own object with a numbered name (Lock key 1 to 8, Plate stud 1 to 8 and so on), so Bambu Studio keeps every part on the plate it was placed on.
 - **Colours with an AMS:** select the four lock keys and give them red filament, like flight safety pins. On plate 3, set a filament change at 2.4 mm to white and back at 3.0 mm, so only the raised lettering is white.
 - **Plate 1 first:** run the load test (below) before you assemble anything. If the fasteners need a tweak, regenerate and reprint just those parts; Bambu Studio can skip objects on a plate.
 

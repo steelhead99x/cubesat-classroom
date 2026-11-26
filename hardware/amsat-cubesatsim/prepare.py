@@ -186,29 +186,30 @@ def png(img):
             + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
 
 
+def place_objects(meshes):
+    """One object per placed part, as Bambu Studio saves them: its plate list keeps a single
+    instance per object, so copies of one object can't be spread across plates. Repeated parts
+    get numbered names. Returns [(label, part, plate, x, y)] with plate-relative x, y."""
+    placed = [(n, p, x, y) for p, (_, rows) in enumerate(PLATES) for n, x, y in layout(rows, meshes)]
+    totals = {n: sum(1 for m, *_ in placed if m == n) for n in PARTS}
+    counters = {n: 0 for n in PARTS}
+    objects = []
+    for n, p, x, y in placed:
+        counters[n] += 1
+        label = f"{n} {counters[n]}" if totals[n] > 1 else n
+        objects.append((label, n, p, x, y))
+    return objects
+
+
 def main():
     meshes = load_parts()
-    names = list(PARTS)
+    objects = place_objects(meshes)
     # Bambu numbering: each object's mesh (its one part) takes an id, the object the next one.
-    ids, next_id = {}, 1
-    for i, n in enumerate(names):
-        ids[n] = (next_id, next_id + 1, i + 1)      # part id, object id, file number
-        next_id += 2
-
-    instances = {n: [] for n in names}              # name -> [(plate, x, y)]
-    plate_items = []
-    for p, (_, rows) in enumerate(PLATES):
-        ox, oy = plate_origin(p, len(PLATES))
-        items = []
-        for n, x, y in layout(rows, meshes):
-            instances[n].append((p, ox + x, oy + y))
-            items.append((n, len(instances[n]) - 1, x, y))
-        plate_items.append(items)
+    ids = [(2 * i + 1, 2 * i + 2, i + 1) for i in range(len(objects))]   # part id, object id, file number
 
     files = {}
     rels = []
-    for n in names:
-        part_id, obj_id, num = ids[n]
+    for (label, n, *_), (part_id, obj_id, num) in zip(objects, ids):
         path = f"3D/Objects/object_{num}.model"
         rels.append(path)
         files[path] = (MODEL_HEAD + " <resources>\n"
@@ -222,59 +223,56 @@ def main():
             "License": "GPL-3.0", "CreationDate": DATE, "ModificationDate": DATE}
     model += [f' <metadata name="{k}">{escape(v)}</metadata>\n' for k, v in sorted(meta.items())]
     model.append(" <resources>\n")
-    for n in names:
-        part_id, obj_id, num = ids[n]
+    for part_id, obj_id, num in ids:
         model.append(f'  <object id="{obj_id}" p:UUID="{num:08x}-61cb-4c03-9d28-80fed5dfa1dc" type="model">\n'
                      f'   <components>\n    <component p:path="/3D/Objects/object_{num}.model" objectid="{part_id}" '
                      f'p:UUID="{num << 16:08x}-b206-40ff-9872-83e8017abed1" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>\n'
                      "   </components>\n  </object>\n")
     model.append(' </resources>\n <build p:UUID="2c7c17d8-22b5-4d84-8835-1976022ea369">\n')
-    for n in names:
-        _, obj_id, _ = ids[n]
-        for k, (_, x, y) in enumerate(instances[n]):
-            uuid = f"{(obj_id << 8) | k:08x}-b1ec-4553-aec9-835e5b724bb4"    # unique per copy
-            model.append(f'  <item objectid="{obj_id}" p:UUID="{uuid}" '
-                         f'transform="1 0 0 0 1 0 0 0 1 {fmt(x)} {fmt(y)} 0" printable="1"/>\n')
+    for (label, n, p, x, y), (_, obj_id, _) in zip(objects, ids):
+        ox, oy = plate_origin(p, len(PLATES))
+        model.append(f'  <item objectid="{obj_id}" p:UUID="{obj_id:08x}-b1ec-4553-aec9-835e5b724bb4" '
+                     f'transform="1 0 0 0 1 0 0 0 1 {fmt(ox + x)} {fmt(oy + y)} 0" printable="1"/>\n')
     model.append(" </build>\n</model>\n")
     files["3D/3dmodel.model"] = "".join(model)
 
     cfg = ['<?xml version="1.0" encoding="UTF-8"?>\n<config>\n']
-    for n in names:
-        part_id, obj_id, _ = ids[n]
-        settings = {"name": n, "extruder": "1", **PARTS[n][2]}
+    for (label, n, *_), (part_id, obj_id, _) in zip(objects, ids):
+        settings = {"name": label, "extruder": "1", **PARTS[n][2]}
         cfg.append(f'  <object id="{obj_id}">\n')
         cfg += [f'    <metadata key="{k}" value="{escape(v)}"/>\n' for k, v in settings.items()]
         cfg.append(f'    <metadata face_count="{len(meshes[n].faces)}"/>\n'
                    f'    <part id="{part_id}" subtype="normal_part">\n'
-                   f'      <metadata key="name" value="{escape(n)}"/>\n'
+                   f'      <metadata key="name" value="{escape(label)}"/>\n'
                    '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n'
                    f'      <mesh_stat face_count="{len(meshes[n].faces)}" edges_fixed="0" degenerate_facets="0" '
                    'facets_removed="0" facets_reversed="0" backwards_edges="0"/>\n'
                    '    </part>\n  </object>\n')
-    identify = 1000
     for p, (title, _) in enumerate(PLATES):
         cfg.append("  <plate>\n"
                    f'    <metadata key="plater_id" value="{p + 1}"/>\n'
                    f'    <metadata key="plater_name" value="{escape(title)}"/>\n'
                    '    <metadata key="locked" value="false"/>\n'
                    f'    <metadata key="thumbnail_file" value="Metadata/plate_{p + 1}.png"/>\n')
-        for n, inst, _, _ in plate_items[p]:
-            identify += 1
+        for (label, n, q, x, y), (_, obj_id, num) in zip(objects, ids):
+            if q != p:
+                continue
             cfg.append("    <model_instance>\n"
-                       f'      <metadata key="object_id" value="{ids[n][1]}"/>\n'
-                       f'      <metadata key="instance_id" value="{inst}"/>\n'
-                       f'      <metadata key="identify_id" value="{identify}"/>\n'
+                       f'      <metadata key="object_id" value="{obj_id}"/>\n'
+                       '      <metadata key="instance_id" value="0"/>\n'
+                       f'      <metadata key="identify_id" value="{1000 + num}"/>\n'
                        "    </model_instance>\n")
         cfg.append("  </plate>\n")
     cfg.append("</config>\n")
     files["Metadata/model_settings.config"] = "".join(cfg)
 
-    for p, items in enumerate(plate_items):
+    for p in range(len(PLATES)):
         scene = []
-        for n, _, x, y in items:
-            m = meshes[n].copy()
-            m.apply_translation((x, y, 0))
-            scene.append((m, PARTS[n][3]))
+        for label, n, q, x, y in objects:
+            if q == p:
+                m = meshes[n].copy()
+                m.apply_translation((x, y, 0))
+                scene.append((m, PARTS[n][3]))
         files[f"Metadata/plate_{p + 1}.png"] = png(render(scene, 512))
         files[f"Metadata/plate_{p + 1}_small.png"] = png(render(scene, 128))
 
@@ -308,9 +306,42 @@ def main():
             data = files[name]
             archive.writestr(ZipInfo(name), data.encode() if isinstance(data, str) else data,
                              compress_type=ZIP_DEFLATED)
+    check(objects, meshes)
     for p, (title, _) in enumerate(PLATES):
-        print(f"plate {p + 1}, {title}: {', '.join(sorted({n for n, *_ in plate_items[p]}))}")
+        print(f"plate {p + 1}, {title}: {sum(1 for o in objects if o[2] == p)} parts")
     print(f"wrote {OUT.relative_to(HERE)}")
+
+
+def check(objects, meshes):
+    """Read the project back the way Bambu Studio does and check the plate split: every object
+    on exactly one plate, once, with a single instance, lying inside that plate's area."""
+    import re
+    with ZipFile(OUT) as archive:
+        model = archive.read("3D/3dmodel.model").decode()
+        cfg = archive.read("Metadata/model_settings.config").decode()
+    items = re.findall(r'<item objectid="(\d+)"[^>]*transform="([^"]+)"', model)
+    counts = {}
+    for obj, _ in items:
+        counts[obj] = counts.get(obj, 0) + 1
+    if any(c != 1 for c in counts.values()) or len(items) != len(objects):
+        raise ValueError("every object must have exactly one instance")
+    position = {obj: tuple(map(float, t.split()[9:11])) for obj, t in items}
+    names = dict(re.findall(r'<object id="(\d+)">\s*<metadata key="name" value="([^"]+)"', cfg))
+    seen = set()
+    for p, plate in enumerate(re.findall(r"<plate>(.*?)</plate>", cfg, re.S)):
+        ox, oy = plate_origin(p, len(PLATES))
+        for obj in re.findall(r'key="object_id" value="(\d+)"', plate):
+            if obj in seen:
+                raise ValueError(f"{names[obj]} is on more than one plate")
+            seen.add(obj)
+            label = names[obj]
+            part = next(n for lab, n, *_ in objects if lab == label)
+            w, d = meshes[part].extents[:2]
+            x, y = position[obj]
+            if not (ox + w / 2 <= x <= ox + BED - w / 2 and oy + d / 2 <= y <= oy + BED - d / 2):
+                raise ValueError(f"{label} on plate {p + 1} lies outside that plate")
+    if seen != set(position):
+        raise ValueError("some objects are on no plate")
 
 
 if __name__ == "__main__":
