@@ -351,6 +351,72 @@ fn stored_readings_wait_while_no_terminal_is_open() {
 }
 
 #[test]
+fn a_slow_link_resumes_mid_line_and_never_doubles_a_record() {
+    // Review finding: USB sent part of a batch, timed out, and the retry started the batch
+    // again, so one serial line held two REC prefixes and the whole batch was retired.
+    // SerialOut keeps the unsent bytes and the next send resumes from that byte.
+    let mut b = Bench::new(Timing::Bench, false);
+    b.deploy();
+    b.send("LOS");
+    b.run(70_050);
+    assert_eq!(b.m.stored(), 64);
+    let rail = b.rail;
+    let mut out: SerialOut<4096> = SerialOut::new();
+    let mut host = Vec::new();
+    for byte in b"AOS\n" {
+        b.m.receive(*byte, b.now, &mut || reading(rail), &mut || rail, &mut out);
+    }
+    for _ in 0..400 {
+        // The link takes only 100 bytes per poll, as when a USB send times out part-way.
+        let n = out.pending().len().min(100);
+        host.extend_from_slice(&out.pending()[..n]);
+        out.sent(n);
+        if out.is_empty() {
+            b.m.delivered();
+        }
+        b.now += 10;
+        b.m.poll(b.now, b.jumper, &mut || reading(rail), &mut out);
+    }
+    let text = String::from_utf8(host).unwrap();
+    assert!(
+        text.lines().all(|l| l.matches("REC ").count() <= 1),
+        "a line with two records"
+    );
+    let seqs: Vec<u32> = text
+        .lines()
+        .filter(|l| l.starts_with("REC "))
+        .map(|l| {
+            l["REC seq=".len()..]
+                .split(' ')
+                .next()
+                .unwrap()
+                .parse()
+                .unwrap()
+        })
+        .collect();
+    assert_eq!(seqs.len(), 64, "{seqs:?}");
+    assert!(seqs.windows(2).all(|w| w[1] == w[0] + 1), "{seqs:?}");
+    assert_eq!(b.m.stored(), 0);
+}
+
+#[test]
+fn serial_out_keeps_the_unsent_tail_in_order() {
+    let mut out: SerialOut<16> = SerialOut::new();
+    out.write_str("REC 1\r\n").unwrap();
+    out.write_str("REC 2\r\n").unwrap();
+    assert!(
+        out.write_str("too long for the rest").is_err(),
+        "refused whole"
+    );
+    out.sent(4);
+    assert_eq!(out.pending(), b"1\r\nREC 2\r\n");
+    out.write_str("x").unwrap();
+    assert_eq!(out.pending(), b"1\r\nREC 2\r\nx");
+    out.clear();
+    assert!(out.is_empty());
+}
+
+#[test]
 fn automatic_orbit_passes() {
     let mut b = Bench::new(Timing::Bench, false);
     b.deploy();
