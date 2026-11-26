@@ -2,6 +2,8 @@
 
 A teacher plays the payload integrator. Each crew delivers an instrument record and the evidence for one configuration. Use one, three, or five nodes in **one classroom experiment**. These counts describe independent loggers. The flight provider and dispenser integrator determine the spacecraft envelope, interfaces and verification baseline.
 
+For ground tests of one node on solar power (energy balance, day and night, brown-out, tumble and endurance), see the [ground-test fork](../rideshare-flatsat-ground/README.md).
+
 ## Start with a desk simulation
 
 From this directory, run the commands below with Python 3. Each simulation creates a new directory to preserve earlier evidence. The CSV files contain generated acceleration in milligravity (mg), where 1000 mg is one standard gravity.
