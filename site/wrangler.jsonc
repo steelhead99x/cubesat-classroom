@@ -9,7 +9,10 @@
 // cubesat.app is not listed: it belongs to the app's own Worker (cubesat-classroom-app repo).
 {
   "name": "cubesat-classroom",
-  "workers_dev": true,
+  // No workers.dev or preview URLs: the site is only served on its custom domains, so there
+  // is no second public copy at <name>.<account>.workers.dev.
+  "workers_dev": false,
+  "preview_urls": false,
   "main": "src/worker.mjs",
   "compatibility_date": "2026-11-01",
   "assets": {
