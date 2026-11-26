@@ -8,12 +8,12 @@
 //! the HaLow board, no part within 2 mm of either board's edges on top (the lips reach 0.8 mm), and XIAO pins on a
 //! 2.54 mm pitch in two rows 15.24 mm apart, 6 mm long under 2.5 mm header plastic.
 
-use manifold_csg::{CrossSection, Manifold};
+use manifold_csg::Manifold;
 
 use crate::design::{Design, Edge, Rect, Side};
 use crate::geom::{EPS, FACETS, bx, offset, rect, union_all};
 use crate::joints::{hook_cut, hook_post, lip};
-use crate::parts::{cable_notch, column_cuts, plate_outline};
+use crate::parts::{cable_notch, column_cuts, isogrid_pockets, plate_outline};
 
 pub const HALOW: Rect = [-23.0, -20.0, 42.0, 25.0];
 pub const HALOW_PCB: f64 = 1.6;
@@ -245,25 +245,11 @@ pub fn xiao_plate(d: &Design, tooth_r: Option<f64>, deflect: f64) -> Manifold {
             HALOW[0] + HALOW[2],
             HALOW[1] + HALOW[3] / 2.0 + 3.0,
         ));
-    let windows = offset(&offset(&outline.difference(&keep), -1.0, 16), 1.0, 16);
-    let big: Vec<Vec<[f64; 2]>> = windows
-        .to_polygons()
-        .into_iter()
-        .filter(|p| {
-            CrossSection::from_polygons(std::slice::from_ref(p))
-                .area()
-                .abs()
-                > 12.0
-        })
-        .collect();
+    let windows = isogrid_pockets(d, &outline, &keep);
     outline
         .extrude(d.plate_t)
         .difference(&cuts)
-        .difference(
-            &CrossSection::from_polygons(&big)
-                .extrude(d.plate_t + 2.0)
-                .translate(0.0, 0.0, -1.0),
-        )
+        .difference(&windows)
         .union(&features(d, deflect))
 }
 

@@ -4,8 +4,8 @@ Printed 1U CubeSat frames (100 × 100 × 113.5 mm) for a Bambu Lab P1S or a simi
 
 | Design | What it is | Start here |
 | --- | --- | --- |
-| **AMSAT CubeSatSim frame + Arduino payload** | AMSAT's v2.0 frame with printed plates for an Uno R3, a Nano 33 BLE Sense and a 3000 mAh battery. No loose parts, 100% printed, no supports. | [Build guide](amsat-cubesatsim/README.md) |
-| Outdoor ground station | The same payload plate in a sealed box with a gasket, cable gland, vent, battery and a 1/4"-20 tripod thread. Design checks only. | [Build guide](outdoor-station/README.md) |
+| **AMSAT CubeSatSim frame + Arduino payload** | AMSAT's v2.0 frame with printed plates for an Uno R3, a Nano 33 BLE Sense and a 3000 mAh battery, and a camera side for a XIAO ESP32-S3 Sense. No loose parts, no screws, no supports. | [Build guide](amsat-cubesatsim/README.md) |
+| Outdoor ground station | The same payload plate in a sealed box with a latching lid and O-ring (no screws), cable gland, vent, battery and a 1/4"-20 tripod thread. Design checks only. | [Build guide](outdoor-station/README.md) |
 | Outdoor XIAO station | The outdoor box with a XIAO plate: XIAO ESP32-S3 on Wi-Fi HaLow, XIAO MG24 Sense, battery, two SMA antenna ports. Design checks only. | [Build guide](outdoor-xiao/README.md) |
 | Teachers in Space frame | The frame TIS uses in its Arduino CubeSat workshops. Files come from TIS. | [Links and comparison](tis/README.md) |
 | Rev A bench box | Closed test box and the M3 screw-fit coupon | [Print guide](p1s/README.md) |

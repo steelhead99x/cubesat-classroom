@@ -6,11 +6,13 @@ Every rule that can be checked is a check in [crates/amsat-kit](../crates/amsat-
 
 ## The three rules
 
-1. **No loose pieces wherever possible.** Every snap, hook, lip and pin is part of a plate or the frame. Nothing small gets dropped, lost or thrown away by mistake. When a part has to be separate (a gasket, a lid's screws), make it captive once it's built, and say why it can't be avoided.
+1. **No loose pieces wherever possible, and no screws.** Every snap, hook, lip, pin and latch is part of a plate, the frame or the case, and every joint snaps apart and back together again. Nothing small gets dropped, lost or thrown away by mistake. When a part has to be separate (the outdoor lid's O-ring), it sits captive in its groove once it's built, and the README says why it can't be avoided.
 2. **Rocket-launch ready and durable.** Every joint holds at the 20 g design load with margin. Nothing that flexes or carries load is thinner than 2 mm. Every snap holds its part tight, so nothing rattles, wears or works loose. Parts that go outside are printed in a material that survives sun and weather.
-3. **Easy enough for kids.** A 13-year-old can build it on a budget printer, without tools, with a click to say each step is done. Parts go together one way round only. Steps that need an adult (soldering, heat-set inserts, wiring a battery) are marked as mentor steps.
+3. **Easy enough for kids.** A 13-year-old can build it on a budget printer, without tools, with a click to say each step is done. Parts go together one way round only. Steps that need an adult (soldering, wiring a battery) are marked as mentor steps.
 
 When two rules pull against each other, the order above decides, except for safety, which always comes first.
+
+One more thing applies to every part: **the look** (see [Design language](#design-language)).
 
 ## Joints
 
@@ -21,7 +23,20 @@ Use these joints, in this order of preference. Each is in [joints.rs](../crates/
 | **Keyed snap pin** | Plates onto columns | A pin with two flats and a 45° head. The plate's keyed slot drops on one way only, centred, and two flex fingers click in under the head. |
 | **Lips and snap hooks** | Circuit boards | Tuck one edge under fixed lips, swing the board down, and snap hooks click over the other edge. |
 | **Push-down end hooks** | Batteries and other thick parts | Press it straight down between side guides until a hook clicks over each end. Tuck-and-swing doesn't work for thick parts: their bottom edge swings into the lips. |
-| **Captive screws** | Only where a seal needs clamping force (the outdoor lid) | The lid's holes are narrow at the bottom, so a screw cuts through once and then stays in the lid. |
+| **Lid latches** | Lids, including sealed outdoor lids | Press the lid straight down: a finger cut into each edge of the lid bends out over a lug on the rim and clicks under it. Press each finger outward with a thumb to lift the lid off again. |
+
+No screws, inserts or nuts hold printed parts together, anywhere. (A bought cable gland or antenna bulkhead keeps its own nut.) A seal doesn't need clamping force if it is a radial seal (see [Outdoor cases](#outdoor-cases)).
+
+## Design language
+
+Every CubeSat Classroom part shares one look, borrowed from modern launch vehicles and spacecraft: clean, functional and engineered. It must never copy anyone's names, logos or trade dress.
+
+- **Monochrome.** White structure, black decks and plates inside, grey for test coupons. Print in white and black filament where you can; any colour still works.
+- **Crisp edges.** Outer edges are chamfered with mitred corners, not rounded blobs. Inside corners that carry load keep a small fillet.
+- **Isogrid.** Lighten a plate with triangular pockets between 2.4 mm ribs at 60°, never with free-form holes. Every plate uses the same pattern from `isogrid_pockets` in [parts.rs](../crates/amsat-kit/src/parts.rs).
+- **Flush and hidden.** No visible fasteners (there are none). Latches and hooks sit inside the outline.
+- **Debossed lettering**, cut 0.6 mm into a face, on parts whose top face is seen (lids). Raised lettering only where a face is printed upward and a deboss would weaken it.
+- **Function first.** The look never costs strength, fit or printability. A rule above always wins.
 
 ## Snap-fit rules
 
@@ -43,7 +58,7 @@ Use these joints, in this order of preference. Each is in [joints.rs](../crates/
 - **Stresses:** a factor of safety of 2. PLA's strength across layers is assumed to be 15 MPa (the Rev C value) until we measure it.
 - **Snap retention: hand calculations, at least 1.5 times the launch load, confirmed by a pull test.** A plate on three snap pins must hold 1.5 × its launch load, about 24 N for the payload plate, so **one pin coupon should take at least 8 N to pull off.** Check that with a luggage scale and record it.
 - **Batteries are held at both ends and both sides**, with the largest cell the listing allows, and foam tape takes up a smaller cell. A battery is never clamped tight: pouch cells swell.
-- **Materials:** PLA indoors. ASA or PETG outdoors, because PLA softens in summer sun. TPU 95A for gaskets. A fit tuned in one material is rechecked in another: print the fit ladder again.
+- **Materials:** PLA indoors. ASA or PETG outdoors, because PLA softens in summer sun. A fit tuned in one material is rechecked in another: print the fit ladder again.
 
 ## Easy for kids
 
@@ -61,12 +76,14 @@ Every new joint or board mount gets a coupon: the same geometry, made by the sam
 - **Pin fit ladder:** three tabs (1, 2 and 3 dots, 0.1 to 0.3 mm). The best fit becomes the kit's fit.
 - **Nano coupon** and **XIAO coupon:** the plate's mounts on their own, for the real boards.
 - **Tripod-thread coupon:** the box's thread and one 0.15 mm looser.
+- **Latch coupon:** a piece of the outdoor box's rim with one lug, and a piece of lid with one latch finger.
+- **Camera coupon:** the camera side's cradle, guides and hooks on their own, for the real XIAO ESP32-S3 Sense.
 
 Print each coupon in the material of the real part. Record what you find, and change the one number that controls it.
 
 ## Outdoor cases
 
-- **Seal:** a gasket in a groove, squeezed 20–30%, with every screw outside it.
+- **Seal:** a radial O-ring in a groove round a skirt under the lid. The skirt drops into the box's opening and squeezes the O-ring sideways against the wall, 18–30%, with the groove at most 85% full. A radial seal needs no clamping force, so the lid latches on instead of screwing down. Use a nitrile O-ring of the cord size and inside diameter the build report gives.
 - **Ports face down; antennas point up.** Use glands and bulkheads with their own O-rings, on flat parts of the wall.
 - **A breathable vent**, so condensation and pressure changes can't pump water past the seal.
 - **Tripod mount:** a 1/4"-20 UNC thread in a sealed boss in the middle of the back. Printed, no metal, and tested with the thread coupon.
@@ -82,7 +99,7 @@ Print each coupon in the material of the real part. Record what you find, and ch
 
 Before a new or changed part is printed beyond a coupon:
 
-- [ ] **No loose pieces**, or each separate piece is justified and captive once built.
+- [ ] **No loose pieces and no screws**, or each separate piece is justified and captive once built. Every joint comes apart and goes back together.
 - [ ] **One way round:** it can't go together wrong, and a click says each step is done.
 - [ ] **No supports**, and one big flat face to print on.
 - [ ] **Snap rules:** flexing parts at most 1.2% strain, in their print plane, at least 2 mm thick, with room to bend.
@@ -91,14 +108,15 @@ Before a new or changed part is printed beyond a coupon:
 - [ ] **Material** right for where it lives: PLA indoors, ASA or PETG outdoors.
 - [ ] **Coupon** printed for every new joint, in the real material, with the result recorded.
 - [ ] **Checks:** every rule a check, every check shown able to fail, output reproducible.
+- [ ] **Look:** crisp chamfered edges, isogrid pockets, flush faces, debossed lettering, white and black.
 - [ ] **Labels:** the README says what's been printed and tested, and what's only been design-checked.
 
 ## Where existing designs stand
 
 | Design | Meets the guide? |
 | --- | --- |
-| [Classroom kit](amsat-cubesatsim/README.md) (AMSAT frame + plates) | Yes. The 5 V boost board still needs a printed mount. |
-| [Outdoor ground station](outdoor-station/README.md) and [outdoor XIAO station](outdoor-xiao/README.md) | Yes. The lid's captive screws and inserts are the one justified exception: a seal needs clamping force. |
+| [Classroom kit](amsat-cubesatsim/README.md) (AMSAT frame + plates) | Yes, including the camera side. The 5 V boost board still needs a printed mount. The upstream AMSAT frame parts keep their own look. |
+| [Outdoor ground station](outdoor-station/README.md) and [outdoor XIAO station](outdoor-xiao/README.md) | Yes. No screws: the lid latches on over a radial O-ring. The O-ring is the one separate piece. |
 | Rev C frame (`crates/cubesat-cad`, PR #37) | Not yet: its board mounts are the rejected quarter-turn studs, lock keys and clamp. Port the keyed snap pin, lips and hooks, and battery hooks. |
 | [Rev A bench box](p1s/README.md) | No: M3 screws. Kept as a historical test box. Replace before it goes to classes. |
 | [Rev B rail-fit set](README.md#rev-b-rail-fit-set) | No: needs supports, and has no board mounts. Rework before it goes to classes. |

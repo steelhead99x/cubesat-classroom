@@ -351,6 +351,14 @@ pub fn fit_plate(d: &Design) -> Result<Manifold, String> {
         FACETS,
     ));
     keep = keep.union(&offset(&branding(d)?, 1.0, 16));
+    let pockets = isogrid_pockets(d, &outline, &keep);
+    Ok(payload_plate(d, None, 0.0)?.difference(&pockets))
+}
+
+/// The kit's one way of lightening a plate: everything in `outline` that `keep` doesn't need
+/// becomes triangular isogrid pockets between 2.4 mm ribs at 60 degrees, with 1 mm fillets in
+/// their corners, through the plate. Tiny slivers stay solid.
+pub fn isogrid_pockets(d: &Design, outline: &CrossSection, keep: &CrossSection) -> Manifold {
     let mut ribs = CrossSection::empty();
     let pitch = TRUSS_PITCH * 3f64.sqrt() / 2.0;
     for angle in [0.0, 60.0, 120.0] {
@@ -368,7 +376,7 @@ pub fn fit_plate(d: &Design) -> Result<Manifold, String> {
         }
     }
     let pockets = offset(
-        &offset(&outline.difference(&keep).difference(&ribs), -1.0, 16),
+        &offset(&outline.difference(keep).difference(&ribs), -1.0, 16),
         1.0,
         16,
     )
@@ -383,10 +391,9 @@ pub fn fit_plate(d: &Design) -> Result<Manifold, String> {
                 > MIN_POCKET
         })
         .collect();
-    let pockets = CrossSection::from_polygons(&big)
+    CrossSection::from_polygons(&big)
         .extrude(d.plate_t + 2.0)
-        .translate(0.0, 0.0, -1.0);
-    Ok(payload_plate(d, None, 0.0)?.difference(&pockets))
+        .translate(0.0, 0.0, -1.0)
 }
 
 // ---------- test coupons ----------
