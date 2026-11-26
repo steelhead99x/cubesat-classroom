@@ -261,18 +261,22 @@ async fn main(spawner: Spawner) {
         blue.set_level(if light.b { Level::Low } else { Level::High });
 
         // Send what the mission wrote. With no terminal open, drop it, like a
-        // satellite talking to an empty sky.
+        // satellite talking to an empty sky. Stored readings are the exception: the
+        // mission retires them only when everything went out, and otherwise keeps them
+        // for the next pass.
+        let mut sent = 0;
         if serial.dtr() {
-            let mut sent = 0;
             while sent < out.len {
                 let end = (sent + 64).min(out.len);
-                if with_timeout(
-                    Duration::from_millis(50),
-                    serial.write_packet(&out.buf[sent..end]),
-                )
-                .await
-                .is_err()
-                {
+                let ok = matches!(
+                    with_timeout(
+                        Duration::from_millis(50),
+                        serial.write_packet(&out.buf[sent..end])
+                    )
+                    .await,
+                    Ok(Ok(()))
+                );
+                if !ok {
                     break;
                 }
                 sent = end;
@@ -282,6 +286,11 @@ async fn main(spawner: Spawner) {
             if sent > 0 && sent == out.len && sent % 64 == 0 {
                 let _ = with_timeout(Duration::from_millis(50), serial.write_packet(&[])).await;
             }
+        }
+        if serial.dtr() && sent == out.len {
+            mission.delivered();
+        } else {
+            mission.undelivered();
         }
         out.len = 0;
     }

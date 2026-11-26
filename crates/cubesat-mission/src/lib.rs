@@ -208,6 +208,8 @@ pub struct Mission {
     store_head: usize,
     store_count: usize,
     store_dropped: u32,
+    /// Stored readings written out but not yet confirmed sent (see [`Mission::delivered`]).
+    in_flight: usize,
     recent: [Option<u32>; RECENT],
     recent_next: usize,
     line: [u8; LINE],
@@ -256,6 +258,7 @@ impl Mission {
             store_head: 0,
             store_count: 0,
             store_dropped: 0,
+            in_flight: 0,
             recent: [None; RECENT],
             recent_next: 0,
             line: [0; LINE],
@@ -595,26 +598,40 @@ impl Mission {
             self.store_count += 1;
         } else {
             self.store_dropped += 1;
+            self.in_flight = self.in_flight.saturating_sub(1); // the oldest is overwritten
         }
     }
 
-    /// Send up to [`STORED_BATCH`] stored readings, oldest first. Each REC line is built
-    /// whole, then handed to `out` in one write; a reading is retired only when `out`
-    /// accepted its whole line. If the link is full, the rest stay stored and go out on a
-    /// later poll, so nothing is cleared that wasn't sent.
+    /// Write up to [`STORED_BATCH`] stored readings, oldest first, each as one whole REC
+    /// line. They stay stored, marked in flight, until the caller reports whether the text
+    /// really left the board: [`Mission::delivered`] retires them, [`Mission::undelivered`]
+    /// keeps them for the next poll. Nothing new is written while a batch awaits that answer.
     fn send_stored(&mut self, out: &mut impl Write) {
-        for _ in 0..STORED_BATCH {
-            if self.store_count == 0 {
-                return;
-            }
-            let first = (self.store_head + STORE - self.store_count) % STORE;
-            let f = self.store[first];
+        if self.in_flight > 0 {
+            return;
+        }
+        let first = (self.store_head + STORE - self.store_count) % STORE;
+        while self.in_flight < STORED_BATCH.min(self.store_count) {
+            let f = self.store[(first + self.in_flight) % STORE];
             let mut line = LineBuf::new();
             if rec_line(&f, &mut line).is_err() || out.write_str(line.as_str()).is_err() {
                 return;
             }
-            self.store_count -= 1;
+            self.in_flight += 1;
         }
+    }
+
+    /// Everything written since the last poll reached the ground station: retire the stored
+    /// readings that were in it. Call after the output was sent in full.
+    pub fn delivered(&mut self) {
+        self.store_count -= self.in_flight.min(self.store_count);
+        self.in_flight = 0;
+    }
+
+    /// The output was not sent (no terminal open, or a send failed): stored readings in it
+    /// stay stored and go out again on a later poll.
+    pub fn undelivered(&mut self) {
+        self.in_flight = 0;
     }
 
     fn acquire(&mut self, now: u32, out: &mut impl Write) {
