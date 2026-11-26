@@ -99,8 +99,15 @@ def summary(a):
         avg = e_mj / dur if dur else statistics.mean(p for _, p in pts)
         side = p + ".json"
         label = json.load(open(side)).get("label", "") if os.path.exists(side) else ""
-        per_mb = f"{e_mj / a.megabytes:.0f}" if a.megabytes else "-"
+        # The megabytes were delivered over the whole run, gaps included, so energy per
+        # megabyte has to cover the same span: the gaps count at the run's average power.
+        span = pts[-1][0] - pts[0][0]
+        gap = max(0.0, span - dur)
+        per_mb = f"{avg * span / a.megabytes:.0f}" if a.megabytes else "-"
         print(f"{p} | {label} | {dur / 60:.1f} | {avg:.0f} | {e_mj / 1e3:.1f} | {per_mb}")
+        if gap > 0:
+            print(f"  {p}: {gap:.1f} s of the {span:.1f} s run had no readings;"
+                  " mJ per MB counts that time at the average power")
     if not a.megabytes:
         print("add --megabytes (delivered at the receiving end) for energy per megabyte")
 

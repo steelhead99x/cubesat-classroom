@@ -164,6 +164,11 @@ const SAFE_BELOW_MV: i32 = 3000;
 const RAIL_PLAUSIBLE_MV: i32 = 1700;
 const DEBOUNCE_MS: u32 = 50;
 const STORE: usize = 64;
+/// Stored readings sent per poll at most, so a full store (about 7 KB of text) goes out
+/// over several polls and never crowds out the live lines sharing the serial buffer.
+const STORED_BATCH: usize = 16;
+/// The longest REC line, with room to spare.
+const REC_LINE: usize = 128;
 const LINE: usize = 72;
 const RECENT: usize = 8;
 /// Brightest reference CAL accepts: full sunlight is about 120 000 lux. The cap also
@@ -371,6 +376,10 @@ impl Mission {
             } else if !self.in_contact && since(now, self.contact_since) >= self.orbit_down_ms {
                 self.acquire(now, out);
             }
+        }
+
+        if self.in_contact && self.store_count > 0 {
+            self.send_stored(out);
         }
 
         if since(now, self.last_sample) >= self.period_ms {
@@ -589,24 +598,23 @@ impl Mission {
         }
     }
 
+    /// Send up to [`STORED_BATCH`] stored readings, oldest first. Each REC line is built
+    /// whole, then handed to `out` in one write; a reading is retired only when `out`
+    /// accepted its whole line. If the link is full, the rest stay stored and go out on a
+    /// later poll, so nothing is cleared that wasn't sent.
     fn send_stored(&mut self, out: &mut impl Write) {
-        let first = (self.store_head + STORE - self.store_count) % STORE;
-        for i in 0..self.store_count {
-            let f = self.store[(first + i) % STORE];
-            let _ = write!(out, "REC seq={} t_ms={}", f.seq, f.t_ms);
-            if let Some(t) = f.temp_mc {
-                let _ = write!(out, " temp_mc={t}");
+        for _ in 0..STORED_BATCH {
+            if self.store_count == 0 {
+                return;
             }
-            let _ = write!(out, " volt_mv={}", f.volt_mv);
-            if let Some(p) = f.pressure_pa {
-                let _ = write!(out, " pressure_pa={p}");
+            let first = (self.store_head + STORE - self.store_count) % STORE;
+            let f = self.store[first];
+            let mut line = LineBuf::new();
+            if rec_line(&f, &mut line).is_err() || out.write_str(line.as_str()).is_err() {
+                return;
             }
-            if let Some(c) = f.light_clear {
-                let _ = write!(out, " light_clear={c}");
-            }
-            let _ = out.write_str("\r\n");
+            self.store_count -= 1;
         }
-        self.store_count = 0;
     }
 
     fn acquire(&mut self, now: u32, out: &mut impl Write) {
@@ -915,6 +923,53 @@ fn parse_milli(s: &str) -> Option<u64> {
 /// Print a fixed-point value with five decimals.
 fn write_e5(out: &mut impl Write, v: u64) {
     let _ = write!(out, "{}.{:05}", v / 100_000, v % 100_000);
+}
+
+fn rec_line(f: &Frame, out: &mut impl Write) -> core::fmt::Result {
+    write!(out, "REC seq={} t_ms={}", f.seq, f.t_ms)?;
+    if let Some(t) = f.temp_mc {
+        write!(out, " temp_mc={t}")?;
+    }
+    write!(out, " volt_mv={}", f.volt_mv)?;
+    if let Some(p) = f.pressure_pa {
+        write!(out, " pressure_pa={p}")?;
+    }
+    if let Some(c) = f.light_clear {
+        write!(out, " light_clear={c}")?;
+    }
+    out.write_str("\r\n")
+}
+
+/// One REC line, built in full before it is sent.
+struct LineBuf {
+    buf: [u8; REC_LINE],
+    len: usize,
+}
+
+impl LineBuf {
+    fn new() -> Self {
+        Self {
+            buf: [0; REC_LINE],
+            len: 0,
+        }
+    }
+
+    fn as_str(&self) -> &str {
+        // Only whole &str pieces are ever copied in, so this is always valid UTF-8.
+        core::str::from_utf8(&self.buf[..self.len]).unwrap_or("")
+    }
+}
+
+impl Write for LineBuf {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        let end = self.len + s.len();
+        if end > REC_LINE {
+            return Err(core::fmt::Error);
+        }
+        self.buf[self.len..end].copy_from_slice(s.as_bytes());
+        self.len = end;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
