@@ -168,3 +168,16 @@ test('without the cookie secret the limiter is not used, so Basic users are not 
   const res = await call('https://cubesatclass.org/', { headers: { authorization: basic('hunter2') } }, env);
   assert.equal(res.status, 200);
 });
+
+test('hashed /_astro/ files are cached for a year; pages revalidate', async () => {
+  const file = await call('https://cubesatclass.org/_astro/app.abc123.css');
+  assert.equal(file.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+  const page = await call('https://cubesatclass.org/hardware/');
+  assert.notEqual(page.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+  assert.equal(page.headers.get('cross-origin-opener-policy'), 'same-origin');
+});
+
+test('the preview gate keeps hashed files private', async () => {
+  const res = await call('https://cubesatclass.org/_astro/app.abc123.css', { headers: { authorization: 'Basic ' + btoa('u:pw') } }, { SITE_PASSWORD: 'pw' });
+  assert.match(res.headers.get('cache-control'), /^private/);
+});

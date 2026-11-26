@@ -348,6 +348,17 @@ function secured(response) {
   out.headers.set('x-content-type-options', 'nosniff');
   out.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
   out.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+  out.headers.set('cross-origin-opener-policy', 'same-origin');
+  return out;
+}
+
+// Astro puts a content hash in every file name under /_astro/, so a changed file always gets
+// a new URL and these can be cached for a year. Pages and other files keep the assets
+// default (revalidate every time), so a deploy shows up at once.
+function cachedLong(request, response) {
+  if (response.status !== 200 || !new URL(request.url).pathname.startsWith('/_astro/')) return response;
+  const out = new Response(response.body, response);
+  out.headers.set('cache-control', 'public, max-age=31536000, immutable');
   return out;
 }
 
@@ -357,7 +368,7 @@ export default {
     if (moved) return secured(moved);
     const gate = await locked(request, env);
     if (gate instanceof Response) return secured(gate);
-    const response = await privately(await route(request, env), env);
+    const response = await privately(cachedLong(request, await route(request, env)), env);
     if (gate?.setCookie) response.headers.append('set-cookie', gate.setCookie);
     return secured(response);
   },

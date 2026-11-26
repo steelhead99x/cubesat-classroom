@@ -36,5 +36,8 @@
   // namespace_id is account-wide: keep it different from cubesat.app's TOKEN_LIMIT (4401).
   "ratelimits": [
     { "name": "UNLOCK_LIMIT", "namespace_id": "4410", "simple": { "limit": 20, "period": 60 } }
-  ]
+  ],
+  // Workers Logs, so console.error from the guide and the preview gate can be read in the
+  // dashboard. Traces are left off.
+  "observability": { "enabled": true }
 }
