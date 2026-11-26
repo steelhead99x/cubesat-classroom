@@ -9,13 +9,12 @@ use crate::boards::{
 use crate::design::{Design, Edge, Rect, Side};
 use crate::geom::{bounds, bx, cyl, overlap, rotate_about};
 use crate::joints::{
-    contact_r, finger_strain, finger_zone, hook_post, hook_strain, hook_zone, lip, pin_retention,
-    pin_top,
+    contact_r, finger_outline, finger_pass, finger_strain, finger_zone, hook_post, hook_strain,
+    hook_zone, lip, pin_retention, pin_top,
 };
 use crate::parts::{
-    COUPON_PIN_AT, board_features, bottom_with_columns, coupon_board, coupon_board_top,
-    coupon_hook_base, coupon_pin_base, coupon_pin_tab, payload_plate, plate_outline, to_frame,
-    to_plate,
+    COUPON_PIN_AT, FIT_LADDER, board_features, bottom_with_columns, branding, coupon_nano_base,
+    coupon_pin_base, coupon_pin_tab, payload_plate, plate_outline, to_frame, to_plate,
 };
 
 /// mm of floating-point noise to ignore; far below print resolution.
@@ -82,8 +81,53 @@ pub fn rules(d: &Design) -> Check {
         ),
     )?;
     require(
-        180.0 - d.finger_span - d.finger_gap >= 6.0,
-        "too little root left for each snap pin finger",
+        d.pin_flat <= d.pin_r - 0.4,
+        "the snap pin's flats barely cut it: nothing to key the plate on",
+    )?;
+    require(
+        at_least(2.0 * d.pin_flat, 4.0),
+        format!(
+            "the snap pin is only {:.1} mm across its flats, under 4 mm",
+            2.0 * d.pin_flat
+        ),
+    )?;
+    require(
+        d.tooth_half + 0.3 <= d.pin_flat,
+        "the snap pin teeth run past the head's round sides onto its flats",
+    )?;
+    require(
+        (0.05..=0.4).contains(&d.pin_fit),
+        format!(
+            "the snap pin fit is {} mm: under 0.05 mm the plate binds, over 0.4 mm it wobbles",
+            d.pin_fit
+        ),
+    )?;
+    require(
+        d.finger_slit >= finger_pass(d) + 0.3,
+        "too little room behind the snap pin fingers for them to bend",
+    )?;
+    require(
+        d.snap_columns.iter().any(|(c, _)| *c == d.pin_datum),
+        "the datum pin isn't one of the snap pins",
+    )?;
+    require(
+        (0.05..=0.3).contains(&d.pin_spacing_allow),
+        "the other snap pins need 0.05 to 0.3 mm more clearance than the datum",
+    )?;
+    require(
+        d.finger_slit_in >= 0.6,
+        "the slit inside each snap pin finger is too thin to print open",
+    )?;
+    require(
+        at_least(
+            2.0 * (d.pin_head_r + d.finger_clear - d.finger_slit_in),
+            d.min_wall,
+        ),
+        "the rigid tongue between the snap pin fingers is too thin",
+    )?;
+    require(
+        d.pin_tip_r <= d.tooth_r - 0.3,
+        "the snap pin's tip is too wide to start between the teeth",
     )?;
     require(
         d.hook_angle + 3.0 <= d.friction_angle(),
@@ -133,6 +177,13 @@ fn plate_on_columns(d: &Design, columns: &Manifold, plate: &Manifold) -> Check {
             "the plate can't be pushed down past the pin heads with its fingers spread",
         )?;
     }
+    let step = d.pin_fit + 0.1;
+    for (dx, dy) in [(step, 0.0), (-step, 0.0), (0.0, step), (0.0, -step)] {
+        require(
+            overlap(&seated.translate(dx, dy, 0.0), columns) > 1e-3,
+            "the plate can slide on its columns: the flats don't locate it",
+        )?;
+    }
     require(
         bounds(&to_frame(d, plate)).1[2] <= -d.snap_tabs_reach,
         "the plate doesn't clear the AMSAT snap tabs",
@@ -149,6 +200,8 @@ struct Board<'a> {
     /// Axis and point it swings about as it goes in, and which way.
     axis: char,
     pivot: [f64; 3],
+    /// Everything it swings past, with the hooks bent out.
+    spread: Manifold,
 }
 
 /// One board: seated clear of everything, held when pulled, and able to go in by tucking its lip
@@ -178,11 +231,10 @@ fn board_held(d: &Design, b: &Board, seated: &Manifold) -> Check {
         )?;
     }
     // Going in: tilted up on its lip edge, the board swings down; the hooks give way.
-    let spread = board_features(d, d.hook_reach + 0.05);
     for angle in [12.0, 8.0, 4.0, 2.0] {
         let tilted = rotate_about(&b.solid, b.axis, -angle, b.pivot);
         require(
-            overlap(&spread, &tilted) < 1e-3,
+            overlap(&b.spread, &tilted) < 1e-3,
             format!("the {name} can't swing down into place (blocked at {angle} degrees)"),
         )?;
     }
@@ -204,11 +256,26 @@ pub fn verify(d: &Design) -> Check {
         overlap(&features, &inside) >= features.volume() - 1e-2,
         "a part reaches past the plate outline, into the frame's corner rails",
     )?;
+    let relief = branding(d)?.extrude(1.0).translate(0.0, 0.0, top);
+    let wall = plate_outline(d).offset(-d.min_wall, manifold_csg::JoinType::Miter, 2.0, 0);
     for (i, [x, y]) in d.plate_holes().into_iter().enumerate() {
-        if d.snap_a0(i).is_some() {
+        if let Some(angle) = d.snap_angle(i) {
+            let fit = d.column_fit(i);
+            let zone = finger_zone(d, x, y, angle, fit, top, 3.0);
             require(
-                overlap(&features, &finger_zone(d, x, y, top, 3.0)) < 1e-3,
+                overlap(&features, &zone) < 1e-3,
                 "a part stands on a snap pin's flex fingers",
+            )?;
+            require(
+                overlap(&relief, &zone) < 1e-3,
+                "the branding runs onto a snap pin's flex fingers",
+            )?;
+            require(
+                finger_outline(d, x, y, angle, fit).difference(&wall).area() < 1e-3,
+                format!(
+                    "a snap pin's fingers come within {} mm of the plate edge",
+                    d.min_wall
+                ),
             )?;
             let head = cyl(
                 2.0 * d.pin_head_r + 0.6,
@@ -235,11 +302,11 @@ pub fn verify(d: &Design) -> Check {
                 "a part stands on a board hook's flex finger",
             )?;
             for (i, [x, y]) in d.plate_holes().into_iter().enumerate() {
-                if d.snap_a0(i).is_some() {
+                if let Some(angle) = d.snap_angle(i) {
                     require(
                         overlap(
                             &hook_zone(d, rect, e, -1.0, top + 2.0),
-                            &finger_zone(d, x, y, -1.0, top + 2.0),
+                            &finger_zone(d, x, y, angle, d.column_fit(i), -1.0, top + 2.0),
                         ) < 1e-3,
                         "a board hook's finger runs into a snap pin's fingers",
                     )?;
@@ -275,6 +342,7 @@ pub fn verify(d: &Design) -> Check {
         hooks: &d.uno_hooks,
         axis: 'y',
         pivot: [x0, 0.0, d.uno_top()],
+        spread: board_features(d, d.hook_reach + 0.05),
     };
     board_held(d, &board, &seated)?;
     let pcb = bx(x0, y0, d.uno_bottom(), x0 + w, y0 + h, d.uno_top());
@@ -304,8 +372,27 @@ pub fn verify(d: &Design) -> Check {
         hooks: &d.nano_hooks,
         axis: 'x',
         pivot: [0.0, ny0 + nh, d.nano_top()],
+        spread: board_features(d, d.hook_reach + 0.05),
     };
     board_held(d, &board, &seated)?;
+    let plug = nano_plug(d);
+    let on_coupon = Board {
+        name: "Nano on its coupon",
+        spread: coupon_nano_base(d, d.hook_reach + 0.05),
+        ..board
+    };
+    let coupon_seated = coupon_nano_base(d, d.hook_preload + 0.01);
+    board_held(d, &on_coupon, &coupon_seated)?;
+    for (name, body) in &parts {
+        require(
+            overlap(&coupon_seated, body) < 1e-3,
+            format!("the Nano coupon hits the Nano's {name}"),
+        )?;
+    }
+    require(
+        overlap(&coupon_seated, &plug) < 1e-3,
+        "something on the Nano coupon blocks its USB plug",
+    )?;
     let play = d.nano_end_play / 2.0 + 0.2;
     for (label, dx, dy) in [
         ("towards its USB end", play, 0.0),
@@ -318,7 +405,6 @@ pub fn verify(d: &Design) -> Check {
             format!("the Nano could slide {label}"),
         )?;
     }
-    let plug = nano_plug(d);
     require(
         overlap(&features, &plug) < 1e-3,
         "something blocks the Nano's USB plug",
@@ -338,25 +424,39 @@ pub fn verify(d: &Design) -> Check {
         )?;
     }
 
-    // Coupons: the same joints on their own fit the same way.
+    // Pin coupon: every tab of the fit ladder goes on, presses, and is located by its flats.
     let base = coupon_pin_base(d);
     let at = |m: Manifold| m.translate(0.0, 0.0, COUPON_PIN_AT);
+    for (fit, dots) in FIT_LADDER {
+        let seated = at(coupon_pin_tab(d, fit, dots, Some(contact_r(d) + 0.02)));
+        require(
+            overlap(&base, &seated) < 1e-3,
+            format!("the {fit} mm fit tab doesn't go onto its pin"),
+        )?;
+        require(
+            overlap(&base, &at(coupon_pin_tab(d, fit, dots, None))) > 1e-3,
+            format!("the {fit} mm fit tab's teeth don't press on the head"),
+        )?;
+        // The walls alone, with the teeth spread out of the way.
+        let walls = at(coupon_pin_tab(d, fit, dots, Some(d.pin_head_r + 0.3)));
+        for dy in [fit + 0.05, -fit - 0.05] {
+            require(
+                overlap(&base, &walls.translate(0.0, dy, 0.0)) > 1e-3,
+                format!("the {fit} mm fit tab can slide across the pin's flats"),
+            )?;
+        }
+        for dy in [fit * 0.9, -fit * 0.9] {
+            require(
+                overlap(&base, &walls.translate(0.0, dy, 0.0)) < 1e-3,
+                format!("the {fit} mm fit tab has less clearance on the flats than it should"),
+            )?;
+        }
+    }
     require(
-        overlap(&base, &at(coupon_pin_tab(d, Some(contact_r(d) + 0.02)))) < 1e-3,
-        "the snap-pin coupon doesn't fit together",
-    )?;
-    require(
-        overlap(&base, &at(coupon_pin_tab(d, None))) > 1e-3,
-        "the snap-pin coupon's teeth don't press",
-    )?;
-    let strip = coupon_board(d).translate(0.0, 0.0, coupon_board_top(d) - d.pcb_uno);
-    require(
-        overlap(&coupon_hook_base(d, d.hook_preload + 0.01), &strip) < 1e-3,
-        "the hook coupon's board strip doesn't fit",
-    )?;
-    require(
-        overlap(&coupon_hook_base(d, 0.0), &strip.translate(0.0, 0.0, 0.3)) > 1e-3,
-        "the hook coupon doesn't hold its board strip",
+        FIT_LADDER
+            .iter()
+            .any(|(fit, _)| (fit - d.pin_fit).abs() < 1e-9),
+        "the fit ladder doesn't include the kit's own fit",
     )
 }
 
@@ -379,7 +479,27 @@ pub fn broken_designs() -> Vec<(&'static str, Design)> {
         ),
         (
             "snap pin fingers too short, so they would crack",
-            with(&|d| d.finger_span = 120.0),
+            with(&|d| d.finger_len = 10.0),
+        ),
+        (
+            "snap pin flats cut too deep: the pin would be weak",
+            with(&|d| d.pin_flat = 1.8),
+        ),
+        (
+            "snap pin teeth wider than the head's round sides",
+            with(&|d| d.tooth_half = 2.3),
+        ),
+        (
+            "no clearance on the flats: the plate would bind",
+            with(&|d| d.pin_fit = 0.0),
+        ),
+        (
+            "every snap pin as tight as the datum: the plate could bind",
+            with(&|d| d.pin_spacing_allow = 0.0),
+        ),
+        (
+            "snap pin turned so its fingers run off the plate",
+            with(&|d| d.snap_columns[0].1 += 180.0),
         ),
         (
             "pin head too small to hold the plate",
@@ -414,8 +534,8 @@ pub fn broken_designs() -> Vec<(&'static str, Design)> {
             with(&|d| d.uno_hooks[0] = Edge::new(Side::Right, 8.0, 1)),
         ),
         (
-            "Uno lip moved into the USB-B connector",
-            with(&|d| d.uno_lips[0] = Edge::new(Side::Left, 38.0, 1)),
+            "Uno lip moved into the DC jack",
+            with(&|d| d.uno_lips[0] = Edge::new(Side::Left, 8.0, 1)),
         ),
         (
             "Uno moved 3 mm towards the Nano",

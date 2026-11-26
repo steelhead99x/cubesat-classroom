@@ -44,6 +44,10 @@ fn build(d: &Design, dir: &Path) -> Result<(), String> {
     report(d);
     let stl = dir.join("stl");
     std::fs::create_dir_all(&stl).map_err(|e| e.to_string())?;
+    let tab = |i: usize| {
+        let (fit, dots) = parts::FIT_LADDER[i];
+        parts::coupon_pin_tab(d, fit, dots, None)
+    };
     let solids = [
         // The end piece prints face down, so its columns point up.
         (
@@ -53,9 +57,10 @@ fn build(d: &Design, dir: &Path) -> Result<(), String> {
         ("payload-plate", parts::payload_plate(d, None, 0.0)?),
         ("fit-plate", parts::fit_plate(d)?),
         ("coupon-pin-base", parts::coupon_pin_base(d)),
-        ("coupon-pin-tab", parts::coupon_pin_tab(d, None)),
-        ("coupon-hook-base", parts::coupon_hook_base(d, 0.0)),
-        ("coupon-board", parts::coupon_board(d)),
+        ("coupon-pin-tab", tab(0)),
+        ("coupon-pin-tab-2-dots", tab(1)),
+        ("coupon-pin-tab-3-dots", tab(2)),
+        ("coupon-nano-base", parts::coupon_nano_base(d, 0.0)),
     ];
     let mut meshes = Vec::new();
     for (name, solid) in solids {
