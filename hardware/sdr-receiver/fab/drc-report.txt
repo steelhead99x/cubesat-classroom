@@ -1,0 +1,30 @@
+** Drc report for ../out/csc-r1.kicad_pcb **
+** Created on 2026-11-25 23:57:39 **
+
+** Found 5 DRC violations **
+[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.3000 mm; actual 0.1000 mm)
+    Rule: board setup constraints edge; Severity: error
+    @(60.0000 mm, 128.0000 mm): Line on Edge.Cuts
+    @(61.9000 mm, 102.0000 mm): Pad 1 [ANT] of J3 on F.Cu
+[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.3000 mm; actual 0.0000 mm)
+    Rule: board setup constraints edge; Severity: error
+    @(60.0000 mm, 128.0000 mm): Line on Edge.Cuts
+    @(62.1000 mm, 99.1750 mm): Pad 2 [GND] of J3 on F.Cu
+[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.3000 mm; actual 0.0000 mm)
+    Rule: board setup constraints edge; Severity: error
+    @(60.0000 mm, 128.0000 mm): Line on Edge.Cuts
+    @(62.1000 mm, 99.1750 mm): Pad 2 [GND] of J3 on B.Cu
+[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.3000 mm; actual 0.0000 mm)
+    Rule: board setup constraints edge; Severity: error
+    @(60.0000 mm, 128.0000 mm): Line on Edge.Cuts
+    @(62.1000 mm, 104.8250 mm): Pad 2 [GND] of J3 on F.Cu
+[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.3000 mm; actual 0.0000 mm)
+    Rule: board setup constraints edge; Severity: error
+    @(60.0000 mm, 128.0000 mm): Line on Edge.Cuts
+    @(62.1000 mm, 104.8250 mm): Pad 2 [GND] of J3 on B.Cu
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** End of Report **
