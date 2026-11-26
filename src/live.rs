@@ -169,12 +169,18 @@ impl Gateway {
             sequence,
             &tick.telemetry.to_board_body()?,
         )? {
-            let snapshot = Telemetry::from_board_body(
+            let mut snapshot = Telemetry::from_board_body(
                 &recovered.payload,
                 u64::from(recovered.sequence),
                 recovered.service,
                 recovered.station_id.as_deref(),
             )?;
+            // The air frame carries whole seconds, so decoding makes the reading look up to a
+            // second older than it is, enough to push a fresh reading past read-live's age
+            // limit. send() only returns this tick's own frame, so put back its exact time.
+            if snapshot.captured_unix_ms == tick.telemetry.captured_unix_ms / 1000 * 1000 {
+                snapshot.captured_unix_ms = tick.telemetry.captured_unix_ms;
+            }
             pieces.push(Piece {
                 track: FeedTrack::Telemetry,
                 sequence: snapshot.sequence,
@@ -530,7 +536,7 @@ fn read_sample(args: &FeedArgs, sequence: u64, now: u64) -> Result<Telemetry> {
     };
     // The reading is only as fresh as its oldest required value.
     let captured = t_at.min(v_at).min(l_at);
-    Ok(Telemetry::from_sensors(
+    encodable(Telemetry::from_sensors(
         sequence,
         captured,
         service,
@@ -542,6 +548,16 @@ fn read_sample(args: &FeedArgs, sequence: u64, now: u64) -> Result<Telemetry> {
             pressure_pa: pressure,
         },
     ))
+}
+
+/// Refuse a reading the air frame can't carry (for example 65536 mV, or a temperature past
+/// ±327.67 °C). The sample loop treats this like any other bad sensor input: it pauses
+/// publishing and resumes when a valid reading comes back, instead of the gateway failing.
+fn encodable(telemetry: Telemetry) -> Result<Telemetry> {
+    telemetry
+        .to_board_body()
+        .context("sensor reading is outside the range the air frame can carry")?;
+    Ok(telemetry)
 }
 
 fn is_live_pseudo_file(path: &std::path::Path) -> bool {
@@ -622,7 +638,13 @@ async fn publish_feed(
             }
             tick = ticks.recv() => {
                 let Some(tick) = tick else { return Ok(()) };
-                let pieces = gateway.ingest(&tick)?;
+                let pieces = match gateway.ingest(&tick) {
+                    Ok(pieces) => pieces,
+                    Err(err) => {
+                        eprintln!("Skipped snapshot {}: {err:#}", tick.telemetry.sequence);
+                        continue;
+                    }
+                };
                 if !pieces.iter().any(|piece| piece.track == FeedTrack::Telemetry) {
                     eprintln!("Downlink missed a telemetry snapshot on the virtual channel.");
                 }
@@ -902,6 +924,43 @@ mod tests {
             audio: None,
             video: None,
         }
+    }
+
+    #[test]
+    fn local_snapshots_keep_their_millisecond_capture_time() {
+        // Review finding: a 4.56 s old reading came out 5.54 s old after the whole-second air
+        // frame, past read-live's limit. The published snapshot keeps the exact time.
+        let mut gateway = gateway(0, 0, Budget::unlimited());
+        let mut sample = tick(1, None);
+        sample.telemetry.captured_unix_ms = 1_700_000_004_560;
+        let pieces = gateway.ingest(&sample).unwrap();
+        let json = pieces
+            .iter()
+            .find(|piece| piece.track == FeedTrack::Telemetry)
+            .expect("telemetry published");
+        let snapshot = Telemetry::from_json(&json.payload).unwrap();
+        assert_eq!(snapshot.captured_unix_ms, 1_700_000_004_560);
+    }
+
+    #[test]
+    fn readings_the_air_frame_cannot_carry_are_refused_before_the_gateway() {
+        let reading = |mv: u32| {
+            Telemetry::from_sensors(
+                1,
+                1_700_000_000_000,
+                Service::Simulation,
+                None,
+                downlink::SensorReading {
+                    temperature_c: 21.0,
+                    bus_voltage_v: f64::from(mv) / 1000.0,
+                    light_lux: 100,
+                    pressure_pa: None,
+                },
+            )
+        };
+        let err = encodable(reading(65_536)).unwrap_err();
+        assert!(format!("{err:#}").contains("outside the range"), "{err:#}");
+        assert!(encodable(reading(65_535)).is_ok());
     }
 
     #[test]
