@@ -4,6 +4,7 @@ import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import LevelPicker from '../components/LevelPicker.astro';
+import PedalLab from '../components/PedalLab.astro';
 import StationDemo from '../components/StationDemo.astro';
 import MissionFanout from '../components/MissionFanout.astro';
 import ProposalCard from '../components/ProposalCard.astro';
@@ -11,7 +12,7 @@ import QuickStart from '../components/QuickStart.astro';
 import MissionEmblem from '../components/MissionEmblem.astro';
 import exploded from '../../../hardware/amsat-cubesatsim/render-exploded.png';
 import preview from '../../../hardware/amsat-cubesatsim/render-exploded-navy.png';
-import { repo } from '../hubs.mjs';
+import { missionBriefing, repo } from '../hubs.mjs';
 import { siteOrigin } from '../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -24,7 +25,7 @@ const labs = [
 ---
 <Base
   title="CubeSat Classroom | Satellite operations for ages 13 and up"
-  description="Teach space science with free, open-source CubeSat quests, a browser simulator, and hands-on bench labs."
+  description="Run a simulated satellite ground station in your classroom. Start with five free, open-source lessons, then explore the Rust station and hands-on bench labs."
   canonical={site + '/'}
   image={site + preview.src.replace(base, '')}
 >
@@ -50,7 +51,7 @@ const labs = [
       <div class="min-w-0">
         <p class="t-label">Mission · Open-source space education</p>
         <h1 id="home-title" class="mt-4"><span class="md:block">Run a ground station</span> <span class="md:block">in your classroom.</span></h1>
-        <p class="lede mt-6">Teach space science one quest at a time. Request a reading from a model CubeSat, receive a picture, and see what happens when the link drops.</p>
+        <p class="lede mt-6">Use the simulator to read a satellite’s sensors, receive a picture and interrupt the signal.</p>
 
         <section class="panel mt-8 max-w-[38rem]" aria-labelledby="flight-plan">
           <div class="panel-head">
@@ -66,11 +67,11 @@ const labs = [
         </section>
 
         <div class="mt-8 flex flex-wrap items-center gap-3">
-          <a class="button launch" href={base + '/quests/first-contact/'}>Start the first lesson <span class="arrow" aria-hidden="true">→</span></a>
-          <a class="button ghost" href={base + '/mission/'}><span class="live-dot" aria-hidden="true"></span>See the flight, minute by minute <span class="arrow" aria-hidden="true">→</span></a>
+          <a class="button launch" href="#demo">Try the simulator <span class="arrow" aria-hidden="true">→</span></a>
+          <a class="button ghost" href="#pedal-lab">Try the receiver pedal <span class="arrow" aria-hidden="true">→</span></a>
         </div>
         <p class="t-label note mt-5">No account · No equipment · Built by volunteers</p>
-        <p class="note mt-3 max-w-[40rem] text-[.92rem] leading-relaxed">For learners 13 and up, guided by teachers, guardians and mentors. The browser lessons run entirely in your browser.</p>
+        <p class="note mt-3 max-w-[40rem] text-[.92rem] leading-relaxed">For learners 13 and up, guided by teachers, guardians and mentors. <a class="text-inherit underline underline-offset-4" href={missionBriefing}>Read the Summer 2027 mission briefing.</a></p>
       </div>
       <MissionEmblem class="mx-auto lg:w-[19rem] xl:w-[21rem]" />
     </div>
@@ -94,7 +95,7 @@ const labs = [
     </div>
   </section>
 
-  <div class="section-band">
+  <div class="section-band" id="demo">
     <div class="shell py-12 sm:py-16">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -104,8 +105,17 @@ const labs = [
         </div>
         <LevelPicker />
       </div>
-      <StationDemo heading={false} />
-      <a class="mt-5 inline-block font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>Open the guided lessons and quest help</a>
+      <div class="mb-5">
+        <p class="mb-3">Grab a pencil and paper. Write the level at the top. Tick each step after you record what you saw.</p>
+        {[
+          ['beginner', ['Press Ask for a reading. Wait for a temperature to appear.', 'Copy the temperature and its unit onto your paper.', 'Press Take pictures. Write down how many frames arrive. Then try Intermediate.']],
+          ['intermediate', ['Press Start video. After two frames appear, press Pause contact.', 'Copy the frame count. Divide the number received by eight to find the fraction delivered.', 'Press Restore contact, then Start video again. Compare the two counts before trying Professional.']],
+          ['professional', ['Press Get sensor reading. Open Raw telemetry and copy the request ID and capture timestamp.', 'Match that ID to the reply in the mission log. Record the round-trip time in milliseconds.', 'Repeat twice. Calculate the mean round-trip time and write down the range.']]
+        ].map(([id, steps]) => <ol data-show={id} class="ml-6 list-decimal space-y-1">{Array.isArray(steps) && steps.map(step => <li>{step}</li>)}</ol>)}
+      </div>
+      <StationDemo heading={false} anchor="station-controls" />
+      <a class="mt-5 inline-block font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>Continue with the five lessons</a>
+      <PedalLab />
     </div>
   </div>
 
@@ -140,8 +150,8 @@ const labs = [
       <div>
         <p class="eyebrow t-label">04 · App · Every screen</p>
         <h2 id="app-title">Follow along on every screen</h2>
-        <p class="mt-3 max-w-md text-muted">The CubeSat Classroom app shows the next satellite pass over your school and live readings from a classroom ground station, on phones, in a browser and at a glance on a watch. Every reading shows its age and where it came from, and the app collects no accounts or personal details.</p>
-        <p class="mt-3 max-w-md text-muted">It's a developer preview: the practice station works today, and live stations appear once a licensed operator and an approved station are in place.</p>
+        <p class="mt-3 max-w-md text-muted">The CubeSat Classroom app preview lets you follow a practice station, predict satellite passes, and check each reading’s age and source. No student account is needed.</p>
+        <p class="mt-3 max-w-md text-muted">The project is testing a live viewer for phones and browsers. Wearable views and live classroom stations are part of the rollout plan.</p>
         <a class="mt-5 inline-block font-bold text-accent underline underline-offset-4" href="https://cubesat.app/">Open cubesat.app</a>
       </div>
       <div>
