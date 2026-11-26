@@ -12,7 +12,7 @@ deck: ["fly-without-permit"]
 
 **14 CFR Part 101** is the FAA rule for moored balloons, kites, amateur rockets and unmanned free balloons. It sets which flights are exempt and which need notice or authorization.
 
-- **Small free balloons:** a balloon is exempt from most of Part 101 when its payload stays under the limits in §101.1(a)(4) (for example, no single package over 6 lb and no more than 12 lb in total).
+- **Small free balloons:** a balloon is exempt from most of Part 101 when its payload stays under the limits in §101.1(a)(4) (for example, no single package over 6 lb, no more than 12 lb in total, and no suspension line that needs an impact force of more than 50 lb to separate the payload from the balloon).
 - **Model rockets (Class 1):** see [model rocket](../model-rocket/).
 - **High-power rockets (Class 2):** see [high-power rocket](../high-power-rocket/).
 
