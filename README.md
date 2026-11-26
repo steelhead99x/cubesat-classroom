@@ -70,6 +70,7 @@ cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo
 | [Browser lessons](https://cubesatclass.org/quests/) | Five lessons cover measurement, pictures, link loss, reading age, and light levels. |
 | [Bench CubeSats](docs/bench-cubesats.md) | Build a one-vendor classroom CubeSat from an Arduino Nano 33 BLE Sense Rev2, or from a Seeed XIAO with Grove sensors. Deploy it, lose and regain the signal, and bring back stored readings or a photo. |
 | [Ground station build guide](docs/ground-station.md) | Connect classroom sensors, predict a pass, or plan a receive-only station. |
+| [Rev C, built to the CubeSat spec](hardware/rev-c/README.md) | A new 1U frame checked against the CubeSat Design Specification and launch loads, with CAD, checks and Nano 33 BLE Sense firmware in Rust. |
 | [Print a 1U CubeSat](hardware/amsat-cubesatsim/README.md) | AMSAT's CubeSatSim frame with a printed payload plate for an Arduino Uno R3 and Nano 33 BLE Sense. Four P1S plates, about 4 hours, no screws. |
 | [Hardware](hardware/README.md) | The AMSAT and Teachers in Space frames, the Rev A test box and screw-fit coupon, and the Rev B rail frame. |
 | [Suborbital flight plan](docs/suborbital-flight-plan.md) | Get a classroom sensor kit ready for a suborbital research flight, using public information. Predict the flight with `flight-profile`. |
