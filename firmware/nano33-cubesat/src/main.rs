@@ -127,10 +127,15 @@ struct Outbox {
 }
 
 impl fmt::Write for Outbox {
+    /// All or nothing: text that doesn't fit is refused whole, never cut off mid-line, so
+    /// the mission knows it wasn't sent (stored readings stay stored and go out next time).
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        let n = s.len().min(self.buf.len() - self.len);
-        self.buf[self.len..self.len + n].copy_from_slice(&s.as_bytes()[..n]);
-        self.len += n;
+        let end = self.len + s.len();
+        if end > self.buf.len() {
+            return Err(fmt::Error);
+        }
+        self.buf[self.len..end].copy_from_slice(s.as_bytes());
+        self.len = end;
         Ok(())
     }
 }

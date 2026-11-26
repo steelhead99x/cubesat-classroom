@@ -209,6 +209,111 @@ fn store_keeps_the_newest_64_and_counts_the_rest() {
     assert!(pass.starts_with("EVT AOS stored=64 dropped=6"), "{pass}");
 }
 
+/// A serial buffer like the firmware's: all or nothing, emptied after each poll.
+struct Link {
+    cap: usize,
+    tick: String,
+    sent: String,
+}
+
+impl Write for Link {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        if self.tick.len() + s.len() > self.cap {
+            return Err(core::fmt::Error);
+        }
+        self.tick.push_str(s);
+        Ok(())
+    }
+}
+
+impl Link {
+    fn flush(&mut self) {
+        self.sent.push_str(&std::mem::take(&mut self.tick));
+    }
+}
+
+#[test]
+fn a_full_store_drains_through_a_small_buffer_without_losing_a_reading() {
+    // Review finding: with the real USB buffer, AOS announced 64 stored readings, only 47
+    // whole REC lines got out, and the store was cleared anyway. Now readings go out in
+    // batches, each only retired once its whole line was taken.
+    let mut b = Bench::new(Timing::Bench, false);
+    b.deploy();
+    b.send("LOS");
+    b.run(70_050);
+    assert_eq!(b.m.stored(), 64);
+    let mut link = Link {
+        cap: 2048,
+        tick: String::new(),
+        sent: String::new(),
+    };
+    let rail = b.rail;
+    for byte in b"AOS\n" {
+        b.m.receive(*byte, b.now, &mut || reading(rail), &mut || rail, &mut link);
+    }
+    link.flush();
+    for _ in 0..40 {
+        b.now += 10;
+        b.m.poll(b.now, b.jumper, &mut || reading(rail), &mut link);
+        link.flush();
+    }
+    assert!(
+        link.sent.contains("EVT AOS stored=64 dropped=6"),
+        "{}",
+        link.sent
+    );
+    let seqs: Vec<u32> = link
+        .sent
+        .lines()
+        .filter(|l| l.starts_with("REC "))
+        .map(|l| {
+            l["REC seq=".len()..]
+                .split(' ')
+                .next()
+                .unwrap()
+                .parse()
+                .unwrap()
+        })
+        .collect();
+    assert_eq!(seqs.len(), 64, "every stored reading arrives: {seqs:?}");
+    assert!(
+        seqs.windows(2).all(|w| w[1] == w[0] + 1),
+        "in order, none twice: {seqs:?}"
+    );
+    assert!(
+        link.sent
+            .lines()
+            .all(|l| !l.starts_with("REC ") || l.contains("light_clear=")),
+        "every REC line is whole"
+    );
+    assert_eq!(b.m.stored(), 0);
+}
+
+#[test]
+fn a_reading_is_retired_only_when_its_whole_line_was_taken() {
+    // A link with room for about two REC lines per poll: the rest wait, nothing is lost.
+    let mut b = Bench::new(Timing::Bench, false);
+    b.deploy();
+    b.send("LOS");
+    b.run(20_050);
+    let stored = b.m.stored();
+    assert!(stored > 10);
+    b.m.in_contact = true;
+    let mut link = Link {
+        cap: 200,
+        tick: String::new(),
+        sent: String::new(),
+    };
+    for _ in 0..100 {
+        b.m.send_stored(&mut link);
+        link.flush();
+    }
+    let recs = link.sent.lines().filter(|l| l.starts_with("REC ")).count();
+    assert_eq!(recs, stored);
+    assert_eq!(b.m.stored(), 0);
+    assert!(link.sent.ends_with("\r\n") && !link.sent.contains("REC seq=REC"));
+}
+
 #[test]
 fn automatic_orbit_passes() {
     let mut b = Bench::new(Timing::Bench, false);
