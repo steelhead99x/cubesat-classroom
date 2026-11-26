@@ -18,11 +18,11 @@ Every joint follows the usual rules for printed snap fits, so it works on a worn
 
 **Plate to frame: keyed snap pins.** Three of the bottom piece's columns end in a pin with two flat sides and a 45° head. The fourth, next to the Nano, has a plain locating pin. Around each snap pin the plate has a keyed slot:
 
-- **Rigid walls face the pin's flats** with 0.2 mm clearance, so the plate drops on one way only, already centred, and can't turn or slide.
+- **Rigid walls face the pin's flats**, so the plate drops on one way only, already centred, and can't turn or slide. The top-right pin is the tight one that sets where the plate sits (0.1 mm on each flat). The other two have 0.25 mm, so a small error in hole spacing between the frame and the plate can't make it bind.
 - **Two straight flex fingers** run either side of the slot, each with a tooth facing the head's round side. A rigid tongue between them stays put.
-- **Press straight down:** the head's gentle 30° lead-in spreads the teeth, then they click in under the 45° face. Each tooth stays 0.25 mm out from rest on that face, so the plate is pulled down onto the columns and can't rattle.
+- **Press straight down:** the head's gentle 30° lead-in spreads the teeth, then they click in under the 45° face. Each tooth stays 0.35 mm out from rest on that face, so the plate is pulled down onto the columns and can't rattle.
 
-It takes about 30 N to pull the plate off, against 16 N for an 80 g payload at 20 g (a common design load for small-satellite launch). The first print used a round pin with curved fingers; it was hard to seat because nothing lined the plate up, so the pin now has flats.
+It takes about 27 N to pull the plate off, against 16 N for an 80 g payload at 20 g (a common design load for small-satellite launch). The first print used a round pin with curved fingers; it was hard to seat because nothing lined the plate up, so the pin now has flats.
 
 **Both boards: tuck and click.** Each board has fixed lips on one edge and snap hooks on the other. Tuck the lip edge under its lips, then swing the board down: its far edge pushes the hooks out sideways, and they spring back over it. Each hook is a post on an 18 mm finger cut into the plate, so it bends in the plate's plane. The hook's underside is angled 10°, less than the 17° friction angle of PLA on a circuit board, so lifting the board can't push a hook open. To take a board out, push its hooks outward with a fingertip and lift.
 
@@ -63,8 +63,10 @@ None of the plates has been sliced for a time estimate yet. For other slicers, e
 
 **Print the test coupons first.** They're the two joints on their own, so a class can check a printer with a few grams of plastic instead of a whole plate:
 
-1. **Snap pin fit ladder:** one pin and three tabs, marked with raised dots on their middle tongue. The tabs differ only in how tight they fit: 1 dot is 0.1 mm clearance on the flats (tight), 2 dots is 0.2 mm (the kit's fit), 3 dots is 0.3 mm (loose). Line a tab's slot up with the pin's flats, dots up, and press it straight down until it clicks. Try all three. The right fit drops onto the flats without forcing, clicks with a firm push, and doesn't wobble or rattle once on. If 1 or 3 dots feels best on your printer, tell us: the kit's fit is one number (`pin_fit`) and the files can be regenerated for it.
+1. **Snap pin fit ladder:** one pin and three tabs, marked with raised dots on their middle tongue. 1 dot is the kit's fit: 0.1 mm clearance on the flats. 2 and 3 dots are looser (0.2 and 0.3 mm on the flats, with their teeth 0.1 and 0.2 mm further out), for printers that print holes small. Line a tab's slot up with the pin's flats, dots up, and press it straight down until it clicks. The right fit drops onto the flats without forcing, clicks with a firm push, and doesn't wobble or rattle once on. If 2 or 3 dots feels better on your printer, tell us: the kit's fit is one number (`pin_fit`), and the files can be regenerated for it.
 2. **Nano mount:** the plate's Nano 33 BLE Sense mount on its own, the same pads, corner stops, lips and hooks in the same places, sized for the bare board (43.18 × 17.78 mm, no headers). Hold the Nano parts up, with its USB end towards the small raised arrow. Tuck the long edge under the two lips, then press the other edge down until both hooks click. It should sit flat on its pads with only a little end play, and lifting it shouldn't pop the hooks. To take it out, push the hooks outward with a fingertip.
+
+**Printed so far (hardware bench, Nov 26, Bambu Lab P1S, PLA):** of the three tabs, 1 dot fit best, so it's the kit's fit. The bare Nano 33 BLE Sense Rev2 fit its coupon well and snapped in. The kit plate's slots are the 1-dot tab's. The fingers (on the plate and the tabs) are now 0.5 mm longer, 14.5 mm, with 0.1 mm more room behind them, to keep the strain under the limit with the tighter teeth.
 
 Write down what you find and report it with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
 
@@ -89,7 +91,7 @@ The Nano's USB plug needs room beyond the plate edge. Use a right-angle Micro-US
 | --- | --- |
 | Plate | 88 × 88 × 3 mm with 8 mm corner chamfers (AMSAT's boards are 90.5 mm), 23.2 cm³ |
 | Plate position | 15 mm inside the bottom face, below AMSAT's 12 mm snap tabs |
-| Snap pins | 6 mm shaft and 7.4 mm head, 4.8 mm across the flats, with a 45° underside and a 30° lead-in. Walls 0.2 mm off each flat. Two straight fingers per pin, 14 mm long and 2 mm wide, bend 0.73 mm in the plate's plane to let a head pass (1.12% strain, limit 1.2%). The teeth stay 0.25 mm out from rest on the 45° face. About 30 N to pull the plate off three pins. |
+| Snap pins | 6 mm shaft and 7.4 mm head, 4.8 mm across the flats, with a 45° underside and a 30° lead-in. Walls 0.1 mm off each flat at the top-right (datum) pin, 0.25 mm at the other two. Two straight fingers per pin, 14.5 mm long and 2 mm wide, bend 0.83 mm in the plate's plane to let a head pass (1.19% strain, limit 1.2%). The teeth stay 0.35 mm out from rest on the 45° face. About 27 N to pull the plate off three pins. |
 | Board hooks | 18 mm fingers, 2.2 mm wide. Each hook reaches 0.8 mm over the board edge, bending its finger 0.92% to let the board pass. Underside at 10° with 0.1 mm preload, about 2.7 N down per hook. |
 | Lips | 6 mm wide with a 45° underside, reaching 0.8 mm over the board edge. |
 | Uno R3 | On 5.5 mm posts with 2.9 mm locating pins. One lip on the left edge, hooks on the right and top edges. |
@@ -98,7 +100,7 @@ The Nano's USB plug needs room beyond the plate edge. Use a right-angle Micro-US
 The checks in [crates/amsat-kit/src/checks.rs](../../crates/amsat-kit/src/checks.rs) build the parts and fail if:
 
 - a snap finger or hook finger would bend more than 1.2%, or anything that flexes or carries load is thinner than 2 mm
-- the snap pins' flats are cut too deep (under 4 mm across), the teeth run onto the flats, the fit is outside 0.05 to 0.4 mm, or the plate can slide on its columns
+- the snap pins' flats are cut too deep (under 4 mm across), the teeth run onto the flats, the fit is outside 0.05 to 0.4 mm, the other pins aren't looser than the datum pin, or the plate can slide on its columns
 - a snap pin's slot comes within 2 mm of the plate edge
 - the snap-pin teeth would meet a head less than 0.2 mm out from rest (so print error could leave it loose), or too near the head's edge to hold, or the three pins hold less than 1.5 times the payload's weight at 20 g
 - the plate hits the columns or the AMSAT piece or its snap tabs, or reaches past the plate outline into the frame's corner rails
@@ -108,9 +110,9 @@ The checks in [crates/amsat-kit/src/checks.rs](../../crates/amsat-kit/src/checks
 - anything hits a part in Arduino's layout for either board, a column's pin head comes up under the Uno's solder joints, or anything blocks the Nano's USB plug or leaves less than 20 mm from it to the plate edge
 - any of the three fit tabs doesn't go on, press, and sit at its own clearance on the flats, or the bare Nano doesn't go into its coupon and stay held the same way as on the plate
 
-`cargo run --release -p amsat-kit -- self-test` (and `cargo test -p amsat-kit`) breaks the design twenty-one ways and checks that each one is caught, and that hook fingers exactly at the strain limit still pass.
+`cargo run --release -p amsat-kit -- self-test` (and `cargo test -p amsat-kit`) breaks the design twenty-two ways and checks that each one is caught, and that hook fingers exactly at the strain limit still pass.
 
-Not yet checked on a real print: nothing in this version has been printed (the first snap-pin coupon, with a round pin, was). These are design checks, not measurements. The strain and force figures are hand calculations for PLA (straight-beam estimates), not test results. Print the coupons first and report what you find with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
+Printed so far: the round-pin coupon (replaced), then the keyed-pin fit ladder and the Nano coupon (see above). The kit plates and fit plate in this version haven't been printed yet. These are design checks, not measurements. The strain and force figures are hand calculations for PLA (straight-beam estimates), not test results. Print the coupons first and report what you find with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
 
 ## Regenerate
 

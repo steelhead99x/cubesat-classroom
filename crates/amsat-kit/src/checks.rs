@@ -107,6 +107,14 @@ pub fn rules(d: &Design) -> Check {
         "too little room behind the snap pin fingers for them to bend",
     )?;
     require(
+        d.snap_columns.iter().any(|(c, _)| *c == d.pin_datum),
+        "the datum pin isn't one of the snap pins",
+    )?;
+    require(
+        (0.05..=0.3).contains(&d.pin_spacing_allow),
+        "the other snap pins need 0.05 to 0.3 mm more clearance than the datum",
+    )?;
+    require(
         d.finger_slit_in >= 0.6,
         "the slit inside each snap pin finger is too thin to print open",
     )?;
@@ -252,7 +260,8 @@ pub fn verify(d: &Design) -> Check {
     let wall = plate_outline(d).offset(-d.min_wall, manifold_csg::JoinType::Miter, 2.0, 0);
     for (i, [x, y]) in d.plate_holes().into_iter().enumerate() {
         if let Some(angle) = d.snap_angle(i) {
-            let zone = finger_zone(d, x, y, angle, top, 3.0);
+            let fit = d.column_fit(i);
+            let zone = finger_zone(d, x, y, angle, fit, top, 3.0);
             require(
                 overlap(&features, &zone) < 1e-3,
                 "a part stands on a snap pin's flex fingers",
@@ -262,7 +271,7 @@ pub fn verify(d: &Design) -> Check {
                 "the branding runs onto a snap pin's flex fingers",
             )?;
             require(
-                finger_outline(d, x, y, angle).difference(&wall).area() < 1e-3,
+                finger_outline(d, x, y, angle, fit).difference(&wall).area() < 1e-3,
                 format!(
                     "a snap pin's fingers come within {} mm of the plate edge",
                     d.min_wall
@@ -297,7 +306,7 @@ pub fn verify(d: &Design) -> Check {
                     require(
                         overlap(
                             &hook_zone(d, rect, e, -1.0, top + 2.0),
-                            &finger_zone(d, x, y, angle, -1.0, top + 2.0),
+                            &finger_zone(d, x, y, angle, d.column_fit(i), -1.0, top + 2.0),
                         ) < 1e-3,
                         "a board hook's finger runs into a snap pin's fingers",
                     )?;
@@ -483,6 +492,10 @@ pub fn broken_designs() -> Vec<(&'static str, Design)> {
         (
             "no clearance on the flats: the plate would bind",
             with(&|d| d.pin_fit = 0.0),
+        ),
+        (
+            "every snap pin as tight as the datum: the plate could bind",
+            with(&|d| d.pin_spacing_allow = 0.0),
         ),
         (
             "snap pin turned so its fingers run off the plate",

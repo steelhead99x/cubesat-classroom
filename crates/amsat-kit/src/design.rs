@@ -83,8 +83,14 @@ pub struct Design {
     pub pin_lead_angle: f64,
     /// Half the distance across the flats.
     pub pin_flat: f64,
-    /// Clearance between each flat and its wall: the fit. The fit-ladder coupon tries others.
+    /// Clearance between each flat and its wall at the datum pin: the fit. 0.1 mm, the 1-dot tab,
+    /// fit best on the first coupon print (a P1S, PLA). The fit-ladder coupon tries others.
     pub pin_fit: f64,
+    /// The snap column whose walls set where the plate sits.
+    pub pin_datum: usize,
+    /// Extra clearance on the other snap pins' flats, so an error in hole spacing between the
+    /// frame and the plate can't make it bind.
+    pub pin_spacing_allow: f64,
     pub locate_clear: f64,
     /// Locating pin above the plate: low enough for the Nano's USB plug to pass over it.
     pub locate_above: f64,
@@ -202,16 +208,18 @@ impl Default for Design {
             pin_tip_r: 2.5,
             pin_lead_angle: 30.0,
             pin_flat: 2.4,
-            pin_fit: 0.2,
+            pin_fit: 0.1,
+            pin_datum: 2,
+            pin_spacing_allow: 0.15,
             locate_clear: 0.4,
             locate_above: 0.5,
             finger_clear: 0.3,
             finger_w: 2.0,
-            finger_slit: 1.1,
+            finger_slit: 1.2,
             finger_slit_in: 0.8,
-            finger_len: 14.0,
+            finger_len: 14.5,
             finger_tip_gap: 0.7,
-            tooth_r: 3.1,
+            tooth_r: 3.0,
             tooth_half: 1.3,
             snap_columns: vec![(0, 183.0), (1, 8.0), (2, 356.5)],
             hook_len: 18.0,
@@ -265,6 +273,15 @@ impl Design {
     /// Stack holes seen from the board side of the plate.
     pub fn plate_holes(&self) -> [[f64; 2]; 4] {
         self.stack_holes.map(|[x, y]| [x, -y])
+    }
+
+    /// Clearance on the flats at a snap column: tight at the datum, looser at the others.
+    pub fn column_fit(&self, column: usize) -> f64 {
+        if column == self.pin_datum {
+            self.pin_fit
+        } else {
+            self.pin_fit + self.pin_spacing_allow
+        }
     }
 
     /// The snap pin's angle at a column, if it has one.

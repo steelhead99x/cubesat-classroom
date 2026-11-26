@@ -279,7 +279,7 @@ pub fn plate_cuts(d: &Design, tooth_r: Option<f64>) -> Manifold {
     let mut cuts = Vec::new();
     for (i, [x, y]) in d.plate_holes().into_iter().enumerate() {
         cuts.push(match d.snap_angle(i) {
-            Some(angle) => finger_cut(d, x, y, angle, tooth_r, d.pin_fit)
+            Some(angle) => finger_cut(d, x, y, angle, tooth_r, d.column_fit(i))
                 .extrude(d.plate_t + 2.0)
                 .translate(0.0, 0.0, -1.0),
             None => cyl(
@@ -378,7 +378,8 @@ pub fn fit_plate(d: &Design) -> Result<Manifold, String> {
 
 // ---------- test coupons ----------
 
-/// Fits the ladder's three tabs try, and how many dots mark each: tight, the kit's, loose.
+/// Fits the ladder's three tabs try, and how many dots mark each: the kit's (it fit best on the
+/// first print), then two looser ones for printers that make holes small.
 pub const FIT_LADDER: [(f64, usize); 3] = [(0.1, 1), (0.2, 2), (0.3, 3)];
 pub const COUPON_PIN_AT: f64 = 5.4;
 
@@ -396,7 +397,7 @@ pub fn coupon_pin_base(d: &Design) -> Manifold {
 pub fn coupon_pin_tab(d: &Design, fit: f64, dots: usize, tooth_r: Option<f64>) -> Manifold {
     let tooth_r = tooth_r.unwrap_or(d.tooth_r + fit - d.pin_fit);
     let [lo, hi] = {
-        let b = finger_outline(d, 0.0, 0.0, 0.0).bounds();
+        let b = finger_outline(d, 0.0, 0.0, 0.0, fit).bounds();
         [b.min(), b.max()]
     };
     let slab = bx(

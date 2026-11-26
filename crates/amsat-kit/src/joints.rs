@@ -20,7 +20,7 @@ use crate::geom::{EPS, FACETS, bx, cone, cyl, rect, round_corners, uz_prism};
 // Local frame of one snap pin: the pin at the origin, its two lobes (the round sides that carry
 // the catch) facing +x and -x, its two flats facing +y and -y. In the plate, two straight flex
 // fingers run along x = +-xi from their roots at -y up to their tips beside the head, each with a
-// tooth facing in. Rigid walls of the plate face the flats with `pin_fit` clearance, so the plate
+// tooth facing in. Rigid walls of the plate face the flats with a small clearance, so the plate
 // drops onto the pin one way only, centred, and can't turn. `angle` turns the whole joint.
 
 /// The slot's half-width: the fingers' inner faces.
@@ -180,8 +180,16 @@ pub fn finger_cut(
 }
 
 /// Room the fingers need: nothing else may stand on them.
-pub fn finger_zone(d: &Design, cx: f64, cy: f64, angle: f64, z0: f64, h: f64) -> Manifold {
-    let (tip, top) = (tip_y(d), wall_y(d, d.pin_fit));
+pub fn finger_zone(
+    d: &Design,
+    cx: f64,
+    cy: f64,
+    angle: f64,
+    fit: f64,
+    z0: f64,
+    h: f64,
+) -> Manifold {
+    let (tip, top) = (tip_y(d), wall_y(d, fit));
     let x = slot_x(d) + d.finger_w + d.finger_slit + 0.5;
     let y1 = (tip + d.finger_tip_gap).max(top) + 0.5;
     let local = bx(-x, tip - d.finger_len - 0.5, z0, x, y1, z0 + h);
@@ -189,8 +197,8 @@ pub fn finger_zone(d: &Design, cx: f64, cy: f64, angle: f64, z0: f64, h: f64) ->
 }
 
 /// The joint's cut at the kit's fit: its slits must stay inside the part's outline.
-pub fn finger_outline(d: &Design, cx: f64, cy: f64, angle: f64) -> CrossSection {
-    finger_cut(d, cx, cy, angle, d.tooth_r, d.pin_fit)
+pub fn finger_outline(d: &Design, cx: f64, cy: f64, angle: f64, fit: f64) -> CrossSection {
+    finger_cut(d, cx, cy, angle, d.tooth_r, fit)
 }
 
 // ---------- board edges ----------

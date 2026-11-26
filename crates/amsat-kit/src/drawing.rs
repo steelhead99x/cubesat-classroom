@@ -214,7 +214,7 @@ fn snap_pin(d: &Design) -> Result<String, String> {
     // On the coupon: the pin's lobes face +-x, its flats +-y.
     let base = parts::coupon_pin_base(d);
     let tab = |tooth: Option<f64>, lift: f64| {
-        parts::coupon_pin_tab(d, d.pin_fit, 2, tooth).translate(0.0, 0.0, COUPON_PIN_AT + lift)
+        parts::coupon_pin_tab(d, d.pin_fit, 1, tooth).translate(0.0, 0.0, COUPON_PIN_AT + lift)
     };
     let head = d.pin_head_r + 0.1;
     let z0 = COUPON_PIN_AT;

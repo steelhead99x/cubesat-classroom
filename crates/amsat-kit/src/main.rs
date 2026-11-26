@@ -57,9 +57,9 @@ fn build(d: &Design, dir: &Path) -> Result<(), String> {
         ("payload-plate", parts::payload_plate(d, None, 0.0)?),
         ("fit-plate", parts::fit_plate(d)?),
         ("coupon-pin-base", parts::coupon_pin_base(d)),
-        ("coupon-pin-tab-tight", tab(0)),
-        ("coupon-pin-tab", tab(1)),
-        ("coupon-pin-tab-loose", tab(2)),
+        ("coupon-pin-tab", tab(0)),
+        ("coupon-pin-tab-2-dots", tab(1)),
+        ("coupon-pin-tab-3-dots", tab(2)),
         ("coupon-nano-base", parts::coupon_nano_base(d, 0.0)),
     ];
     let mut meshes = Vec::new();
