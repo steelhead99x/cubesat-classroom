@@ -65,6 +65,7 @@ impl Bench {
             self.now += 10;
             self.m
                 .poll(self.now, self.jumper, &mut || reading(rail), &mut self.out);
+            self.m.delivered(); // a terminal is open and takes everything
         }
     }
 
@@ -80,6 +81,7 @@ impl Bench {
                 &mut self.out,
             );
         }
+        self.m.delivered();
         self.out[start..].to_string()
     }
 
@@ -227,8 +229,10 @@ impl Write for Link {
 }
 
 impl Link {
-    fn flush(&mut self) {
+    /// The firmware sends the buffer in full and tells the mission so.
+    fn flush(&mut self, m: &mut Mission) {
         self.sent.push_str(&std::mem::take(&mut self.tick));
+        m.delivered();
     }
 }
 
@@ -251,11 +255,11 @@ fn a_full_store_drains_through_a_small_buffer_without_losing_a_reading() {
     for byte in b"AOS\n" {
         b.m.receive(*byte, b.now, &mut || reading(rail), &mut || rail, &mut link);
     }
-    link.flush();
+    link.flush(&mut b.m);
     for _ in 0..40 {
         b.now += 10;
         b.m.poll(b.now, b.jumper, &mut || reading(rail), &mut link);
-        link.flush();
+        link.flush(&mut b.m);
     }
     assert!(
         link.sent.contains("EVT AOS stored=64 dropped=6"),
@@ -306,12 +310,44 @@ fn a_reading_is_retired_only_when_its_whole_line_was_taken() {
     };
     for _ in 0..100 {
         b.m.send_stored(&mut link);
-        link.flush();
+        link.flush(&mut b.m);
     }
     let recs = link.sent.lines().filter(|l| l.starts_with("REC ")).count();
     assert_eq!(recs, stored);
     assert_eq!(b.m.stored(), 0);
     assert!(link.sent.ends_with("\r\n") && !link.sent.contains("REC seq=REC"));
+}
+
+#[test]
+fn stored_readings_wait_while_no_terminal_is_open() {
+    // Review finding: with automatic passes and USB closed, all 10 stored readings were
+    // retired on contact and the firmware then dropped the text. They now stay stored
+    // until a send really goes out, and arrive once the terminal opens.
+    let mut b = Bench::new(Timing::Bench, false);
+    b.deploy();
+    assert!(b.send("ORBIT 10 12").contains("contact_s=10 gap_s=12"));
+    b.run(10_100);
+    assert!(!b.m.in_contact());
+    let rail = b.rail;
+    let mut dropped = String::new();
+    for _ in 0..1_200 {
+        // 12 s out of contact, then contact again, with no terminal: output is discarded.
+        b.now += 10;
+        b.m.poll(b.now, b.jumper, &mut || reading(rail), &mut dropped);
+        b.m.undelivered();
+    }
+    assert!(b.m.in_contact());
+    let waiting = b.m.stored();
+    assert!(waiting >= 10, "{waiting}");
+    assert!(dropped.contains("REC "), "it did try to send them");
+    b.take_output();
+    b.run(500); // the terminal opens: delivered from here on
+    let recs = b.out.lines().filter(|l| l.starts_with("REC ")).count();
+    assert_eq!(
+        recs, waiting,
+        "each stored reading once, after the terminal opened"
+    );
+    assert_eq!(b.m.stored(), 0);
 }
 
 #[test]

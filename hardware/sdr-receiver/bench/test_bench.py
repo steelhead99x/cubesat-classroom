@@ -62,6 +62,22 @@ def test_power_per_mb_covers_gaps():
         assert "10.0 s of the 30.0 s run had no readings" in out, out
 
 
+def test_power_per_mb_needs_measured_time():
+    # Review finding: three readings 10 s apart gave 0.0 J next to 1000 mJ per MB, though
+    # no interval was integrated. With nothing measured, the efficiency is left out.
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, "sparse.csv")
+        with open(p, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["t_ms", "current_ma", "bus_v", "power_mw"])
+            for t in (0, 10_000, 20_000):
+                w.writerow([t, "200.000", "5.0000", "1000.00"])
+        out = run(power_log.main, ["summary", p, "--megabytes", "20"])
+        row = next(line for line in out.splitlines() if line.startswith(p + " |"))
+        assert row.split(" | ")[-1].strip() == "-", row
+        assert "no energy was measured" in out, out
+
+
 def test_sweeps():
     d = tempfile.mkdtemp()
     base, test = os.path.join(d, "off.csv"), os.path.join(d, "on.csv")
@@ -117,6 +133,7 @@ def test_power():
 
 
 if __name__ == "__main__":
-    for t in (test_sweeps, test_response_stub, test_power, test_power_per_mb_covers_gaps):
+    for t in (test_sweeps, test_response_stub, test_power, test_power_per_mb_covers_gaps,
+              test_power_per_mb_needs_measured_time):
         t()
         print(f"ok  {t.__name__}")
