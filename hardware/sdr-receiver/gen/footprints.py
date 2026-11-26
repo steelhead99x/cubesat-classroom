@@ -61,3 +61,6 @@ if __name__ == '__main__':
     name, t = ltc_uf24()
     open(f'{OUT}/{name}.kicad_mod', 'w').write(dump(t) + '\n')
     print('wrote', f'{OUT}/{name}.kicad_mod')
+    open('../kicad/fp-lib-table', 'w').write(
+        '(fp_lib_table\n  (lib (name "CSC_R1")(type "KiCad")(uri "${KIPRJMOD}/CSC_R1.pretty")(options "")'
+        '(descr "CSC-R1 project footprints"))\n)\n')
