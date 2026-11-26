@@ -37,13 +37,16 @@ add('J','Connector','USB_C_Receptacle_PowerOnly_6P','USB-C 5V in','Connector_USB
 _cnt['J']=1
 R('5k1','USB_CC1','GND',B); R('5k1','USB_CC2','GND',B)
 add('J','Connector','Screw_Terminal_01x02','5V EXT','TerminalBlock_Phoenix:TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal',
-    {1:'VEXT',2:'GND'},B,mpn='Phoenix PT 1,5/2-3,5-H')
+    {1:'VEXT_RAW',2:'GND'},B,mpn='Phoenix PT 1,5/2-3,5-H')
+add('Q','Transistor_FET','AO3401A','AO3401A','Package_TO_SOT_SMD:SOT-23',{1:'VEXT_G',2:'VEXT',3:'VEXT_RAW'},B,mpn='AOS AO3401A',note='reverse-polarity protection, about 50 mOhm')
+R('10k','VEXT_G','GND',B)
+add('D','Device','D_Zener','SMAJ5.0A','Diode_SMD:D_SMA',{1:'VUSB',2:'GND'},B,mpn='SMAJ5.0A (5 V stand-off, unidirectional)',note='USB VBUS surge/ESD clamp; cathode (band, pad 1) to VUSB, anode to GND')
 add('JP','Jumper','Jumper_3_Bridged12','SRC USB/EXT',FP_H3,{1:'VUSB',2:'VIN',3:'VEXT'},B,note='1-2 = USB-C, 2-3 = bench supply')
 add('F','Device','Polyfuse_Small','1.5A hold','Fuse:Fuse_1812_4532Metric',{1:'VIN',2:'+5V'},B,mpn='PTC resettable 1.5A/6V 1812')
 bypass('+5V',B,('22u','22u','100n'))
 R('2k2','+5V','LED_PWR_A',B); LED('PWR green','LED_PWR_A','GND',B)
 # rails with current-measurement jumpers
-JP2('I_DEMOD','+5V','5V_DEMOD_J',B); FB('5V_DEMOD_J','5V_DEMOD',B); bypass('5V_DEMOD',B,('10u',))
+add('JP','Jumper','Jumper_3_Bridged12','I_DEMOD / SRC',FP_H3,{1:'+5V',2:'5V_DEMOD_J',3:'VEXT'},B,note='1-2 = kit 5 V; 2-3 = bench supply straight to the demodulator (bypasses fuse); remove to measure current'); FB('5V_DEMOD_J','5V_DEMOD',B); bypass('5V_DEMOD',B,('10u',))
 JP2('I_LNA','+5V','5V_LNA_J',B); FB('5V_LNA_J','5V_LNA',B); bypass('5V_LNA',B,('10u',))
 def ldo(rail,blkname):
     j=JP2('I_'+rail[4:],'+5V',rail+'_IN',B)
@@ -81,14 +84,28 @@ def sw(rfc,rf1,rf2,blk,ctrl='BAND_SEL'):
         {1:rf1,2:'GND',3:rf2,4:ctrl,5:rfc,6:'3V3_DIG'},blk,mpn='pSemi PE4259-63')
     C('100n','3V3_DIG','GND',blk)
 sw('FILT_IN','F70_IN','F2_IN',B)       # CTRL high -> RFC-RF1 (70 cm), low -> RFC-RF2 (2 m)
+LADDERS={}
 def ladder(pfx,nin,nout,hp,lp,blk):
-    # HPF: Cs, Lp, Cs, Lp, Cs  then LPF: C, L, C, L, C
-    n=[nin]+[f'{pfx}_{i}' for i in range(1,5)]+[f'{pfx}_M']
-    C(hp[0],n[0],n[1],blk); L(hp[1],n[1],'GND',blk); C(hp[2],n[1],n[2],blk); L(hp[3],n[2],'GND',blk); C(hp[4],n[2],n[5],blk)
-    m=[n[5],f'{pfx}_5',nout]
-    C(lp[0],m[0],'GND',blk); L(lp[1],m[0],m[1],blk); C(lp[2],m[1],'GND',blk); L(lp[3],m[1],m[2],blk); C(lp[4],m[2],'GND',blk)
-ladder('F2','F2_IN','F2_OUT',('47p','39nH','15p','39nH','47p'),('10p','68nH','33p','68nH','10p'),B)
-ladder('F70','F70_IN','F70_OUT',('15p','15nH','4p7','15nH','15p'),('3p9','22nH','12p','22nH','3p9'),B)
+    """hp = values Cs,Lp,Cs,...,Cs (odd count); lp = values C,L,C,...,C (odd count).
+    Records the series chain and the shunt parts per node in LADDERS for the layout script."""
+    chain=[]; shunts={}; node=nin; k=0
+    for i,v in enumerate(hp):
+        if i%2==0:
+            k+=1; nxt=f'{pfx}_H{k}' if i<len(hp)-1 else f'{pfx}_M'
+            chain.append(C(v,node,nxt,blk)); node=nxt
+        else: shunts.setdefault(node,[]).append(L(v,node,'GND',blk))
+    k=0
+    for i,v in enumerate(lp):
+        if i%2==0: shunts.setdefault(node,[]).append(C(v,node,'GND',blk))
+        else:
+            k+=1; nxt=f'{pfx}_L{k}' if i<len(lp)-2 else nout
+            chain.append(L(v,node,nxt,blk)); node=nxt
+    assert node==nout
+    LADDERS[pfx]=dict(nin=nin,nout=nout,chain=chain,shunts=shunts)
+# 2 m: 0.1 dB Chebyshev, 7th-order high-pass at 125 MHz + 5th-order low-pass at 185 MHz (gen/calc.py, filter_check)
+ladder('F2','F2_IN','F2_OUT',('22p','47nH','12p','39nH','12p','47nH','22p'),('18p','56nH','33p','56nH','18p'),B)
+# 70 cm: 0.1 dB Chebyshev, 5th-order high-pass at 370 MHz + 7th-order low-pass at 520 MHz (46 dB modelled at 915 MHz)
+ladder('F70','F70_IN','F70_OUT',('8p2','15nH','4p7','15nH','8p2'),('6p8','22nH','12p','22nH','12p','22nH','6p8'),B)
 sw('FILT_OUT','F2_OUT','F70_OUT',B,ctrl='BAND_SEL_N')   # mirrored pinout: driven by inverted control
 add('Q','Transistor_FET','2N7002','2N7002','Package_TO_SOT_SMD:SOT-23',{1:'BAND_SEL',2:'GND',3:'BAND_SEL_N'},B,mpn='2N7002',note='inverter for output switch')
 R('10k','BAND_SEL_N','3V3_DIG',B)
@@ -102,7 +119,8 @@ add('T','Transformer','TC1-1-13M+','TC1-1-13M+','Transformer_SMD:Transformer_Min
     {6:'DEM_RF_M',4:'GND',1:'RF_BAL_P',3:'RF_BAL_N'},B,mpn='Mini-Circuits TC1-1-13M+')
 L('15nH','RF_BAL_P','RF_BAL_N',B,dnp=True,note='L6 per LTC5584 data sheet: 15nH @450MHz, 68nH @140MHz; confirm position against data sheet Figure 4')
 C('10n','RF_BAL_P','DEM_RFP',B); C('10n','RF_BAL_N','DEM_RFN',B)
-add('U','CSC_R1','LTC5584','LTC5584IUF','Package_DFN_QFN:QFN-24-1EP_4x4mm_P0.5mm_EP2.6x2.6mm_ThermalVias',
+C('DNP','DEM_RFP','DEM_RFN',B,dnp=True,note='match pad: differential shunt C at RF+/RF- (1.0p @450MHz, 8.0p @140MHz in the data sheet table; position to confirm)')
+add('U','CSC_R1','LTC5584','LTC5584IUF','CSC_R1:LTC_UF24_QFN-24-1EP_4x4mm_P0.5mm_EP2.45mm',
     {1:'TRIM_IP2Q',2:'TRIM_DCOQ',3:'TRIM_DCOI',4:'TRIM_IP2I',5:'DEM_RFP',6:'DEM_RFN',7:'DEMOD_EN',8:'GND',9:'DEM_VBIAS',
      10:'5V_DEMOD',11:'DEMOD_EDC',12:'DEMOD_EIP2',13:'GND',14:'GND',15:'LO_P',16:'LO_N',17:'DEM_VCAP',18:'DEM_CMQ',19:'DEM_CMI',
      20:'BB_QN',21:'BB_QP',22:'BB_IN',23:'BB_IP',24:'DEM_REF',25:'GND'},B,mpn='Analog Devices LTC5584IUF#PBF')
@@ -149,9 +167,9 @@ for i in range(4): bypass('3V3_PLL',B,('100n','10p'))
 bypass('3V3_PLL',B,('10u',)); bypass('3V3_VCO',B,('100n','10p','100n','10p','10u'))
 R('5k1','PLL_RSET','GND',B,note='1%'); C('100n','PLL_TEMP','GND',B); C('100n','PLL_VCOM','GND',B); C('100n','PLL_VREF','GND',B)
 R('10k','PLL_CE','3V3_DIG',B); R('10k','PLL_PDBRF','3V3_DIG',B); TP('PDBRF','PLL_PDBRF',B)
-# loop filter (verify with ADIsimPLL): Icp 2.5 mA, ~20 kHz
-C('18n','PLL_CP','GND',B,note='C0G/X7R loop C1'); R('180R','PLL_CP','PLL_LF2',B); C('120n','PLL_LF2','GND',B,fp=FP_C6,note='loop C2')
-R('390R','PLL_CP','PLL_VTUNE',B); C('1n5','PLL_VTUNE','GND',B,note='loop C3'); TP('VTUNE','PLL_VTUNE',B)
+# loop filter, Icp 2.5 mA: 59-67 deg phase margin, 15-40 kHz bandwidth across both bands and Kv 40-80 MHz/V (gen/calc.py)
+C('3n9','PLL_CP','GND',B,note='loop C1, C0G'); R('120R','PLL_CP','PLL_LF2',B); C('180n','PLL_LF2','GND',B,fp=FP_C6,note='loop C2, X7R or film')
+R('560R','PLL_CP','PLL_VTUNE',B); C('680p','PLL_VTUNE','GND',B,note='loop C3, C0G'); TP('VTUNE','PLL_VTUNE',B)
 # reference
 add('Y','Oscillator','TG2520SMN-xx.xxxxxxMhz-xxxxNM','25MHz TCXO','Oscillator:Oscillator_SMD_SeikoEpson_TG2520SMN-xxx-xxxxxx-4Pin_2.5x2.0mm',
     {1:NC,2:'GND',3:'TCXO_OUT',4:'3V3_TCXO'},B,mpn='25 MHz TCXO 2.5x2.0 mm, 3.3 V, <= 2 ppm (Epson TG2520SMN family or equiv.)')

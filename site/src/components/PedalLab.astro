@@ -1,0 +1,100 @@
+---
+import panelMark from '../assets/classroom-mark-reversed.svg?url';
+---
+<section id="pedal-lab" class="mt-10" aria-labelledby="pedal-title">
+  <h2 id="pedal-title">Satellite pedal trainer</h2>
+  <p class="mt-2 max-w-2xl text-muted">Practice on the proposed CSC-R1 Rev B receiver. The signal and meters are simulated. Start with the footswitch, then tune a station and set its gain.</p>
+  <div class="console mt-4">
+    <header><img src={panelMark} width="44" height="44" alt="" /><strong>CSC-R1 / RECEIVER LAB</strong></header>
+    <p id="pedal-task" aria-live="polite">1 of 3 · Tap ENGAGE to unmute the receiver.</p>
+    <div class="scope">
+      <svg viewBox="0 0 400 80" preserveAspectRatio="none" role="img" aria-label="Simulated receiver waveform"><path d="M0 40H400 M100 0V80 M200 0V80 M300 0V80" stroke="#264239" fill="none" vector-effect="non-scaling-stroke"/><polyline data-wave points="0,40 400,40" fill="none" stroke="#8dffb6" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+      <output data-display aria-live="off">145.795 MHz · muted</output>
+    </div>
+    <div class="controls">
+      <label>BAND<select data-band><option value="2">2 m</option><option value="70">70 cm</option></select></label>
+      <fieldset><legend>TUNE</legend><div><button data-down aria-label="Tune down">−</button> <button data-up aria-label="Tune up">+</button></div></fieldset>
+      <label>GAIN <output data-gain-label>0 dB</output><input data-gain type="range" min="0" max="42" step="1" value="0" /></label>
+      <label>LEVEL <output data-level-label>25%</output><input data-volume type="range" min="0" max="100" value="25" /></label>
+    </div>
+    <div class="actions"><button data-engage aria-pressed="false">ENGAGE</button><button data-check>Check setting</button><button data-reset>Restart</button></div>
+    <p data-feedback role="status"></p>
+  </div>
+  <p class="mt-3 max-w-2xl text-sm text-muted">On paper, draw the path from the antenna through GAIN to the output LEVEL. Mark where the signal clipped in your trial. <a class="underline" href="https://github.com/steelhead99x/cubesat-classroom/blob/main/hardware/sdr-receiver/rev-b-pedal-plan.md#controls">Receiver control design</a></p>
+</section>
+<style>
+  .console { background:#081410; color:#bdf5ce; border:1px solid #37674a; border-radius:.65rem; padding:clamp(1rem,3vw,2rem); font-family:var(--font-mono); }
+  header,.actions,.controls { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+  header { letter-spacing:.09em; }
+  #pedal-task { margin:1rem 0; color:white; }
+  .scope { background:#04100b; border:1px solid #37674a; padding:.7rem; }
+  .scope svg { display:block; width:100%; height:5rem; }
+  .controls { margin:1rem 0; align-items:start; }
+  .controls label,.controls fieldset { min-width:7rem; flex:1; }
+  .controls select,.controls input { display:block; width:100%; }
+  button,select { border:1px solid #638b70; color:#dcffe6; background:#152c20; border-radius:.25rem; min-height:44px; padding:.4rem .8rem; cursor:pointer; }
+  input { min-height:44px; accent-color:#93f5aa; }
+  button[aria-pressed=true] { background:#bdf5ce; color:#081410; }
+  [data-feedback]:not(:empty) { margin-top:1rem; }
+</style>
+<script>
+  const panel = document.querySelector<HTMLElement>('#pedal-lab')!;
+  const get = <T extends Element>(name: string) => panel.querySelector<T>(name)!;
+  const band = get<HTMLSelectElement>('[data-band]');
+  const gain = get<HTMLInputElement>('[data-gain]');
+  const volume = get<HTMLInputElement>('[data-volume]');
+  let engaged = false, offset = -1, stage = 0;
+  const tasks = [
+    '1 of 3 · Tap ENGAGE to unmute the receiver.',
+    '2 of 3 · Select 2 m. Tune to 145.800 MHz in 5 kHz steps.',
+    '3 of 3 · Raise GAIN until the peaks clip. Then lower GAIN until the input meter reads 60–95%. Set LEVEL between 20% and 40%.',
+    'Complete · Write down the frequency, gain and level that worked.'
+  ];
+  let sawClip = false;
+  // Off station there is only noise; on station a carrier rides above it. GAIN lifts both.
+  const NOISE = .006, CARRIER = .12;
+  function signal() {
+    const tuned = band.value === '2' && offset === 0;
+    const g = 10 ** (Number(gain.value) / 20);
+    return { tuned, g, peak: (tuned ? CARRIER : NOISE) * g };
+  }
+  const noise = () => Math.random() * 2 - 1;
+  function render() {
+    const {tuned, g, peak} = signal();
+    if (stage === 2 && engaged && tuned && peak > 1) sawClip = true;
+    const frequency = ((band.value === '2' ? 145800 : 435000) + 5 * offset) / 1000;
+    get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · input ' + Math.round(peak*100) + '% · ' +
+      (peak > 1 ? 'CLIPPING' : 'within range') + (engaged ? ' · output on' : ' · muted');
+    get('[data-wave]').setAttribute('points', Array.from({length:201}, (_,i) => {
+      // Clip at the input, before LEVEL: turning LEVEL down shrinks a clipped wave, it can't unflatten it.
+      const raw = (tuned ? CARRIER * Math.sin(i * Math.PI / 20) : 0) + NOISE * noise();
+      const sample = Math.max(-1, Math.min(1, raw * g));
+      return (2*i) + ',' + (40 - (engaged ? sample * Number(volume.value) / 100 * 37 : 0));
+    }).join(' '));
+    get('[data-engage]').setAttribute('aria-pressed', String(engaged));
+    get('[data-gain-label]').textContent = gain.value + ' dB';
+    get('[data-level-label]').textContent = volume.value + '%';
+    get('#pedal-task').textContent = tasks[stage];
+  }
+  function check() {
+    const {tuned,peak} = signal();
+    const pass = [engaged, engaged && tuned, engaged && tuned && sawClip && peak >= .6 && peak <= .95 && +volume.value >= 20 && +volume.value <= 40];
+    if (stage < 3 && pass[stage]) {
+      stage++; get('[data-feedback]').textContent = 'Setting confirmed.';
+    } else if (stage < 3) {
+      get('[data-feedback]').textContent = !engaged ? 'Tap ENGAGE first.' : !tuned ? 'Check the band and frequency on the display.' : !sawClip ? 'Turn GAIN up until the input meter says CLIPPING.' : 'Check the input percentage and output LEVEL.';
+    }
+    render();
+  }
+  get('[data-check]').addEventListener('click', check);
+  get('[data-engage]').addEventListener('click', () => { engaged = !engaged; render(); if (stage === 0 && engaged) check(); });
+  for (const [selector, delta] of [['[data-down]',-1],['[data-up]',1]] as const) {
+    get(selector).addEventListener('click', () => { offset = Math.max(-20, Math.min(20, offset + delta)); render(); });
+  }
+  panel.addEventListener('input', render);
+  get('[data-reset]').addEventListener('click', () => {
+    offset=-1; stage=0; engaged=false; sawClip=false; band.value='2'; gain.value='0'; volume.value='25';
+    get('[data-feedback]').textContent=''; render();
+  });
+  render();
+</script>

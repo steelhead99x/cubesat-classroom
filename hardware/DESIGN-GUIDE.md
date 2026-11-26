@@ -118,8 +118,8 @@ Before a new or changed part is printed beyond a coupon:
 | [Classroom kit](amsat-cubesatsim/README.md) (AMSAT frame + plates) | Yes, including the camera side. The 5 V boost board still needs a printed mount. The upstream AMSAT frame parts keep their own look. |
 | [Outdoor ground station](outdoor-station/README.md) and [outdoor XIAO station](outdoor-xiao/README.md) | Yes. No screws: the lid latches on over a radial O-ring. The O-ring is the one separate piece. |
 | Rev C frame (`crates/cubesat-cad`, PR #37) | Not yet: its board mounts are the rejected quarter-turn studs, lock keys and clamp. Port the keyed snap pin, lips and hooks, and battery hooks. |
-| [Rev A bench box](p1s/README.md) | No: M3 screws. Kept as a historical test box. Replace before it goes to classes. |
-| [Rev B rail-fit set](README.md#rev-b-rail-fit-set) | No: needs supports, and has no board mounts. Rework before it goes to classes. |
+| [Rev A bench box](p1s/README.md) | No: M3 screws. Archived as a historical test box. |
+| [Rev B rail-fit set](ARCHIVE.md#rev-b-rail-fit-set) | No: needs supports, and has no board mounts. Archived. |
 | [CSC-R1 receiver](sdr-receiver/README.md) | Its enclosure is a bought die-cast box. Any printed bracket, knob or faceplate follows the guide. |
 | [Teachers in Space frame](tis/README.md) | Not ours, so it's linked, not changed. Mounts we print for it follow the guide. |
 | Designs in other CubeSat Classroom repositories (balloon gondolas, rocket pods, solar faces) | Apply the guide the next time each is changed. |

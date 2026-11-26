@@ -5,7 +5,7 @@ The mounts in this folder are designed around Arduino's own CAD for both boards.
 | File | What it is | Source |
 | --- | --- | --- |
 | `nano-33-ble-sense-rev2-ABX00069.stl` | Arduino Nano 33 BLE Sense Rev2, bare board (no headers), with every part's 3D model | Arduino's Altium design, `NANO33BLE_SENSE.PcbDoc`, from the [ABX00069 CAD files](https://docs.arduino.cc/hardware/nano-33-ble-sense-rev2) |
-| `uno-r3-envelope.stl` | Arduino Uno R3: the board plus a box for each part, at its catalogue height | Arduino's Eagle design, `UNO-TH_Rev3e.brd`, from the [A000066 CAD files](https://docs.arduino.cc/hardware/uno-rev3). Arduino ships no 3D models for the Uno, so the part heights in `UNO_PARTS` in [generate.py](../generate.py) are rounded-up catalogue values. |
+| `uno-r3-envelope.stl` | Arduino Uno R3: the board plus a box for each part, at its catalogue height | Arduino's Eagle design, `UNO-TH_Rev3e.brd`, from the [A000066 CAD files](https://docs.arduino.cc/hardware/uno-rev3). Arduino ships no 3D models for the Uno, so the part heights in `UNO_PARTS` in [boards.rs](../../../crates/amsat-kit/src/boards.rs) are rounded-up catalogue values. |
 
 Coordinates are in mm. The origin is the board's lower-left corner, on the bottom face of the PCB, with parts up (+z). On the Nano, the USB end is at x = 0.
 

@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""Log and summarise radio power for the CSC-R1 bench quests.
+
+    power_log.py record --port /dev/ttyACM0 --minutes 10 --label "C5, 5 GHz, streaming" --out c5-5g.csv
+    power_log.py summary c5-5g.csv --megabytes 210
+    power_log.py summary s3-24.csv c5-5g.csv --delivered s3-24.csv=180 --delivered c5-5g.csv=210
+    power_log.py summary *.csv
+
+Each run delivers its own amount of data, so give each file its own delivered
+megabytes: --megabytes for a single file, or --delivered FILE=MB per file.
+
+`record` reads the power-logger sketch over USB serial (needs pyserial:
+`pip install pyserial`). `summary` needs only the standard library.
+
+It also reads a Nordic Power Profiler (PPK2) CSV export: a file whose header
+has "Timestamp(ms)" and "Current(uA)" columns, with --volts for the supply.
+"""
+
+import argparse
+import csv
+import datetime as dt
+import json
+import os
+import statistics
+import sys
+import time
+
+SHUNT_LSB_V = 2.5e-6   # INA226 shunt-voltage register
+BUS_LSB_V = 1.25e-3    # INA226 bus-voltage register
+
+
+def record(a):
+    try:
+        import serial  # pyserial
+    except ImportError:
+        sys.exit("needs pyserial: pip install pyserial")
+    end = time.time() + a.minutes * 60
+    n = 0
+    with serial.Serial(a.port, 115200, timeout=2) as s, open(a.out, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["t_ms", "current_ma", "bus_v", "power_mw"])
+        while time.time() < end:
+            line = s.readline().decode(errors="replace").strip()
+            if not line or line.startswith("#"):
+                if line:
+                    print(line, file=sys.stderr)
+                continue
+            try:
+                t, sh, bus = (int(x) for x in line.split(","))
+            except ValueError:
+                continue
+            i_ma = sh * SHUNT_LSB_V / a.shunt * 1e3
+            v = bus * BUS_LSB_V
+            w.writerow([t, f"{i_ma:.3f}", f"{v:.4f}", f"{i_ma * v:.2f}"])
+            n += 1
+            if n % 200 == 0:
+                print(f"{n} readings, now {i_ma:.1f} mA at {v:.3f} V", file=sys.stderr)
+    info = {
+        "label": a.label, "evidence": "hardware bench", "meter": "INA226",
+        "shunt_ohm": a.shunt, "minutes": a.minutes,
+        "utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+    }
+    with open(a.out + ".json", "w") as f:
+        json.dump(info, f, indent=2)
+    print(f"saved {n} readings to {a.out}")
+
+
+def load(path, volts):
+    """Return [(t_s, power_mw)] from our logger CSV or a PPK2 export."""
+    with open(path, newline="") as f:
+        rows = list(csv.DictReader(f))
+    if not rows:
+        sys.exit(f"{path}: empty")
+    keys = rows[0].keys()
+    out = []
+    if "power_mw" in keys:
+        for r in rows:
+            out.append((int(r["t_ms"]) / 1e3, float(r["power_mw"])))
+    elif "Timestamp(ms)" in keys and "Current(uA)" in keys:
+        if not volts:
+            sys.exit(f"{path}: a PPK2 export has no voltage; pass --volts")
+        for r in rows:
+            out.append((float(r["Timestamp(ms)"]) / 1e3, float(r["Current(uA)"]) / 1e3 * volts))
+    else:
+        sys.exit(f"{path}: unknown columns {list(keys)}")
+    return out
+
+
+def delivered_map(a):
+    """Megabytes delivered per file. One shared figure is refused for several files."""
+    out = {}
+    if a.megabytes is not None:
+        if len(a.files) != 1:
+            sys.exit("--megabytes is for one file; each run delivers its own amount. "
+                     "Use --delivered FILE=MB once per file instead.")
+        out[a.files[0]] = a.megabytes
+    for item in a.delivered or []:
+        name, sep, mb = item.rpartition("=")
+        if not sep or name not in a.files:
+            sys.exit(f"--delivered {item}: expected FILE=MB with FILE one of the files given")
+        try:
+            out[name] = float(mb)
+        except ValueError:
+            sys.exit(f"--delivered {item}: {mb!r} is not a number")
+    return out
+
+
+def summary(a):
+    mb_for = delivered_map(a)
+    print("file | label | minutes | average mW | energy J | mJ per MB")
+    for p in a.files:
+        pts = load(p, a.volts)
+        if len(pts) < 2:
+            print(f"{p}: too few readings")
+            continue
+        # Trapezoid integral; skips gaps longer than 1 s instead of bridging them.
+        e_mj, dur = 0.0, 0.0
+        for (t0, p0), (t1, p1) in zip(pts, pts[1:]):
+            dtt = t1 - t0
+            if 0 < dtt <= 1.0:
+                e_mj += (p0 + p1) / 2 * dtt
+                dur += dtt
+        avg = e_mj / dur if dur else statistics.mean(p for _, p in pts)
+        side = p + ".json"
+        label = json.load(open(side)).get("label", "") if os.path.exists(side) else ""
+        # The megabytes were delivered over the whole run, gaps included, so energy per
+        # megabyte has to cover the same span: the gaps count at the run's average power.
+        span = pts[-1][0] - pts[0][0]
+        gap = max(0.0, span - dur)
+        # With no interval short enough to integrate, nothing was measured: the average is
+        # only the mean of isolated readings, too weak to state an efficiency from.
+        mb = mb_for.get(p)
+        per_mb = f"{avg * span / mb:.0f}" if mb and dur > 0 else "-"
+        print(f"{p} | {label} | {dur / 60:.1f} | {avg:.0f} | {e_mj / 1e3:.1f} | {per_mb}")
+        if dur == 0:
+            print(f"  {p}: no two readings were within 1 s of each other, so no energy was"
+                  " measured; mJ per MB is left out. Log at least one reading a second.")
+        elif gap > 0:
+            print(f"  {p}: {gap:.1f} s of the {span:.1f} s run had no readings;"
+                  " mJ per MB counts that time at the average power")
+    if len(mb_for) < len(a.files):
+        print("for energy per megabyte, give each file its delivered megabytes: "
+              "--delivered FILE=MB (or --megabytes for a single file)")
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    sub = p.add_subparsers(dest="cmd", required=True)
+    r = sub.add_parser("record")
+    r.add_argument("--port", required=True)
+    r.add_argument("--minutes", type=float, default=10)
+    r.add_argument("--shunt", type=float, default=0.1, help="shunt resistor in ohms")
+    r.add_argument("--label", required=True)
+    r.add_argument("--out", required=True)
+    s = sub.add_parser("summary")
+    s.add_argument("files", nargs="+")
+    s.add_argument("--megabytes", type=float, help="data delivered during the run (one file only)")
+    s.add_argument("--delivered", action="append", metavar="FILE=MB",
+                   help="data delivered during that file's run; repeat once per file")
+    s.add_argument("--volts", type=float, help="supply voltage, for PPK2 exports")
+    a = p.parse_args(argv)
+    (record if a.cmd == "record" else summary)(a)
+
+
+if __name__ == "__main__":
+    main()

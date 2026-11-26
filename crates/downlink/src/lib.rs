@@ -33,9 +33,9 @@ pub use frame::{
 };
 pub use schedule::{Budget, FeedTrack, LIVE_BROADCAST, Piece, Scheduler};
 pub use schema::{
-    AGE_SKEW_MS, AUDIO_MAGIC, AudioFrame, BOARD_BODY_LEN, EVIDENCE_DESK, FREQUENCY_HZ,
-    HEALTH_SCHEMA, LORA_BOARD_PAYLOAD, LORA_SMALL_PAYLOAD, MAX_OBJECT_BYTES, OLED_COLUMNS,
-    RelayHealth, SOURCE_SENSORS, SOURCE_SIMULATION, SensorReading, TELEMETRY_SCHEMA, Telemetry,
-    age_ms,
+    AGE_SKEW_MS, AUDIO_MAGIC, AudioFrame, BOARD_BODY_LEN, EVIDENCE_BENCH, EVIDENCE_DESK,
+    FREQUENCY_HZ, HEALTH_SCHEMA, LORA_BOARD_PAYLOAD, LORA_SMALL_PAYLOAD, MAX_OBJECT_BYTES,
+    OLED_COLUMNS, RelayHealth, SOURCE_SENSORS, SOURCE_SIMULATION, SensorReading, TELEMETRY_SCHEMA,
+    Telemetry, age_ms,
 };
 pub use study::{Bench, Studies, bench, bench_text, studies, text_report};

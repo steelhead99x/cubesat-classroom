@@ -1,0 +1,98 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import { glossary, deckSlides, deckUrl, ldJson, type Term } from '../../lib/glossary';
+import { repo } from '../../hubs.mjs';
+import { siteOrigin } from '../../origin';
+
+export async function getStaticPaths() {
+  const entries = await glossary();
+  const byId = new Map(entries.map(entry => [entry.id, entry]));
+  return entries.map(entry => ({ params: { slug: entry.id }, props: { entry, related: entry.data.related.map(id => byId.get(id)!) } }));
+}
+
+interface Props { entry: Term; related: Term[] }
+const { entry, related } = Astro.props;
+const { Content } = await render(entry);
+const { term, summary, category, aliases, seeAlso, sources, deck } = entry.data;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const canonical = `${siteOrigin}/wiki/${entry.id}/`;
+const file = `site/src/content/glossary/${entry.id}.md`;
+const site = (href: string) => (href.startsWith('/') ? base + href : href);
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'DefinedTerm',
+  '@id': canonical,
+  name: term,
+  description: summary,
+  url: canonical,
+  termCode: entry.id,
+  ...(aliases.length ? { alternateName: aliases } : {}),
+  inDefinedTermSet: { '@type': 'DefinedTermSet', '@id': `${siteOrigin}/wiki/`, name: 'CubeSat Classroom glossary', url: `${siteOrigin}/wiki/` },
+  ...(sources.length ? { subjectOf: sources.map(s => ({ '@type': 'CreativeWork', name: s.label, url: s.url })) } : {}),
+};
+---
+<Base title={`${term} | CubeSat Classroom glossary`} description={summary} canonical={canonical}>
+  <script slot="head" type="application/ld+json" is:inline set:html={ldJson(ld)} />
+  <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Mission', href: base + '/mission/' },
+    { label: 'Lessons', href: base + '/quests/' },
+    { label: 'CAD', href: base + '/hardware/' },
+    { label: 'Glossary', href: base + '/wiki/', current: true },
+  ]} />
+  <article class="shell grid gap-10 py-10 sm:py-14 lg:grid-cols-[1fr_18rem]">
+    <div class="min-w-0">
+      <nav aria-label="Breadcrumb" class="t-label text-muted"><a class="text-accent" href={base + '/wiki/'}>Glossary</a> <span aria-hidden="true">/</span> {category}</nav>
+      <h1 class="mt-3">{term}</h1>
+      <p class="lede mt-3">{summary}</p>
+      {aliases.length > 0 && <p class="mt-3 text-muted"><strong class="text-ink">Also called:</strong> {aliases.join(', ')}</p>}
+      <div class="wiki-body mt-6 max-w-3xl"><Content /></div>
+
+      {sources.length > 0 && (
+        <section class="mt-10" aria-labelledby="sources-title">
+          <h2 id="sources-title">Sources</h2>
+          <ul class="mt-3 space-y-2">
+            {sources.map(source => <li><a class="text-accent underline underline-offset-4" href={source.url}>{source.label}</a></li>)}
+          </ul>
+        </section>
+      )}
+
+      <p class="mt-10 flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-5 text-sm">
+        <a class="font-bold text-accent underline underline-offset-4" href={`${repo}/edit/main/${file}`}>Edit this page on GitHub</a>
+        <a class="text-accent underline underline-offset-4" href={`${repo}/commits/main/${file}`}>Page history</a>
+        <a class="text-accent underline underline-offset-4" href={base + '/wiki/#contribute'}>How to contribute</a>
+      </p>
+    </div>
+
+    <aside class="space-y-8 lg:border-l lg:border-line lg:pl-8" aria-label="Related">
+      {related.length > 0 && (
+        <section aria-labelledby="related-title">
+          <h2 id="related-title" class="text-lg">Related terms</h2>
+          <ul class="mt-3 space-y-2">
+            {related.map(other => <li><a class="text-accent underline underline-offset-4" href={`${base}/wiki/${other.id}/`}>{other.data.term}</a></li>)}
+          </ul>
+        </section>
+      )}
+      {seeAlso.length > 0 && (
+        <section aria-labelledby="see-title">
+          <h2 id="see-title" class="text-lg">See also</h2>
+          <ul class="mt-3 space-y-2">
+            {seeAlso.map(link => <li><a class="text-accent underline underline-offset-4" href={site(link.href)}>{link.label}</a></li>)}
+          </ul>
+        </section>
+      )}
+      {deck.length > 0 && (
+        <section aria-labelledby="deck-title">
+          <h2 id="deck-title" class="text-lg">Appears in the deck</h2>
+          <p class="mt-1 text-sm text-muted">The mission briefing needs the deck password.</p>
+          <ul class="mt-3 space-y-2">
+            {deck.map(slide => <li><a class="text-accent underline underline-offset-4" href={deckUrl(slide)}>{deckSlides[slide]}<span class="sr-only"> (mission briefing, password required)</span></a></li>)}
+          </ul>
+        </section>
+      )}
+    </aside>
+  </article>
+  <SiteFooter slot="footer" />
+</Base>

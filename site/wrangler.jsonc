@@ -9,7 +9,10 @@
 // cubesat.app is not listed: it belongs to the app's own Worker (cubesat-classroom-app repo).
 {
   "name": "cubesat-classroom",
-  "workers_dev": true,
+  // No workers.dev or preview URLs: the site is only served on its custom domains, so there
+  // is no second public copy at <name>.<account>.workers.dev.
+  "workers_dev": false,
+  "preview_urls": false,
   "main": "src/worker.mjs",
   "compatibility_date": "2026-11-01",
   "assets": {
@@ -29,5 +32,15 @@
     { "pattern": "www.cubesatclass.io", "custom_domain": true },
     { "pattern": "cubesatclass.dev", "custom_domain": true },
     { "pattern": "www.cubesatclass.dev", "custom_domain": true }
-  ]
+  ],
+  // Password attempts on the preview gate, per network address: 20 a minute. It needs the
+  // PREVIEW_COOKIE_SECRET secret (see src/worker.mjs, tooManyGuesses) but no KV store; the
+  // optional GUIDE_LIMITS store adds a daily cap on wrong guesses.
+  // namespace_id is account-wide: keep it different from cubesat.app's TOKEN_LIMIT (4401).
+  "ratelimits": [
+    { "name": "UNLOCK_LIMIT", "namespace_id": "4410", "simple": { "limit": 20, "period": 60 } }
+  ],
+  // Workers Logs, so console.error from the guide and the preview gate can be read in the
+  // dashboard. Traces are left off.
+  "observability": { "enabled": true }
 }

@@ -7,7 +7,7 @@ for n in find(first(t,'nets'),'net'):
     name=first(n,'name')[1].lstrip('/')
     for x in find(n,'node'): sch[(first(x,'ref')[1],first(x,'pin')[1])]=name
 comps={first(c,'ref')[1]:first(c,'footprint')[1] for c in find(first(t,'components'),'comp')}
-b=pcbnew.LoadBoard('../kicad/csc-r1.kicad_pcb'); bad=0; seen=set()
+b=pcbnew.LoadBoard(sys.argv[1] if len(sys.argv)>1 else '../kicad/csc-r1.kicad_pcb'); bad=0; seen=set()
 for f in b.GetFootprints():
     r=f.GetReference(); seen.add(r)
     fp=str(f.GetFPID().GetLibNickname())+':'+str(f.GetFPID().GetLibItemName())
@@ -27,3 +27,4 @@ on={}
 for x in trk:
     if x.GetClass()=='PCB_TRACK': on[b.GetLayerName(x.GetLayer())]=on.get(b.GetLayerName(x.GetLayer()),0)+1
 print('tracks per layer',on)
+sys.exit(1 if bad else 0)
