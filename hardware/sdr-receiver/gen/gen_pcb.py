@@ -3,7 +3,7 @@ import pcbnew, math, json, sys, os
 import design
 from design import parts
 FPDIR='/usr/share/kicad/footprints'; OUT='../kicad'; PROJ='csc-r1'
-OX,OY=60.0,50.0; W,H=116.0,78.0
+OX,OY=60.0,50.0; W,H=120.0,78.0
 mm=pcbnew.FromMM
 def V(x,y): return pcbnew.VECTOR2I(mm(OX+x),mm(OY+y))
 board=pcbnew.BOARD(); board.SetCopperLayerCount(4)
@@ -12,7 +12,7 @@ for i,name in enumerate(sorted(design.nets())):
     ni=pcbnew.NETINFO_ITEM(board,name,i+1); board.Add(ni); nets[name]=ni
 fps={}
 for r,p in parts.items():
-    lib,name=p['fp'].split(':'); f=pcbnew.FootprintLoad(f'{FPDIR}/{lib}.pretty',name)
+    lib,name=p['fp'].split(':'); f=pcbnew.FootprintLoad(f"{'../kicad' if lib=='CSC_R1' else FPDIR}/{lib}.pretty",name)
     f.SetReference(r); f.SetValue(p['value']); f.SetFPID(pcbnew.LIB_ID(lib,name))
     for pd in f.Pads():
         n=p['pins'].get(pd.GetNumber())
@@ -88,15 +88,16 @@ x=breakpoint('LNA_OUT','FILT_IN',e[0]+3.1)
 sw1=one('U','FILT_IN','F2_IN'); pin_at(sw1,'5',x+3.4,RFY,180)
 xs=pos(sw1,'1')[0]+2.2
 def ladder(pfx,nin,nout,y,out):
-    n=[nin,f'{pfx}_1',f'{pfx}_2',f'{pfx}_M',f'{pfx}_5',nout]; xx=xs; ends=[]
-    for a,b in zip(n[:-1],n[1:]):
-        k='C' if b in(f'{pfx}_1',f'{pfx}_2',f'{pfx}_M') else 'L'
-        r=one(k,a,b); e=inline(r,xx,y,0,pinof(r,a)); xx=e[0]+1.25; ends.append(e)
-    for net,e in zip(n[1:],ends):
-        for k in('L','C'):
-            for r in sel(k,net,'GND'):
-                if parts[r]['value']!='100n': inline(r,e[0]+0.6,y+out*1.15,90 if out>0 else 270,pinof(r,net))
-    return ends[-1][0]
+    L_=design.LADDERS[pfx]; xx=xs; node=nin; last=None
+    for r in L_['chain']:
+        e=inline(r,xx,y,0,pinof(r,node)); nxt=[v for k,v in parts[r]['pins'].items() if v!=node][0]
+        node=nxt; xx=e[0]+1.25; last=e
+        # shunt parts at this node hang off the series part's far pad
+        for k_,sh in enumerate(L_['shunts'].get(node,[])):
+            inline(sh,e[0]+0.6+1.1*k_,y+out*1.15,90 if out>0 else 270,pinof(sh,node))
+    # shunts on the input node (none for these filters) would go before the first part
+    assert not L_['shunts'].get(nin)
+    return last[0]
 xe=max(ladder('F2','F2_IN','F2_OUT',RFY-2.4,-1),ladder('F70','F70_IN','F70_OUT',RFY+2.4,+1))
 sw2=one('U','FILT_OUT','F2_OUT'); pin_at(sw2,'1',xe+2.6,RFY-0.65,0)
 assert abs(pos(sw2,'5')[1]-RFY)<0.01 and pos(sw2,'3')[1]>RFY and pos(sw1,'3')[1]<RFY
@@ -109,7 +110,7 @@ b1=pos(bal,'1'); b3=pos(bal,'3'); assert b1[0]>pos(bal,'6')[0] and b1[1]<b3[1]
 l6=one('L','RF_BAL_P','RF_BAL_N'); inline(l6,b1[0]+1.7,RFY-0.48,90,pinof(l6,'RF_BAL_P'))
 cp=one('C','RF_BAL_P','DEM_RFP'); cn=one('C','RF_BAL_N','DEM_RFN')
 ep=inline(cp,b1[0]+2.9,RFY-0.5,0,pinof(cp,'RF_BAL_P')); inline(cn,b1[0]+2.9,RFY+0.5,0,pinof(cn,'RF_BAL_N'))
-dem=one('U','DEM_RFP','LO_P'); pin_at(dem,'5',ep[0]+2.4,RFY-0.25,0)
+dem=one('U','DEM_RFP','LO_P'); pin_at(dem,'5',ep[0]+2.9,RFY-0.25,0)
 CX,CY=fps[dem].GetPosition(); CX=pcbnew.ToMM(CX)-OX; CY=pcbnew.ToMM(CY)-OY
 print('demod centre',round(CX,2),round(CY,2))
 # ------------------------------------------------------------------ LO: PLL right of demod, RF outputs facing left
@@ -138,11 +139,13 @@ cm_=one('C','LOB_P','LO_MON'); e=at(cm_,'LOB_P',PX-4.2,CY+5.7,90)
 path('LOB_P',[p14,(PX-4.2,p14[1]),(PX-4.2,CY+5.7)],0.25); path('LOB_P',[(PX-4.2,CY+4.2),(PX-5.3,CY+4.2)],0.25)
 um=one('J','LO_MON'); pin_at(um,'1',e[0],e[1]+1.9,270); path('LO_MON',[e,pos(um,'1')])
 # ---------------- hand routes for the RF nets (straight MST between pads)
-for n in ['ANT','RF_A','LNA_IN','LNA_G','LNA_D','LNA_OUT','FILT_IN','F2_IN','F2_1','F2_2','F2_M','F2_5','F2_OUT','F70_IN','F70_1','F70_2','F70_M','F70_5','F70_OUT',
+FILTNETS=sorted({v for pf in ('F2','F70') for r in design.LADDERS[pf]['chain'] for v in parts[r]['pins'].values()})
+for n in ['ANT','RF_A','LNA_IN','LNA_G','LNA_D','LNA_OUT','FILT_IN']+FILTNETS+[
           'FILT_OUT','DEM_RF','DEM_RF_M','RF_BAL_P','RF_BAL_N']:
     connect(n,0.35)
+csh=one('C','DEM_RFP','DEM_RFN'); inline(csh,ep[0]+0.9,RFY-0.48,90,pinof(csh,'DEM_RFP'))
 for n,cc,pn in (('DEM_RFP',cp,'5'),('DEM_RFN',cn,'6')):
-    q=pos(dem,pn); path(n,[pos(cc,pinof(cc,n)),(q[0]-1.5,q[1]),q],0.2)
+    q=pos(dem,pn); a_=pos(cc,pinof(cc,n)); b_=pos(csh,pinof(csh,n)); path(n,[a_,(b_[0],a_[1]),b_,(q[0]-0.9,q[1]),q],0.2)
 for sgn,na,nl,pa,pd in ((-1,'LOA_P','LO_N','12','16'),(1,'LOA_N','LO_P','13','15')):
     pp=pos(pll,pa); cpad=(ea[0],CY+sgn*0.5); rr=ra if sgn<0 else rb
     path(na,[pp,(ea[0]+0.49,pp[1]),cpad,pos(rr,pinof(rr,na))],0.22)
@@ -261,7 +264,9 @@ qi=one('Q','BAND_SEL','BAND_SEL_N'); put(qi,s2[0]+0.6,RFY+9.6,90); at(one('R','B
 # ---------------- power input (bottom-left)
 usb=parts['J1'] and 'J1'; put(usb,14.0,H-3.2,0)
 at(one('R','USB_CC1','GND'),'USB_CC1',12.6,H-8.6,270); at(one('R','USB_CC2','GND'),'USB_CC2',15.4,H-8.6,270)
-st=one('J','VEXT','GND'); put(st,27.0,H-4.6,0)
+st=one('J','VEXT_RAW','GND'); put(st,27.0,H-4.6,0)
+qv=one('Q','VEXT_G'); put(qv,35.5,H-4.8,0); at(one('R','VEXT_G','GND'),'VEXT_G',35.5,H-2.2,180)
+tvs=one('D','VUSB'); put(tvs,8.0,H-12.5,0)
 put(one('JP','VUSB','VIN','VEXT'),23.0,H-14.0,90); put(one('F','VIN','+5V'),33.0,H-12.6,0)
 b5=[r for r in sel('C','+5V','GND')]; put(b5[0],37.4,H-12.6,90); put(b5[1],40.0,H-12.6,90); put(b5[2],42.2,H-12.6,90)
 at(one('R','+5V','LED_PWR_A'),'+5V',36.4,H-8.8,0); at(one('D','LED_PWR_A','GND'),'LED_PWR_A',39.0,H-8.8,0)
