@@ -4,7 +4,7 @@ Printed 1U CubeSat frames (100 × 100 × 113.5 mm) for a Bambu Lab P1S or a simi
 
 | Design | What it is | Start here |
 | --- | --- | --- |
-| **Rev C (Rust)** | New frame built to the CubeSat Design Specification: 8.5 mm-plus rounded rails, recessed ends, 100% printed, Uno R3 and Nano 33 BLE Sense. CAD, checks and firmware all in Rust. | [Build guide](rev-c/README.md) |
+| **Rev C (Rust)** | New frame built to the CubeSat Design Specification: rounded 9 mm rails, recessed ends and faces, closed and vented sides, launch-load margins, 100% printed, Uno R3 and Nano 33 BLE Sense. CAD, checks and firmware all in Rust. | [Build guide](rev-c/README.md) |
 | **AMSAT CubeSatSim frame + Arduino payload** | AMSAT's v2.0 frame with a printed plate for an Uno R3 and a Nano 33 BLE Sense. 100% printed, no supports. | [Build guide](amsat-cubesatsim/README.md) |
 | Teachers in Space frame | The frame TIS uses in its Arduino CubeSat workshops. Files come from TIS. | [Links and comparison](tis/README.md) |
 | Rev A bench box | Closed test box and the M3 screw-fit coupon | [Print guide](p1s/README.md) |

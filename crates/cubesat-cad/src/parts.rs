@@ -4,7 +4,9 @@
 use manifold_csg::{CrossSection, Manifold};
 
 use crate::design::Design;
-use crate::geom::{EPS, cuboid, cylinder, rounded_rect, teardrop_hole_z, union_all};
+use crate::geom::{
+    EPS, cuboid, cylinder, prism, root_chamfer, rounded_rect, teardrop_hole_z, union_all,
+};
 
 /// A split snap peg standing on `base`, pointing +Z, long enough to pass through
 /// `through` mm of material. Returns the solid and the slot to cut afterwards.
@@ -40,9 +42,11 @@ pub fn side_panel(d: &Design) -> Manifold {
     let ri = d.rail_inner();
     // The web stops short of the ends like the end plates, so only the rail ends touch at ±Z (CDS §2.2.8).
     let web_z = hz - d.end_recess;
+    // The web's outer face sits `face_recess` inside the rail plane, so only the rails
+    // can touch the deployer walls.
     let web = cuboid(
         [-(h - d.rail / 2.0), d.web_inner_y(), -web_z],
-        [h - d.rail / 2.0, h, web_z],
+        [h - d.rail / 2.0, d.face_outer(), web_z],
     );
     let rails = [
         rounded_rect([ri, ri], [h, h], d.rail_radius, -hz, d.length),
@@ -75,7 +79,7 @@ pub fn side_panel(d: &Design) -> Manifold {
                 d.snap_hole,
                 d.lug_t + 2.0,
                 [x, d.peg_y, (z0 + z1) / 2.0],
-                -1.0,
+                [0.0, -1.0],
             ));
         }
     }
@@ -93,19 +97,104 @@ pub fn lug_z(d: &Design, sign: f64) -> (f64, f64) {
     }
 }
 
-/// End plate at +Z with its four bosses and snap pegs pointing towards the centre.
+/// Cover at +X: closes the face between the rails, with a port for USB and the
+/// inhibit jumper, vent slots, and an end wall at each end with two snap holes.
+/// The -X cover is the same part turned 180 degrees about Z.
+pub fn cover(d: &Design) -> Manifold {
+    let hz = d.half_z();
+    let edge = d.rail_inner() - d.end_gap;
+    let web_z = hz - d.end_recess;
+    let (inner, outer) = (d.web_inner_y(), d.face_outer());
+    let mut parts = vec![cuboid([inner, -edge, -web_z], [outer, edge, web_z])];
+    for sign in [1.0, -1.0] {
+        let (z0, z1) = lug_z(d, sign);
+        parts.push(cuboid(
+            [d.lug_inner_y, -d.cover_lug_half, z0],
+            [inner + EPS, d.cover_lug_half, z1],
+        ));
+    }
+    let mut cover = union_all(&parts);
+    let (py, pz) = (d.port[0] / 2.0, d.port[1] / 2.0);
+    cover = cover.difference(&cuboid(
+        [inner - 1.0, -py, d.port_center_z - pz],
+        [outer + 1.0, py, d.port_center_z + pz],
+    ));
+    for y in d.vent_ys() {
+        cover = cover.difference(&cuboid(
+            [
+                inner - 1.0,
+                y - d.vent[0] / 2.0,
+                d.vent_center_z - d.vent[1] / 2.0,
+            ],
+            [
+                outer + 1.0,
+                y + d.vent[0] / 2.0,
+                d.vent_center_z + d.vent[1] / 2.0,
+            ],
+        ));
+    }
+    for sign in [1.0, -1.0] {
+        let (z0, z1) = lug_z(d, sign);
+        for [x, y] in d.cover_peg_points() {
+            if x < 0.0 {
+                continue;
+            }
+            // The cover prints outer face down, so "up" is towards the centre (-X).
+            cover = cover.difference(&teardrop_hole_z(
+                d.snap_hole,
+                d.lug_t + 2.0,
+                [x, y, (z0 + z1) / 2.0],
+                [-1.0, 0.0],
+            ));
+        }
+    }
+    cover
+}
+
+/// End plate outline: a square notched at each corner for the rails, reaching out
+/// to the side panels in Y and to the covers in X.
+fn end_outline(d: &Design, z: f64, h: f64) -> Manifold {
+    let a = d.rail_inner() - d.end_gap;
+    let b = d.web_inner_y() - d.end_gap;
+    prism(
+        &[
+            [-a, -b],
+            [a, -b],
+            [a, -a],
+            [b, -a],
+            [b, a],
+            [a, a],
+            [a, b],
+            [-a, b],
+            [-a, a],
+            [-b, a],
+            [-b, -a],
+            [-a, -a],
+        ],
+        z,
+        h,
+    )
+}
+
+/// End plate at +Z with eight bosses and snap pegs pointing towards the centre:
+/// four for the side panels, four for the covers.
 fn end_plate_base(d: &Design) -> Manifold {
-    let x = d.rail_inner() - d.end_gap;
-    let y = d.web_inner_y() - d.end_gap;
-    let mut plate = cuboid([-x, -y, d.end_inner_z()], [x, y, d.end_outer_z()]);
+    let mut plate = end_outline(d, d.end_inner_z(), d.end_t);
+    let footprint = end_outline(d, d.lug_outer_z() - 1.0, d.boss_h + 2.0);
     let mut slots = Vec::new();
-    for [px, py] in d.peg_points() {
+    for [px, py] in d.all_peg_points() {
         plate = plate.union(&cylinder(
             d.boss_d,
             d.boss_h + EPS,
             [px, py, d.lug_outer_z()],
             None,
         ));
+        // A cone at the boss root spreads the snap load into the plate; trimmed to
+        // the outline so it can't reach the panels.
+        plate = plate.union(
+            &root_chamfer(d.boss_d, d.root_chamfer, [px, py], d.end_inner_z(), -1.0)
+                .intersection(&footprint),
+        );
         // Peg points -Z: build it pointing up from z = 0, mirror, then move into place.
         let (body, slot) = peg_up(d, [0.0, 0.0, 0.0], d.lug_t);
         plate = plate.union(
@@ -146,6 +235,7 @@ pub fn end_plate_bottom(d: &Design) -> Manifold {
             [x, y, face - 1.0],
             None,
         ));
+        plate = plate.union(&root_chamfer(d.column_d, d.root_chamfer, [x, y], face, 1.0));
         let (body, slot) = peg_up(d, [x, y, d.plate_bottom_z()], d.plate_t);
         plate = plate.union(&body);
         slots.push(slot);
@@ -323,7 +413,7 @@ pub fn snap_test(d: &Design) -> (Manifold, Manifold) {
             d.snap_hole,
             d.lug_t + 2.0,
             [0.0, 2.0 + hole_h, d.lug_t / 2.0],
-            1.0,
+            [0.0, 1.0],
         ))
         .rotate(90.0, 0.0, 0.0);
     // After the turn the wall stands on its edge; give it a foot.
@@ -337,6 +427,8 @@ pub fn snap_test(d: &Design) -> (Manifold, Manifold) {
 pub struct Assembly {
     pub panel_pos_y: Manifold,
     pub panel_neg_y: Manifold,
+    pub cover_pos_x: Manifold,
+    pub cover_neg_x: Manifold,
     pub end_top: Manifold,
     pub end_bottom: Manifold,
     pub payload: Manifold,
@@ -346,9 +438,12 @@ pub struct Assembly {
 impl Assembly {
     pub fn new(d: &Design) -> Self {
         let panel = side_panel(d);
+        let cover = cover(d);
         Self {
             panel_neg_y: panel.rotate(0.0, 0.0, 180.0),
             panel_pos_y: panel,
+            cover_neg_x: cover.rotate(0.0, 0.0, 180.0),
+            cover_pos_x: cover,
             end_top: end_plate_top(d),
             end_bottom: end_plate_bottom(d),
             payload: payload_plate(d),
@@ -356,24 +451,33 @@ impl Assembly {
         }
     }
 
-    /// The four frame parts (panels and end plates).
-    pub fn frame(&self) -> [&Manifold; 4] {
+    /// The six frame parts: panels, covers and end plates.
+    pub fn frame(&self) -> [&Manifold; 6] {
         [
             &self.panel_pos_y,
             &self.panel_neg_y,
+            &self.cover_pos_x,
+            &self.cover_neg_x,
             &self.end_top,
             &self.end_bottom,
         ]
     }
 
+    /// Every part by name, frame first.
+    pub fn named(&self) -> [(&'static str, &Manifold); 8] {
+        [
+            ("+Y panel", &self.panel_pos_y),
+            ("-Y panel", &self.panel_neg_y),
+            ("+X cover", &self.cover_pos_x),
+            ("-X cover", &self.cover_neg_x),
+            ("+Z end plate", &self.end_top),
+            ("-Z end plate", &self.end_bottom),
+            ("payload plate", &self.payload),
+            ("Nano strap", &self.strap),
+        ]
+    }
+
     pub fn all(&self) -> Manifold {
-        union_all(&[
-            self.panel_pos_y.clone(),
-            self.panel_neg_y.clone(),
-            self.end_top.clone(),
-            self.end_bottom.clone(),
-            self.payload.clone(),
-            self.strap.clone(),
-        ])
+        union_all(&self.named().map(|(_, m)| m.clone()))
     }
 }

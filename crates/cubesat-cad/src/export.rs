@@ -24,15 +24,16 @@ pub const PLATES: &[(&str, &[(&str, &str)])] = &[
             ("side-panel-b", "side-panel"),
         ],
     ),
+    ("02-covers", &[("cover-a", "cover"), ("cover-b", "cover")]),
     (
-        "02-end-plates",
+        "03-end-plates",
         &[
             ("end-plate-bottom", "end-plate-bottom"),
             ("end-plate-top", "end-plate-top"),
         ],
     ),
     (
-        "03-payload",
+        "04-payload",
         &[
             ("payload-plate", "payload-plate"),
             ("nano-strap", "nano-strap"),

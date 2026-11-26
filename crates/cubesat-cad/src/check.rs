@@ -5,6 +5,7 @@ use manifold_csg::Manifold;
 
 use crate::design::Design;
 use crate::geom::{bounds, cuboid, cylinder, overlap, union_all};
+use crate::loads::{self, Masses};
 use crate::mesh::Mesh;
 use crate::parts::{Assembly, lug_z, peg_height};
 
@@ -198,6 +199,7 @@ pub fn print_parts(d: &Design) -> Vec<(&'static str, Manifold)> {
             "side-panel",
             crate::parts::side_panel(d).rotate(-90.0, 0.0, 0.0),
         ),
+        ("cover", crate::parts::cover(d).rotate(0.0, 90.0, 0.0)),
         (
             "end-plate-top",
             crate::parts::end_plate_top(d).rotate(180.0, 0.0, 0.0),
@@ -327,17 +329,56 @@ pub fn verify(d: &Design) -> Report {
         ),
     );
 
+    // Only the rails may touch the deployer: nothing else in the outer skin of the
+    // four long faces, between the rails.
+    let skin = d.face_recess - 0.05;
+    let (assembled, span) = (a.all(), ri - 0.1);
+    let mut touching = 0.0;
+    for s in [-1.0, 1.0] {
+        let (o0, o1) = if s > 0.0 {
+            (h - skin, h + 1.0)
+        } else {
+            (-h - 1.0, -h + skin)
+        };
+        touching += overlap(&assembled, &cuboid([o0, -span, -hz], [o1, span, hz]));
+        touching += overlap(&assembled, &cuboid([-span, o0, -hz], [span, o1, hz]));
+    }
+    r.add(
+        "RAILS-only",
+        "Only the rails touch the deployer walls; panel and cover faces are recessed",
+        "CDS Rev 14.1 §2.2.3, §2.2.9; deployer rails guide the CubeSat",
+        skin > 0.0 && touching < 1e-3,
+        format!(
+            "faces {:.1} mm inside the rail planes, nothing in the gap",
+            d.face_recess
+        ),
+    );
+
+    // Venting (CDS §2.1.9): the inside must vent as the fairing depressurises.
+    // Open area is the side-panel windows, the cover ports and slots, and the
+    // +Z window; the ratio uses inches as the CDS does.
+    let open = 2.0 * d.window[0] * d.window[1]
+        + 2.0 * (d.port[0] * d.port[1] + d.vent_count as f64 * d.vent[0] * d.vent[1])
+        + std::f64::consts::PI * d.top_window_d * d.top_window_d / 4.0;
+    let inner = 2.0 * d.web_inner_y();
+    let volume = inner * inner * 2.0 * d.end_inner_z();
+    let ratio_in = volume / open / 25.4;
+    r.add(
+        "CDS-2.1.9",
+        "Ventable volume / vent area below 2000 in",
+        "CDS Rev 14.1 §2.1.9",
+        open > 0.0 && ratio_in < 2000.0,
+        format!(
+            "{:.0} cm3 inside, {:.0} mm2 open: {ratio_in:.1} in. The CDS states the limit in inches; read as in3/in2",
+            volume / 1000.0,
+            open
+        ),
+    );
+
     // Mass and centre of mass, solid PLA (upper bound) plus the boards.
     let mut mass = 0.0;
     let mut moment = [0.0; 3];
-    for part in [
-        &a.panel_pos_y,
-        &a.panel_neg_y,
-        &a.end_top,
-        &a.end_bottom,
-        &a.payload,
-        &a.strap,
-    ] {
+    for (_, part) in a.named() {
         let (v, c) =
             Mesh::from_solid("mass", part).map_or((0.0, [0.0; 3]), |m| m.volume_and_centroid());
         let g = v * PLA_G_PER_MM3;
@@ -414,7 +455,7 @@ pub fn verify(d: &Design) -> Report {
     r.note("CDS-2.3.2", "At least one deployment switch that cuts power while in the deployer", "CDS Rev 14.1 §2.3.2", Outcome::Deviation,
         "bench kit: the D2 jumper stands in for it and the firmware resets to pre-launch when it is refitted (§2.3.2.4); there is no rail-end switch");
     r.note("CDS-2.3.5", "Remove-before-flight pin cuts all power and protrudes at most 6.5 mm", "CDS Rev 14.1 §2.3.5", Outcome::Deviation,
-        "the D2 jumper only inhibits the firmware; it reaches through the open -X face without protruding");
+        "the D2 jumper only inhibits the firmware; it is reached through the -X cover's port and does not protrude");
     r.note(
         "CDS-2.3.7/8",
         "Three independent RF inhibits; three deployable inhibits",
@@ -462,14 +503,7 @@ pub fn verify(d: &Design) -> Report {
     );
 
     // ---- Parts fit together ----
-    let parts = [
-        ("+Y panel", &a.panel_pos_y),
-        ("-Y panel", &a.panel_neg_y),
-        ("+Z end plate", &a.end_top),
-        ("-Z end plate", &a.end_bottom),
-        ("payload plate", &a.payload),
-        ("Nano strap", &a.strap),
-    ];
+    let parts = a.named();
     let mut clashes = Vec::new();
     for i in 0..parts.len() {
         for j in i + 1..parts.len() {
@@ -484,7 +518,11 @@ pub fn verify(d: &Design) -> Report {
         "CAD assembly",
         clashes.is_empty(),
         if clashes.is_empty() {
-            "6 parts, 15 pairs checked".into()
+            format!(
+                "{} parts, {} pairs checked",
+                parts.len(),
+                parts.len() * (parts.len() - 1) / 2
+            )
         } else {
             clashes.join(", ")
         },
@@ -508,6 +546,25 @@ pub fn verify(d: &Design) -> Report {
             snaps_ok &=
                 overlap(panel, &probe) < 1e-3 && overlap(end, &probe) > 0.5 * probe.volume();
         }
+        for [x, y] in d.cover_peg_points() {
+            let probe = cylinder(d.peg_shank - 0.2, z1 - z0 - 0.2, [x, y, z0 + 0.1], None);
+            let cover = if x > 0.0 {
+                &a.cover_pos_x
+            } else {
+                &a.cover_neg_x
+            };
+            let end = if sign > 0.0 {
+                &a.end_top
+            } else {
+                &a.end_bottom
+            };
+            // The cover's end wall must surround the peg, or the snap holds nothing.
+            let wall = cylinder(d.snap_hole + 2.0, z1 - z0 - 0.2, [x, y, z0 + 0.1], None)
+                .difference(&cylinder(d.snap_hole + 0.4, z1 - z0, [x, y, z0], None));
+            snaps_ok &= overlap(cover, &probe) < 1e-3
+                && overlap(end, &probe) > 0.5 * probe.volume()
+                && overlap(cover, &wall) > 0.9 * wall.volume();
+        }
     }
     for [x, y] in d.columns {
         let probe = cylinder(
@@ -524,7 +581,7 @@ pub fn verify(d: &Design) -> Report {
         "Every snap peg passes through its hole",
         "CAD assembly",
         snaps_ok,
-        "8 end-plate snaps and 4 payload-column snaps".into(),
+        "16 end-plate snaps (panels and covers) and 4 payload-column snaps".into(),
     );
 
     // ---- Boards ----
@@ -596,6 +653,61 @@ pub fn verify(d: &Design) -> Report {
             board_issues.join("; ")
         },
     );
+
+    // ---- Launch and handling loads (see `loads`) ----
+    let masses = Masses::new(&a);
+    let modes = loads::modes(d, &masses);
+    for m in &modes {
+        r.add(
+            m.id,
+            m.what,
+            "JAXA J-SSOD: at least 100 Hz",
+            m.hz >= loads::MIN_FREQ_HZ,
+            format!("about {:.0} Hz: {}", m.hz, m.basis),
+        );
+    }
+    let mut gevs_short = Vec::new();
+    for item in loads::items(d, &masses, &modes) {
+        let (mc, mg) = (item.margin_classroom(), item.margin_gevs());
+        if mg < 0.0 {
+            gevs_short.push(format!("{} MS {mg:+.2}", item.id));
+        }
+        r.add(
+            item.id,
+            item.what,
+            "hand calculation, FS 2.0 (NASA-STD-5001B)",
+            mc >= 0.0,
+            format!(
+                "MS {mc:+.2} at {:.0} g (classroom); MS {mg:+.2} at {:.0} g (GEVS, {:.0} Hz); {}",
+                loads::classroom_g(),
+                loads::gevs_peak_g(item.freq_hz),
+                item.freq_hz,
+                item.basis
+            ),
+        );
+    }
+    let gevs = Check {
+        id: "LOAD-GEVS",
+        requirement: "Positive margins at the GEVS 14.1 Grms qualification level (orbital launch)",
+        source: "GSFC-STD-7000A; CDS Rev 14.1 §3",
+        outcome: if gevs_short.is_empty() {
+            Outcome::Pass
+        } else {
+            Outcome::Deviation
+        },
+        detail: if gevs_short.is_empty() {
+            format!(
+                "3-sigma Miles response, Q = {:.0}; a shake test is the evidence",
+                loads::Q
+            )
+        } else {
+            format!(
+                "printed PLA falls short: {}; a flight frame is aluminium",
+                gevs_short.join(", ")
+            )
+        },
+    };
+    r.checks.push(gevs);
 
     // ---- Printability on a Bambu P1S ----
     let mut print_issues = Vec::new();

@@ -43,8 +43,12 @@ struct Bench {
 
 impl Bench {
     fn new(timing: Timing, jumper: bool) -> Self {
+        Self::after(ResetCause::PowerOn, timing, jumper)
+    }
+
+    fn after(reset: ResetCause, timing: Timing, jumper: bool) -> Self {
         let mut out = String::new();
-        let m = Mission::boot(config(timing), all_sensors(), 0, jumper, &mut out);
+        let m = Mission::boot(config(timing), all_sensors(), reset, 0, jumper, &mut out);
         Self {
             m,
             now: 0,
@@ -328,11 +332,43 @@ fn status_light_follows_the_mission() {
 fn clock_wraparound_does_not_stall_the_mission() {
     let mut out = String::new();
     let start = u32::MAX - 5_000;
-    let mut m = Mission::boot(config(Timing::Bench), all_sensors(), start, false, &mut out);
+    let mut m = Mission::boot(
+        config(Timing::Bench),
+        all_sensors(),
+        ResetCause::PowerOn,
+        start,
+        false,
+        &mut out,
+    );
     let mut now = start;
     for _ in 0..3_200 {
         now = now.wrapping_add(10);
         m.poll(now, false, &mut || reading(3300), &mut out);
     }
     assert_eq!(m.mode(), Mode::Nominal);
+}
+
+#[test]
+fn watchdog_reset_is_reported_at_boot_and_in_status() {
+    let mut b = Bench::after(ResetCause::Watchdog, Timing::Bench, false);
+    assert!(b.out.contains("# bench: reset=watchdog\r\n"), "{}", b.out);
+    assert!(b.out.contains("hardware restarted it"), "{}", b.out);
+    b.run(31_000);
+    let status = b.send("STATUS");
+    assert!(status.contains(" reset=watchdog "), "{status}");
+}
+
+#[test]
+fn power_on_reset_is_quiet() {
+    let mut out = String::new();
+    Mission::boot(
+        config(Timing::Bench),
+        all_sensors(),
+        ResetCause::PowerOn,
+        0,
+        false,
+        &mut out,
+    );
+    assert!(out.contains("# bench: reset=power_on\r\n"));
+    assert!(!out.contains("hardware restarted it"));
 }

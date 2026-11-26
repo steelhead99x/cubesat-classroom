@@ -56,6 +56,38 @@ pub struct Config {
     pub imu_driver: bool,
 }
 
+/// Why the processor last started, from its reset-reason register. A watchdog
+/// reset means the firmware hung and the hardware restarted it: on orbit that is
+/// the only way back, so the ground needs to know it happened.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ResetCause {
+    /// Power was applied (or the register was already clear).
+    PowerOn,
+    /// The reset button or pin.
+    ResetPin,
+    /// The watchdog: the firmware stopped checking in.
+    Watchdog,
+    /// The firmware asked for a reset.
+    Software,
+    /// The processor locked up on a fault.
+    Lockup,
+    /// Any other reason, such as waking from system off.
+    Unknown,
+}
+
+impl ResetCause {
+    fn name(self) -> &'static str {
+        match self {
+            Self::PowerOn => "power_on",
+            Self::ResetPin => "reset_pin",
+            Self::Watchdog => "watchdog",
+            Self::Software => "software",
+            Self::Lockup => "lockup",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
 /// Which sensors answered at boot.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Present {
@@ -149,6 +181,7 @@ struct Frame {
 pub struct Mission {
     config: Config,
     present: Present,
+    reset: ResetCause,
     mode: Mode,
     mode_since: u32,
     in_contact: bool,
@@ -183,11 +216,12 @@ fn since(now: u32, then: u32) -> u32 {
 }
 
 impl Mission {
-    /// Start up. `inhibit_installed` is the remove-before-flight jumper's state.
-    /// Writes the boot lines.
+    /// Start up. `inhibit_installed` is the remove-before-flight jumper's state and
+    /// `reset` why the processor started. Writes the boot lines.
     pub fn boot(
         config: Config,
         present: Present,
+        reset: ResetCause,
         now: u32,
         inhibit_installed: bool,
         out: &mut impl Write,
@@ -195,6 +229,7 @@ impl Mission {
         let mut m = Self {
             config,
             present,
+            reset,
             mode: Mode::Inhibited,
             mode_since: now,
             in_contact: true,
@@ -234,6 +269,12 @@ impl Mission {
             config.timing.name(),
             config.timing.deploy_delay_ms() / 1000
         );
+        let _ = write!(out, "# bench: reset={}\r\n", reset.name());
+        if reset == ResetCause::Watchdog || reset == ResetCause::Lockup {
+            let _ = out.write_str(
+                "# bench: the firmware hung and the hardware restarted it; check the last log\r\n",
+            );
+        }
         if !present.temp_humidity {
             let _ = out.write_str(
                 "# bench: HS3003 temperature sensor not found (is this a Rev2 board?)\r\n",
@@ -738,11 +779,12 @@ impl Mission {
         ack(out, id, "STATUS");
         let _ = write!(
             out,
-            " mode={} rate_ms={} stored={} uptime_s={} orbit={} timing={} sensors=",
+            " mode={} rate_ms={} stored={} uptime_s={} reset={} orbit={} timing={} sensors=",
             self.mode.name(),
             self.period_ms,
             self.store_count,
             now / 1000,
+            self.reset.name(),
             if self.orbit_up_ms > 0 { "on" } else { "off" },
             self.config.timing.name()
         );

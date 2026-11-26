@@ -648,6 +648,7 @@ dependencies = [
  "embassy-sync",
  "embassy-time",
  "embassy-usb",
+ "nrf-pac",
  "panic-halt",
  "static_cell",
 ]

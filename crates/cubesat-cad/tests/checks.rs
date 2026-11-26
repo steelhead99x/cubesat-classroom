@@ -115,3 +115,58 @@ fn nano_cannot_drop_past_the_strap_posts() {
 fn uno_hits_the_frame() {
     rejects("FIT-boards", |d| d.uno_top_margin = -8.0);
 }
+
+#[test]
+fn panel_faces_flush_with_the_rails() {
+    rejects("RAILS-only", |d| d.face_recess = 0.0);
+}
+
+#[test]
+fn too_little_vent_area() {
+    rejects("CDS-2.1.9", |d| {
+        d.window = [1.0, 1.0];
+        d.port = [1.0, 1.0];
+        d.vent = [0.5, 1.0];
+        d.top_window_d = 1.0;
+    });
+}
+
+#[test]
+fn cover_snaps_miss_the_cover() {
+    rejects("FIT-align", |d| d.cover_peg = [30.0, 25.0]);
+}
+
+#[test]
+fn cover_end_walls_into_the_panels() {
+    rejects("FIT-parts", |d| d.cover_lug_half = 40.0);
+}
+
+#[test]
+fn columns_into_the_cover_end_walls() {
+    // Rev C's first column positions, before the covers.
+    rejects("FIT-parts", |d| {
+        d.columns = [[-36.0, 26.0], [24.0, 30.0], [-36.0, -26.0], [36.0, -26.0]];
+    });
+}
+
+#[test]
+fn columns_too_thin_for_launch_loads() {
+    rejects("LOAD-columns", |d| d.column_d = 4.0);
+}
+
+#[test]
+fn end_plate_too_floppy() {
+    rejects("FREQ-end-plate", |d| d.end_t = 1.5);
+}
+
+#[test]
+fn gevs_shortfall_is_a_deviation_not_hidden() {
+    // 7 mm columns pass the classroom envelope but fall short at the GEVS level.
+    let report = verify(&Design {
+        column_d: 7.0,
+        ..Design::default()
+    });
+    assert!(report.passed());
+    let gevs = report.checks.iter().find(|c| c.id == "LOAD-GEVS").unwrap();
+    assert_eq!(gevs.outcome, Outcome::Deviation);
+}

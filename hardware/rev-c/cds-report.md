@@ -12,20 +12,35 @@ Checked against the CubeSat Design Specification (CDS) Rev 14.1 (Cal Poly, 2022-
 | CDS-2.2.7 | Rail edges rounded to at least 1 mm (should) | CDS Rev 14.1 §2.2.7 | pass | 1.0 mm radius on all four long edges of each rail |
 | CDS-2.2.8 | Rail ends give at least 6.5 x 6.5 mm contact on the ±Z faces; nothing else reaches the ends | CDS Rev 14.1 §2.2.8 | pass | 7.0 x 7.0 mm flat on each rail end; end plates 1.5 mm below the rail ends |
 | CDS-2.2.9 | At least 75% of each rail contacts the deployer rails (should) | CDS Rev 14.1 §2.2.9 | pass | worst rail face is 100% solid along its length |
-| CDS-2.2.10 | Mass within the 1U limit of 2.00 kg | CDS Rev 14.1 §2.2.10, Table 1 | pass | about 210 g with solid PLA and both boards (the slicer's figure at 20% infill is lower) |
-| CDS-2.2.11 | Centre of mass within ±2 cm of the geometric centre in X, Y and Z | CDS Rev 14.1 §2.2.11 | pass | X -0.1, Y +0.6, Z -9.4 mm (estimate; weigh and balance the build) |
+| RAILS-only | Only the rails touch the deployer walls; panel and cover faces are recessed | CDS Rev 14.1 §2.2.3, §2.2.9; deployer rails guide the CubeSat | pass | faces 0.5 mm inside the rail planes, nothing in the gap |
+| CDS-2.1.9 | Ventable volume / vent area below 2000 in | CDS Rev 14.1 §2.1.9 | pass | 927 cm3 inside, 15835 mm2 open: 2.3 in. The CDS states the limit in inches; read as in3/in2 |
+| CDS-2.2.10 | Mass within the 1U limit of 2.00 kg | CDS Rev 14.1 §2.2.10, Table 1 | pass | about 269 g with solid PLA and both boards (the slicer's figure at 20% infill is lower) |
+| CDS-2.2.11 | Centre of mass within ±2 cm of the geometric centre in X, Y and Z | CDS Rev 14.1 §2.2.11 | pass | X -0.0, Y +0.5, Z -7.3 mm (estimate; weigh and balance the build) |
 | CDS-2.2.6 | Rail surface roughness below 1.6 µm Ra (should) | CDS Rev 14.1 §2.2.6 | deviation | printed layers are much rougher; a flight frame needs machined or finished rails |
 | CDS-2.2.12/13 | Aluminium structure; hard-anodised rails and standoffs | CDS Rev 14.1 §2.2.12, §2.2.13 | deviation | PLA classroom frame; any printed flight structure needs the launch provider's approval |
 | CDS-2.1.7 | Low-outgassing materials (TML ≤ 1.0%, CVCM ≤ 0.1%) | CDS Rev 14.1 §2.1.7 | deviation | PLA is not outgassing-qualified; see quest m2/material-outgassing |
 | CDS-2.2.14 | Separation spring when sharing a deployer | CDS Rev 14.1 §2.2.14 | n/a | bench frame, not in a shared deployer |
 | CDS-2.3.2 | At least one deployment switch that cuts power while in the deployer | CDS Rev 14.1 §2.3.2 | deviation | bench kit: the D2 jumper stands in for it and the firmware resets to pre-launch when it is refitted (§2.3.2.4); there is no rail-end switch |
-| CDS-2.3.5 | Remove-before-flight pin cuts all power and protrudes at most 6.5 mm | CDS Rev 14.1 §2.3.5 | deviation | the D2 jumper only inhibits the firmware; it reaches through the open -X face without protruding |
+| CDS-2.3.5 | Remove-before-flight pin cuts all power and protrudes at most 6.5 mm | CDS Rev 14.1 §2.3.5 | deviation | the D2 jumper only inhibits the firmware; it is reached through the -X cover's port and does not protrude |
 | CDS-2.3.7/8 | Three independent RF inhibits; three deployable inhibits | CDS Rev 14.1 §2.3.7, §2.3.8 | n/a | no transmitter and no deployables: the radio stays off and USB stands in for the link |
 | CDS-2.4.4/5 | Deployables wait 30 min; no transmission for 45 min after deployment | CDS Rev 14.1 §2.4.4, §2.4.5 | n/a | firmware: the `cds` timing profile in firmware/nano33-cubesat uses these values; the bench default is 30 s |
 | FIT-snap | Snap barb overlaps its hole enough to latch | first P1S snap test (0.6 mm nozzle) | pass | barb 5.7 mm into a 5.2 mm hole: 0.50 mm overlap, slot 1.4 mm |
 | FIT-clip | Uno clip lips reach over the board edge | Uno R3 outline | pass | 0.40 mm over the edge (needs 0.3) |
 | FIT-strain | Clip and peg bending strain within the PLA limit | PLA yield about 3% | pass | clip 1.4%, peg 0.8% (limit 2%) |
-| FIT-parts | Assembled parts do not overlap | CAD assembly | pass | 6 parts, 15 pairs checked |
-| FIT-align | Every snap peg passes through its hole | CAD assembly | pass | 8 end-plate snaps and 4 payload-column snaps |
+| FIT-parts | Assembled parts do not overlap | CAD assembly | pass | 8 parts, 28 pairs checked |
+| FIT-align | Every snap peg passes through its hole | CAD assembly | pass | 16 end-plate snaps (panels and covers) and 4 payload-column snaps |
 | FIT-boards | Uno R3 and Nano 33 BLE Sense fit with clearance | board outlines | pass | posts, clips, rails, strap, drop-in path, solder-joint zone, header pins, frame; 0.25 mm clearance |
+| FREQ-payload | Payload sways on its four columns | JAXA J-SSOD: at least 100 Hz | pass | about 797 Hz: 4 cantilevers, 8 mm diameter, 15 mm long, 66 g payload |
+| FREQ-end-plate | -Z end plate flexes under the payload | JAXA J-SSOD: at least 100 Hz | pass | about 146 Hz: 3.0 mm plate, 84 mm between snaps, 85 g on it |
+| FREQ-payload-plate | Payload plate flexes between its columns | JAXA J-SSOD: at least 100 Hz | pass | about 222 Hz: 3.0 mm plate as a beam over 62 mm, 47 g on it |
+| FREQ-uno | Uno sways on its posts | JAXA J-SSOD: at least 100 Hz | pass | about 1815 Hz: 4 posts, 7 mm diameter, 10 mm tall |
+| FREQ-nano | Nano sways on its rails | JAXA J-SSOD: at least 100 Hz | pass | about 649 Hz: 2 rails, 3 x 30 mm, 20 mm tall |
+| LOAD-columns | Payload columns bending at the root (sideways load) | hand calculation, FS 2.0 (NASA-STD-5001B) | pass | MS +2.13 at 50 g (classroom); MS +0.16 at 134 g (GEVS, 797 Hz); 66 g payload on 4 columns, cantilever, interlayer |
+| LOAD-column-snaps | Payload-plate snaps: peg lip shear (plate pulled off) | hand calculation, FS 2.0 (NASA-STD-5001B) | pass | MS +3.82 at 50 g (classroom); MS +0.79 at 134 g (GEVS, 797 Hz); 10.3 mm2 lip in shear, 4 pegs |
+| LOAD-end-snaps | -Z end-plate snaps: peg lip shear (plate pulled out) | hand calculation, FS 2.0 (NASA-STD-5001B) | pass | MS +5.04 at 50 g (classroom); MS +4.24 at 58 g (GEVS, 146 Hz); 8 snaps share the end plate and payload |
+| LOAD-lugs | Panel and cover end walls bending where the snaps pull | hand calculation, FS 2.0 (NASA-STD-5001B) | pass | MS +2.09 at 50 g (classroom); MS +1.69 at 58 g (GEVS, 146 Hz); 5.1 mm arm, 9 x 3.0 mm section, interlayer |
+| LOAD-uno-pins | Uno locating pins in shear (sideways load) | hand calculation, FS 2.0 (NASA-STD-5001B) | pass | MS +7.08 at 50 g (classroom); MS +3.52 at 89 g (GEVS, 1815 Hz); 4 pins, 2.9 mm diameter, interlayer shear |
+| LOAD-uno-clips | Uno clip lips in shear (board lifting) | hand calculation, FS 2.0 (NASA-STD-5001B) | pass | MS +20.53 at 50 g (classroom); MS +11.05 at 89 g (GEVS, 1815 Hz); 2 lips, 18 mm2 root each |
+| LOAD-nano-strap | Nano strap snaps: peg lip shear (board lifting) | hand calculation, FS 2.0 (NASA-STD-5001B) | pass | MS +21.56 at 50 g (classroom); MS +8.31 at 121 g (GEVS, 649 Hz); 2 pegs |
+| LOAD-GEVS | Positive margins at the GEVS 14.1 Grms qualification level (orbital launch) | GSFC-STD-7000A; CDS Rev 14.1 §3 | pass | 3-sigma Miles response, Q = 10; a shake test is the evidence |
 | PRINT | Every part is one closed solid that prints on a P1S without supports | Bambu Lab P1S, 256 mm build volume | pass | largest overhang 62 mm2 (side-panel) |
