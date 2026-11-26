@@ -12,4 +12,4 @@ Find out whether the 18 mm opening in the Rev A lid reduces the usable view of t
 
 ## Required
 
-- [Printed case assembly test](/quest/m0/test-p1s-case-fit.md) - provides the fitted lid and the tested camera position or mock-up.
+- [Printed case assembly test](/archive/quest/m0/test-p1s-case-fit.md) - provides the fitted lid and the tested camera position or mock-up.

@@ -10,4 +10,4 @@ Print the [M3 fit coupon](/hardware/p1s/01-m3-fit-coupon.3mf). From the notched 
 
 ## Required
 
-- [P1S case slice review](/quest/m0/slice-p1s-case.md) - provides the slicer settings.
+- [P1S case slice review](/archive/quest/m0/slice-p1s-case.md) - provides the slicer settings.

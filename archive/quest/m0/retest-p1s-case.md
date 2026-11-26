@@ -10,4 +10,4 @@ Reprint the part you changed and repeat the same measurements from the fit test.
 
 ## Required
 
-- [Case improvement review](/quest/m0/improve-p1s-case.md) - the change to retest.
+- [Case improvement review](/archive/quest/m0/improve-p1s-case.md) - the change to retest.

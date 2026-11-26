@@ -1,5 +1,7 @@
 # Rev C: a 1U CubeSat frame built to the CubeSat spec, in Rust
 
+> **Archived.** Rev C is no longer offered as a build. The current printed frame is the [AMSAT CubeSatSim frame with an Arduino payload](../amsat-cubesatsim/README.md). These files stay because CI still builds and checks them; see [ARCHIVE.md](../ARCHIVE.md).
+
 Rev C is a fully printed 1U frame (100 × 100 × 113.5 mm) that holds an **Arduino Uno R3** and an **Arduino Nano 33 BLE Sense Rev2**. Its CAD, its checks and its print files all come from one Rust crate, [`crates/cubesat-cad`](../../crates/cubesat-cad/src/lib.rs). The board firmware is Rust too: [`firmware/nano33-cubesat`](../../firmware/nano33-cubesat/README.md).
 
 Every dimension is checked against the [CubeSat Design Specification (CDS) Rev 14.1](https://www.cubesat.org/s/CDS-REV14_1-2022-02-09.pdf) from Cal Poly ([cubesat.org](https://www.cubesat.org/)), using the processes in NASA's [CubeSat 101](https://www.nasa.gov/wp-content/uploads/2017/03/nasa_csli_cubesat_101_508.pdf). The full result is in the [compliance report](cds-report.md).

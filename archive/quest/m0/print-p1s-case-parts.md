@@ -10,4 +10,4 @@ Print the [case shell](/hardware/p1s/02-case-shell.3mf) and [camera lid](/hardwa
 
 ## Required
 
-- [PLA case coupon](/quest/m0/print-p1s-case-coupon.md) - confirms the screws fit.
+- [PLA case coupon](/archive/quest/m0/print-p1s-case-coupon.md) - confirms the screws fit.

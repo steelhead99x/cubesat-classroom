@@ -10,4 +10,4 @@ Pick one problem from the fit test. Write down what you measured, what you think
 
 ## Required
 
-- [Case assembly fit test](/quest/m0/test-p1s-case-fit.md) - provides the measurements to improve on.
+- [Case assembly fit test](/archive/quest/m0/test-p1s-case-fit.md) - provides the measurements to improve on.

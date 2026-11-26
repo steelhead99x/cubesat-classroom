@@ -12,7 +12,7 @@ Write down the equipment you have, including the board or printer model, availab
 
 | Your setup | First quest |
 | --- | --- |
-| Bambu Lab P1S | [Print the AMSAT frame and Arduino payload](/hardware/amsat-cubesatsim/README.md), starting with the 5-minute snap test |
+| A 3D printer with a 256 mm bed, such as a Bambu Lab | [Print the AMSAT frame and Arduino payload](/hardware/amsat-cubesatsim/README.md), starting with the test coupons |
 | Computer only or unsure | [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md) |
 | Arduino, such as an Uno | [Read one Arduino sample](/quest/m0/arduino-first-reading.md) |
 | Seeed XIAO, such as ESP32-C3 or RP2040 | [Record a XIAO bench sample](/quest/m0/xiao-first-reading.md) |
@@ -36,27 +36,15 @@ Step-by-step, hands-on demos that a teacher, guardian or mentor guides for a sma
 
 Start in M0. After a run, tell us which steps the class completed, which instruction they got stuck on, and one change you would make. Share a redacted note through the [contribution guide](../CONTRIBUTING.md). Teachers can pilot and review lessons before any flight work.
 
-### Bambu P1S case test track
-
-Print the Rev A case with the [P1S print guide](/hardware/p1s/README.md), then use these quests to record what you measured so another crew can repeat it. Start with PLA and go in order. The Rev B rail-fit and ISS work has its own path below.
-
-1. [Validate the slice in Bambu Studio](/quest/m0/slice-p1s-case.md)
-2. [Print and measure the PLA fastener coupon](/quest/m0/print-p1s-case-coupon.md)
-3. [Print the shell and lid](/quest/m0/print-p1s-case-parts.md)
-4. [Test the assembly fit](/quest/m0/test-p1s-case-fit.md)
-5. [Review an improvement against the fit evidence](/quest/m0/improve-p1s-case.md)
-6. [Repeat the fit test](/quest/m0/retest-p1s-case.md)
-
 ### Demo and bench experiments
 
 - [Rehearse the five-minute demo offline](/quest/m0/demo-offline-rehearsal.md) and record a restart procedure.
 - [Trace a sensor value from file to display](/quest/m0/trace-sensor-fixtures.md) and verify what happens when an input is missing.
-- [Measure what the camera lid blocks](/quest/m0/measure-case-camera-view.md) once the P1S case fit has been tested.
 - [Fly the Arduino bench CubeSat](/quest/m0/arduino-bench-cubesat.md) or the [Seeed XIAO bench CubeSat](/quest/m0/xiao-bench-cubesat.md): deploy, lose the signal, recover stored readings, and bring back data. See the [bench CubeSat guide](/docs/bench-cubesats.md).
 
 ### Flight work
 
-The ISS hardware work is listed in review priority. Start the provider inquiry and the P1S slice review in parallel. The numbered lists show the recommended order for review. Quest dependencies control what is ready to start. Run `quest unblocked` to see ready work and `quest check` to validate the board. See the [contribution guide](../CONTRIBUTING.md).
+The ISS hardware work is listed in review priority. Start the provider inquiry and the rail slice review in parallel. The numbered lists show the recommended order for review. Quest dependencies control what is ready to start. Run `quest unblocked` to see ready work and `quest check` to validate the board. See the [contribution guide](../CONTRIBUTING.md).
 
 ### M0 · Start now
 

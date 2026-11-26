@@ -17,4 +17,4 @@ Mark each one pass, fail or not tested, with the measurement or observation behi
 
 ## Required
 
-- [Printed PLA shell and lid](/quest/m0/print-p1s-case-parts.md) - the parts to test.
+- [Printed PLA shell and lid](/archive/quest/m0/print-p1s-case-parts.md) - the parts to test.

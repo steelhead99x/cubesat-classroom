@@ -2,4 +2,4 @@
 
 ## Goal
 
-Collect provider-reviewed evidence for the selected P1S print process, components and assembled CubeSat. Verify the deployer interface and capture formal compliance dispositions before flight.
+Collect provider-reviewed evidence for the selected print process, components and assembled CubeSat. Verify the deployer interface and capture formal compliance dispositions before flight.
