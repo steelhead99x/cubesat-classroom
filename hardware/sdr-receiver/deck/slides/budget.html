@@ -1,0 +1,15 @@
+<section id="budget" class="alt">
+<p class="eyebrow">Bench on a budget · for amateurs and classrooms</p>
+<h2>Measure it for about $250, not a lab’s worth of gear</h2>
+<table>
+<tr><th>Job</th><th>Lab tool</th><th>Amateur stand-in</th><th>About</th></tr>
+<tr><td>See the spectrum</td><td class="dim">Spectrum analyzer</td><td>RTL-SDR Blog V4 + <span class="mono">rtl_power</span></td><td class="mono">$30–40</td></tr>
+<tr><td>Weak test signal</td><td class="dim">Signal generator</td><td>ADF4351 module in a cookie tin, behind ~100 dB of attenuators</td><td class="mono">$70–120</td></tr>
+<tr><td>Test filters</td><td class="dim">Vector network analyzer</td><td>Noise source + the V4; practise on a coax stub</td><td class="mono">$15–30</td></tr>
+<tr><td>Radio power</td><td class="dim">Power profiler</td><td>INA226 breakout + a spare XIAO</td><td class="mono">$3–10</td></tr>
+<tr><td>LO level</td><td class="dim">RF power meter</td><td>AD8318 detector board</td><td class="mono">~$20</td></tr>
+</table>
+<p class="status">Estimates · check prices before buying · readings are relative dB, not dBm: good for before/after comparisons</p>
+<p class="foot">12 bench quests and scripts: hardware/sdr-receiver/bench · quest/README.md “CSC-R1 receiver bench”</p>
+<aside>The trick is to compare, not to calibrate. Every quest measures something twice with the same dongle and gain: load versus antenna, HaLow off versus on, noise straight through versus through the filter. The difference is trustworthy even when the absolute number isn't. Six of the quests need no CSC-R1 board, so a crew can start the day an RTL-SDR V4 arrives. The $250 is an estimate for the stand-ins plus a load, attenuators, a tee, cables and a splitter; it leaves out the XIAO and HaLow boards. Safety: bias tee off, no transmitter ever into a dongle, and a licensed operator approves test frequencies on 145 and 437 MHz.</aside>
+</section>

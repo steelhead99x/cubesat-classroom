@@ -1,0 +1,14 @@
+<section id="parts" class="alt">
+<p class="eyebrow">Rev A · parts</p>
+<h2>Every chip has a public datasheet</h2>
+<table>
+<tr><th>Block</th><th>Part</th><th>Why</th></tr>
+<tr><td>I/Q demodulator</td><td class="mono">ADI LTC5584</td><td class="dim">30 MHz–1.4 GHz, in production; 5 V, about 200 mA</td></tr>
+<tr><td>Local oscillator</td><td class="mono">ADI ADF4351</td><td class="dim">35 MHz–4.4 GHz; output divider reaches both bands</td></tr>
+<tr><td>ADC</td><td class="mono">TI TLV320ADC3140</td><td class="dim">Differential inputs, 0–42 dB gain, 8–768 kHz</td></tr>
+<tr><td>LNA and filters</td><td class="mono">PGA-103+, 2 × PE4259</td><td class="dim">Switched 2 m and 70 cm LC filters</td></tr>
+<tr><td>Control</td><td class="mono">MCP4728, TCA9534</td><td class="dim">Demodulator trim DAC and I²C expander</td></tr>
+<tr><td>Controller</td><td class="mono">Any XIAO, in a socket</td><td class="dim">ESP32-S3 by default</td></tr>
+</table>
+<aside>All of these are in production and have public datasheets. The XIAO plugs into a socket, so a crew can compare controllers on the same board.</aside>
+</section>
