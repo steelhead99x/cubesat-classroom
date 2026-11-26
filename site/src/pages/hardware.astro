@@ -3,37 +3,23 @@ import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import casePreview from '../../../hardware/rev-a-cad-preview.png';
 import exploded from '../../../hardware/amsat-cubesatsim/render-exploded.png';
 import assembled from '../../../hardware/amsat-cubesatsim/render-assembled.png';
-import drawing from '../../../hardware/rev-b-drawing.svg?url';
 import { repo } from '../hubs.mjs';
 import { siteOrigin } from '../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const cad = repo + '/blob/main/hardware/';
-const caseQuests = repo + '/blob/main/quest/README.md#bambu-p1s-case-test-track';
 const raw = repo + '/raw/refs/heads/main/hardware/';
-const mesh = raw + 'stl/';
-const caseFiles = [
-  { name: 'M3 fit coupon', file: '01-m3-fit-coupon.3mf', size: '48 × 14 × 10 mm', note: 'Print first. Check the fit with the intended fastener.' },
-  { name: 'Case shell', file: '02-case-shell.3mf', size: '100 × 100 × 109.5 mm', note: 'Closed floor down, opening up.' },
-  { name: 'Camera lid', file: '03-camera-lid.3mf', size: '100 × 100 × 6 mm', note: 'Exterior face down, locator tabs up.' },
-];
-const kitPlates = [
-  { name: 'Snap test', file: '01-snap-test.3mf', time: '5 min, 2 g', note: 'Print first. The peg should click into the tab with a firm push.' },
-  { name: 'Sides', file: '02-sides.3mf', time: '1 h 40 min, 58 g', note: 'AMSAT side, and the side with the camera hole.' },
-  { name: 'Top and bottom', file: '03-top-and-bottom.3mf', time: '1 h 18 min, 48 g', note: 'AMSAT top, unchanged, and the bottom with four snap columns.' },
-  { name: 'Payload plate', file: '04-payload-plate.3mf', time: '50 min, 33 g', note: 'Holds the Uno R3 and the Nano 33 BLE Sense, plus the Nano strap.' },
-];
-const parts = [
-  { name: 'Rail corner coupon', dimensions: '26 × 26 × 20', file: 'rev-b-rail-corner-coupon.stl', print: 'Print first, rail end down. Measure the corner and inspect the recessed walls.' },
-  { name: 'Rail frame', dimensions: '100 × 100 × 113.5', file: 'rev-b-rail-frame.stl', print: 'Print upright. Check supports under the recessed walls in Bambu Studio.' },
-  { name: 'Base plate', dimensions: '93.3 × 93.3 × 4.4', file: 'rev-b-base-plate.stl', print: 'Print the exterior face down. Check that the locators seat without force.' },
-  { name: 'Camera plate', dimensions: '93.3 × 93.3 × 4.4', file: 'rev-b-camera-plate.stl', print: 'Print the exterior face down. Check the 18 mm opening against the camera’s field of view.' },
+const kit = raw + 'amsat-cubesatsim/p1s/';
+const guide = cad + 'amsat-cubesatsim/README.md';
+const kitFiles = [
+  { name: 'Test coupons', file: 'cubesat-test-coupons.3mf', note: 'Print first. A snap pin with its flex-finger tab, and a board hook and lip with a strip of test board: a few grams of plastic to check your printer.' },
+  { name: 'Frame and payload kit', file: 'cubesat-kit.3mf', note: 'Two plates: the payload plate and the bottom piece with snap columns, then both AMSAT sides (one with the camera hole) and the unchanged AMSAT top.' },
+  { name: 'Fit plate (optional)', file: 'cubesat-fit-plate.3mf', note: 'An open-truss version of the payload plate with the same board mounts, to check both boards with less plastic.' },
 ];
 ---
-<Base title="CAD and print files | CubeSat Classroom" description="Print a real 1U CubeSat frame on a Bambu P1S: the AMSAT CubeSatSim frame with an Arduino payload plate, plus Rev A fit tests and Rev B rail-fit drawings." canonical={siteOrigin + '/hardware/'}>
+<Base title="CAD and print files | CubeSat Classroom" description="Print a real 1U CubeSat frame: AMSAT's CubeSatSim frame with a printed Arduino payload plate modeled on the Teachers in Space Multiplate." canonical={siteOrigin + '/hardware/'}>
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Mission', href: base + '/mission/' },
     { label: 'Lessons', href: base + '/quests/' },
@@ -43,13 +29,13 @@ const parts = [
   <section class="classroom-hero">
     <div class="shell grid items-center gap-8 py-12 lg:grid-cols-[1.15fr_1fr]">
       <div>
-        <p class="field-label">Bambu Lab P1S mechanical kit</p>
+        <p class="field-label">AMSAT CubeSatSim fork · Arduino payload</p>
         <h1 class="mt-3">CubeSat CAD and print files</h1>
-        <p class="lede mt-4">Build a real 1U frame: AMSAT's CubeSatSim frame with a printed plate for an Arduino Uno and Nano 33 BLE Sense, 100% printed in about four hours on a P1S. The Rev A test box and coupon below check your printer's fit first. The Rev B rail-fit set is a separate experiment.</p>
+        <p class="lede mt-4">Build a real 1U frame: AMSAT's CubeSatSim frame with a printed plate for an Arduino Uno R3 and Nano 33 BLE Sense. Every part is printed, with no screws, nuts or metal standoffs. Print the test coupons first to check your printer's fit.</p>
         <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <a class="button primary" href={raw + 'p1s/' + caseFiles[0].file}>Download the case fit coupon</a>
-          <a class="font-bold text-accent underline underline-offset-4" href={cad + 'amsat-cubesatsim/README.md'}>AMSAT frame build guide</a>
-          <a class="font-bold text-accent underline underline-offset-4" href={cad + 'generate.py'}>Open the parametric CAD source</a>
+          <a class="button primary" href={kit + kitFiles[0].file}>Download the test coupons</a>
+          <a class="font-bold text-accent underline underline-offset-4" href={guide}>AMSAT frame build guide</a>
+          <a class="font-bold text-accent underline underline-offset-4" href={repo + '/tree/main/crates/amsat-kit'}>Open the CAD source</a>
         </div>
       </div>
       <figure class="bench-figure hud m-0">
@@ -59,79 +45,40 @@ const parts = [
     </div>
   </section>
   <div class="shell space-y-12 py-12">
+    <section class="border-y border-line py-6" aria-labelledby="status-title">
+      <p class="eyebrow t-label">Verification status</p>
+      <h2 id="status-title">Almost verified</h2>
+      <p class="mt-2 max-w-3xl text-muted">We're nearly done verifying this AMSAT-forked design. Its design checks run on every change; the last print-and-fit checks are wrapping up. This is the only version we publish here. Until verification is finished, print the test coupons first and report what you find.</p>
+    </section>
+
     <section class="grid items-start gap-8 lg:grid-cols-[1fr_22rem] lg:gap-14" aria-labelledby="kit-title">
       <div>
         <p class="eyebrow t-label">Current build · AMSAT frame kit</p>
         <h2 id="kit-title">Print the 1U frame and payload</h2>
-        <p class="mt-2 text-muted">Four plates, about 3 h 50 min and 140 g of PLA with a 0.6 mm nozzle, supports off. No screws, nuts or metal standoffs. The frame is AMSAT's CubeSatSim v2.0 (GPL-3.0); the payload plate, strap and snap columns are new.</p>
+        <p class="mt-2 text-muted">Three Bambu Studio projects, each part already in print orientation. Use PLA, the 0.20mm Standard process for your nozzle, and supports off. No screws, nuts or metal standoffs.</p>
         <dl class="mt-5 divide-y divide-line border-y border-line">
-          {kitPlates.map(plate => (
+          {kitFiles.map(file => (
             <div class="grid gap-2 py-4 sm:grid-cols-[13rem_1fr] sm:gap-6">
-              <dt><a class="text-accent" href={raw + 'amsat-cubesatsim/p1s/' + plate.file}>{plate.name} (3MF)</a><span class="t-src mt-1 block text-muted">{plate.time}</span></dt>
-              <dd class="text-muted">{plate.note}</dd>
+              <dt><a class="text-accent" href={kit + file.file}>{file.name} (3MF)</a></dt>
+              <dd class="text-muted">{file.note}</dd>
             </div>
           ))}
         </dl>
-        <a class="mt-4 inline-block font-bold text-accent underline underline-offset-4" href={cad + 'amsat-cubesatsim/README.md'}>Assembly steps and fit checks</a>
+        <a class="mt-4 inline-block font-bold text-accent underline underline-offset-4" href={guide}>Assembly steps and fit checks</a>
+        <a class="mt-4 ml-4 inline-block text-accent" href={repo + '/tree/main/hardware/amsat-cubesatsim/stl'}>STL files for other slicers</a>
       </div>
       <figure class="bench-figure hud m-0">
         <Image src={assembled} alt="The assembled AMSAT CubeSatSim frame with the payload plate and Arduino boards inside" widths={[360, 720]} sizes="(min-width: 1024px) 22rem, 100vw" />
-        <figcaption><span>Assembled</span><span>Times are slicer estimates</span></figcaption>
+        <figcaption><span>Assembled</span><span>Render of an earlier payload</span></figcaption>
       </figure>
     </section>
 
-    <section aria-labelledby="p1s-title">
-      <figure class="bench-figure float-right mb-4 ml-8 hidden w-[20rem] lg:block">
-        <Image src={casePreview} alt="Exploded view of the enclosed Rev A case, camera lid, and fastener coupon" widths={[320, 640]} sizes="20rem" />
-        <figcaption><span>Rev A case and fit coupon</span></figcaption>
-      </figure>
-      <h2 id="p1s-title">P1S case test prints</h2>
-      <p class="mt-2 text-muted">Use the P1S profile for your nozzle (0.20mm Standard for 0.4 mm, 0.30mm Standard for 0.6 mm), your PLA preset and supports off. Each file opens centered and in print orientation.</p>
-      <dl class="mt-5 divide-y divide-line border-y border-line">
-        {caseFiles.map(part => (
-          <div class="grid gap-2 py-4 sm:grid-cols-[13rem_1fr] sm:gap-6">
-            <dt><a class="text-accent" href={raw + 'p1s/' + part.file}>{part.name} (3MF)</a></dt>
-            <dd><p class="text-sm font-bold">{part.size}</p><p class="text-muted">{part.note}</p></dd>
-          </div>
-        ))}
-      </dl>
-      <a class="mt-4 inline-block text-accent" href={cad + 'p1s/README.md'}>P1S print guide</a>
-      <a class="mt-4 ml-4 inline-block text-accent" href={caseQuests}>Follow the P1S print and test quests</a>
-    </section>
-    <section class="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-8" aria-labelledby="rail-title">
-      <div>
-        <h2 id="rail-title">Rev B rail-fit model</h2>
-        <p class="mt-2 text-muted">Use the corner coupon to check rail width and inspect the recessed walls before printing the frame.</p>
-      </div>
-      <a class="text-accent" href={mesh + parts[0].file}>Download the rail corner coupon</a>
-    </section>
-    <section aria-labelledby="drawing-title">
-      <h2 id="drawing-title">Dimensioned drawing</h2>
-      <p class="mt-2 text-muted">Nominal dimensions come from the checked-in STL geometry. The drawing shows a front view of the frame and the outside face of the camera plate.</p>
-      <a class="mt-4 inline-block text-accent" href={drawing} download="rev-b-drawing.svg">Download the drawing (SVG)</a>
-      <figure class="mt-4 overflow-hidden rounded-lg border border-line">
-        <img src={drawing} width="900" height="590" loading="lazy" alt="Rev B orthographic drawing showing a 100 mm wide and 113.5 mm tall frame, 9 mm square rails and a 93.3 mm camera plate with an 18 mm aperture." />
-      </figure>
-    </section>
-    <section aria-labelledby="parts-title">
-      <h2 id="parts-title">Printable parts</h2>
-      <dl class="mt-5 divide-y divide-line border-y border-line">
-        {parts.map(part => (
-          <div class="grid gap-2 py-4 sm:grid-cols-[13rem_1fr] sm:gap-6">
-            <dt><a class="text-accent" href={mesh + part.file}>{part.name} (STL)</a></dt>
-            <dd><p class="text-sm font-bold">{part.dimensions} mm</p><p class="text-muted">{part.print}</p></dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-    <section aria-labelledby="requirements-title">
-      <h2 id="requirements-title">Fit requirements and evidence</h2>
-      <p class="mt-3 max-w-3xl text-muted">The model targets a 100 × 100 × 113.5 mm envelope, 9 mm square rails, 3 mm end recesses, and 0.35 mm of locator clearance per side. Compare printed width at both ends and the middle, and record warping or support scars.</p>
-      <p class="mt-3 max-w-3xl text-muted">The meshes passed nominal size and integrity checks. Slicing, print measurements, positive plate retention, and deployer fit still need verification. Flight qualification requires review of the exact materials, process, and assembled hardware.</p>
-      <ul class="mt-5 flex flex-wrap gap-x-6 gap-y-3">
-        <li><a class="text-accent" href={cad + 'README.md'}>Print and fit instructions</a></li>
-        <li><a class="text-accent" href={repo + '/blob/main/quest/m0/print-and-fit.md'}>Rail coupon test</a></li>
-        <li><a class="text-accent" href={repo + '/blob/main/docs/iss-deployment-review.md'}>ISS qualification review</a></li>
+    <section aria-labelledby="credit-title">
+      <h2 id="credit-title">Credit</h2>
+      <ul class="mt-3 max-w-3xl space-y-3 text-muted">
+        <li><strong>Frame:</strong> <a class="text-accent" href="https://cubesatsim.org">AMSAT CubeSat Simulator</a> v2.0 frame by Alan Johnston, KU2Y, from <a class="text-accent" href="https://github.com/alanbjohnston/CubeSatSim/tree/master/hardware/frame/v2.0">alanbjohnston/CubeSatSim</a> (GPL-3.0). Unchanged except for the bottom piece, which gains four snap columns.</li>
+        <li><strong>Payload plate:</strong> modeled on the Multiplate from the <a class="text-accent" href="https://www.tis.org/">Teachers in Space</a> (TIS) 1U frame, the frame TIS uses in its Arduino CubeSat workshops. <a class="text-accent" href={cad + 'tis/README.md'}>TIS frame links and comparison</a>.</li>
+        <li>This fork is licensed GPL-3.0, like the AMSAT frame. It's an independent build, not made or endorsed by AMSAT or TIS.</li>
       </ul>
     </section>
   </div>
