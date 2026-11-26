@@ -12,6 +12,9 @@
 
 use core::fmt::Write;
 
+mod serial_out;
+pub use serial_out::SerialOut;
+
 /// How long the CubeSat waits after deployment before it transmits.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Timing {

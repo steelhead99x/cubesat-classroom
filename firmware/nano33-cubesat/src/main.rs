@@ -20,9 +20,8 @@
 mod sensors;
 
 use core::cell::Cell;
-use core::fmt;
 
-use cubesat_mission::{Config, Mission, Present, Readings, ResetCause, Timing};
+use cubesat_mission::{Config, Mission, Present, Readings, ResetCause, SerialOut, Timing};
 use embassy_executor::Spawner;
 use embassy_futures::select::{Either, select};
 use embassy_nrf::gpio::{Input, Level, Output, OutputDrive, Pull};
@@ -120,26 +119,6 @@ fn reset_cause() -> ResetCause {
     }
 }
 
-/// Text the mission writes, held until it can go out over USB.
-struct Outbox {
-    buf: [u8; 4096],
-    len: usize,
-}
-
-impl fmt::Write for Outbox {
-    /// All or nothing: text that doesn't fit is refused whole, never cut off mid-line, so
-    /// the mission knows it wasn't sent (stored readings stay stored and go out next time).
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        let end = self.len + s.len();
-        if end > self.buf.len() {
-            return Err(fmt::Error);
-        }
-        self.buf[self.len..end].copy_from_slice(s.as_bytes());
-        self.len = end;
-        Ok(())
-    }
-}
-
 fn now_ms() -> u32 {
     // Wraps after about 49 days; the mission's timers use wrapping arithmetic.
     #[allow(clippy::cast_possible_truncation)]
@@ -226,11 +205,9 @@ async fn main(spawner: Spawner) {
         .await
         .unwrap_or_default();
 
-    static OUTBOX: StaticCell<Outbox> = StaticCell::new();
-    let out = OUTBOX.init(Outbox {
-        buf: [0; 4096],
-        len: 0,
-    });
+    // Text the mission writes, held until it goes out over USB (see SerialOut).
+    static OUTBOX: StaticCell<SerialOut<4096>> = StaticCell::new();
+    let out = OUTBOX.init(SerialOut::new());
     Timer::after_millis(60).await;
     let mut mission = Mission::boot(CONFIG, present, reset, now_ms(), rbf.is_low(), out);
 
@@ -260,18 +237,23 @@ async fn main(spawner: Spawner) {
         green.set_level(if light.g { Level::Low } else { Level::High });
         blue.set_level(if light.b { Level::Low } else { Level::High });
 
-        // Send what the mission wrote. With no terminal open, drop it, like a
-        // satellite talking to an empty sky. Stored readings are the exception: the
-        // mission retires them only when everything went out, and otherwise keeps them
-        // for the next pass.
-        let mut sent = 0;
-        if serial.dtr() {
-            while sent < out.len {
-                let end = (sent + 64).min(out.len);
+        // Send what the mission wrote. With no terminal open, drop it, like a satellite
+        // talking to an empty sky; stored readings in it stay stored for the next pass.
+        // If only part goes out (a timeout or a USB error), keep the rest: the next send
+        // resumes from that exact byte on the same connection, so a line is never cut and
+        // started again. Stored readings are retired only once everything has gone out.
+        if !serial.dtr() {
+            out.clear();
+            mission.undelivered();
+        } else if !out.is_empty() {
+            let mut sent = 0;
+            let total = out.pending().len();
+            while sent < total {
+                let end = (sent + 64).min(total);
                 let ok = matches!(
                     with_timeout(
                         Duration::from_millis(50),
-                        serial.write_packet(&out.buf[sent..end])
+                        serial.write_packet(&out.pending()[sent..end])
                     )
                     .await,
                     Ok(Ok(()))
@@ -283,15 +265,13 @@ async fn main(spawner: Spawner) {
             }
             // A full 64-byte packet tells the computer more is coming, so it may hold
             // the line back. An empty packet ends the transfer.
-            if sent > 0 && sent == out.len && sent % 64 == 0 {
+            if sent == total && sent % 64 == 0 {
                 let _ = with_timeout(Duration::from_millis(50), serial.write_packet(&[])).await;
             }
+            out.sent(sent);
+            if out.is_empty() {
+                mission.delivered();
+            }
         }
-        if serial.dtr() && sent == out.len {
-            mission.delivered();
-        } else {
-            mission.undelivered();
-        }
-        out.len = 0;
     }
 }
