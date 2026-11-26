@@ -26,4 +26,22 @@ const quests = defineCollection({
   }),
 });
 
-export const collections = { quests };
+// The public glossary at /wiki/. One Markdown file per term in src/content/glossary/.
+// The file name (or `slug`) is the URL: /wiki/<slug>/. `related` lists other entries' slugs
+// (checked at build time), `deck` lists slide slugs in the mission briefing deck.
+const glossary = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/glossary' }),
+  schema: z.object({
+    term: z.string(),
+    slug: z.string().regex(/^[a-z0-9-]+$/),
+    summary: z.string().max(160),
+    category: z.enum(['Spacecraft', 'Launch and flight', 'Radio', 'Rules and safety', 'Software and data', 'Organizations and programs', 'Hardware']),
+    aliases: z.array(z.string()).default([]),
+    related: z.array(z.string()).default([]),
+    seeAlso: z.array(z.object({ label: z.string(), href: z.string() })).default([]),
+    sources: z.array(z.object({ label: z.string(), url: z.string().url() })).default([]),
+    deck: z.array(z.string().regex(/^[a-z0-9-]+$/)).default([]),
+  }),
+});
+
+export const collections = { quests, glossary };
