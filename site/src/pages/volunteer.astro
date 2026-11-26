@@ -7,7 +7,8 @@ import RelatedProjects from '../components/RelatedProjects.astro';
 import PageHero from '../components/PageHero.astro';
 import { Image } from 'astro:assets';
 import Workshops from '../components/Workshops.astro';
-import rail from '../../../docs/assets/rail-fit.png';
+import exploded from '../../../hardware/amsat-cubesatsim/render-exploded-dark.png';
+import preview from '../../../hardware/amsat-cubesatsim/render-exploded-navy.png';
 import { classroomHost, fundraiser, repo } from '../hubs.mjs';
 import { siteOrigin } from '../origin';
 
@@ -25,7 +26,7 @@ const roles = [
   description={description}
   canonical={canonical}
   mark="club-mark.svg"
-  image={canonical.replace(/\/$/, '') + rail.src.replace(base, '')}
+  image={canonical.replace(/\/$/, '') + preview.src.replace(base, '')}
 >
   <SiteHeader slot="header" brand="CubeSat Club" mark="club-mark.svg" home={canonical} links={[
     { label: 'Quick start', href: '#start' },
@@ -41,7 +42,7 @@ const roles = [
           <a class="button launch mt-7" href="#volunteer">See volunteer roles</a>
         </div>
         <figure class="chassis relative m-0 bg-transparent">
-          <Image src={rail} alt="Exploded model of the CubeSat frame, camera cover, and base plate" widths={[360, 720]} sizes="(min-width: 1024px) 28rem, 100vw" />
+          <Image src={exploded} alt="Exploded view of the classroom CubeSat: AMSAT CubeSatSim frame and a printed Arduino payload plate" widths={[480, 960]} sizes="(min-width: 1024px) 28rem, 100vw" />
           <figcaption>The 1U CubeSat bench model. Print it and test it with a classroom crew.</figcaption>
         </figure>
       </PageHero>

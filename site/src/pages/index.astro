@@ -9,7 +9,8 @@ import MissionFanout from '../components/MissionFanout.astro';
 import ProposalCard from '../components/ProposalCard.astro';
 import QuickStart from '../components/QuickStart.astro';
 import MissionEmblem from '../components/MissionEmblem.astro';
-import rail from '../../../docs/assets/rail-fit.png';
+import exploded from '../../../hardware/amsat-cubesatsim/render-exploded.png';
+import preview from '../../../hardware/amsat-cubesatsim/render-exploded-navy.png';
 import { fundraiser, repo } from '../hubs.mjs';
 import { siteOrigin } from '../origin';
 
@@ -25,7 +26,7 @@ const labs = [
   title="CubeSat Classroom | Satellite operations for ages 13 and up"
   description="Teach space science with free, open-source CubeSat quests, a browser simulator, and hands-on bench labs."
   canonical={site + '/'}
-  image={site + rail.src.replace(base, '')}
+  image={site + preview.src.replace(base, '')}
 >
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Mission', href: base + '/mission/' },
@@ -126,8 +127,8 @@ const labs = [
         </div>
       </div>
       <figure class="bench-figure hud m-0">
-        <Image src={rail} alt="Exploded CAD view of the CubeSat chassis, camera cover, and base plate" widths={[360, 540, 720]} sizes="(min-width: 1024px) 32rem, 100vw" />
-        <figcaption><span>Rev B classroom bench model</span><span>100 × 100 × 113.5 mm · 1U</span></figcaption>
+        <Image src={exploded} alt="Exploded view of the classroom CubeSat: AMSAT CubeSatSim frame ends and sides, and a printed payload plate holding an Arduino Uno and Nano 33 BLE Sense" widths={[480, 720, 1080]} sizes="(min-width: 1024px) 32rem, 100vw" />
+        <figcaption><span>AMSAT CubeSatSim frame · Arduino payload</span><span>1U · 100 × 100 × 113.5 mm · 100% printed</span></figcaption>
       </figure>
     </div>
     <div id="get-started" class="mt-9"><QuickStart /></div>

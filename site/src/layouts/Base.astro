@@ -4,7 +4,7 @@ import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import '@fontsource/ibm-plex-mono/600.css';
 import '../theme.css';
-import rail from '../../../docs/assets/rail-fit.png';
+import preview from '../../../hardware/amsat-cubesatsim/render-exploded-navy.png';
 import { siteOrigin } from '../origin';
 
 interface Props {
@@ -17,9 +17,9 @@ interface Props {
   robots?: string;
 }
 
-const { title, description, canonical, image, imageAlt = 'Exploded view of the CubeSat Classroom bench model', mark = 'favicon.svg', robots } = Astro.props;
+const { title, description, canonical, image, imageAlt = 'Exploded view of the classroom CubeSat: the AMSAT CubeSatSim frame with a printed Arduino payload plate', mark = 'favicon.svg', robots } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const social = image ?? siteOrigin + rail.src.replace(base, '');
+const social = image ?? siteOrigin + preview.src.replace(base, '');
 ---
 <!doctype html>
 <html lang="en">
