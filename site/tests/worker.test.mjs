@@ -138,3 +138,33 @@ test('wrong form and Basic guesses share one limit', async () => {
   const other = await call('https://cubesatclass.org/', { headers: { 'cf-connecting-ip': '198.51.100.1', authorization: basic('hunter2') } }, env);
   assert.equal(other.status, 200);
 });
+
+test('a right Basic password signs the visitor in with the cookie, so later files skip the check', async () => {
+  const env = { SITE_PASSWORD: 'hunter2', PREVIEW_COOKIE_SECRET: 's'.repeat(32) };
+  const res = await call('https://cubesatclass.org/', { headers: { authorization: basic('hunter2') } }, env);
+  assert.equal(res.status, 200);
+  const cookie = res.headers.get('set-cookie');
+  assert.match(cookie, /^__Host-preview=\d+\.[0-9a-f]{64}; /);
+  const next = await call('https://cubesatclass.org/style.css', { headers: { cookie: cookie.split(';')[0] } }, env);
+  assert.equal(next.status, 200);
+});
+
+test('password attempts are rate-limited per address even without the KV store', async () => {
+  let count = 0;
+  const UNLOCK_LIMIT = { limit: async () => ({ success: ++count <= 3 }) };
+  const env = { SITE_PASSWORD: 'hunter2', PREVIEW_COOKIE_SECRET: 's'.repeat(32), UNLOCK_LIMIT };
+  const ip = { 'cf-connecting-ip': '203.0.113.7' };
+  for (let i = 0; i < 3; i++) {
+    const res = await call('https://cubesatclass.org/', { headers: { ...ip, authorization: basic('bad') } }, env);
+    assert.doesNotMatch(await res.text(), /Too many/);
+  }
+  const blocked = await call('https://cubesatclass.org/', { headers: { ...ip, authorization: basic('hunter2') } }, env);
+  assert.match(await blocked.text(), /Too many wrong passwords/);
+});
+
+test('without the cookie secret the limiter is not used, so Basic users are not locked out by their own page loads', async () => {
+  const UNLOCK_LIMIT = { limit: async () => ({ success: false }) };
+  const env = { SITE_PASSWORD: 'hunter2', UNLOCK_LIMIT };
+  const res = await call('https://cubesatclass.org/', { headers: { authorization: basic('hunter2') } }, env);
+  assert.equal(res.status, 200);
+});

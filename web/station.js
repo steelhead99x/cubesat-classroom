@@ -36,7 +36,7 @@ function render() {
     el('light').textContent = `${sample.light_lux} lx`;
   }
   el('readingStatus').textContent = sample
-    ? `${fresh ? 'Fresh reading' : 'Last reading · historical'} · ${sample.source}`
+    ? `${fresh ? 'Fresh reading' : 'Last reading · historical'} · ${sample.source} · ${evidenceLabel(sample.source)}`
     : 'No reading yet';
   el('readingAge').textContent = sample ? `Captured ${ago(Date.now() - sample.captured_unix_ms)}` : '';
   el('readingStatus').classList.toggle('fresh', !!(sample && fresh));
@@ -103,9 +103,20 @@ el('contact').addEventListener('click', async () => {
   await refresh();
 });
 
+// The data type for a sample's source: the formula is a desk simulation; sensor files are
+// measured by bench hardware. Anything else is shown as unknown, never as measured.
+function evidenceLabel(source) {
+  if (source === 'simulation') return 'desk simulation';
+  if (source === 'configured sensor inputs') return 'hardware bench';
+  return 'unknown data type';
+}
+
 const log = el('log');
+// sessionStorage, not localStorage: school computers are shared, and the next crew should not
+// see this crew's nickname or a mentor's call sign. Clear anything an older version kept.
 for (const name of ['alias', 'call']) {
-  try { log.elements[name].value = localStorage.getItem(`cubesat.${name}`) || ''; } catch {}
+  try { localStorage.removeItem(`cubesat.${name}`); } catch {}
+  try { log.elements[name].value = sessionStorage.getItem(`cubesat.${name}`) || ''; } catch {}
 }
 log.addEventListener('submit', event => {
   event.preventDefault();
@@ -121,8 +132,8 @@ log.addEventListener('submit', event => {
     return;
   }
   try {
-    localStorage.setItem('cubesat.alias', alias);
-    localStorage.setItem('cubesat.call', call);
+    sessionStorage.setItem('cubesat.alias', alias);
+    sessionStorage.setItem('cubesat.call', call);
   } catch {}
   const evidence = station?.display;
   const sample = evidence?.sample;
@@ -132,6 +143,7 @@ log.addEventListener('submit', event => {
     `Date: ${new Date().toISOString().slice(0, 10)}`, '',
     '## Station record', '',
     sample ? `- Last sample: ${sample.temperature_c.toFixed(1)} °C, ${sample.bus_voltage_v.toFixed(3)} V, ${sample.light_lux} lx (${sample.source})` : '- No sensor reading received',
+    ...(sample ? [`- Data type: ${evidenceLabel(sample.source)}`] : []),
     `- Frames in latest burst: ${evidence?.frame_count ?? 0}/8 (simulated video)`,
     `- New reply after contact resumed: ${evidence?.recovery_seen ? 'yes' : 'not yet'}`, '',
     '## What we observed and would test next', '', observation, ''

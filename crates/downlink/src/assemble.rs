@@ -15,6 +15,11 @@ use crate::frame::{AirFrame, AirKind, FrameFault, decode};
 const MAX_INCOMPLETE: usize = 128;
 /// Ignore a shard this many sequence numbers behind the newest of its kind.
 const WINDOW: u32 = 128;
+/// Refuse a shard this far ahead of the newest of its kind. The CRC is not authentication,
+/// and one frame claiming sequence 4294967295 would otherwise make every real frame after
+/// it "late" until the sender started a new session. About a day of frames at 12 per second
+/// still fits, so a long gap between passes is fine.
+const MAX_FORWARD_JUMP: u32 = 1 << 20;
 /// Finished object keys kept so a late copy is a duplicate, not a new object.
 const RECENT: usize = 4096;
 
@@ -287,11 +292,16 @@ impl Assembler {
             self.count_duplicate(relay);
             return None;
         }
-        if let Some(newest) = self.newest.get(&(frame.session, frame.kind))
-            && frame.sequence.saturating_add(WINDOW) < *newest
-        {
-            self.metrics.late += 1;
-            return None;
+        if let Some(&newest) = self.newest.get(&(frame.session, frame.kind)) {
+            if frame.sequence.saturating_add(WINDOW) < newest {
+                self.metrics.late += 1;
+                return None;
+            }
+            if frame.sequence > newest.saturating_add(MAX_FORWARD_JUMP) {
+                // Counted as malformed: the header passed the CRC but is not usable.
+                self.metrics.malformed += 1;
+                return None;
+            }
         }
         self.newest
             .entry((frame.session, frame.kind))
@@ -424,6 +434,33 @@ mod tests {
         assert_eq!(metrics.duplicates, 1);
         assert_eq!(metrics.relays[1].duplicates, 1);
         assert_eq!(metrics.relays[0].rssi_dbm, -90.0);
+    }
+
+    #[test]
+    fn a_far_future_sequence_cannot_make_real_frames_late() {
+        let one = |sequence: u32| {
+            encode_object(
+                &AirConfig {
+                    parity: 0,
+                    ..AirConfig::default()
+                },
+                AirKind::Telemetry,
+                sequence,
+                b"snapshot",
+            )
+            .unwrap()
+            .remove(0)
+        };
+        let mut assembler = Assembler::new();
+        assert!(assembler.push(heard(0, one(10))).is_some());
+        // A CRC-valid frame claiming the last sequence number is refused...
+        assert!(assembler.push(heard(0, one(u32::MAX))).is_none());
+        assert_eq!(assembler.metrics().malformed, 1);
+        // ...so the next real frame is still accepted, not counted late.
+        assert!(assembler.push(heard(0, one(11))).is_some());
+        assert_eq!(assembler.metrics().late, 0);
+        // A long but plausible gap between passes is fine.
+        assert!(assembler.push(heard(0, one(11 + 50_000))).is_some());
     }
 
     #[test]

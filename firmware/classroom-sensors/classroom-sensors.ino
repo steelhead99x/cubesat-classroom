@@ -1,6 +1,7 @@
 // Classroom sensors for the CubeSat Classroom ground station.
 //
-// Prints one line per second over USB serial at 115200 baud:
+// Prints one line per second over USB serial at 115200 baud (with USE_TMP36 and
+// USE_BATTERY turned on below):
 //
 //   CSC1 temp_mc=21500 volt_mv=3912 light_lux=460
 //
@@ -28,8 +29,12 @@
 
 #include <Wire.h>
 
-const bool USE_TMP36 = true;
-const bool USE_BATTERY = true;
+// The analog sensors start OFF. A pin with nothing connected still reads a believable
+// voltage, so the sketch would print a made-up temperature or battery voltage as if it
+// were measured. Set each one to true only after it is wired and a mentor has checked it.
+// The BH1750 is found on I2C at start-up, so a missing one is simply left out.
+const bool USE_TMP36 = false;
+const bool USE_BATTERY = false;
 const bool USE_BH1750 = true;
 
 const int TMP36_PIN = A0;

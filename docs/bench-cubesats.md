@@ -158,7 +158,7 @@ Every part is optional. The sketch reports what it finds at boot and leaves out 
 | Flight computer | The XIAO running the sketch | A watchdog, radiation tolerance, flight-qualified firmware |
 | Payload | BME280, TSL2561, camera (S3 Sense) | The mission instrument |
 | Attitude sensors | LSM6DS3 accelerometer and gyroscope | A magnetometer, sun sensors, actuators |
-| Data storage | The last 64 readings in memory. Every reading also goes to `CUBESAT.CSV` on the microSD card, and photos to `IMG0001.JPG` and onward. | Radiation-tolerant storage |
+| Data storage | The last 64 readings in memory. Every reading also goes to `CUBESAT.CSV` on the microSD card (or `CUBE0001.CSV` and up, if the card holds a log with different columns from an older sketch), and photos to `IMG0001.JPG` and onward. | Radiation-tolerant storage |
 | Time | PCF8563 real-time clock, set with `TIME` | Time from GPS or the ground |
 | Communications | USB serial stands in for the radio. Wi-Fi and Bluetooth stay off. | A licensed radio with its own inhibit |
 | Inhibit | Expansion Board button (or D1 touched to GND) | Several independent hardware switches in the power path |
