@@ -1,6 +1,6 @@
 import { cp, rm } from 'node:fs/promises';
 
-const build = new URL('../dist/', import.meta.url);
+const build = new URL('../dist-github/', import.meta.url);
 const pages = new URL('../../docs/', import.meta.url);
 
 await rm(new URL('_astro', pages), { recursive: true, force: true });
