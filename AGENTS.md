@@ -35,6 +35,11 @@ The people you help are learners 13 and up, and the teachers, guardians and amat
 - Label results as desk simulation, hardware bench, received RF, balloon flight, glider flight, suborbital flight or orbital flight. Never present a simulated result as measured.
 - If you are not sure, say so and point to the source: the code, [docs/mission.md](docs/mission.md), or a qualified reviewer.
 
+## Printed parts
+
+- Every 3D-printed design follows [hardware/DESIGN-GUIDE.md](hardware/DESIGN-GUIDE.md): no loose pieces where possible, rocket-launch ready and durable, and easy enough for kids. Print a test coupon before a full part, and check every rule in code.
+- Claude Code loads the same rules from the [public skills](docs/skills.md) in `.claude/skills/`.
+
 ## Useful starting points
 
 - Run the station: `bash docs/start.sh`, or `cargo run --locked -- classroom`.

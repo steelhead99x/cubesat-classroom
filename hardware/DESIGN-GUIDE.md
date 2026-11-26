@@ -1,6 +1,8 @@
 # CubeSat Classroom hardware design guide
 
-How we design the printed parts. It applies to the [classroom kit](amsat-cubesatsim/README.md), the [outdoor ground station](outdoor-station/README.md), the [outdoor XIAO station](outdoor-xiao/README.md) and anything forked from them. The rules come from what printed well (and badly) in class. Every rule that can be checked is a check in [crates/amsat-kit](../crates/amsat-kit), and every check is proven able to fail by a broken design in the self-test.
+How we design printed parts. **This guide applies to every CubeSat Classroom 3D design:** frames, plates, board and battery mounts, enclosures, ground-station and outdoor cases, fit tools and test coupons, and balloon, glider and rocket hardware. It applies in this repository, in every other CubeSat Classroom repository, and in forks, whoever designs the part, by hand or with an AI assistant. The rules come from what printed well (and badly) in class.
+
+Every rule that can be checked is a check in [crates/amsat-kit](../crates/amsat-kit), and every check is proven able to fail by a broken design in the self-test. Other designs should do the same in their own CAD code. The same rules are packaged as an AI skill, [cubesat-printed-design](../.claude/skills/cubesat-printed-design/SKILL.md), with the other [public skills](../docs/skills.md).
 
 ## The three rules
 
@@ -75,6 +77,36 @@ Print each coupon in the material of the real part. Record what you find, and ch
 - **The battery:** a MakerFocus flat 3.7 V 3000 mAh LiPo with a JST PH 2.0 plug, listed at 67 × 36 × 12 mm, ±2 mm. Every case holds it.
 - **Safety:** protected cells only. A mentor checks the cell and its polarity and does any wiring (see the [battery safety quest](../quest/m1/battery-safety.md)).
 - **Power:** an Uno or Nano needs a 5 V boost board. A XIAO charges and runs from the cell directly. Wire one cell to one charger only.
+
+## Checklist for any design
+
+Before a new or changed part is printed beyond a coupon:
+
+- [ ] **No loose pieces**, or each separate piece is justified and captive once built.
+- [ ] **One way round:** it can't go together wrong, and a click says each step is done.
+- [ ] **No supports**, and one big flat face to print on.
+- [ ] **Snap rules:** flexing parts at most 1.2% strain, in their print plane, at least 2 mm thick, with room to bend.
+- [ ] **Locating:** at least half the pins tight, two of them on opposite corners, and the rest looser.
+- [ ] **Launch:** holds at 20 g with margin. Anything that flies is checked for its own loads too.
+- [ ] **Material** right for where it lives: PLA indoors, ASA or PETG outdoors.
+- [ ] **Coupon** printed for every new joint, in the real material, with the result recorded.
+- [ ] **Checks:** every rule a check, every check shown able to fail, output reproducible.
+- [ ] **Labels:** the README says what's been printed and tested, and what's only been design-checked.
+
+## Where existing designs stand
+
+| Design | Meets the guide? |
+| --- | --- |
+| [Classroom kit](amsat-cubesatsim/README.md) (AMSAT frame + plates) | Yes. The 5 V boost board still needs a printed mount. |
+| [Outdoor ground station](outdoor-station/README.md) and [outdoor XIAO station](outdoor-xiao/README.md) | Yes. The lid's captive screws and inserts are the one justified exception: a seal needs clamping force. |
+| Rev C frame (`crates/cubesat-cad`, PR #37) | Not yet: its board mounts are the rejected quarter-turn studs, lock keys and clamp. Port the keyed snap pin, lips and hooks, and battery hooks. |
+| [Rev A bench box](p1s/README.md) | No: M3 screws. Kept as a historical test box. Replace before it goes to classes. |
+| [Rev B rail-fit set](README.md#rev-b-rail-fit-set) | No: needs supports, and has no board mounts. Rework before it goes to classes. |
+| [CSC-R1 receiver](sdr-receiver/README.md) | Its enclosure is a bought die-cast box. Any printed bracket, knob or faceplate follows the guide. |
+| [Teachers in Space frame](tis/README.md) | Not ours, so it's linked, not changed. Mounts we print for it follow the guide. |
+| Designs in other CubeSat Classroom repositories (balloon gondolas, rocket pods, solar faces) | Apply the guide the next time each is changed. |
+
+When a design doesn't meet the guide yet, its README says so.
 
 ## Every result is labelled
 
