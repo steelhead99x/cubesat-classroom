@@ -22,17 +22,17 @@ A noise source puts out roughly equal power at every frequency. Sweep it straigh
 
 ### Steps
 
-1. **Work out the length:** `python3 sweep.py stub --freq 98e6 --vf 0.66`. Cut the coax about 3 cm longer than that, measured from the tee.
+1. **Work out the length:** `csc-sweep stub --freq 98e6 --vf 0.66`. Cut the coax about 3 cm longer than that, measured from the tee.
 2. **Reference sweep.** Noise source → 10 dB → V4. Bias tee off. Try gain 0 and gain 10 first: if the floor rises much less than 10 dB, the dongle is overloading, so swap in the 20 dB attenuator.
 
    ```sh
-   python3 sweep.py record --start 80e6 --stop 120e6 --step 100e3 --gain 10 --label "noise, through" --out through.csv --dc-checked
+   csc-sweep record --start 80e6 --stop 120e6 --step 100e3 --gain 10 --label "noise, through" --out through.csv --dc-checked
    ```
 
 3. **Stub sweep.** Put the tee between the attenuator and the V4, with the stub on its third port. Record `--label "noise, stub" --out stub.csv` with the same settings.
-4. **Find the notch:** `python3 sweep.py response --ref through.csv --dut stub.csv --at 98e6 --out stub-response.csv`.
+4. **Find the notch:** `csc-sweep response --ref through.csv --dut stub.csv --at 98e6 --out stub-response.csv`.
 5. **Trim.** The notch is low because the stub is long. Trim 1 cm at a time and re-sweep until the notch sits on 98 MHz. Write down the final length.
-6. **Solve for the velocity factor:** `python3 sweep.py stub --freq <notch frequency> --length <final length in m>`.
+6. **Solve for the velocity factor:** `csc-sweep stub --freq <notch frequency> --length <final length in m>`.
 
 ### Check your work
 

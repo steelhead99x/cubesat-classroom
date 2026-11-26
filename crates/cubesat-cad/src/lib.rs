@@ -6,7 +6,9 @@
 //! - [`loads`] estimates launch and handling loads, margins and frequencies.
 //! - [`check::verify`] runs the CDS, loads, fit and printability checks.
 //! - [`export::write_all`] writes the STL files, P1S plates and report.
+//! - [`archive`] rebuilds the archived Rev A case and Rev B rail-fit set.
 
+pub mod archive;
 pub mod boards;
 pub mod check;
 pub mod design;

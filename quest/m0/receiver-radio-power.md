@@ -21,7 +21,7 @@ A mentor checks the wiring before anything is powered.
 3. **Record each case for 10 minutes:**
 
    ```sh
-   python3 power_log.py record --port /dev/ttyACM0 --minutes 10 --label "S3, 2.4 GHz, streaming" --out s3-24-stream.csv
+   csc-power-log record --port /dev/ttyACM0 --minutes 10 --label "S3, 2.4 GHz, streaming" --out s3-24-stream.csv
    ```
 
    | Board under test | Link | States to record |
@@ -34,8 +34,8 @@ A mentor checks the wiring before anything is powered.
 5. **Summarise.** Each run delivers its own amount of data, so give each file its own figure:
 
    ```sh
-   python3 power_log.py summary s3-24-stream.csv --megabytes 180
-   python3 power_log.py summary s3-24-stream.csv c5-5g-stream.csv \
+   csc-power-log summary s3-24-stream.csv --megabytes 180
+   csc-power-log summary s3-24-stream.csv c5-5g-stream.csv \
        --delivered s3-24-stream.csv=180 --delivered c5-5g-stream.csv=210
    ```
 

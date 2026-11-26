@@ -66,13 +66,10 @@ Inside there's about 94 × 94 mm of floor and 105 mm of height, with a 7 mm squa
 
 ## If the screw doesn't fit
 
-The hole sizes are set in [generate.py](../generate.py). Change `M3_PILOT` (shell, default 2.8) or `M3_CLEARANCE` (lid, default 3.5) to the coupon hole that worked, then rebuild the files:
+The hole sizes are set in [archive.rs](../../crates/cubesat-cad/src/archive.rs). Change `M3_PILOT` (shell, default 2.8) or `M3_CLEARANCE` (lid, default 3.5) to the coupon hole that worked, then rebuild the files from the repository folder:
 
 ```sh
-python3 -m venv /tmp/cubesat-cad
-/tmp/cubesat-cad/bin/pip install -r hardware/requirements.txt
-/tmp/cubesat-cad/bin/python hardware/generate.py
-/tmp/cubesat-cad/bin/python hardware/p1s/prepare.py
+cargo run --locked --release -p cubesat-cad -- archive hardware
 ```
 
 Reprint the part you changed.

@@ -21,7 +21,7 @@ Rev A has three RF break points, each a 0 Ω link with a U.FL on each side. Remo
 1. **Bias tee off on both.** Run `BIAS OFF` on the kit, then measure under 0.5 V DC at break point 2's filter-side U.FL. Repeat the V4's DC check from [first light](/quest/m0/receiver-v4-first-light.md). Inductors to ground in a filter short any DC, and DC can damage the noise source.
 2. **Reference.** Noise source → attenuator → U.FL-to-U.FL through cable → V4. Sweep with `--band filter2m --gain 10 --out ref-2m.csv`.
 3. **2 m filter.** Run `BAND 2M`. Noise in at break point 2's filter-side U.FL, V4 at break point 3's filter-side U.FL. Sweep `--band filter2m` with the same gain.
-4. **Response:** `python3 sweep.py response --ref ref-2m.csv --dut f2.csv --at 88e6 98e6 108e6 145e6 437e6 --out f2-response.csv`.
+4. **Response:** `csc-sweep response --ref ref-2m.csv --dut f2.csv --at 88e6 98e6 108e6 145e6 437e6 --out f2-response.csv`.
 5. **70 cm filter.** Run `BAND 70CM` and repeat with `--band filter70cm`, reporting `--at 146e6 436e6 915e6`.
 6. Put your numbers next to the calculated ones:
 

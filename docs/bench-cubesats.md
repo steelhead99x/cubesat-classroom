@@ -184,7 +184,7 @@ The XIAO boards have no built-in way to read a battery voltage. To add `volt_mv`
 
 1. Send `PHOTO`. The reply gives the photo's size and a CRC-32 checksum, and the photo is saved to the card.
 2. Clear the Serial Monitor, send `DOWNLINK`, wait for `IMG END`, then copy all the output into a text file. The CubeSat keeps sampling while it sends, so `CSC1` lines can appear between the `IMG` lines; the script ignores them. `PHOTO` is refused until `IMG END`, because a new photo would replace the bytes being sent.
-3. Run `python3 tools/serial_image.py capture.txt photo.jpg`. The script puts the chunks back in order and checks the size and checksum. It says the photo arrived intact only if every byte arrived and the checksum matches. If any lines are missing, it lists the lost byte ranges, reports the transfer as incomplete (even if the checksum happens to match the zero-filled gap), and the photo shows the damage.
+3. From the repository folder, run `cargo run --locked --release -p bench-tools --bin csc-serial-image -- capture.txt photo.jpg`. The tool puts the chunks back in order and checks the size and checksum. It says the photo arrived intact only if every byte arrived and the checksum matches. If any lines are missing, it lists the lost byte ranges, reports the transfer as incomplete (even if the checksum happens to match the zero-filled gap), and the photo shows the damage.
 
 A 320 × 240 JPEG is usually a few kilobytes to a few tens of kilobytes. Sent as hex, every byte becomes two characters, plus line overhead. Ask the class how long the downlink would take at 1200 bits per second, a common amateur packet radio speed, and how many passes it would need.
 
@@ -192,7 +192,7 @@ The camera sensor varies by batch. Seeed has shipped the S3 Sense with OV2640, O
 
 ## Mounting either CubeSat in the Rev B frame
 
-The [Rev B rail frame](../hardware/ARCHIVE.md#rev-b-rail-fit-set) is 100 × 100 × 113.5 mm outside. From the CAD values in `hardware/generate.py`, the inside is about 88 mm square between the side walls (about 82 mm clear of the corner rails) and about 98 mm between the end-plate locator tabs. These are nominal CAD numbers, so measure your print.
+The [Rev B rail frame](../hardware/ARCHIVE.md#rev-b-rail-fit-set) is 100 × 100 × 113.5 mm outside. From the CAD values in `crates/cubesat-cad/src/archive.rs`, the inside is about 88 mm square between the side walls (about 82 mm clear of the corner rails) and about 98 mm between the end-plate locator tabs. These are nominal CAD numbers, so measure your print.
 
 - The Nano 33 BLE Sense is 45 × 18 mm. The XIAO is 21 × 17.8 mm, and the Grove sensor boards are about 20 × 20 to 20 × 40 mm. The Expansion Board's size isn't on its wiki page, so measure it. Seeed describes it as half the size of a Raspberry Pi 4.
 - For the bench, hold the boards to the base plate with double-sided foam tape or cable ties. Leave the USB connector reachable through a gap between the side walls. Point the light sensor at the camera-plate aperture so the class can shade it.

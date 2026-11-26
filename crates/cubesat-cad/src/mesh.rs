@@ -135,9 +135,13 @@ impl Mesh {
     }
 
     /// Binary STL. The header is fixed so output is byte-for-byte reproducible.
-    pub fn write_stl(&self, mut out: impl Write, name: &str) -> io::Result<()> {
+    pub fn write_stl(&self, out: impl Write, name: &str) -> io::Result<()> {
+        self.write_stl_titled(out, &format!("CubeSat Classroom Rev C {name}"))
+    }
+
+    /// Binary STL with `text` (up to 80 bytes) as the header.
+    pub fn write_stl_titled(&self, mut out: impl Write, text: &str) -> io::Result<()> {
         let mut header = [b' '; 80];
-        let text = format!("CubeSat Classroom Rev C {name}");
         let n = text.len().min(80);
         header[..n].copy_from_slice(&text.as_bytes()[..n]);
         out.write_all(&header)?;

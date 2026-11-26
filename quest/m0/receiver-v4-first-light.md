@@ -10,7 +10,7 @@ Get an RTL-SDR Blog V4 running, then record its noise floor on 2 m and 70 cm wit
 - an RTL-SDR Blog V4
 - a 50 Ω SMA load (a few dollars)
 - the station antenna, or the dipole kit
-- a computer with Python 3
+- a computer with Rust (the [bench tools](/hardware/sdr-receiver/bench/README.md#install) installed)
 
 No login is needed.
 
@@ -20,18 +20,18 @@ The V4 needs the RTL-SDR Blog drivers. Most current SDR apps include them. For t
 2. **Check for DC on the antenna socket.** The bias tee puts DC on the socket, which can damage a load, an antenna that is a short circuit at DC, a filter or a noise source.
    - Run `rtl_biast -b 0`. If it reports an error, stop.
    - Run `rtl_test` without flags. It should report the R828D tuner and keep running. While it is still reading samples, a mentor measures the DC voltage between the SMA's centre pin and its outer shell. Continue only if the magnitude is under 0.5 V. Otherwise stop and see "Bias tee" in the [bench README](/hardware/sdr-receiver/bench/README.md#bias-tee).
-   - Write the reading in your log. `sweep.py record` won't run until you add `--dc-checked` to say this check was done with this dongle. Press Ctrl-C to stop `rtl_test` before starting the sweep. The script requests bias off and stops if the utility reports an error. The meter reading is the check that DC is off.
+   - Write the reading in your log. `csc-sweep record` won't run until you add `--dc-checked` to say this check was done with this dongle. Press Ctrl-C to stop `rtl_test` before starting the sweep. The script requests bias off and stops if the utility reports an error. The meter reading is the check that DC is off.
 3. **Sweep the load.** Screw the 50 Ω load on the SMA. Run:
 
    ```sh
    cd hardware/sdr-receiver/bench
-   python3 sweep.py record --band 2m   --gain 20 --label "50 ohm load" --out load-2m.csv --dc-checked
-   python3 sweep.py record --band 70cm --gain 20 --label "50 ohm load" --out load-70cm.csv --dc-checked
+   csc-sweep record --band 2m   --gain 20 --label "50 ohm load" --out load-2m.csv --dc-checked
+   csc-sweep record --band 70cm --gain 20 --label "50 ohm load" --out load-70cm.csv --dc-checked
    ```
 
 4. **Sweep the antenna.** Swap the load for the antenna and repeat with `--label "antenna, <where it is>"` and `--out ant-2m.csv`, `ant-70cm.csv`.
-5. **Compare.** Run `python3 sweep.py compare load-2m.csv ant-2m.csv`, then the same for 70 cm. The change is how much noise your site adds on top of the dongle's own noise.
-6. Share the crew nickname, the date, the dongle and the gain, and the four summaries from `sweep.py summary *.csv`. Keep the CSV and `.json` files together.
+5. **Compare.** Run `csc-sweep compare load-2m.csv ant-2m.csv`, then the same for 70 cm. The change is how much noise your site adds on top of the dongle's own noise.
+6. Share the crew nickname, the date, the dongle and the gain, and the four summaries from `csc-sweep summary *.csv`. Keep the CSV and `.json` files together.
 
 ### Check your work
 
