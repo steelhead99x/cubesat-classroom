@@ -96,6 +96,23 @@ The ISS hardware work is listed in review priority. Start the provider inquiry a
 12. [Complete the provider’s deployer fit check](/quest/m2/deployer-fit-check.md)
 13. [Submit the ISS qualification evidence](/quest/m2/iss-compliance-handover.md)
 
+### CSC-R1 receiver bench
+
+Measure the [CSC-R1 receiver](/hardware/sdr-receiver/README.md) and its Rev B radios with cheap gear, starting with an RTL-SDR Blog V4. The [bench kit](/hardware/sdr-receiver/bench/README.md) has the scripts, a shopping list and the safety rules. The first six need no CSC-R1 board.
+
+1. [First light with the RTL-SDR Blog V4](/quest/m0/receiver-v4-first-light.md)
+2. [Measure FM broadcast at your antenna](/quest/m0/receiver-fm-at-your-site.md)
+3. [Build a shielded test signal](/quest/m0/receiver-test-signal.md)
+4. [Sweep a filter with a noise source](/quest/m0/receiver-sweep-a-stub.md)
+5. [Does HaLow noise land in the receive bands?](/quest/m0/receiver-halow-noise.md)
+6. [Compare radio power: 2.4 GHz, 5 GHz and HaLow](/quest/m0/receiver-radio-power.md)
+7. [Bring up CSC-R1 power and control](/quest/m1/receiver-rev-a-power-up.md)
+8. [Write the CSC-R1 Rev A bring-up firmware](/quest/m1/receiver-rev-a-firmware.md)
+9. [Check the CSC-R1 local oscillator and 5 V under load](/quest/m1/receiver-rev-a-lo-and-supply.md)
+10. [Measure the CSC-R1 band filters](/quest/m1/receiver-rev-a-filters.md)
+11. [Measure HaLow desense on the CSC-R1](/quest/m1/receiver-rev-a-desense.md)
+12. [Compare the CSC-R1 with the RTL-SDR V4 on a real pass](/quest/m1/receiver-rev-a-vs-v4.md)
+
 ### Flight heritage and the suborbital research flight
 
 These quests cover three rides for a classroom sensor kit: a glider, a suborbital research flight and the ISS. See the [suborbital flight plan](/docs/suborbital-flight-plan.md).

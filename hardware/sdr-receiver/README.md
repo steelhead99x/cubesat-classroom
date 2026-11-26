@@ -21,6 +21,7 @@ Date: 25 November 2026 (Rev A, fix round 1). Tool: KiCad 7.0.11.
 | [`fab/csc-r1-bom.csv`](fab/csc-r1-bom.csv) | Bill of materials (103 lines, 212 fitted parts, 5 not fitted) |
 | `fab/csc-r1-cpl-top.csv` | Pick-and-place positions. All parts are on the top side. |
 | [`fab/drc-report.txt`](fab/drc-report.txt) | KiCad design rule check report |
+| [`bench/`](bench/README.md) | Bench scripts, a power-logger sketch, a shopping list and the bench quests for measuring the kit with an RTL-SDR V4 and other low-cost gear |
 | `gen/` | The Python that generates everything. `gen/build.sh` rebuilds it all; `gen/rf_checks.py` repeats the desk calculations below. |
 
 ![CSC-R1 Rev A top side](kicad/csc-r1-top.png)
@@ -129,8 +130,10 @@ Fix round 1 (25 November 2026) closed what could be closed at the desk. Status i
 4. Program the ADF4351 for 437 MHz. Check the lock LED and the LO monitor port with a spectrum analyzer. Repeat at 145.8 MHz.
 5. Enable the demodulator. Inject a signal at break point 3 and look at the baseband header with a scope.
 6. Start the ADC, capture I/Q, and check for the injected tone.
-7. Refit the links, then measure sensitivity at 145.8 and 437 MHz against an RTL-SDR Blog V3.
+7. Refit the links, then measure sensitivity at 145.8 and 437 MHz against an RTL-SDR Blog V4 (or V3).
 8. Look for spurs near 440 MHz (the XIAO's 40 MHz crystal, 11th harmonic).
+
+Each step has a bench quest with scripts and a low-cost way to measure it: see the [bench kit](bench/README.md).
 
 ## Rev B: satellite stompbox
 
