@@ -1,0 +1,3 @@
+No Gerbers: the AZUR SPACE 3G30A-Advanced 8 x 4 cm CIC land pattern is not verified.
+Rear-contact polarity and the position and length of the welded interconnectors are taken as rear = +, interconnectors along one long edge. Check both against the AZUR drawing that comes with the cells before bonding or ordering boards.
+When it is checked, set verified=True for CIC_3G30A_8x4 in gen/cells.py and run gen/build.sh.

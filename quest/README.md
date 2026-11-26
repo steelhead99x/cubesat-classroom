@@ -12,7 +12,7 @@ Write down the equipment you have, including the board or printer model, availab
 
 | Your setup | First quest |
 | --- | --- |
-| Bambu Lab P1S | [Print the AMSAT frame and Arduino payload](/hardware/amsat-cubesatsim/README.md), starting with the 5-minute snap test |
+| A 3D printer with a 256 mm bed, such as a Bambu Lab | [Print the AMSAT frame and Arduino payload](/hardware/amsat-cubesatsim/README.md), starting with the test coupons |
 | Computer only or unsure | [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md) |
 | Arduino, such as an Uno | [Read one Arduino sample](/quest/m0/arduino-first-reading.md) |
 | Seeed XIAO, such as ESP32-C3 or RP2040 | [Record a XIAO bench sample](/quest/m0/xiao-first-reading.md) |
@@ -36,27 +36,15 @@ Step-by-step, hands-on demos that a teacher, guardian or mentor guides for a sma
 
 Start in M0. After a run, tell us which steps the class completed, which instruction they got stuck on, and one change you would make. Share a redacted note through the [contribution guide](../CONTRIBUTING.md). Teachers can pilot and review lessons before any flight work.
 
-### Bambu P1S case test track
-
-Print the Rev A case with the [P1S print guide](/hardware/p1s/README.md), then use these quests to record what you measured so another crew can repeat it. Start with PLA and go in order. The Rev B rail-fit and ISS work has its own path below.
-
-1. [Validate the slice in Bambu Studio](/quest/m0/slice-p1s-case.md)
-2. [Print and measure the PLA fastener coupon](/quest/m0/print-p1s-case-coupon.md)
-3. [Print the shell and lid](/quest/m0/print-p1s-case-parts.md)
-4. [Test the assembly fit](/quest/m0/test-p1s-case-fit.md)
-5. [Review an improvement against the fit evidence](/quest/m0/improve-p1s-case.md)
-6. [Repeat the fit test](/quest/m0/retest-p1s-case.md)
-
 ### Demo and bench experiments
 
 - [Rehearse the five-minute demo offline](/quest/m0/demo-offline-rehearsal.md) and record a restart procedure.
 - [Trace a sensor value from file to display](/quest/m0/trace-sensor-fixtures.md) and verify what happens when an input is missing.
-- [Measure what the camera lid blocks](/quest/m0/measure-case-camera-view.md) once the P1S case fit has been tested.
 - [Fly the Arduino bench CubeSat](/quest/m0/arduino-bench-cubesat.md) or the [Seeed XIAO bench CubeSat](/quest/m0/xiao-bench-cubesat.md): deploy, lose the signal, recover stored readings, and bring back data. See the [bench CubeSat guide](/docs/bench-cubesats.md).
 
 ### Flight work
 
-The ISS hardware work is listed in review priority. Start the provider inquiry and the P1S slice review in parallel. The numbered lists show the recommended order for review. Quest dependencies control what is ready to start. Run `quest unblocked` to see ready work and `quest check` to validate the board. See the [contribution guide](../CONTRIBUTING.md).
+The ISS hardware work is listed in review priority. Start the provider inquiry and the rail slice review in parallel. The numbered lists show the recommended order for review. Quest dependencies control what is ready to start. Run `quest unblocked` to see ready work and `quest check` to validate the board. See the [contribution guide](../CONTRIBUTING.md).
 
 ### M0 · Start now
 
@@ -96,6 +84,29 @@ The ISS hardware work is listed in review priority. Start the provider inquiry a
 12. [Complete the provider’s deployer fit check](/quest/m2/deployer-fit-check.md)
 13. [Submit the ISS qualification evidence](/quest/m2/iss-compliance-handover.md)
 
+### CSC-R1 receiver bench
+
+Measure the [CSC-R1 receiver](/hardware/sdr-receiver/README.md) and its Rev B radios with cheap gear, starting with an RTL-SDR Blog V4. The [bench kit](/hardware/sdr-receiver/bench/README.md) has the scripts, a shopping list and the safety rules. The first six need no CSC-R1 board.
+
+1. [First light with the RTL-SDR Blog V4](/quest/m0/receiver-v4-first-light.md)
+2. [Measure FM broadcast at your antenna](/quest/m0/receiver-fm-at-your-site.md)
+3. [Build a shielded test signal](/quest/m0/receiver-test-signal.md)
+4. [Sweep a filter with a noise source](/quest/m0/receiver-sweep-a-stub.md)
+5. [Does HaLow noise land in the receive bands?](/quest/m0/receiver-halow-noise.md)
+6. [Compare radio power: 2.4 GHz, 5 GHz and HaLow](/quest/m0/receiver-radio-power.md)
+7. [Bring up CSC-R1 power and control](/quest/m1/receiver-rev-a-power-up.md)
+8. [Write the CSC-R1 Rev A bring-up firmware](/quest/m1/receiver-rev-a-firmware.md)
+9. [Check the CSC-R1 local oscillator and 5 V under load](/quest/m1/receiver-rev-a-lo-and-supply.md)
+10. [Measure the CSC-R1 band filters](/quest/m1/receiver-rev-a-filters.md)
+11. [Measure HaLow desense on the CSC-R1](/quest/m1/receiver-rev-a-desense.md)
+12. [Compare the CSC-R1 with the RTL-SDR V4 on a real pass](/quest/m1/receiver-rev-a-vs-v4.md)
+
+### Solar power
+
+One solar face, two kinds of cells: silicon for the bench, space cells for flight. See the [solar cost plan](/docs/solar-plan.md).
+
+1. [Measure a 1U solar face](/quest/m1/solar-face-bench.md)
+
 ### Flight heritage and the suborbital research flight
 
 These quests cover three rides for a classroom sensor kit: a glider, a suborbital research flight and the ISS. See the [suborbital flight plan](/docs/suborbital-flight-plan.md).
@@ -124,6 +135,9 @@ Maintainer work for the live classroom site. These quests stay in the log after 
 - [Move cubesat.app to the app Worker and align site branding](/quest/m0/cubesat-app-hostname-move.md)
 - [Patch the url advisory and add a dependency audit to the classroom Rust workspace](/quest/m0/classroom-rust-advisories.md)
 - [Align the public site copy with the volunteer review](/quest/m0/classroom-public-copy.md)
+- [Add the Rev C printed 1U frame and Nano 33 firmware, in Rust](/quest/m0/rev-c-printed-frame.md)
+- [Compile the firmware in every build](/quest/m0/compile-firmware-in-builds.md)
+- [Run cubesat-classroom CI on PrairieDog runners](/quest/m0/prairiedog-ci.md)
 
 ### Parallel classroom, balloon and radio work
 

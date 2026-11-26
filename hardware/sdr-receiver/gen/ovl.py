@@ -18,6 +18,7 @@ for i,a in enumerate(rs):
         if ox>0.005 and oy>0.005:
             n+=1; print(f"{a[0]}({(a[1]+a[3])/2:.1f},{(a[2]+a[4])/2:.1f}) x {c[0]}({(c[1]+c[3])/2:.1f},{(c[2]+c[4])/2:.1f}) overlap {ox:.2f}x{oy:.2f}")
 print('overlaps:',n)
+if n and len(sys.argv)==1: sys.exit(1)
 if len(sys.argv)>1:
     for r in rs:
         if r[0] in sys.argv[1:]: print(r[0],'w',round(r[3]-r[1],2),'h',round(r[4]-r[2],2))

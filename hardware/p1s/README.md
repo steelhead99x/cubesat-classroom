@@ -1,4 +1,6 @@
-# Print the CubeSat case on a Bambu Lab P1S
+# Print the CubeSat case on a Bambu Lab P1S (archived)
+
+> **Archived.** This Rev A bench case is no longer offered as a build. The current printed frame is the [AMSAT CubeSatSim frame with an Arduino payload](../amsat-cubesatsim/README.md). These files stay because CI still regenerates them; see [ARCHIVE.md](../ARCHIVE.md).
 
 A 1U-sized bench case in three prints: a small screw-fit coupon, the case shell and a lid with a camera hole. PLA, stock settings, no supports.
 
@@ -78,9 +80,9 @@ Reprint the part you changed.
 ## Next
 
 - Put a sensor inside. The [first reading quests](../../quest/README.md#start-with-what-you-have) cover Arduino, XIAO and Raspberry Pi.
-- Share your print. The [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track) say what to measure so another crew can repeat it.
+- Share your print. The [archived P1S case quests](../../archive/quest/README.md) say what to measure so another crew can repeat it.
 - ASA: print the coupon again with the filament maker's profile and ventilation advice before trying a full shell.
 
 The plain STLs are in [../stl](../stl) ([coupon](../stl/m3-fit-coupon.stl), [shell](../stl/bench-shell.stl), [lid](../stl/camera-lid.stl)) for other slicers.
 
-For a real 1U frame that holds an Arduino, build the [AMSAT CubeSatSim frame with the printed payload](../amsat-cubesatsim/README.md). This box is for learning and fit tests, not flight hardware. The [Rev B rail-fit set](../README.md#rev-b-rail-fit-set) is the separate flight-structure experiment.
+For a real 1U frame that holds an Arduino, build the [AMSAT CubeSatSim frame with the printed payload](../amsat-cubesatsim/README.md). This box is for learning and fit tests, not flight hardware. The [Rev B rail-fit set](../ARCHIVE.md#rev-b-rail-fit-set) is the separate flight-structure experiment.

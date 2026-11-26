@@ -40,7 +40,8 @@ It takes about 27 N to pull the plate off, against 16 N for an 80 g payload at 2
 - **Frame:** AMSAT CubeSatSim v2.0 by Alan Johnston, KU2Y, AMSAT VP Educational Relations. Source: [alanbjohnston/CubeSatSim `hardware/frame/v2.0`](https://github.com/alanbjohnston/CubeSatSim/tree/master/hardware/frame/v2.0), commit `1f6a01c4` (2024-10-07), with the [Onshape CAD](https://cad.onshape.com/documents/ba47819ff100597297d1d967/w/f19409ec7cd5459afb429cb9/e/a0e0cc37dee6fb879c4bcc2b) linked from there.
 - **License:** the CubeSatSim repository is GPL-3.0, so everything in this folder is GPL-3.0 too ([LICENSE](LICENSE)). The rest of CubeSat Classroom keeps its MIT or Apache-2.0 terms.
 - **Changes:** modified by CubeSat Classroom on 2026-11-25. `bottom-with-columns` is the AMSAT top/bottom piece with four standoff columns added where the AMSAT board stack normally screws in; three end in snap pins and one in a locating pin. The payload plate, fit plate and test coupons are new parts. The files in [upstream/](upstream/) are AMSAT's, byte for byte (SHA-256 below).
-- This is an independent build. It isn't made or endorsed by AMSAT.
+- **Payload plate design:** modeled on the `Multiplate` from the [Teachers in Space](https://www.tis.org/) (TIS) 1U frame, the frame TIS uses in its Arduino CubeSat workshops. TIS publishes its files without a license, so none are copied here; see [tis/README.md](../tis/README.md).
+- This is an independent build. It isn't made or endorsed by AMSAT or TIS.
 
 ## What to print
 
@@ -68,7 +69,7 @@ None of the plates has been sliced for a time estimate yet. For other slicers, e
 
 **Printed so far (hardware bench, Nov 26, Bambu Lab P1S, PLA):** of the three tabs, 1 dot fit best, so it's the kit's fit. The bare Nano 33 BLE Sense Rev2 fit its coupon well and snapped in. The kit plate's slots are the 1-dot tab's. The fingers (on the plate and the tabs) are now 0.5 mm longer, 14.5 mm, with 0.1 mm more room behind them, to keep the strain under the limit with the tighter teeth.
 
-Write down what you find and report it with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
+Write down what you find and share it through the [contribution guide](../../CONTRIBUTING.md).
 
 **The fit plate** has the payload plate's posts, pads, lips, hooks, snap slots and branding, made by the same code and in the same places, on an open triangular truss instead of a solid deck: 14.9 cm³ of plastic instead of 23.2 cm³. A fit you check on it holds for the real plate, and it snaps onto the bottom piece the same way. It also makes a display piece for photos and school projects: dark grey or black with white lettering looks most like flight hardware.
 
@@ -112,7 +113,7 @@ The checks in [crates/amsat-kit/src/checks.rs](../../crates/amsat-kit/src/checks
 
 `cargo run --release -p amsat-kit -- self-test` (and `cargo test -p amsat-kit`) breaks the design twenty-two ways and checks that each one is caught, and that hook fingers exactly at the strain limit still pass.
 
-Printed so far: the round-pin coupon (replaced), then the keyed-pin fit ladder and the Nano coupon (see above). The kit plates and fit plate in this version haven't been printed yet. These are design checks, not measurements. The strain and force figures are hand calculations for PLA (straight-beam estimates), not test results. Print the coupons first and report what you find with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
+**Verification status: nearly verified.** The design checks above pass in CI, and the keyed-pin fit ladder and the Nano coupon have printed well (see above). The kit plates and fit plate in this version haven't been printed yet. The checks are design checks, not measurements, and the strain and force figures are hand calculations for PLA (straight-beam estimates), not test results. Print the coupons first and share what you find through the [contribution guide](../../CONTRIBUTING.md).
 
 ## Regenerate
 

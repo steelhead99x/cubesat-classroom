@@ -21,16 +21,18 @@ def s21(net,f,QL=40,QC=200):
     A,B,C,D=M.ravel(); return 20*math.log10(abs(2/(A+B/50+C*50+D)))
 def rnd(net): return [(k,nearest(v)) for k,v in net]
 def fmt(k,v): return f"{v*1e12:.3g}pF" if k[0]=='C' else f"{v*1e9:.3g}nH"
-out={}
-for name,fh,fl,probes in [('2m',118e6,180e6,[88e6,100e6,108e6,144e6,146e6,437e6]),('70cm',360e6,540e6,[108e6,146e6,300e6,435e6,438e6,900e6,1311e6])]:
-    net=rnd(hpf(fh))+rnd(lpf(fl)); out[name]=net
-    print(name,' '.join(f"{k}:{fmt(k,v)}" for k,v in net))
-    print('   ',' '.join(f"{p/1e6:.0f}MHz:{s21(net,p):.1f}dB" for p in probes))
-# PLL loop filter (3rd order passive), ADF4351
-Kv=2*math.pi*40e6; Icp=2.5e-3; Kphi=Icp/(2*math.pi)
-for N,label in [(139.84,'70cm N=139.84'),(93.3,'2m N=93.3')]:
-    fc=20e3; pm=math.radians(50); wc=2*math.pi*fc
-    T1=(1/math.cos(pm)-math.tan(pm))/wc; T2=1/(wc*wc*T1)
-    C1=(Kphi*Kv/(N*wc*wc))*(T1/T2)*math.sqrt((1+(wc*T2)**2)/(1+(wc*T1)**2))
-    C2=C1*(T2/T1-1); R2=T2/C2
-    print(label,f"C1={C1*1e9:.2f}nF C2={C2*1e9:.2f}nF R2={R2:.0f}ohm")
+if __name__=='__main__':
+    # first-pass Butterworth sizing used for Rev A's first layout; rf_checks.py checks the values now in design.py
+    out={}
+    for name,fh,fl,probes in [('2m',118e6,180e6,[88e6,100e6,108e6,144e6,146e6,437e6]),('70cm',360e6,540e6,[108e6,146e6,300e6,435e6,438e6,900e6,1311e6])]:
+        net=rnd(hpf(fh))+rnd(lpf(fl)); out[name]=net
+        print(name,' '.join(f"{k}:{fmt(k,v)}" for k,v in net))
+        print('   ',' '.join(f"{p/1e6:.0f}MHz:{s21(net,p):.1f}dB" for p in probes))
+    # PLL loop filter (3rd order passive), ADF4351
+    Kv=2*math.pi*40e6; Icp=2.5e-3; Kphi=Icp/(2*math.pi)
+    for N,label in [(139.84,'70cm N=139.84'),(93.3,'2m N=93.3')]:
+        fc=20e3; pm=math.radians(50); wc=2*math.pi*fc
+        T1=(1/math.cos(pm)-math.tan(pm))/wc; T2=1/(wc*wc*T1)
+        C1=(Kphi*Kv/(N*wc*wc))*(T1/T2)*math.sqrt((1+(wc*T2)**2)/(1+(wc*T1)**2))
+        C2=C1*(T2/T1-1); R2=T2/C2
+        print(label,f"C1={C1*1e9:.2f}nF C2={C2*1e9:.2f}nF R2={R2:.0f}ohm")

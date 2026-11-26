@@ -17,3 +17,4 @@ for r,p in design.parts.items():
     if r not in comps: bad+=1; print('missing comp',r)
     elif comps[r][1]!=p['fp']: bad+=1; print('fp differs',r,comps[r],p['fp'])
 print('nets in schematic:',len([k for k in got if not k.startswith('unconnected')]),'designed:',len(want),'components:',len(comps),'mismatches:',bad)
+sys.exit(1 if bad else 0)

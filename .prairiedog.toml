@@ -1,0 +1,4 @@
+# PrairieDog CI configuration (replaces GitHub Actions).
+ci_command = "bash scripts/ci.sh"
+ci_labels = ["ci", "x86_64"]
+ci_timeout_secs = 3600

@@ -6,9 +6,10 @@
 //! smaller fixed body so a beta LoRa board can show it on a 128×64 OLED without
 //! a CBOR library.
 //!
-//! Readers must ignore JSON fields they do not know. This program only writes
-//! `desk-simulation`. A later sender may use another evidence label; showing
-//! that label is not a claim that this repository flew.
+//! Readers must ignore JSON fields they do not know. This program writes
+//! `desk-simulation` for the built-in formula and `hardware-bench` for readings
+//! from real sensor files. A later sender may use another evidence label;
+//! showing that label is not a claim that this repository flew.
 
 use crate::assemble::Metrics;
 use crate::frame::{Error, Service};
@@ -17,8 +18,11 @@ use crate::frame::{Error, Service};
 pub const TELEMETRY_SCHEMA: &str = "cubesat.telemetry.v1";
 /// Schema name inside every relay-health object.
 pub const HEALTH_SCHEMA: &str = "cubesat.relay-health.v1";
-/// Evidence label this crate writes. It means a desk simulation, not a flight.
+/// Evidence label for the built-in formula. It means a desk simulation, not a flight.
 pub const EVIDENCE_DESK: &str = "desk-simulation";
+/// Evidence label for readings from real sensors on a bench (the sensor files). The
+/// numbers are measured, but by bench hardware, not a flight.
+pub const EVIDENCE_BENCH: &str = "hardware-bench";
 /// `source` string for the built-in formula, matching the station simulator.
 pub const SOURCE_SIMULATION: &str = "simulation";
 /// `source` string when the numbers came from the sensor files.
@@ -72,7 +76,7 @@ pub struct Telemetry {
     pub captured_unix_ms: u64,
     /// Where the numbers came from, in short words.
     pub source: String,
-    /// What kind of evidence this is. This crate writes [`EVIDENCE_DESK`].
+    /// What kind of evidence this is: [`EVIDENCE_DESK`] or [`EVIDENCE_BENCH`] from this crate.
     pub evidence: String,
     /// Frame-rule label. See [`Service`].
     pub service: Service,
@@ -127,7 +131,7 @@ impl Telemetry {
             sequence,
             captured_unix_ms,
             source: SOURCE_SENSORS.into(),
-            evidence: EVIDENCE_DESK.into(),
+            evidence: EVIDENCE_BENCH.into(),
             service,
             frequency_hz: FREQUENCY_HZ,
             station_id: station_id.map(str::to_string),
@@ -219,8 +223,9 @@ impl Telemetry {
 
     /// Decode a board body. Sequence, service, and station ID come from the air header.
     ///
-    /// The free-form source string is only a sensor-file bit on the air, and the
-    /// evidence label is filled in as [`EVIDENCE_DESK`].
+    /// The free-form source string is only a sensor-file bit on the air. The evidence
+    /// label follows that bit: [`EVIDENCE_BENCH`] for sensor readings, otherwise
+    /// [`EVIDENCE_DESK`].
     pub fn from_board_body(
         body: &[u8],
         sequence: u64,
@@ -233,6 +238,7 @@ impl Telemetry {
             ));
         }
         let flags = body[1];
+        let from_sensors = (flags & 0b0000_0010) != 0;
         let captured_unix_s = u32::from_be_bytes(body[2..6].try_into().expect("four bytes"));
         let temp = i16::from_be_bytes(body[6..8].try_into().expect("two bytes"));
         let volts = u16::from_be_bytes(body[8..10].try_into().expect("two bytes"));
@@ -242,12 +248,16 @@ impl Telemetry {
             schema: TELEMETRY_SCHEMA.into(),
             sequence,
             captured_unix_ms: u64::from(captured_unix_s) * 1000,
-            source: if (flags & 0b0000_0010) == 0 {
-                SOURCE_SIMULATION.into()
-            } else {
+            source: if from_sensors {
                 SOURCE_SENSORS.into()
+            } else {
+                SOURCE_SIMULATION.into()
             },
-            evidence: EVIDENCE_DESK.into(),
+            evidence: if from_sensors {
+                EVIDENCE_BENCH.into()
+            } else {
+                EVIDENCE_DESK.into()
+            },
             service,
             frequency_hz: FREQUENCY_HZ,
             station_id: station_id.map(str::to_string),
@@ -279,8 +289,18 @@ impl Telemetry {
             fit_oled(&head),
             fit_oled(&reading),
             fit_oled(&light),
-            fit_oled(&format!("{service} desk")),
+            fit_oled(&format!("{service} {}", short_evidence(&self.evidence))),
         ]
+    }
+}
+
+/// A short evidence word for the 16-column OLED. Unknown labels show as "other", never as
+/// a word that would make them look like a known kind.
+fn short_evidence(evidence: &str) -> &'static str {
+    match evidence {
+        EVIDENCE_DESK => "desk",
+        EVIDENCE_BENCH => "bench",
+        _ => "other",
     }
 }
 
@@ -551,6 +571,29 @@ mod tests {
         assert!(lines[1].contains("3.91V") || lines[1].contains("3.90V"));
         assert!(lines[3].contains("part97"));
         assert!(lines[3].contains("desk"));
+    }
+
+    #[test]
+    fn sensor_readings_are_labelled_hardware_bench_end_to_end() {
+        let reading = SensorReading {
+            temperature_c: 20.5,
+            bus_voltage_v: 3.9,
+            light_lux: 300,
+            pressure_pa: None,
+        };
+        let sample = Telemetry::from_sensors(3, 1_700_000_000_000, Service::Part15, None, reading);
+        assert_eq!(sample.evidence, EVIDENCE_BENCH);
+        let body = sample.to_board_body().unwrap();
+        let back = Telemetry::from_board_body(&body, 3, Service::Part15, None).unwrap();
+        assert_eq!(back.source, SOURCE_SENSORS);
+        assert_eq!(back.evidence, EVIDENCE_BENCH);
+        assert!(back.oled_lines()[3].contains("bench"));
+
+        let sim = Telemetry::synthetic(3, 1_700_000_000_000, Service::Part15, None);
+        let back =
+            Telemetry::from_board_body(&sim.to_board_body().unwrap(), 3, Service::Part15, None)
+                .unwrap();
+        assert_eq!(back.evidence, EVIDENCE_DESK);
     }
 
     #[test]
