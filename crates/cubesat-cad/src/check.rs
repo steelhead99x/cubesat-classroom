@@ -3,10 +3,19 @@
 
 use manifold_csg::Manifold;
 
+use crate::boards::{
+    nano_card, nano_pcb, nano_plug, nano_top_parts, uno_parts, uno_pcb, uno_underside,
+};
 use crate::design::Design;
+use crate::fasteners::{
+    bar_stress, key_flat, key_in_place, key_strain, latch, latch_force, latch_strain, placed_stud,
+    plate_hold_down, qt_stud, qt_washer, washer_crest, washer_strain,
+};
 use crate::geom::{bounds, cuboid, cylinder, overlap, union_all};
 use crate::mesh::Mesh;
-use crate::parts::{Assembly, lug_z, peg_height};
+use crate::parts::{
+    Assembly, fasteners_in_place, lug_z, nano_clamp, on_columns, payload_plate, peg_height,
+};
 
 /// PLA density for the mass estimate, g/mm3. Solid parts give an upper bound;
 /// the slicer reports the real mass at its infill.
@@ -114,12 +123,6 @@ impl Report {
     }
 }
 
-/// Bending strain of an Uno clip as the board pushes it out by the lip depth.
-pub fn clip_strain(d: &Design) -> f64 {
-    let arm = d.uno_post_h + d.pcb_uno + 0.1;
-    1.5 * d.clip_t * d.clip_lip / (arm * arm)
-}
-
 /// Bending strain of one peg half as the barb squeezes through the hole.
 pub fn peg_strain(d: &Design) -> f64 {
     let half = (d.peg_shank - d.peg_slot) / 2.0;
@@ -127,67 +130,9 @@ pub fn peg_strain(d: &Design) -> f64 {
     1.5 * half * (d.peg_barb - d.snap_hole) / 2.0 / (arm * arm)
 }
 
-/// Board volumes for fit checks, in the assembled position.
-pub struct Boards {
-    pub uno_pcb: Manifold,
-    pub uno_usb: Manifold,
-    pub uno_underside: Manifold,
-    pub nano_pcb: Manifold,
-    pub nano_pins: Manifold,
-}
-
-impl Boards {
-    pub fn new(d: &Design) -> Self {
-        let o = d.uno_origin();
-        let pcb = d.uno_pcb_bottom_z();
-        // The board plus a clearance margin in X and Y.
-        let m = d.min_board_clearance;
-        let mut uno_pcb = cuboid(
-            [o[0] - m, o[1] - m, pcb],
-            [o[0] + d.uno[0] + m, o[1] + d.uno[1] + m, pcb + d.pcb_uno],
-        );
-        let mut posts = Vec::new();
-        for i in 0..4 {
-            let [x, y] = d.uno_hole(i);
-            uno_pcb = uno_pcb.difference(&cylinder(3.2, d.pcb_uno + 2.0, [x, y, pcb - 1.0], None));
-            posts.push(cylinder(
-                7.0,
-                d.uno_post_h + d.pcb_uno + 2.0,
-                [x, y, d.plate_top_z() - 1.0],
-                None,
-            ));
-        }
-        // USB-B socket overhangs the left edge by about 6.2 mm and stands 11 mm tall.
-        let uno_usb = cuboid(
-            [o[0] - 6.2, o[1] + 31.8, pcb + d.pcb_uno],
-            [o[0] + 10.0, o[1] + 43.9, pcb + d.pcb_uno + 11.0],
-        );
-        let uno_underside = cuboid(
-            [o[0], o[1], pcb - 2.0],
-            [o[0] + d.uno[0], o[1] + d.uno[1], pcb],
-        )
-        .difference(&union_all(&posts));
-        let [nx, ny] = d.nano_center;
-        let zn = d.nano_pcb_bottom_z();
-        let nano_pcb = cuboid(
-            [nx - d.nano[0] / 2.0, ny - d.nano[1] / 2.0, zn],
-            [nx + d.nano[0] / 2.0, ny + d.nano[1] / 2.0, zn + d.pcb_nano],
-        );
-        let rows: Vec<Manifold> = [-1.0, 1.0]
-            .iter()
-            .map(|s| {
-                let row = ny + s * d.nano_row / 2.0;
-                cuboid([nx - 19.1, row - 1.3, zn - 8.5], [nx + 19.1, row + 1.3, zn])
-            })
-            .collect();
-        Self {
-            uno_pcb,
-            uno_usb,
-            uno_underside,
-            nano_pcb,
-            nano_pins: union_all(&rows),
-        }
-    }
+/// `value >= minimum`, ignoring floating-point noise far below print resolution.
+fn at_least(value: f64, minimum: f64) -> bool {
+    value >= minimum - 1e-6
 }
 
 /// Parts in print orientation, by name.
@@ -203,11 +148,192 @@ pub fn print_parts(d: &Design) -> Vec<(&'static str, Manifold)> {
             crate::parts::end_plate_top(d).rotate(180.0, 0.0, 0.0),
         ),
         ("end-plate-bottom", crate::parts::end_plate_bottom(d)),
-        ("payload-plate", crate::parts::payload_plate(d)),
-        ("nano-strap", crate::parts::nano_strap(d)),
+        ("payload-plate", payload_plate(d)),
+        // Flat top on the bed.
+        ("nano-clamp", nano_clamp(d).rotate(180.0, 0.0, 0.0)),
+        ("lock-key", key_flat(d)),
+        ("qt-stud-plate", qt_stud(d, d.plate_stud_a0())),
+        ("qt-stud-clamp", qt_stud(d, d.clamp_stud_a0())),
+        ("qt-washer", qt_washer(d)),
         ("snap-test-peg", peg),
         ("snap-test-wall", wall),
     ]
+}
+
+/// Uno latches and keys, in plate coordinates. Returns the problems found.
+fn latch_issues(
+    d: &Design,
+    features: &Manifold,
+    others: &Manifold,
+    keys: &[Manifold],
+) -> Vec<String> {
+    let mut issues = Vec::new();
+    let l = &d.latch;
+    let [ux, uy] = d.uno_origin();
+    let top = d.uno_top();
+    let mut fixed = features.clone();
+    let mut seated = Vec::new();
+    for i in 0..4 {
+        fixed = fixed.difference(&latch(d, i, 0.0));
+        seated.push(latch(d, i, l.preload + 0.01));
+    }
+    let mut in_service = vec![fixed.clone(), others.clone()];
+    in_service.extend(seated.iter().cloned());
+    in_service.extend(keys.iter().cloned());
+    let in_service = union_all(&in_service);
+    if overlap(&in_service, &uno_pcb(d)) > 1e-3 {
+        issues.push("a latch or part passes through the Uno board".into());
+    }
+    if overlap(&in_service, &uno_underside(d)) > 1e-3 {
+        issues.push("something under the Uno would hit its solder joints".into());
+    }
+    for (name, body) in uno_parts(d) {
+        if overlap(&in_service, &body) > 1e-3 {
+            issues.push(format!(
+                "a latch, key, stud or pillar hits the Uno's {name}"
+            ));
+        }
+    }
+    let above = cuboid([ux, uy, top], [ux + d.uno[0], uy + d.uno[1], top + 3.0]);
+    for (i, s) in seated.iter().enumerate() {
+        let edge = format!("{:?}", l.places[i].0).to_lowercase();
+        if overlap(s, &above) / l.w <= 0.3 {
+            issues.push(format!(
+                "the {edge} latch's hook doesn't reach over the Uno"
+            ));
+        }
+        let relaxed = latch(d, i, 0.0);
+        if keys.iter().any(|k| overlap(k, &relaxed) > 1e-3) {
+            issues.push(format!("a lock key doesn't fit the {edge} latch"));
+        }
+        let opened = latch(d, i, l.preload + 2.0 * d.key.clear + 0.05);
+        if keys.iter().map(|k| overlap(&opened, k)).sum::<f64>() <= 1e-3 {
+            issues.push(format!(
+                "the {edge} latch can open past its key: the key doesn't lock it"
+            ));
+        }
+    }
+    let mut snapping = vec![fixed];
+    snapping.extend((0..4).map(|i| latch(d, i, l.reach + 0.05)));
+    // The board's outline swept down from above, with its USB-B socket.
+    let path = cuboid([ux, uy, top + 0.01], [ux + d.uno[0], uy + d.uno[1], 80.0]).union(&cuboid(
+        [ux - 7.0, uy + 30.0, top + 0.01],
+        [ux, uy + 46.0, 80.0],
+    ));
+    if overlap(&union_all(&snapping), &path) > 1e-3 {
+        issues.push("the Uno can't be pushed down past its latches".into());
+    }
+    issues
+}
+
+/// Nano card cage and clamp, in plate coordinates. Returns the problems found.
+fn nano_issues(
+    d: &Design,
+    features: &Manifold,
+    clamp: &Manifold,
+    everything: &Manifold,
+) -> Vec<String> {
+    let mut issues = Vec::new();
+    let n = &d.nano;
+    let pcb = nano_pcb(d);
+    if overlap(everything, &nano_top_parts(d)) > 1e-3 {
+        issues.push("a groove wall, stop or clamp hits a part on the Nano".into());
+    }
+    if overlap(everything, &pcb) > 1e-3 {
+        issues.push("the Nano's board does not fit between its V-grooves and stops".into());
+    }
+    let moves = [
+        ("up", [0.0, 0.0, 0.3]),
+        ("down", [0.0, 0.0, -0.3]),
+        ("towards the Uno", [0.0, 0.3, 0.0]),
+        ("towards the plate edge", [0.0, -0.3, 0.0]),
+        ("towards the USB end", [-n.end_play - 0.2, 0.0, 0.0]),
+        ("towards the far end", [n.end_play + 0.2, 0.0, 0.0]),
+    ];
+    for (label, [dx, dy, dz]) in moves {
+        let moved = pcb.translate(dx, dy, dz);
+        if overlap(everything, &moved) <= 1e-3 {
+            issues.push(format!("the Nano could move {label}: nothing holds it"));
+        }
+        if dx == 0.0 && dz == 0.0 {
+            for (half, solid) in [("base", features), ("cap", clamp)] {
+                if overlap(solid, &moved) <= 1e-3 {
+                    issues.push(format!("the {half} groove does not hold the Nano sideways"));
+                }
+            }
+        }
+    }
+    // With the clamp off, the Nano goes straight down into its groove, USB end first
+    // past the stop: its outline and parts swept up from the groove must be clear.
+    let (h, x1) = (d.plate[1], n.x0 + n.l + 0.1);
+    let lift = union_all(&[
+        cuboid(
+            [n.x0 + 0.1, n.y0 + 0.02, n.z0 + 0.01],
+            [x1, n.y0 + n.t - 0.02, 90.0],
+        ),
+        nano_top_parts(d).translate(0.1, 0.0, 0.0),
+        cuboid(
+            [n.x0 + 0.1, n.y0, n.z0 + n.edge_clear],
+            [n.x0 + n.l, n.y0 + n.t + 2.8, 90.0],
+        ),
+    ])
+    .difference(&cuboid([-h, -h, -1.0], [h, h, n.z0 + 0.01]))
+    .union(&cuboid(
+        [n.x0 + 0.1, n.y0 + 0.02, n.z0 + n.w],
+        [x1, n.y0 + n.t + 2.8, 90.0],
+    ));
+    if overlap(features, &lift) > 1e-3 {
+        issues.push("with the clamp off, the Nano can't be lowered into its groove".into());
+    }
+    let room = n.x0 + crate::boards::NANO_PARTS[0].1[0] + d.plate[0] / 2.0;
+    if !at_least(room, n.min_plug_room) {
+        issues.push(format!(
+            "only {room:.1} mm from the Nano's USB to the plate edge, less than {:.0} mm for the plug",
+            n.min_plug_room
+        ));
+    }
+    issues
+}
+
+/// Quarter-turn studs, in plate coordinates: each passes its bar going in, clears
+/// everything when locked, and is held by the bar if pulled.
+fn stud_issues(
+    d: &Design,
+    column_tops: &Manifold,
+    plate: &Manifold,
+    clamp: &Manifold,
+) -> Vec<String> {
+    let mut issues = Vec::new();
+    let mut check = |what: &str, a0: f64, xy: &[[f64; 2]], z_head: f64, stack: &Manifold| {
+        for &[x, y] in xy {
+            if overlap(&placed_stud(d, a0, x, y, z_head, 0.0), stack) > 1e-3 {
+                issues.push(format!("a {what} stud can't be pushed in past its bar"));
+            }
+            if overlap(&placed_stud(d, a0, x, y, z_head - 0.02, 90.0), stack) > 1e-3 {
+                issues.push(format!("a locked {what} stud collides with its receptacle"));
+            }
+            if overlap(&placed_stud(d, a0, x, y, z_head + 0.3, 90.0), stack) <= 1e-3 {
+                issues.push(format!("a locked {what} stud isn't held by its bar"));
+            }
+        }
+    };
+    let plate_stack = plate.union(column_tops);
+    check(
+        "plate",
+        d.plate_stud_a0(),
+        &d.columns,
+        d.plate_t + d.washer_h(),
+        &plate_stack,
+    );
+    let clamp_stack = plate.union(clamp);
+    check(
+        "Nano clamp",
+        d.clamp_stud_a0(),
+        &d.pillars(),
+        d.clamp_bottom_z() + d.nano.clamp_t + d.washer_h(),
+        &clamp_stack,
+    );
+    issues
 }
 
 /// Run every check. A design is ready to print when `Report::passed` is true.
@@ -215,8 +341,19 @@ pub fn print_parts(d: &Design) -> Vec<(&'static str, Manifold)> {
 pub fn verify(d: &Design) -> Report {
     let mut r = Report::default();
     let a = Assembly::new(d);
-    let boards = Boards::new(d);
     let (h, hz) = (d.half(), d.half_z());
+    // Both boards with their parts, and the Uno's clearance margin, in the CubeSat.
+    let m = d.min_board_clearance;
+    let [ux, uy] = d.uno_origin();
+    let mut boards = vec![
+        cuboid(
+            [ux - m, uy - m, d.uno_pcb_bottom()],
+            [ux + d.uno[0] + m, uy + d.uno[1] + m, d.uno_top()],
+        ),
+        nano_card(d),
+    ];
+    boards.extend(uno_parts(d).into_iter().map(|(_, b)| b));
+    let board_set = on_columns(d, &union_all(&boards));
     let frame = union_all(&a.frame().map(Clone::clone));
 
     // ---- CDS mechanical (Rev 14.1 §2.2) ----
@@ -236,12 +373,7 @@ pub fn verify(d: &Design) -> Report {
             size[0], size[1], size[2]
         ),
     );
-    let (alo, ahi) = bounds(&union_all(&[
-        a.all(),
-        boards.uno_pcb.clone(),
-        boards.uno_usb.clone(),
-        boards.nano_pcb.clone(),
-    ]));
+    let (alo, ahi) = bounds(&union_all(&[a.all(d), board_set.clone()]));
     let inside = alo[0] >= -h - 1e-6
         && alo[1] >= -h - 1e-6
         && ahi[0] <= h + 1e-6
@@ -339,14 +471,10 @@ pub fn verify(d: &Design) -> Report {
     // Mass and centre of mass, solid PLA (upper bound) plus the boards.
     let mut mass = 0.0;
     let mut moment = [0.0; 3];
-    for part in [
-        &a.panel_pos_y,
-        &a.panel_neg_y,
-        &a.end_top,
-        &a.end_bottom,
-        &a.payload,
-        &a.strap,
-    ] {
+    let fasteners = on_columns(d, &fasteners_in_place(d));
+    let mut massed: Vec<&Manifold> = a.parts().into_iter().map(|(_, m)| m).collect();
+    massed.push(&fasteners);
+    for part in massed {
         let (v, c) =
             Mesh::from_solid("mass", part).map_or((0.0, [0.0; 3]), |m| m.volume_and_centroid());
         let g = v * PLA_G_PER_MM3;
@@ -359,12 +487,13 @@ pub fn verify(d: &Design) -> Report {
     let uno_c = [
         o[0] + d.uno[0] / 2.0,
         o[1] + d.uno[1] / 2.0,
-        d.uno_pcb_bottom_z() + 5.0,
+        d.plate_bottom_z() + d.uno_pcb_bottom() + 5.0,
     ];
+    let n = &d.nano;
     let nano_c = [
-        d.nano_center[0],
-        d.nano_center[1],
-        d.nano_pcb_bottom_z() + 1.0,
+        n.x0 + n.l / 2.0,
+        n.y0 + n.t,
+        d.plate_bottom_z() + n.z0 + n.w / 2.0,
     ];
     for (g, c) in [(UNO_G, uno_c), (NANO_G, nano_c)] {
         mass += g;
@@ -378,7 +507,7 @@ pub fn verify(d: &Design) -> Report {
         "Mass within the 1U limit of 2.00 kg",
         "CDS Rev 14.1 §2.2.10, Table 1",
         mass <= 2000.0,
-        format!("about {mass:.0} g with solid PLA and both boards (the slicer's figure at 20% infill is lower)"),
+        format!("about {mass:.0} g with solid PLA, fasteners and both boards (the slicer's figure at 20% infill is lower)"),
     );
     r.add(
         "CDS-2.2.11",
@@ -434,11 +563,11 @@ pub fn verify(d: &Design) -> Report {
     r.note("CDS-2.4.4/5", "Deployables wait 30 min; no transmission for 45 min after deployment", "CDS Rev 14.1 §2.4.4, §2.4.5", Outcome::NotApplicable,
         "firmware: the `cds` timing profile in firmware/nano33-cubesat uses these values; the bench default is 30 s");
 
-    // ---- Snap fits, clips and strain ----
+    // ---- End-plate snaps ----
     let overlap_mm = d.peg_barb - d.snap_hole;
     r.add(
         "FIT-snap",
-        "Snap barb overlaps its hole enough to latch",
+        "End-plate snap barbs overlap their holes enough to latch",
         "first P1S snap test (0.6 mm nozzle)",
         overlap_mm >= d.min_snap_overlap && d.snap_hole > d.peg_shank && d.peg_slot > overlap_mm,
         format!(
@@ -446,42 +575,133 @@ pub fn verify(d: &Design) -> Report {
             d.peg_barb, d.snap_hole, d.peg_slot
         ),
     );
-    let reach = d.clip_lip - d.clip_gap;
+
+    // ---- Uno latch and lock-key rules ----
+    let l = &d.latch;
+    let mut rules = Vec::new();
+    if latch_strain(d) >= l.strain_limit {
+        rules.push(format!(
+            "latch arm bends {:.1}% snapping in, over the {:.1}% limit for an arm printed upright",
+            latch_strain(d) * 100.0,
+            l.strain_limit * 100.0
+        ));
+    }
+    if d.plate_t - l.root_depth < 1.2 {
+        rules.push("too little plate left under the latch pockets".to_string());
+    }
+    if !at_least(l.reach, l.min_reach) {
+        rules.push(format!(
+            "hooks reach {:.2} mm over the board, less than {:.1} mm",
+            l.reach, l.min_reach
+        ));
+    }
+    let free = 2.0 * d.key.clear;
+    if free >= (l.reach - l.preload) / 2.0 {
+        rules.push(format!(
+            "with its key in, a latch can still open {free:.2} mm, more than half its {:.2} mm grip",
+            l.reach - l.preload
+        ));
+    }
+    if !(l.preload > 0.0 && l.preload < l.reach / 2.0) {
+        rules.push("latch preload must be positive and well inside the hook's reach".to_string());
+    }
+    if key_strain(d) >= d.pla_strain_limit {
+        rules.push(format!("key prongs bend {:.1}%", key_strain(d) * 100.0));
+    }
+    if d.key.slot < 2.0 * d.key.bump + 0.2 {
+        rules.push(
+            "the key's slot is too narrow for its prongs to flex past the notches".to_string(),
+        );
+    }
     r.add(
-        "FIT-clip",
-        "Uno clip lips reach over the board edge",
-        "Uno R3 outline",
-        reach >= d.min_clip_reach,
-        format!(
-            "{reach:.2} mm over the edge (needs {:.1})",
-            d.min_clip_reach
-        ),
+        "FIT-latch",
+        "Uno latches snap in without cracking, hold the board down, and lock with their keys",
+        "AMSAT kit latch design (generate.py)",
+        rules.is_empty(),
+        if rules.is_empty() {
+            format!(
+                "arm strain {:.1}% (limit {:.1}%), hook {:.1} mm over the edge, about {:.0} N down each, \
+                 {free:.2} mm free with the key in, key prongs {:.1}%",
+                latch_strain(d) * 100.0,
+                l.strain_limit * 100.0,
+                l.reach,
+                latch_force(d),
+                key_strain(d) * 100.0
+            )
+        } else {
+            rules.join("; ")
+        },
+    );
+
+    // ---- Quarter-turn fastener rules ----
+    let q = &d.qt;
+    let crest = washer_crest(d);
+    let (have, need) = plate_hold_down(d);
+    let mut rules = Vec::new();
+    if !(q.det > 0.0 && q.det < q.lift) {
+        rules.push("each stud needs a detent smaller than its cam draw-in".to_string());
+    }
+    if !at_least(d.pla_strain_limit, washer_strain(d, crest)) {
+        rules.push(format!(
+            "washer arms bend {:.2}% at the detent crest, over {:.0}%",
+            washer_strain(d, crest) * 100.0,
+            d.pla_strain_limit * 100.0
+        ));
+    }
+    if d.washer.foot < q.lift + q.det + d.nano.preload + 0.2 - 1e-6 {
+        rules.push("the washer's feet are too short for its hub to travel".to_string());
+    }
+    if have < need {
+        rules.push(format!(
+            "the four plate studs hold {have:.1} N down, less than the {need:.1} N the payload weighs at {:.0} g",
+            d.design_g
+        ));
+    }
+    if q.tip < 1.2 {
+        rules.push("too little stud left behind the bar to carry the load".to_string());
+    }
+    if bar_stress(d) >= 20.0 {
+        rules.push(format!(
+            "bar bending stress {:.0} MPa is too high for PLA",
+            bar_stress(d)
+        ));
+    }
+    r.add(
+        "FIT-qt",
+        "Quarter-turn studs lock with a detent and hold the payload down at the design load",
+        "AMSAT kit fastener design (generate.py)",
+        rules.is_empty(),
+        if rules.is_empty() {
+            format!(
+                "washer strain {:.2}% at the detent crest, plate held with {have:.0} N ({need:.0} N at {:.0} g), \
+                 bar stress {:.0} MPa",
+                washer_strain(d, crest) * 100.0,
+                d.design_g,
+                bar_stress(d)
+            )
+        } else {
+            rules.join("; ")
+        },
     );
     r.add(
         "FIT-strain",
-        "Clip and peg bending strain within the PLA limit",
+        "End-plate snap pegs bend within the PLA limit",
         "PLA yield about 3%",
-        clip_strain(d) < d.pla_strain_limit && peg_strain(d) < d.pla_strain_limit,
+        peg_strain(d) < d.pla_strain_limit,
         format!(
-            "clip {:.1}%, peg {:.1}% (limit {:.0}%)",
-            clip_strain(d) * 100.0,
+            "peg {:.1}% (limit {:.0}%)",
             peg_strain(d) * 100.0,
             d.pla_strain_limit * 100.0
         ),
     );
 
     // ---- Parts fit together ----
-    let parts = [
-        ("+Y panel", &a.panel_pos_y),
-        ("-Y panel", &a.panel_neg_y),
-        ("+Z end plate", &a.end_top),
-        ("-Z end plate", &a.end_bottom),
-        ("payload plate", &a.payload),
-        ("Nano strap", &a.strap),
-    ];
+    let parts = a.parts();
     let mut clashes = Vec::new();
+    let mut pairs = 0;
     for i in 0..parts.len() {
         for j in i + 1..parts.len() {
+            pairs += 1;
             if overlap(parts[i].1, parts[j].1) > 1e-3 {
                 clashes.push(format!("{} / {}", parts[i].0, parts[j].0));
             }
@@ -493,7 +713,7 @@ pub fn verify(d: &Design) -> Report {
         "CAD assembly",
         clashes.is_empty(),
         if clashes.is_empty() {
-            "6 parts, 15 pairs checked".into()
+            format!("{} parts, {pairs} pairs checked", parts.len())
         } else {
             clashes.join(", ")
         },
@@ -518,93 +738,138 @@ pub fn verify(d: &Design) -> Report {
                 overlap(panel, &probe) < 1e-3 && overlap(end, &probe) > 0.5 * probe.volume();
         }
     }
+    // Each plate hole lines up with its column's bore: a stud-sized probe through both is clear.
     for [x, y] in d.columns {
         let probe = cylinder(
-            d.peg_shank - 0.2,
-            d.plate_t - 0.2,
-            [x, y, d.plate_bottom_z() + 0.1],
+            d.qt.d,
+            d.plate_t + d.qt.bar_z - 0.1,
+            [x, y, d.plate_bottom_z() - d.qt.bar_z + 0.05],
             None,
         );
-        snaps_ok &= overlap(&a.payload, &probe) < 1e-3
-            && overlap(&a.end_bottom, &probe) > 0.5 * probe.volume();
+        snaps_ok &= overlap(&a.payload, &probe) < 1e-3 && overlap(&a.end_bottom, &probe) < 1e-3;
     }
     r.add(
         "FIT-align",
-        "Every snap peg passes through its hole",
+        "Every snap peg passes through its hole, and every plate hole lines up with its column",
         "CAD assembly",
         snaps_ok,
-        "8 end-plate snaps and 4 payload-column snaps".into(),
+        "8 end-plate snaps and 4 plate studs".into(),
     );
 
-    // ---- Boards ----
-    let top = d.plate_top_z();
-    let features = a.payload.difference(&cuboid([-h, -h, -hz], [h, h, top]));
-    let barb_h = peg_height(d, d.plate_t) - d.plate_t;
-    let barb_room = union_all(
-        &d.columns
-            .map(|[x, y]| cylinder(d.peg_barb + 2.0, barb_h + 1.0, [x, y, top], None)),
-    );
-    let mut board_issues = Vec::new();
-    if overlap(&features, &barb_room) > 1e-3 {
-        board_issues.push("a plate feature blocks a column snap");
-    }
-    if overlap(&features, &boards.uno_pcb) > 1e-3 {
-        board_issues.push("a plate feature passes through the Uno");
-    }
-    if overlap(&features, &boards.uno_underside) > 1e-3 {
-        board_issues.push("something under the Uno would hit its solder joints");
-    }
-    if overlap(&features, &boards.nano_pcb) > 1e-3 {
-        board_issues.push("a plate feature passes through the Nano");
-    }
-    if overlap(&features, &boards.nano_pins) > 1e-3 {
-        board_issues.push("a Nano rail hits the header pins");
-    }
-    if overlap(&a.strap, &boards.nano_pcb) > 1e-3 {
-        board_issues.push("the strap presses into the Nano");
-    }
-    // The Nano goes in from above, so its outline swept down from above the posts
-    // to the rails must be clear of everything on the plate.
-    let [nx, ny] = d.nano_center;
-    let m = d.min_board_clearance;
-    let drop_path = cuboid(
-        [
-            nx - d.nano[0] / 2.0 - m,
-            ny - d.nano[1] / 2.0 - m,
-            d.nano_pcb_bottom_z(),
-        ],
-        [
-            nx + d.nano[0] / 2.0 + m,
-            ny + d.nano[1] / 2.0 + m,
-            d.strap_bottom_z() + d.strap_t + 10.0,
-        ],
-    );
-    if overlap(&features, &drop_path) > 1e-3 {
-        board_issues.push("the Nano can't drop past the strap posts onto its rails");
-    }
-    let board_set = union_all(&[
-        boards.uno_pcb.clone(),
-        boards.uno_usb.clone(),
-        boards.nano_pcb.clone(),
-        boards.nano_pins.clone(),
-    ]);
-    if overlap(&frame, &board_set) > 1e-3 {
-        board_issues.push("a board hits the frame");
-    }
+    // ---- Boards and fasteners, in plate coordinates ----
+    let plate = payload_plate(d);
+    let clamp = nano_clamp(d).translate(0.0, 0.0, d.nano.preload);
+    let keys: Vec<Manifold> = (0..4).map(|i| key_in_place(d, i)).collect();
+    let fasteners = fasteners_in_place(d);
+    let features = plate.difference(&cuboid([-h, -h, -1.0], [h, h, d.plate_t]));
+    let others = clamp.union(&fasteners);
+    let mut everything = vec![features.clone(), others.clone()];
+    everything.extend(keys.iter().cloned());
+    let everything = union_all(&everything);
+
+    let issues = latch_issues(d, &features, &others, &keys);
     r.add(
-        "FIT-boards",
-        "Uno R3 and Nano 33 BLE Sense fit with clearance",
-        "board outlines",
-        board_issues.is_empty(),
-        if board_issues.is_empty() {
+        "FIT-uno",
+        "Uno R3 pushes down past its latches, and clears every latch, key, stud and pillar",
+        "Arduino UNO-TH_Rev3e.brd",
+        issues.is_empty(),
+        if issues.is_empty() {
             format!(
-                "posts, clips, rails, strap, drop-in path, solder-joint zone, header pins, frame; {:.2} mm clearance",
-                d.min_board_clearance
+                "board, underside, {} parts, hooks, keys and the push-down path",
+                crate::boards::UNO_PARTS.len()
             )
         } else {
-            board_issues.join("; ")
+            issues.join("; ")
         },
     );
+
+    let n = &d.nano;
+    let mut issues = nano_issues(d, &features, &clamp, &everything);
+    let seat = d.nano_seat();
+    if !at_least(seat, n.min_seat) {
+        issues.push(format!(
+            "the Nano's edges sit {seat:.2} mm into the V-grooves, less than {:.1} mm",
+            n.min_seat
+        ));
+    }
+    let lowest = crate::boards::NANO_PARTS
+        .iter()
+        .map(|(_, p)| p[1])
+        .filter(|&y| y > 0.0)
+        .fold(f64::INFINITY, f64::min);
+    let highest = crate::boards::NANO_PARTS
+        .iter()
+        .map(|(_, p)| p[3])
+        .fold(0.0, f64::max);
+    if seat + 0.3 >= lowest.min(n.w - highest) {
+        issues.push("the V-groove walls reach the parts along the Nano's edges".into());
+    }
+    // The plug must clear everything in the CubeSat, frame included.
+    let plug = on_columns(d, &nano_plug(d));
+    if overlap(&a.all(d), &plug) > 1e-3 {
+        issues.push("something blocks the Nano's USB plug".into());
+    }
+    r.add(
+        "FIT-nano",
+        "Nano 33 BLE Sense is held on its edge in V-grooves, with room for its USB plug",
+        "Arduino NANO33BLE_SENSE.PcbDoc",
+        issues.is_empty(),
+        if issues.is_empty() {
+            format!(
+                "{seat:.2} mm in each groove, {:.1} mm end play, captured in all six directions, plug clear",
+                n.end_play
+            )
+        } else {
+            issues.join("; ")
+        },
+    );
+
+    let column_tops = a.end_bottom.translate(0.0, 0.0, -d.plate_bottom_z());
+    let mut issues = stud_issues(d, &column_tops, &plate, &nano_clamp(d));
+    // Washers and heads sit flat: nothing else on the plate under them.
+    for [x, y] in d.columns {
+        let seat = cylinder(
+            d.washer.od + 0.5,
+            d.washer_h() + d.qt.head_h,
+            [x, y, d.plate_t + 0.01],
+            None,
+        );
+        if overlap(&features, &seat) > 1e-3 || keys.iter().any(|k| overlap(k, &seat) > 1e-3) {
+            issues.push("a plate stud's washer or head sits on a raised part of the plate".into());
+        }
+    }
+    r.add(
+        "FIT-studs",
+        "Every quarter-turn stud passes its bar, locks clear, and is held when pulled",
+        "CAD assembly",
+        issues.is_empty(),
+        if issues.is_empty() {
+            "4 plate studs into the columns, 2 Nano clamp studs into the pillars".into()
+        } else {
+            issues.join("; ")
+        },
+    );
+
+    if overlap(&frame, &board_set) > 1e-3 {
+        r.add(
+            "FIT-boards",
+            "Both boards clear the frame",
+            "board outlines",
+            false,
+            "a board hits the frame".into(),
+        );
+    } else {
+        r.add(
+            "FIT-boards",
+            "Both boards clear the frame",
+            "board outlines",
+            true,
+            format!(
+                "Uno with {:.2} mm margin, Nano with its parts",
+                d.min_board_clearance
+            ),
+        );
+    }
 
     // ---- Printability on a Bambu P1S ----
     let mut print_issues = Vec::new();

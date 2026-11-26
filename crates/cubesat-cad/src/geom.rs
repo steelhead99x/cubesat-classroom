@@ -7,8 +7,12 @@ pub const FACETS: i32 = 48;
 /// Overlap between stacked features so unions fuse into one solid instead of touching.
 pub const EPS: f64 = 0.05;
 
-/// Axis-aligned box from two opposite corners.
+/// Axis-aligned box from two opposite corners. Empty if any side has no length,
+/// so a parameter change that squeezes a feature away leaves nothing, not an error.
 pub fn cuboid(min: [f64; 3], max: [f64; 3]) -> Manifold {
+    if (0..3).any(|i| max[i] <= min[i]) {
+        return Manifold::empty();
+    }
     Manifold::cube(max[0] - min[0], max[1] - min[1], max[2] - min[2], false)
         .translate(min[0], min[1], min[2])
 }

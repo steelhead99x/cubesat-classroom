@@ -12,8 +12,8 @@ Checked against the CubeSat Design Specification (CDS) Rev 14.1 (Cal Poly, 2022-
 | CDS-2.2.7 | Rail edges rounded to at least 1 mm (should) | CDS Rev 14.1 §2.2.7 | pass | 1.0 mm radius on all four long edges of each rail |
 | CDS-2.2.8 | Rail ends give at least 6.5 x 6.5 mm contact on the ±Z faces; nothing else reaches the ends | CDS Rev 14.1 §2.2.8 | pass | 7.0 x 7.0 mm flat on each rail end; end plates 1.5 mm below the rail ends |
 | CDS-2.2.9 | At least 75% of each rail contacts the deployer rails (should) | CDS Rev 14.1 §2.2.9 | pass | worst rail face is 100% solid along its length |
-| CDS-2.2.10 | Mass within the 1U limit of 2.00 kg | CDS Rev 14.1 §2.2.10, Table 1 | pass | about 210 g with solid PLA and both boards (the slicer's figure at 20% infill is lower) |
-| CDS-2.2.11 | Centre of mass within ±2 cm of the geometric centre in X, Y and Z | CDS Rev 14.1 §2.2.11 | pass | X -0.1, Y +0.6, Z -9.4 mm (estimate; weigh and balance the build) |
+| CDS-2.2.10 | Mass within the 1U limit of 2.00 kg | CDS Rev 14.1 §2.2.10, Table 1 | pass | about 220 g with solid PLA, fasteners and both boards (the slicer's figure at 20% infill is lower) |
+| CDS-2.2.11 | Centre of mass within ±2 cm of the geometric centre in X, Y and Z | CDS Rev 14.1 §2.2.11 | pass | X +0.3, Y -0.8, Z -10.6 mm (estimate; weigh and balance the build) |
 | CDS-2.2.6 | Rail surface roughness below 1.6 µm Ra (should) | CDS Rev 14.1 §2.2.6 | deviation | printed layers are much rougher; a flight frame needs machined or finished rails |
 | CDS-2.2.12/13 | Aluminium structure; hard-anodised rails and standoffs | CDS Rev 14.1 §2.2.12, §2.2.13 | deviation | PLA classroom frame; any printed flight structure needs the launch provider's approval |
 | CDS-2.1.7 | Low-outgassing materials (TML ≤ 1.0%, CVCM ≤ 0.1%) | CDS Rev 14.1 §2.1.7 | deviation | PLA is not outgassing-qualified; see quest m2/material-outgassing |
@@ -22,10 +22,14 @@ Checked against the CubeSat Design Specification (CDS) Rev 14.1 (Cal Poly, 2022-
 | CDS-2.3.5 | Remove-before-flight pin cuts all power and protrudes at most 6.5 mm | CDS Rev 14.1 §2.3.5 | deviation | the D2 jumper only inhibits the firmware; it reaches through the open -X face without protruding |
 | CDS-2.3.7/8 | Three independent RF inhibits; three deployable inhibits | CDS Rev 14.1 §2.3.7, §2.3.8 | n/a | no transmitter and no deployables: the radio stays off and USB stands in for the link |
 | CDS-2.4.4/5 | Deployables wait 30 min; no transmission for 45 min after deployment | CDS Rev 14.1 §2.4.4, §2.4.5 | n/a | firmware: the `cds` timing profile in firmware/nano33-cubesat uses these values; the bench default is 30 s |
-| FIT-snap | Snap barb overlaps its hole enough to latch | first P1S snap test (0.6 mm nozzle) | pass | barb 5.7 mm into a 5.2 mm hole: 0.50 mm overlap, slot 1.4 mm |
-| FIT-clip | Uno clip lips reach over the board edge | Uno R3 outline | pass | 0.40 mm over the edge (needs 0.3) |
-| FIT-strain | Clip and peg bending strain within the PLA limit | PLA yield about 3% | pass | clip 1.4%, peg 0.8% (limit 2%) |
-| FIT-parts | Assembled parts do not overlap | CAD assembly | pass | 6 parts, 15 pairs checked |
-| FIT-align | Every snap peg passes through its hole | CAD assembly | pass | 8 end-plate snaps and 4 payload-column snaps |
-| FIT-boards | Uno R3 and Nano 33 BLE Sense fit with clearance | board outlines | pass | posts, clips, rails, strap, drop-in path, solder-joint zone, header pins, frame; 0.25 mm clearance |
-| PRINT | Every part is one closed solid that prints on a P1S without supports | Bambu Lab P1S, 256 mm build volume | pass | largest overhang 62 mm2 (side-panel) |
+| FIT-snap | End-plate snap barbs overlap their holes enough to latch | first P1S snap test (0.6 mm nozzle) | pass | barb 5.7 mm into a 5.2 mm hole: 0.50 mm overlap, slot 1.4 mm |
+| FIT-latch | Uno latches snap in without cracking, hold the board down, and lock with their keys | AMSAT kit latch design (generate.py) | pass | arm strain 1.3% (limit 1.5%), hook 0.8 mm over the edge, about 7 N down each, 0.20 mm free with the key in, key prongs 1.5% |
+| FIT-qt | Quarter-turn studs lock with a detent and hold the payload down at the design load | AMSAT kit fastener design (generate.py) | pass | washer strain 1.64% at the detent crest, plate held with 21 N (20 N at 20 g), bar stress 8 MPa |
+| FIT-strain | End-plate snap pegs bend within the PLA limit | PLA yield about 3% | pass | peg 0.8% (limit 2%) |
+| FIT-parts | Assembled parts do not overlap | CAD assembly | pass | 10 parts, 45 pairs checked |
+| FIT-align | Every snap peg passes through its hole, and every plate hole lines up with its column | CAD assembly | pass | 8 end-plate snaps and 4 plate studs |
+| FIT-uno | Uno R3 pushes down past its latches, and clears every latch, key, stud and pillar | Arduino UNO-TH_Rev3e.brd | pass | board, underside, 16 parts, hooks, keys and the push-down path |
+| FIT-nano | Nano 33 BLE Sense is held on its edge in V-grooves, with room for its USB plug | Arduino NANO33BLE_SENSE.PcbDoc | pass | 1.62 mm in each groove, 0.5 mm end play, captured in all six directions, plug clear |
+| FIT-studs | Every quarter-turn stud passes its bar, locks clear, and is held when pulled | CAD assembly | pass | 4 plate studs into the columns, 2 Nano clamp studs into the pillars |
+| FIT-boards | Both boards clear the frame | board outlines | pass | Uno with 0.25 mm margin, Nano with its parts |
+| PRINT | Every part is one closed solid that prints on a P1S without supports | Bambu Lab P1S, 256 mm build volume | pass | largest overhang 75 mm2 (payload-plate) |

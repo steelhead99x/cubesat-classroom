@@ -35,7 +35,28 @@ pub const PLATES: &[(&str, &[(&str, &str)])] = &[
         "03-payload",
         &[
             ("payload-plate", "payload-plate"),
-            ("nano-strap", "nano-strap"),
+            ("nano-clamp", "nano-clamp"),
+        ],
+    ),
+    (
+        "04-fasteners",
+        &[
+            ("lock-key-1", "lock-key"),
+            ("lock-key-2", "lock-key"),
+            ("lock-key-3", "lock-key"),
+            ("lock-key-4", "lock-key"),
+            ("plate-stud-1", "qt-stud-plate"),
+            ("plate-stud-2", "qt-stud-plate"),
+            ("plate-stud-3", "qt-stud-plate"),
+            ("plate-stud-4", "qt-stud-plate"),
+            ("clamp-stud-1", "qt-stud-clamp"),
+            ("clamp-stud-2", "qt-stud-clamp"),
+            ("washer-1", "qt-washer"),
+            ("washer-2", "qt-washer"),
+            ("washer-3", "qt-washer"),
+            ("washer-4", "qt-washer"),
+            ("washer-5", "qt-washer"),
+            ("washer-6", "qt-washer"),
         ],
     ),
 ];
@@ -79,7 +100,7 @@ pub fn write_all(d: &Design, report: &Report, out: &Path) -> io::Result<()> {
     }
 
     // The assembled CubeSat, for viewing: every part where it sits, in CDS coordinates.
-    let assembly = crate::parts::Assembly::new(d).all();
+    let assembly = crate::parts::Assembly::new(d).all(d);
     Mesh::from_solid("assembly", &assembly)
         .map_err(io::Error::other)?
         .write_stl(
@@ -90,30 +111,54 @@ pub fn write_all(d: &Design, report: &Report, out: &Path) -> io::Result<()> {
     Ok(())
 }
 
-/// Lay parts out in a row, centred on the 256 mm bed.
+/// Lay parts out in rows, each row centred, the block centred on the 256 mm bed.
 fn arrange(plate: &str, parts: Vec<(String, Mesh)>) -> io::Result<Vec<(String, Mesh)>> {
-    let widths: Vec<f64> = parts
-        .iter()
-        .map(|(_, m)| {
-            let (lo, hi) = m.bounds();
-            hi[0] - lo[0]
-        })
-        .collect();
-    let total: f64 = widths.iter().sum::<f64>() + GAP * (widths.len() as f64 - 1.0);
-    let mut x = (BED - total) / 2.0;
-    let mut placed = Vec::new();
-    for ((name, mesh), w) in parts.into_iter().zip(widths) {
-        let (lo, hi) = mesh.bounds();
-        let depth = hi[1] - lo[1];
-        let moved = mesh.translated([x - lo[0], (BED - depth) / 2.0 - lo[1], -lo[2]]);
-        let (mlo, mhi) = moved.bounds();
-        if mlo[0] < MARGIN || mlo[1] < MARGIN || mhi[0] > BED - MARGIN || mhi[1] > BED - MARGIN {
-            return Err(io::Error::other(format!(
-                "{plate}: {name} does not fit the P1S plate"
-            )));
+    let size = |m: &Mesh| {
+        let (lo, hi) = m.bounds();
+        (hi[0] - lo[0], hi[1] - lo[1])
+    };
+    // Fill rows left to right, starting a new row when the next part won't fit.
+    let mut rows: Vec<Vec<(String, Mesh)>> = vec![Vec::new()];
+    let mut width = 0.0;
+    for (name, mesh) in parts {
+        let (w, _) = size(&mesh);
+        let row = rows.last_mut().expect("at least one row");
+        let next = if row.is_empty() { w } else { width + GAP + w };
+        if !row.is_empty() && next > BED - 2.0 * MARGIN {
+            rows.push(vec![(name, mesh)]);
+            width = w;
+        } else {
+            row.push((name, mesh));
+            width = next;
         }
-        placed.push((name, moved));
-        x += w + GAP;
+    }
+    let depths: Vec<f64> = rows
+        .iter()
+        .map(|r| r.iter().map(|(_, m)| size(m).1).fold(0.0, f64::max))
+        .collect();
+    let total_depth = depths.iter().sum::<f64>() + GAP * (depths.len() as f64 - 1.0);
+    let mut y = (BED + total_depth) / 2.0;
+    let mut placed = Vec::new();
+    for (row, depth) in rows.into_iter().zip(depths) {
+        let total: f64 =
+            row.iter().map(|(_, m)| size(m).0).sum::<f64>() + GAP * (row.len() as f64 - 1.0);
+        let mut x = (BED - total) / 2.0;
+        y -= depth;
+        for (name, mesh) in row {
+            let (lo, _) = mesh.bounds();
+            let (w, dep) = size(&mesh);
+            let moved = mesh.translated([x - lo[0], y + (depth - dep) / 2.0 - lo[1], -lo[2]]);
+            let (mlo, mhi) = moved.bounds();
+            if mlo[0] < MARGIN || mlo[1] < MARGIN || mhi[0] > BED - MARGIN || mhi[1] > BED - MARGIN
+            {
+                return Err(io::Error::other(format!(
+                    "{plate}: {name} does not fit the P1S plate"
+                )));
+            }
+            placed.push((name, moved));
+            x += w + GAP;
+        }
+        y -= GAP;
     }
     Ok(placed)
 }

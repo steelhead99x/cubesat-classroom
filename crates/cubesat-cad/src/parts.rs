@@ -1,9 +1,13 @@
 //! Rev C parts, modeled where they sit in the assembled CubeSat (CDS coordinates).
 //! `export` turns each one into its print orientation.
 
-use manifold_csg::{CrossSection, Manifold};
+use manifold_csg::Manifold;
 
 use crate::design::Design;
+use crate::fasteners::{
+    key_in_place, latch, latch_ear, latch_pocket, placed_stud, poly, qt_bar, qt_stud_length,
+    qt_washer,
+};
 use crate::geom::{EPS, cuboid, cylinder, rounded_rect, teardrop_hole_z, union_all};
 
 /// A split snap peg standing on `base`, pointing +Z, long enough to pass through
@@ -134,176 +138,249 @@ pub fn end_plate_top(d: &Design) -> Manifold {
     ))
 }
 
-/// -Z end plate (inserted first), with four columns that carry the payload plate.
+/// -Z end plate (inserted first), with four hollow columns that carry the payload
+/// plate. Each column has a cross-bar near its top for a quarter-turn stud that comes
+/// down through the plate.
 pub fn end_plate_bottom(d: &Design) -> Manifold {
     let mut plate = end_plate_base(d).mirror([0.0, 0.0, 1.0]);
     let face = -d.end_inner_z();
-    let mut slots = Vec::new();
+    let top = d.plate_bottom_z();
     for [x, y] in d.columns {
         plate = plate.union(&cylinder(
-            d.column_d,
-            d.column_length + 1.0,
+            d.column_od,
+            top - face + 1.0,
             [x, y, face - 1.0],
             None,
         ));
-        let (body, slot) = peg_up(d, [x, y, d.plate_bottom_z()], d.plate_t);
-        plate = plate.union(&body);
-        slots.push(slot);
     }
-    for slot in slots {
-        plate = plate.difference(&slot);
+    let depth = column_bore_depth(d);
+    for [x, y] in d.columns {
+        plate = plate.difference(&cylinder(d.qt.bore, depth + 1.0, [x, y, top - depth], None));
+    }
+    for [x, y] in d.columns {
+        plate = plate.union(&qt_bar(d, x, y, top, true));
     }
     plate
 }
 
-/// Payload plate: Uno R3 on four pins with two edge clips, Nano 33 BLE Sense on
-/// two rails with an end stop and two strap posts. Board side faces +Z.
+/// How deep each column's bore goes below its top: room for the stud tip at the detent crest.
+pub fn column_bore_depth(d: &Design) -> f64 {
+    qt_stud_length(d, d.plate_stud_a0()) - (d.washer_h() + d.plate_t) + 1.0
+}
+
+/// Extrude a (y, z) profile along +X from `x0` to `x1`, centred on the Nano's board.
+fn groove(d: &Design, pts: &[[f64; 2]], x0: f64, x1: f64, mouth_z: f64) -> Manifold {
+    poly(pts)
+        .extrude(x1 - x0)
+        .rotate(0.0, 90.0, 0.0)
+        .rotate(90.0, 0.0, 0.0)
+        .translate(x0, d.nano.y0 + d.nano.t / 2.0, mouth_z)
+}
+
+/// Payload plate, in plate coordinates (underside at z = 0, board side up):
+/// - Uno R3 on four posts with short locating pins, held by four snap latches with lock keys;
+/// - Nano 33 BLE Sense on its edge in a V-groove card cage, with an end stop at each end;
+/// - two barred pillars for the Nano clamp's quarter-turn studs;
+/// - a hole over each column for the plate's own quarter-turn studs.
 pub fn payload_plate(d: &Design) -> Manifold {
     let (px, py) = (d.plate[0] / 2.0, d.plate[1] / 2.0);
-    let (bottom, top) = (d.plate_bottom_z(), d.plate_top_z());
-    let mut parts = vec![cuboid([-px, -py, bottom], [px, py, top])];
+    let top = d.plate_t;
+    let mut base = vec![cuboid([-px, -py, 0.0], [px, py, top])];
+    base.extend((0..4).map(|i| latch_ear(d, i)));
+    let mut part = union_all(&base);
 
-    // Uno posts and locating pins.
-    let pcb = d.uno_pcb_bottom_z();
+    // Uno R3: four posts with locating pins that stop below the board's top face.
+    let pcb = d.uno_pcb_bottom();
+    let pin_h = d.pcb_uno + d.uno_pin_above;
+    let mut posts = Vec::new();
     for i in 0..4 {
         let [x, y] = d.uno_hole(i);
-        parts.push(cylinder(
+        posts.push(cylinder(
             7.0,
             d.uno_post_h - 2.5 + EPS,
             [x, y, top - EPS],
             None,
         ));
-        parts.push(cylinder(
+        posts.push(cylinder(
             d.uno_post_top,
             2.5 + EPS,
             [x, y, pcb - 2.5 - EPS],
             None,
         ));
-        parts.push(cylinder(
+        posts.push(cylinder(
             d.uno_pin,
-            d.pcb_uno + 0.9,
+            pin_h - 0.4 + 2.0 * EPS,
             [x, y, pcb - EPS],
             None,
         ));
-        parts.push(cylinder(
+        posts.push(cylinder(
             d.uno_pin,
-            0.5 + EPS,
-            [x, y, pcb + d.pcb_uno + 0.9 - EPS],
-            Some(d.uno_pin - 0.8),
+            0.4,
+            [x, y, pcb + pin_h - 0.4],
+            Some(d.uno_pin - 0.6),
         ));
+    }
+    part = part.union(&union_all(&posts));
+
+    // Uno snap latches, each rooted in a pocket so its arm is longer.
+    for i in 0..4 {
+        part = part
+            .difference(&latch_pocket(d, i))
+            .union(&latch(d, i, 0.0));
     }
 
-    // Uno edge clips: left between the DC jack and USB, right at mid-height.
-    let o = d.uno_origin();
-    let catch = pcb + d.pcb_uno + 0.1;
-    let left = o[0] - d.clip_gap;
-    let right = o[0] + d.uno[0] + d.clip_gap;
-    for (x0, x1, yc, inward) in [
-        (left - d.clip_t, left, o[1] + 22.0, 1.0),
-        (right, right + d.clip_t, o[1] + d.uno[1] / 2.0, -1.0),
-    ] {
-        let (y0, y1) = (yc - d.clip_w / 2.0, yc + d.clip_w / 2.0);
-        parts.push(cuboid(
-            [x0, y0, top - EPS],
-            [x1, y1, catch + d.clip_lip + 1.5],
+    // Pillars for the Nano clamp's two quarter-turn studs, each with a cross-bar inside.
+    let n = &d.nano;
+    let z_pillar = d.clamp_bottom_z();
+    let depth = qt_stud_length(d, d.clamp_stud_a0()) - (d.washer_h() + n.clamp_t) + 1.0;
+    let mut bores = Vec::new();
+    let mut bars = Vec::new();
+    for [x, y] in d.pillars() {
+        part = part.union(&cylinder(
+            n.pillar_od,
+            z_pillar - top + EPS,
+            [x, y, top - EPS],
+            None,
         ));
-        let (lx0, lx1) = if inward > 0.0 {
-            (x1 - EPS, x1 + d.clip_lip)
-        } else {
-            (x0 - d.clip_lip, x0 + EPS)
-        };
-        parts.push(cuboid(
-            [lx0, y0, catch],
-            [lx1, y1, catch + d.clip_lip + EPS],
+        bores.push(cylinder(
+            d.qt.bore,
+            depth + 1.0,
+            [x, y, z_pillar - depth],
+            None,
         ));
-        let ramp: [[f64; 2]; 3] = if inward > 0.0 {
-            [[x1, 0.0], [x1 + d.clip_lip, 0.0], [x1, 1.5]]
-        } else {
-            [[x0 - d.clip_lip, 0.0], [x0, 0.0], [x0, 1.5]]
-        };
-        parts.push(
-            Manifold::extrude(&CrossSection::from_simple_polygon(&ramp), d.clip_w)
-                .rotate(90.0, 0.0, 0.0)
-                .translate(0.0, y1, catch + d.clip_lip - EPS),
-        );
+        bars.push(qt_bar(d, x, y, z_pillar, true));
     }
 
-    // Nano rails between the pin rows, end stop, strap posts.
-    let [nx, ny] = d.nano_center;
-    let rail_top = d.nano_pcb_bottom_z();
-    for (y0, y1) in [(2.0, 5.0), (-5.0, -2.0)] {
-        parts.push(cuboid(
-            [nx - 15.0, ny + y0, top - EPS],
-            [nx + 15.0, ny + y1, rail_top],
-        ));
-    }
-    let stop = nx + d.nano[0] / 2.0 + 0.3;
-    parts.push(cuboid(
-        [stop, ny - 3.0, top - EPS],
-        [stop + 2.5, ny + 3.0, rail_top + 1.0],
+    // Nano card cage, lower half: V-groove rail, USB-end corner stop, far-end wall.
+    let (y0, y1) = (n.y0 - n.v_wall, n.y0 + n.t + n.v_wall);
+    let x_end = n.x0 + n.l + n.end_play;
+    part = union_all(&[
+        part,
+        cuboid(
+            [n.x0 - 2.0, y0, top - EPS],
+            [x_end + 1.0, y1, d.base_mouth_z()],
+        ),
+        cuboid(
+            [n.x0 - 2.0, n.y0 - 1.0, d.base_mouth_z() - EPS],
+            [n.x0, n.y0 + n.t + 1.0, n.z0 + n.stop_reach],
+        ),
+        cuboid([x_end, y0, top - EPS], [x_end + 2.0, y1, n.z0 + n.w - 2.0]),
+    ]);
+    let (m, a) = (n.v_mouth / 2.0, n.v_apex / 2.0);
+    part = part.difference(&groove(
+        d,
+        &[
+            [-m, 0.0],
+            [-a, -n.v_depth],
+            [a, -n.v_depth],
+            [m, 0.0],
+            [m, 1.0],
+            [-m, 1.0],
+        ],
+        n.x0 - EPS,
+        x_end,
+        d.base_mouth_z(),
     ));
-    let strap_bottom = d.strap_bottom_z();
-    let mut slots = Vec::new();
-    for side in [-1.0, 1.0] {
-        let (x, y) = (nx, ny + side * d.strap_post);
-        parts.push(cylinder(8.0, 5.0 + EPS, [x, y, top - EPS], None));
-        parts.push(cylinder(
-            d.peg_shank,
-            strap_bottom - top - 5.0 + EPS,
-            [x, y, top + 5.0 - EPS],
-            None,
-        ));
-        let (body, slot) = peg_up(d, [x, y, strap_bottom], d.strap_t);
-        parts.push(body);
-        slots.push(slot);
-    }
 
-    let mut plate = union_all(&parts);
-    for [x, y] in d.columns {
-        plate = plate.difference(&cylinder(
-            d.snap_hole,
-            d.plate_t + 2.0,
-            [x, y, bottom - 1.0],
-            None,
-        ));
-    }
-    for slot in slots {
-        plate = plate.difference(&slot);
-    }
-    plate
+    let holes: Vec<Manifold> = d
+        .columns
+        .iter()
+        .map(|&[x, y]| cylinder(d.qt.bore, top + 2.0, [x, y, -1.0], None))
+        .chain(bores)
+        .collect();
+    part = part.difference(&union_all(&holes));
+    part.union(&union_all(&bars))
 }
 
-/// Nano strap in print orientation (feet up). Feet press on the header pin tips.
-pub fn nano_strap(d: &Design) -> Manifold {
-    let length = 2.0 * d.strap_post + 10.0;
-    let mut strap = cuboid(
-        [-d.strap_w / 2.0, -length / 2.0, 0.0],
-        [d.strap_w / 2.0, length / 2.0, d.strap_t],
+/// Nano clamp: the cap rail over the Nano's upper edge, held down at both ends by
+/// quarter-turn studs into the pillars. One flat top face, so it prints upside down
+/// without supports. It doesn't touch the Uno, so either board comes out on its own.
+/// Plate coordinates, resting on its pillars; the Nano's edge lifts it `preload` in service.
+pub fn nano_clamp(d: &Design) -> Manifold {
+    let n = &d.nano;
+    let zs = d.clamp_bottom_z();
+    let zt = zs + n.clamp_t;
+    let [hx, hy] = n.anchor;
+    let [fx, fy] = n.far_pillar;
+    let pad = d.washer.od + 0.5;
+    let outline = cuboid(
+        [-d.plate[0] / 2.0 + 0.5, -d.plate[1] / 2.0 + 0.5, zs - 1.0],
+        [d.plate[0] / 2.0 - 0.5, d.plate[1] / 2.0 - 0.5, zt + 1.0],
     );
-    let feet_h = d.strap_arch - d.strap_foot_above_pcb;
-    for side in [-1.0, 1.0] {
-        strap = strap.difference(&cylinder(
-            d.snap_hole,
-            d.strap_t + 2.0,
-            [0.0, side * d.strap_post, -1.0],
-            None,
-        ));
-        let y0 = side * (d.nano_row / 2.0 - 1.0);
-        let y1 = side * (d.nano[1] / 2.0 + 0.5);
-        strap = strap.union(&cuboid(
-            [-d.strap_w / 2.0, y0.min(y1), d.strap_t - EPS],
-            [d.strap_w / 2.0, y0.max(y1), d.strap_t + feet_h],
-        ));
+    let rail = union_all(&[
+        cuboid(
+            [n.x0 - 2.0, n.y0 - n.v_wall, zs],
+            [fx, n.y0 + n.t + n.v_wall, zt],
+        ),
+        cylinder(pad, zt - zs, [fx, fy, zs], None),
+        cuboid([fx - 4.0, n.y0, zs], [fx + 4.0, fy, zt]),
+    ])
+    .intersection(&outline);
+    let arm = cuboid([hx - 4.0, n.y0, zs], [hx + 4.0, hy, zt]).union(&cylinder(
+        pad,
+        zt - zs,
+        [hx, hy, zs],
+        None,
+    ));
+    let stop = cuboid(
+        [n.x0 - 2.0, n.y0 - 1.0, n.z0 + n.w - n.stop_reach],
+        [n.x0, n.y0 + n.t + 1.0, zs + EPS],
+    );
+    let (m, a) = (n.v_mouth / 2.0, n.v_apex / 2.0);
+    let mut part = union_all(&[rail, arm, stop]).difference(&groove(
+        d,
+        &[
+            [-m, -1.0],
+            [m, -1.0],
+            [m, 0.0],
+            [a, n.v_depth],
+            [-a, n.v_depth],
+            [-m, 0.0],
+        ],
+        n.x0 - EPS,
+        n.x0 + n.l + n.end_play + EPS,
+        zs,
+    ));
+    for [x, y] in d.pillars() {
+        part = part.difference(&cylinder(d.qt.bore, zt - zs + 2.0, [x, y, zs - 1.0], None));
     }
-    strap
+    part
 }
 
-/// The strap where it sits in the assembly, feet down on the Nano.
-pub fn nano_strap_seated(d: &Design) -> Manifold {
-    let [nx, ny] = d.nano_center;
-    nano_strap(d)
-        .rotate(180.0, 0.0, 0.0)
-        .translate(nx, ny, d.strap_bottom_z() + d.strap_t)
+/// A spring washer seated feet down on a surface at `z`, centred on (x, y).
+pub fn washer_seated(d: &Design, x: f64, y: f64, z: f64) -> Manifold {
+    qt_washer(d)
+        .mirror([0.0, 0.0, 1.0])
+        .translate(x, y, z + d.washer_h())
+}
+
+/// Plate studs and clamp studs, locked, with their washers, in plate coordinates.
+pub fn fasteners_in_place(d: &Design) -> Manifold {
+    let mut all = Vec::new();
+    for [x, y] in d.columns {
+        all.push(washer_seated(d, x, y, d.plate_t));
+        all.push(placed_stud(
+            d,
+            d.plate_stud_a0(),
+            x,
+            y,
+            d.plate_t + d.washer_h(),
+            90.0,
+        ));
+    }
+    let clamp_top = d.clamp_bottom_z() + d.nano.preload + d.nano.clamp_t;
+    for [x, y] in d.pillars() {
+        all.push(washer_seated(d, x, y, clamp_top));
+        all.push(placed_stud(
+            d,
+            d.clamp_stud_a0(),
+            x,
+            y,
+            clamp_top + d.washer_h(),
+            90.0,
+        ));
+    }
+    union_all(&all)
 }
 
 /// Snap test, both pieces in print orientation: a boss and peg like the end plates',
@@ -333,6 +410,11 @@ pub fn snap_test(d: &Design) -> (Manifold, Manifold) {
     (peg, foot.union(&wall))
 }
 
+/// Move a solid from payload-plate coordinates into the CubeSat.
+pub fn on_columns(d: &Design, m: &Manifold) -> Manifold {
+    m.translate(0.0, 0.0, d.plate_bottom_z())
+}
+
 /// Frame parts in the assembled position, for checks and the assembly preview.
 pub struct Assembly {
     pub panel_pos_y: Manifold,
@@ -340,7 +422,9 @@ pub struct Assembly {
     pub end_top: Manifold,
     pub end_bottom: Manifold,
     pub payload: Manifold,
-    pub strap: Manifold,
+    /// Lifted by the Nano's edge, as in service.
+    pub clamp: Manifold,
+    pub keys: Vec<Manifold>,
 }
 
 impl Assembly {
@@ -351,8 +435,9 @@ impl Assembly {
             panel_pos_y: panel,
             end_top: end_plate_top(d),
             end_bottom: end_plate_bottom(d),
-            payload: payload_plate(d),
-            strap: nano_strap_seated(d),
+            payload: on_columns(d, &payload_plate(d)),
+            clamp: on_columns(d, &nano_clamp(d).translate(0.0, 0.0, d.nano.preload)),
+            keys: (0..4).map(|i| on_columns(d, &key_in_place(d, i))).collect(),
         }
     }
 
@@ -366,14 +451,25 @@ impl Assembly {
         ]
     }
 
-    pub fn all(&self) -> Manifold {
-        union_all(&[
-            self.panel_pos_y.clone(),
-            self.panel_neg_y.clone(),
-            self.end_top.clone(),
-            self.end_bottom.clone(),
-            self.payload.clone(),
-            self.strap.clone(),
-        ])
+    /// Every printed part except the studs and washers.
+    pub fn parts(&self) -> Vec<(String, &Manifold)> {
+        let mut v = vec![
+            ("+Y panel".to_string(), &self.panel_pos_y),
+            ("-Y panel".to_string(), &self.panel_neg_y),
+            ("+Z end plate".to_string(), &self.end_top),
+            ("-Z end plate".to_string(), &self.end_bottom),
+            ("payload plate".to_string(), &self.payload),
+            ("Nano clamp".to_string(), &self.clamp),
+        ];
+        for (i, k) in self.keys.iter().enumerate() {
+            v.push((format!("lock key {}", i + 1), k));
+        }
+        v
+    }
+
+    pub fn all(&self, d: &Design) -> Manifold {
+        let mut v: Vec<Manifold> = self.parts().into_iter().map(|(_, m)| m.clone()).collect();
+        v.push(on_columns(d, &fasteners_in_place(d)));
+        union_all(&v)
     }
 }

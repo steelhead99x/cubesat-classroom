@@ -4,6 +4,110 @@
 //! origin at the geometric centre, Z along the 113.5 mm length, and the -Z face
 //! goes into the deployer first. The two side panels sit at ±Y, each carrying two
 //! corner rails. The ±X faces stay open for access to the boards and the inhibit.
+//!
+//! The payload plate is modelled in its own frame (plate underside at z = 0, board
+//! side up) and moved into place by [`Design::plate_bottom_z`]. Its board mounts,
+//! latches and fasteners are the AMSAT kit's (hardware/amsat-cubesatsim/generate.py),
+//! with the same numbers, so both builds share one tested design.
+
+/// Which Uno edge a latch sits on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Edge {
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
+
+/// Uno snap latch: a cantilever arm beside a board edge with an angled hook over the
+/// board, and a backstop that a lock key drops in against.
+#[derive(Clone, Debug)]
+pub struct Latch {
+    pub w: f64,
+    pub t: f64,            // arm thickness: three lines with a 0.6 mm nozzle
+    pub gap: f64,          // board edge to arm, relaxed
+    pub reach: f64,        // how far the hook reaches over the board
+    pub root_depth: f64,   // arm starts in a pocket this deep in the plate
+    pub angle: f64,        // hook underside, degrees: inward spring becomes a downward force
+    pub preload: f64,      // arm stays bent outward this much with the board seated
+    pub lip_t: f64,        // hook thickness at its tip
+    pub strain_limit: f64, // the arm prints upright, so it bends across its layers
+    pub min_reach: f64,
+    /// (edge, centre along that edge from the Uno's lower-left corner, gusset depth).
+    pub places: [(Edge, f64, f64); 4],
+}
+
+/// Lock key: clips in behind a latch arm so it can't open.
+#[derive(Clone, Debug)]
+pub struct Key {
+    pub t: f64,
+    pub w: f64,
+    pub clear: f64, // each side of the key in its slot
+    pub slot: f64,  // split between the two detent prongs
+    pub prong: f64,
+    pub bump: f64, // detent bump on each prong, 45 degree flanks
+    pub notch_z: f64,
+    pub tab: f64, // above the latch, with a hole for a pull ribbon
+    pub cheek_t: f64,
+    pub back_t: f64,
+}
+
+/// Quarter-turn fastener: a stud with a spiral cam slot that rides over a cross-bar.
+/// A generic push-and-turn panel fastener, described without brand names.
+#[derive(Clone, Debug)]
+pub struct QuarterTurn {
+    pub d: f64,
+    pub bore: f64,
+    pub bar_w: f64,
+    pub bar_h: f64,
+    pub bar_z: f64, // bar's near face below the receptacle's entry face
+    pub clear: f64, // slot clearance around the bar
+    pub lift: f64,  // cam draw-in over the first 75 degrees
+    pub det: f64,   // detent: extra push needed to turn back out
+    pub tip: f64,   // stud material behind the bar when locked
+    pub head_d: f64,
+    pub head_h: f64,
+}
+
+/// Spring washer printed flat: two spiral arms join a hub to a ring on three feet.
+#[derive(Clone, Debug)]
+pub struct Washer {
+    pub od: f64,
+    pub id: f64,
+    pub t: f64, // arm thickness, five 0.3 mm layers
+    pub arm: f64,
+    pub slit: f64,
+    pub sweep: f64, // degrees each arm wraps
+    pub foot: f64,
+}
+
+/// Arduino Nano 33 BLE Sense Rev2, bare board, standing on its long edge in V-grooves
+/// like a card in a card cage. Parts face +Y, USB end towards -X. `x0` is the USB
+/// end, `y0` the back face, `z0` the lower edge, in plate coordinates.
+#[derive(Clone, Debug)]
+pub struct NanoCage {
+    pub l: f64,
+    pub w: f64,
+    pub t: f64,
+    pub x0: f64,
+    pub y0: f64,
+    pub z0: f64,
+    pub end_play: f64,
+    pub v_mouth: f64,
+    pub v_apex: f64,
+    pub v_depth: f64,
+    pub v_wall: f64,
+    pub min_seat: f64,
+    pub edge_clear: f64,
+    pub stop_reach: f64,
+    pub plug: [f64; 3], // Micro-USB plug envelope: length, thickness, width
+    pub min_plug_room: f64,
+    pub preload: f64, // the Nano's top edge lifts its clamp this much
+    pub pillar_od: f64,
+    pub clamp_t: f64,
+    pub anchor: [f64; 2], // clamp pillar near the USB end
+    pub far_pillar: [f64; 2],
+}
 
 /// One full set of design parameters. `Design::default()` is Rev C as printed.
 /// The checks take a `Design`, so a test can change one number and confirm the
@@ -44,43 +148,36 @@ pub struct Design {
     pub snap_hole: f64,
     pub slot_into_body: f64,
 
-    // Payload plate on four columns from the -Z end plate.
-    pub column_d: f64,
+    // Payload plate on four hollow columns from the -Z end plate, held by
+    // quarter-turn studs that go down through the plate into the columns.
+    pub column_od: f64,
     pub column_length: f64,
     pub columns: [[f64; 2]; 4],
     pub plate: [f64; 2], // X by Y
     pub plate_t: f64,
 
-    // Arduino Uno R3, holes from its lower-left corner, USB on the left (-X) edge.
+    // Arduino Uno R3 (Eagle UNO-TH_Rev3e.brd), holes from its lower-left corner,
+    // USB on the left (-X) edge.
     pub uno: [f64; 2],
     pub uno_holes: [[f64; 2]; 4],
-    pub uno_top_margin: f64,
+    pub uno_top_margin: f64, // plate edge to the Uno's top edge: room for the top latch
     pub uno_post_h: f64,
     pub uno_post_top: f64,
     pub uno_pin: f64,
+    pub uno_pin_above: f64, // pin tip relative to the board's top face
     pub pcb_uno: f64,
-    pub clip_t: f64,
-    pub clip_w: f64,
-    pub clip_gap: f64,
-    pub clip_lip: f64,
 
-    // Arduino Nano 33 BLE Sense Rev2 with headers, pins down. 45 x 18 mm: the classic
-    // Nano's 43.18 x 17.78 mm left too little room past the strap posts on a real print.
-    pub nano: [f64; 2],
-    pub nano_center: [f64; 2],
-    pub nano_row: f64,
-    pub nano_rail_h: f64,
-    pub pcb_nano: f64,
-    pub strap_arch: f64,
-    pub strap_foot_above_pcb: f64,
-    pub strap_t: f64,
-    pub strap_w: f64,
-    pub strap_post: f64,
+    pub latch: Latch,
+    pub key: Key,
+    pub qt: QuarterTurn,
+    pub washer: Washer,
+    pub nano: NanoCage,
 
-    // Limits used by the checks.
+    // Loads and limits used by the checks.
+    pub payload_mass: f64, // kg on the plate: plate, boards, clamp, keys (estimate)
+    pub design_g: f64,     // quasi-static design load
     pub pla_strain_limit: f64,
     pub min_snap_overlap: f64,
-    pub min_clip_reach: f64,
     pub min_board_clearance: f64,
 }
 
@@ -111,35 +208,98 @@ impl Default for Design {
             peg_slot: 1.4,
             snap_hole: 5.2,
             slot_into_body: 4.0,
-            column_d: 7.0,
+            column_od: 10.0,
             column_length: 15.0,
-            columns: [[-36.0, 26.0], [24.0, 30.0], [-36.0, -26.0], [36.0, -26.0]],
+            columns: [[-22.0, 21.0], [18.0, 21.0], [-8.0, -6.0], [14.0, -24.0]],
             plate: [80.0, 88.0],
             plate_t: 3.0,
             uno: [68.58, 53.34],
             uno_holes: [[13.97, 2.54], [15.24, 50.80], [66.04, 7.62], [66.04, 35.56]],
-            uno_top_margin: 0.5,
+            uno_top_margin: 7.16,
             uno_post_h: 10.0,
             uno_post_top: 4.4,
             uno_pin: 2.9,
+            uno_pin_above: -0.3,
             pcb_uno: 1.6,
-            clip_t: 1.8,
-            clip_w: 8.0,
-            clip_gap: 0.3,
-            clip_lip: 0.7,
-            nano: [45.0, 18.0],
-            nano_center: [-2.0, -26.5],
-            nano_row: 15.24,
-            nano_rail_h: 20.0,
-            pcb_nano: 1.6,
-            strap_arch: 3.0,
-            strap_foot_above_pcb: 1.0,
-            strap_t: 3.0,
-            strap_w: 7.0,
-            strap_post: 13.5,
+            latch: Latch {
+                w: 8.0,
+                t: 1.8,
+                gap: 0.3,
+                reach: 0.8,
+                root_depth: 1.5,
+                angle: 20.0,
+                preload: 0.15,
+                lip_t: 1.0,
+                strain_limit: 0.015,
+                min_reach: 0.6,
+                places: [
+                    (Edge::Left, 21.0, 1.5),  // between the DC jack and the USB-B
+                    (Edge::Right, 16.0, 1.5), // between hole 2 and the ICSP header
+                    (Edge::Top, 14.5, 0.0),   // between the reset button and the 8-13 header
+                    (Edge::Bottom, 6.0, 0.0), // beside the DC jack
+                ],
+            },
+            key: Key {
+                t: 1.8,
+                w: 6.0,
+                clear: 0.1,
+                slot: 1.4,
+                prong: 9.0,
+                bump: 0.35,
+                notch_z: 2.0,
+                tab: 4.5,
+                cheek_t: 1.25,
+                back_t: 2.4,
+            },
+            qt: QuarterTurn {
+                d: 6.0,
+                bore: 6.4,
+                bar_w: 2.0,
+                bar_h: 1.6,
+                bar_z: 0.7,
+                clear: 0.3,
+                lift: 0.55,
+                det: 0.2,
+                tip: 1.6,
+                head_d: 10.0,
+                head_h: 2.5,
+            },
+            washer: Washer {
+                od: 18.0,
+                id: 6.8,
+                t: 1.5,
+                arm: 1.6,
+                slit: 0.8,
+                sweep: 150.0,
+                foot: 1.2,
+            },
+            nano: NanoCage {
+                l: 43.18,
+                w: 17.78,
+                t: 1.59,
+                x0: -18.0,
+                y0: -40.0,
+                z0: 4.5,
+                end_play: 0.5,
+                v_mouth: 2.4,
+                v_apex: 1.4,
+                v_depth: 2.0,
+                v_wall: 2.6,
+                min_seat: 1.0,
+                edge_clear: 2.8,
+                stop_reach: 3.0,
+                plug: [28.0, 7.0, 10.5],
+                min_plug_room: 20.0,
+                preload: 0.15,
+                pillar_od: 10.0,
+                clamp_t: 4.0,
+                anchor: [-14.0, -29.2],
+                far_pillar: [30.0, -29.2],
+            },
+            payload_mass: 0.10,
+            design_g: 20.0,
             pla_strain_limit: 0.02,
             min_snap_overlap: 0.2,
-            min_clip_reach: 0.3,
             min_board_clearance: 0.25,
         }
     }
@@ -178,7 +338,7 @@ impl Design {
         let (x, y) = (self.peg_x, self.peg_y);
         [[-x, y], [x, y], [-x, -y], [x, -y]]
     }
-    /// Payload plate: the side facing the -Z end plate, and the board side.
+    /// Payload plate underside, in CDS coordinates: the plate's own frame starts here.
     pub fn plate_bottom_z(&self) -> f64 {
         -self.end_inner_z() + self.column_length
     }
@@ -196,13 +356,41 @@ impl Design {
         let o = self.uno_origin();
         [o[0] + self.uno_holes[i][0], o[1] + self.uno_holes[i][1]]
     }
-    pub fn uno_pcb_bottom_z(&self) -> f64 {
-        self.plate_top_z() + self.uno_post_h
+    /// Uno board, bottom and top faces, in plate coordinates.
+    pub fn uno_pcb_bottom(&self) -> f64 {
+        self.plate_t + self.uno_post_h
     }
-    pub fn nano_pcb_bottom_z(&self) -> f64 {
-        self.plate_top_z() + self.nano_rail_h
+    pub fn uno_top(&self) -> f64 {
+        self.uno_pcb_bottom() + self.pcb_uno
     }
-    pub fn strap_bottom_z(&self) -> f64 {
-        self.nano_pcb_bottom_z() + self.pcb_nano + self.strap_arch
+    /// How deep each Nano edge sits in its V-groove.
+    pub fn nano_seat(&self) -> f64 {
+        let n = &self.nano;
+        n.v_depth * (n.v_mouth - n.t) / (n.v_mouth - n.v_apex)
+    }
+    /// Mouth of the lower groove and the clamp's groove, in plate coordinates.
+    pub fn base_mouth_z(&self) -> f64 {
+        self.nano.z0 + self.nano_seat()
+    }
+    pub fn cap_mouth_z(&self) -> f64 {
+        self.nano.z0 + self.nano.w - self.nano_seat()
+    }
+    /// The clamp's underside as built, resting on its pillars.
+    pub fn clamp_bottom_z(&self) -> f64 {
+        self.cap_mouth_z() - self.nano.preload
+    }
+    pub fn pillars(&self) -> [[f64; 2]; 2] {
+        [self.nano.anchor, self.nano.far_pillar]
+    }
+    /// Washer height under a stud head.
+    pub fn washer_h(&self) -> f64 {
+        self.washer.t + self.washer.foot
+    }
+    /// Stud head underside to its bar, washer at rest, for the plate and clamp studs.
+    pub fn plate_stud_a0(&self) -> f64 {
+        self.washer_h() + self.plate_t + self.qt.bar_z
+    }
+    pub fn clamp_stud_a0(&self) -> f64 {
+        self.washer_h() + self.nano.clamp_t + self.qt.bar_z
     }
 }

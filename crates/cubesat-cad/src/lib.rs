@@ -6,9 +6,11 @@
 //! - [`check::verify`] runs the CDS, fit and printability checks.
 //! - [`export::write_all`] writes the STL files, P1S plates and report.
 
+pub mod boards;
 pub mod check;
 pub mod design;
 pub mod export;
+pub mod fasteners;
 pub mod geom;
 pub mod mesh;
 pub mod parts;
