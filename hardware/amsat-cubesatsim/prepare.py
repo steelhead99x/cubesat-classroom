@@ -18,8 +18,10 @@ MARGIN = 5
 FLIP = trimesh.transformations.rotation_matrix(np.pi, [1, 0, 0])
 
 PLATES = {
-    "01-snap-test": [("snap-test-peg", "stl/snap-test-peg.stl", None),
-                     ("snap-test-tab", "stl/snap-test-tab.stl", None)],
+    "01-load-test": [("load-test-post", "stl/load-test-post.stl", None),
+                     ("load-test-tab", "stl/load-test-tab.stl", None),
+                     ("qt-stud-plate", "stl/qt-stud-plate.stl", None),
+                     ("qt-washer", "stl/qt-washer.stl", None)],
     "02-sides": [("side", "upstream/cubesatsim_frame_side.v2.0.stl", None),
                  ("side-camera", "upstream/cubesatsim_frame_side_camera.v2.0.stl", None)],
     "03-top-and-bottom": [("top", "upstream/cubesatsim_frame_top_bottom.v2.0.stl", FLIP),
@@ -28,8 +30,10 @@ PLATES = {
                          ("lower-clamp", "stl/lower-clamp.stl", None)],
     "05-fit-plate": [("fit-plate", "stl/fit-plate.stl", None),
                      ("lower-clamp", "stl/lower-clamp.stl", None)],
-    "06-keys-and-screws": [(f"lock-key-{i}", "stl/lock-key.stl", None) for i in range(1, 5)]
-                          + [(f"screw-{i}", "stl/screw.stl", None) for i in range(1, 3)],
+    "06-fasteners": [(f"lock-key-{i}", "stl/lock-key.stl", None) for i in range(1, 5)]
+                    + [(f"qt-stud-plate-{i}", "stl/qt-stud-plate.stl", None) for i in range(1, 5)]
+                    + [(f"qt-stud-clamp-{i}", "stl/qt-stud-clamp.stl", None) for i in range(1, 3)]
+                    + [(f"qt-washer-{i}", "stl/qt-washer.stl", None) for i in range(1, 7)],
 }
 
 
@@ -44,15 +48,32 @@ def pack(plate, parts):
         mesh.apply_translation(-mesh.bounds[0])
         meshes.append((name, mesh))
 
-    width = sum(m.extents[0] for _, m in meshes) + GAP * (len(meshes) - 1)
-    x = (BED - width) / 2
+    # Rows, left to right, wrapping when a row is full; the whole layout is centred on the bed.
+    rows, row, used = [], [], 0.0
+    for name, mesh in meshes:
+        if row and used + GAP + mesh.extents[0] > BED - 2 * MARGIN:
+            rows.append(row)
+            row, used = [], 0.0
+        used += (GAP if row else 0.0) + mesh.extents[0]
+        row.append((name, mesh))
+    rows.append(row)
+    depth = sum(max(m.extents[1] for _, m in r) for r in rows) + GAP * (len(rows) - 1)
+    y = (BED - depth) / 2
+    placed = []
+    for r in rows:
+        width = sum(m.extents[0] for _, m in r) + GAP * (len(r) - 1)
+        x = (BED - width) / 2
+        height = max(m.extents[1] for _, m in r)
+        for name, mesh in r:
+            mesh.apply_translation((x, y + (height - mesh.extents[1]) / 2, 0))
+            x += mesh.extents[0] + GAP
+            placed.append((name, mesh))
+        y += height + GAP
     model = Element("model", {"unit": "millimeter",
                               "xmlns": "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"})
     resources = SubElement(model, "resources")
     build = SubElement(model, "build")
-    for index, (name, mesh) in enumerate(meshes, 1):
-        mesh.apply_translation((x, (BED - mesh.extents[1]) / 2, 0))
-        x += mesh.extents[0] + GAP
+    for index, (name, mesh) in enumerate(placed, 1):
         if (mesh.bounds[0, :2].min() < MARGIN or mesh.bounds[1, :2].max() > BED - MARGIN
                 or mesh.bounds[1, 2] > BED):
             raise ValueError(f"{plate}: {name} does not fit the P1S plate")

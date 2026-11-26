@@ -1,14 +1,18 @@
 """Fully printed payload kit for the AMSAT CubeSatSim v2.0 frame. Dimensions in mm.
 
 Builds, from the unmodified AMSAT frame in upstream/:
-  bottom-with-columns  AMSAT top/bottom piece plus four snap-peg standoff columns,
+  bottom-with-columns  AMSAT top/bottom piece plus four hollow standoff columns,
                        placed where the AMSAT board stack screws to the frame
-  payload-plate        holds an Arduino Uno R3 and an Arduino Nano 33 BLE Sense
-  nano-strap           snaps over the Nano to hold it down
-  snap-test            a short column and a holed tab to test the snap fit first
+  payload-plate        holds an Arduino Uno R3 (snap latches) and a Nano 33 BLE Sense
+                       (card cage), with quarter-turn receptacles for the frame
+  lower-clamp          caps the Nano; two quarter-turn studs hold it down
+  lock-key             locks a Uno latch shut (four)
+  qt-stud-plate/-clamp quarter-turn studs; qt-washer is the spring under each head
+  fit-plate            the payload plate's mounts on an isogrid display panel
+  load-test-*          one plate fastener on its own, to hang weights from
 
-No screws, nuts or metal standoffs. Everything is in print orientation, flat
-side down, and needs no supports.
+No metal screws, nuts or springs: everything is printed. Every part is in print orientation and
+needs no supports.
 
 This folder is a derivative of the AMSAT CubeSatSim frame by Alan Johnston,
 KU2Y, and is licensed GPL-3.0 like the original. Modified by CubeSat Classroom
@@ -35,17 +39,34 @@ FACE_INNER_Z = 0.0
 FACE_T = 3.0
 SNAP_TABS_REACH = 12.0          # AMSAT snap tabs extend this far below the face
 
-# Snap peg, shared by the columns, the strap posts and the test piece.
-PEG_SHANK = 5.0
-PEG_BARB = 5.7
-PEG_TIP = 4.0
-PEG_LIP = 0.8
-PEG_LEAD = 1.0
-PEG_SLOT = 1.4
-SNAP_HOLE = 5.2
-SLOT_INTO_BODY = 4.0
+# Quarter-turn fasteners (the classic push-and-turn panel fastener of aircraft and spacecraft;
+# a generic design, described here without brand names). A stud with a screwdriver slot has a
+# spiral cam slot across its tip. Push it through, past a cross-bar in the receptacle, and turn
+# it 90 degrees clockwise: the cam draws it in against a printed spring washer, then drops the
+# bar into a detent. To undo it you have to push in and turn back, so vibration can't loosen it.
+QT_D = 6.0                      # stud shank
+QT_BORE = 6.4                   # hole the stud passes through
+QT_BAR_W, QT_BAR_H = 2.0, 1.6   # receptacle cross-bar, across and along the stud
+QT_BAR_Z = 0.7                  # bar's near face, below the receptacle's entry face
+QT_CLEAR = 0.3                  # slot clearance around the bar
+QT_LIFT = 0.55                  # cam draw-in over the first 75 degrees
+QT_DET = 0.2                    # detent: extra push needed to turn back out
+QT_TIP = 1.6                    # stud material behind the bar when locked
+QT_HEAD_D, QT_HEAD_H = 10.0, 2.5
+# Spring washer, printed flat: two spiral arms join a hub (under the stud head) to a ring
+# standing on three feet. Pushing the hub down bends the arms along their layers.
+WASHER_OD, WASHER_ID = 18.0, 6.8
+WASHER_T = 1.5                  # arm thickness, five 0.3 mm layers
+WASHER_ARM = 1.6                # arm width
+WASHER_SLIT = 0.8
+WASHER_SWEEP = 150.0            # degrees each arm wraps
+WASHER_FOOT = 1.2
+WASHER_H = WASHER_T + WASHER_FOOT
+NANO_PRELOAD = 0.15             # the Nano's top edge lifts its clamp this much: the washers press it down
+PAYLOAD_MASS = 0.10             # kg on the plate: plate, boards, clamp, keys (estimate)
+DESIGN_G = 20.0                 # quasi-static design load, a common figure for small-satellite launch
 
-COLUMN_OD = 7.0
+COLUMN_OD = 10.0                # hollow: the plate's studs pass up through them
 COLUMN_LENGTH = 15.0            # face to plate; clears the 12 mm snap tabs
 
 PLATE = 88.0                    # AMSAT boards are 90.5 mm square
@@ -53,7 +74,6 @@ PLATE_CHAMFER = 8.0
 PLATE_T = 3.0
 TOLERANCE = 1e-6                # mm of floating-point noise to ignore; far below print resolution
 PLA_STRAIN_LIMIT = 0.02         # keep repeated flexing well under PLA's ~3% yield
-MIN_SNAP_OVERLAP = 0.2          # barb diameter minus hole diameter that still holds
 
 # Board geometry comes from Arduino's own CAD files (CC BY-SA 4.0), see reference/README.md.
 # Arduino Uno R3 (A000066, Eagle UNO-TH_Rev3e.brd): 68.58 x 53.34 mm, 1.6 mm PCB.
@@ -113,18 +133,8 @@ NANO_STOP_REACH = 3.0           # end stops cover the corners only, clear of the
 PLUG = (28.0, 7.0, 10.5)        # Micro-USB plug envelope: length, thickness, width
 MIN_PLUG_ROOM = 20.0            # from the receptacle to the plate edge, for the plug
 
-# Printed screws: a round single-start thread made by twisting an off-centre circle.
-SCREW_R = 2.75                  # core circle
-SCREW_E = 0.5                   # offset: thread crest 6.5 mm, root 4.5 mm diameter
-PITCH = 2.5                     # 8 layers per turn at 0.3 mm
-SCREW_CLEAR = 0.25              # radial clearance in the pillar
-LOCK_INTERFERENCE = 0.1         # bottom of each bore grips the screw like a nylon locknut
-LOCK_LEN = 3.0
-ENGAGE = 10.0                   # thread length in the pillar
-HEAD_D, HEAD_H = 10.0, 4.0
-MIN_BORE_WALL = 1.2
 PILLAR_OD = 10.0
-CLAMP_T = 4.0
+CLAMP_T = 4.0                   # Nano clamp thickness
 # Uno snap latches with lock keys. Each latch is a cantilever arm beside a board edge with a
 # hook over the board. Its hook underside is angled, so the arm's spring presses the board
 # down onto its posts. After it clicks in, a printed key drops in behind the arm and clips
@@ -134,7 +144,7 @@ LATCHES = {                     # name: (board edge, centre along that edge, gus
     "left": ("left", 21.0, 1.5),        # between the DC jack and the USB-B
     "right": ("right", 16.0, 1.5),      # between hole 1 and the ICSP header
     "top": ("top", 14.5, 1.5),          # between the reset button and the 8-13 header
-    "bottom": ("bottom", 6.0, 0.0),     # beside the DC jack; no gussets, a snap barb is near
+    "bottom": ("bottom", 6.0, 0.0),     # beside the DC jack; no gussets, a plate stud is near
 }
 LATCH_W = 8.0
 LATCH_T = 1.8                   # arm thickness: three lines with a 0.6 mm nozzle
@@ -155,8 +165,6 @@ KEY_NOTCH_Z = 2.0               # detent height above the plate
 KEY_TAB = 4.5                   # key above the latch, with a hole for a pull ribbon
 CHEEK_T = 1.25
 BACK_T = 2.4                    # backstop wall the key bears on
-HEEL_GAP = 0.3                  # pillar tops sit this far below the clamp, so the screw
-                                # pulls the clamp down onto the board, like a strap clamp
 EDGE_GAP = 0.5                  # board edge to pillar
 
 UNO_TOP_Z = PLATE_T + UNO_POST_H + PCB_UNO
@@ -170,12 +178,13 @@ def uno_xy(ux, uy):
     return UNO_ORIGIN[0] + ux, UNO_ORIGIN[1] + uy
 
 
-FAR_PILLAR = (34.5, -36.5)
+FAR_PILLAR = (35.0, -30.0)
+NANO_ANCHOR = (-10.0, -30.0)
 
 
 def nano_anchor():
-    """Pillar for the lower clamp's arm, beside the Uno's bottom edge."""
-    return uno_xy(16.0, 0)[0], UNO_ORIGIN[1] - EDGE_GAP - PILLAR_OD / 2
+    """Pillar for the lower clamp's arm, between the Uno's bottom edge and the Nano."""
+    return NANO_ANCHOR
 
 
 def pillar_positions():
@@ -318,21 +327,6 @@ def box(x0, y0, z0, x1, y1, z1):
     return cad.Manifold.cube((x1 - x0, y1 - y0, z1 - z0)).translate((x0, y0, z0))
 
 
-def peg(z_base, through, slot_axis="x"):
-    """Split snap peg standing on z_base: shank through `through` mm, then a barb."""
-    shank = cyl(PEG_SHANK, through + 0.2 + EPS, z=z_base - EPS)
-    z = z_base + through + 0.2
-    barb = (cyl(PEG_BARB, PEG_LIP + EPS, z=z - EPS)
-            + cyl(PEG_BARB, PEG_LEAD + EPS, z=z + PEG_LIP - EPS, d2=PEG_TIP))
-    top = z + PEG_LIP + PEG_LEAD
-    span = PEG_BARB + 2
-    if slot_axis == "x":
-        slot = box(-span / 2, -PEG_SLOT / 2, z_base - SLOT_INTO_BODY, span / 2, PEG_SLOT / 2, top + 1)
-    else:
-        slot = box(-PEG_SLOT / 2, -span / 2, z_base - SLOT_INTO_BODY, PEG_SLOT / 2, span / 2, top + 1)
-    return shank + barb, slot
-
-
 def chamfered_square(size, chamfer, height):
     h = size / 2
     c = chamfer
@@ -348,20 +342,14 @@ def load(name):
 
 
 def bottom_with_columns():
-    """AMSAT end piece with columns growing from the face's inner side (frame coordinates)."""
+    """AMSAT end piece with hollow columns growing from the face's inner side (frame
+    coordinates). The plate's quarter-turn studs go up through them from outside."""
     part = load("cubesatsim_frame_top_bottom.v2.0.stl")
-    slots = []
     for x, y in STACK_HOLES:
         z0 = FACE_INNER_Z - COLUMN_LENGTH
-        column = cyl(COLUMN_OD, COLUMN_LENGTH + FACE_T, x, y, z0)   # fills the 3.2 mm hole flush
-        # Peg points away from the face (towards -z): build upward, then mirror in z.
-        body, slot = peg(0.0, PLATE_T)
-        body = body.mirror((0, 0, 1)).translate((x, y, z0))
-        slot = slot.mirror((0, 0, 1)).translate((x, y, z0))
-        part += column + body
-        slots.append(slot)
-    for slot in slots:
-        part -= slot
+        part += cyl(COLUMN_OD, COLUMN_LENGTH + FACE_T, x, y, z0)
+    for x, y in STACK_HOLES:
+        part -= cyl(QT_BORE, COLUMN_LENGTH + FACE_T + 2, x, y, FACE_INNER_Z - COLUMN_LENGTH - 1)
     return part
 
 
@@ -370,45 +358,126 @@ def plate_holes():
     return [(x, -y) for x, y in STACK_HOLES]
 
 
-def barb_rooms(z_top=None):
-    """Space each snap barb needs where it comes up through the plate."""
-    h = 0.2 + PEG_LIP + PEG_LEAD + 1.0
-    return [cyl(PEG_BARB + 2.0, h if z_top is None else z_top, x, y, PLATE_T) for x, y in plate_holes()]
+def tip_rooms():
+    """Room on the plate's board side for each plate stud's tip, at its deepest (the detent crest)."""
+    h = qt_stud_length(plate_stud_a0()) - plate_stud_a0() + QT_BAR_Z - PLATE_T + 1.0
+    return [cyl(QT_BORE + 1.0, max(h, 0.5), x, y, PLATE_T) for x, y in plate_holes()]
 
 
-# ---------- printed screws ----------
+# ---------- quarter-turn fasteners ----------
 
-def thread(r, z0, z1, x=0.0, y=0.0):
-    """Round single-start right-hand thread between z0 and z1, in phase at any z so that bore
-    sections of different sizes line up."""
-    h = z1 - z0
-    start = 360.0 * z0 / PITCH
-    section = cad.CrossSection.circle(r, FACETS).translate((SCREW_E, 0)).rotate(start)
-    return section.extrude(h, max(2, int(h / 0.15)), 360.0 * h / PITCH).translate((x, y, z0))
-
-
-def screw_bore(x, y, z_top):
-    """Threaded hole down from a pillar top: clearance first, then the locking band."""
-    z_bottom = z_top - ENGAGE - 1.0
-    lock = z_bottom + 1.0 + LOCK_LEN
-    return (thread(SCREW_R + SCREW_CLEAR, lock, z_top + 1.0, x, y)
-            + thread(SCREW_R - LOCK_INTERFERENCE, z_bottom, lock + EPS, x, y)
-            + cyl(2 * (SCREW_R - SCREW_E) - 0.4, ENGAGE + 1.0, x, y, z_bottom))
+def qt_drop(phi):
+    """How far the cam has drawn the stud in at phi degrees of turn."""
+    if phi <= 75:
+        return QT_LIFT * phi / 75
+    if phi <= 82:
+        return QT_LIFT + QT_DET * (phi - 75) / 7
+    return QT_LIFT + QT_DET * (90 - phi) / 8
 
 
-def screw():
-    """Head down, as printed. Slot in the head for a flat screwdriver, hex flats for pliers or a spanner."""
-    head = cad.CrossSection.circle(HEAD_D / 2, 6).extrude(HEAD_H) ^ cyl(HEAD_D * 1.08, HEAD_H)
-    head -= box(-HEAD_D, -0.8, -1, HEAD_D, 0.8, 1.2)
-    shank_len = CLAMP_T + ENGAGE - 0.5
-    shank = thread(SCREW_R, HEAD_H - EPS, HEAD_H + shank_len)
-    tip = cyl(2 * (SCREW_R + SCREW_E) + 2, 1.2, z=HEAD_H + shank_len - 1.2) - cyl(
-        2 * (SCREW_R + SCREW_E) + 0.2, 1.2 + EPS, z=HEAD_H + shank_len - 1.2 - EPS / 2, d2=2 * (SCREW_R - SCREW_E))
-    return head + shank - tip
+def qt_stud_length(a0):
+    """Shank length so that QT_TIP of stud stays behind the bar when it's locked."""
+    return a0 + QT_BAR_H + QT_TIP
 
 
-def clearance_hole(x, y, z0, h):
-    return cyl(2 * (SCREW_R + SCREW_E) + 0.6, h, x, y, z0)
+def qt_bar_box(a, theta, length=None):
+    """The bar as it sits relative to the stud: at depth a from the head, turned theta."""
+    w = (QT_BAR_W + QT_CLEAR) / 2
+    L = length or QT_D + 2
+    return box(-L, -w, a - QT_CLEAR, L, w, a + QT_BAR_H).rotate((0, 0, theta))
+
+
+def qt_stud(a0):
+    """Stud as printed: head down on the bed, shank up. z = 0 is the underside of the head, and
+    a0 is the bar's distance from it before turning (washer at rest)."""
+    length = qt_stud_length(a0)
+    head = cyl(QT_HEAD_D, QT_HEAD_H, z=-QT_HEAD_H) - box(-QT_HEAD_D, -0.8, -QT_HEAD_H - 1, QT_HEAD_D, 0.8, -QT_HEAD_H + 1.2)
+    shank = cyl(QT_D, length + EPS, z=-EPS) - (cyl(QT_D + 2, 0.6, z=length - 0.6) - cyl(QT_D + 0.1, 0.6 + EPS, z=length - 0.6 - EPS / 2, d2=QT_D - 1.0))
+    slot = qt_bar_box(a0, 0).translate((0, 0, 0)) + box(-QT_D, -(QT_BAR_W + QT_CLEAR) / 2, a0 - QT_CLEAR,
+                                                         QT_D, (QT_BAR_W + QT_CLEAR) / 2, length + 1)
+    steps = list(range(0, 91, 5)) + [78, 82, 86]
+    steps = sorted(set(steps))
+    prev = None
+    for phi in steps:
+        b = qt_bar_box(a0 - qt_drop(phi), -phi)
+        slot += b if prev is None else cad.Manifold.hull(prev + b)
+        prev = b
+    return head + shank - slot
+
+
+def qt_bar(x, y, z_face, downward):
+    """Receptacle cross-bar in a hole of diameter QT_BORE, its near face QT_BAR_Z inside the entry
+    face at z_face. downward: the stud comes in from above (entry face on top)."""
+    z0 = z_face - QT_BAR_Z - QT_BAR_H if downward else z_face + QT_BAR_Z
+    return box(-QT_BORE / 2 - 0.5, -QT_BAR_W / 2, z0, QT_BORE / 2 + 0.5, QT_BAR_W / 2, z0 + QT_BAR_H).translate((x, y, 0))
+
+
+def _arc_band(r0, r1, a0, a1, n=48):
+    import math
+    outer = [(r1 * math.cos(math.radians(a0 + (a1 - a0) * i / n)), r1 * math.sin(math.radians(a0 + (a1 - a0) * i / n)))
+             for i in range(n + 1)]
+    inner = [(r0 * math.cos(math.radians(a1 - (a1 - a0) * i / n)), r0 * math.sin(math.radians(a1 - (a1 - a0) * i / n)))
+             for i in range(n + 1)]
+    return _poly(outer + inner)
+
+
+def washer_radii():
+    hub = WASHER_ID / 2 + 1.0
+    arm0 = hub + WASHER_SLIT
+    arm1 = arm0 + WASHER_ARM
+    ring0 = arm1 + WASHER_SLIT
+    return hub, arm0, arm1, ring0
+
+
+def washer_arm_length():
+    import math
+    _, arm0, arm1, _ = washer_radii()
+    return (arm0 + arm1) / 2 * math.radians(WASHER_SWEEP)
+
+
+def qt_washer():
+    """Spring washer as printed: flat, feet up. Fit it feet down under the stud head."""
+    hub, arm0, arm1, ring0 = washer_radii()
+    flat = _arc_band(WASHER_ID / 2, hub, 0, 360) + _arc_band(ring0, WASHER_OD / 2, 0, 360)
+    for k in (0, 180):
+        flat += _arc_band(arm0, arm1, k, k + WASHER_SWEEP)
+        flat += _arc_band(hub - 0.1, arm0 + 0.1, k, k + 12)                       # spoke from the hub
+        flat += _arc_band(arm1 - 0.1, ring0 + 0.1, k + WASHER_SWEEP - 12, k + WASHER_SWEEP)   # spoke to the ring
+    washer = flat.simplify(0.02).extrude(WASHER_T)
+    for k in (90, 210, 330):
+        washer += _arc_band(ring0 + 0.3, WASHER_OD / 2 - 0.3, k - 6, k + 6, 8).extrude(WASHER_FOOT + EPS).translate((0, 0, WASHER_T - EPS))
+    return washer
+
+
+def washer_strain(deflection=None):
+    """Arm bending strain, guided-end beam, at the detent crest by default."""
+    d = QT_LIFT + QT_DET + NANO_PRELOAD if deflection is None else deflection
+    return 3 * WASHER_T * d / washer_arm_length() ** 2
+
+
+def washer_force(deflection):
+    """Newtons, both arms, PLA E = 3.5 GPa."""
+    L = washer_arm_length()
+    return 2 * 12 * 3500 * (WASHER_ARM * WASHER_T ** 3 / 12) / L ** 3 * deflection
+
+
+def plate_stud_a0():
+    """Head underside to the plate bar, washer at rest: washer, face, column, then into the plate."""
+    return WASHER_H + FACE_T + COLUMN_LENGTH + QT_BAR_Z
+
+
+def clamp_stud_a0():
+    """Head underside to a pillar's bar: washer, clamp, then into the pillar."""
+    return WASHER_H + CLAMP_T + QT_BAR_Z
+
+
+def placed_stud(a0, x, y, z_head, phi=0.0, downward=True):
+    """A stud in place: head underside at z_head before turning, turned phi and drawn in."""
+    stud = qt_stud(a0).rotate((0, 0, phi))
+    d = qt_drop(phi)
+    if downward:
+        return stud.mirror((0, 0, 1)).translate((x, y, z_head - d))
+    return stud.translate((x, y, z_head + d))
 
 
 # ---------- payload plate ----------
@@ -460,12 +529,14 @@ def payload_plate():
         part -= latch_pocket(name)
         part += latch(name)
 
-    # Pillars for the lower clamp's two printed screws.
-    bores = []
+    # Pillars for the Nano clamp's two quarter-turn studs, each with a cross-bar inside.
+    bores, bars = [], []
+    z_pillar = CAP_MOUTH_Z - NANO_PRELOAD
     for x, y in pillar_positions():
-        z = CAP_MOUTH_Z - HEEL_GAP
-        part += cyl(PILLAR_OD, z - top + EPS, x, y, top - EPS)
-        bores.append(screw_bore(x, y, z))
+        part += cyl(PILLAR_OD, z_pillar - top + EPS, x, y, top - EPS)
+        depth = qt_stud_length(clamp_stud_a0()) - (WASHER_H + CLAMP_T) + 1.0
+        bores.append(cyl(QT_BORE, depth + 1, x, y, z_pillar - depth))
+        bars.append(qt_bar(x, y, z_pillar, downward=True))
 
     # Nano card cage, lower half: V-groove rail, USB-end corner stop, far-end wall.
     y0, y1 = NY0 - V_WALL, NY0 + NANO_T + V_WALL
@@ -476,33 +547,40 @@ def payload_plate():
     part -= _groove([(-V_MOUTH / 2, 0), (-V_APEX / 2, -V_DEPTH), (V_APEX / 2, -V_DEPTH), (V_MOUTH / 2, 0),
                      (V_MOUTH / 2, 1), (-V_MOUTH / 2, 1)], NX0 - EPS, x_end, BASE_MOUTH_Z)
 
-    for hole in plate_holes():
-        part -= cyl(SNAP_HOLE, PLATE_T + 2, hole[0], hole[1], -1)
-    for room in barb_rooms():
-        part -= room                      # pillars and rails near a barb get a pocket above it
+    for x, y in plate_holes():
+        part -= cyl(QT_BORE, PLATE_T + 2, x, y, -1)
+    for room in tip_rooms():
+        part -= room                      # pillars and rails near a stud tip get a pocket
     for bore in bores:
         part -= bore
+    for x, y in plate_holes():
+        part += qt_bar(x, y, 0.0, downward=False)       # studs come up from the frame side
+    for bar in bars:
+        part += bar
     return part
 
 
 def lower_clamp():
-    """Cap rail over the Nano's upper edge, screwed down at both ends. One flat top face, so it
-    prints upside down without supports. It doesn't touch the Uno, so either board comes out
-    on its own."""
-    zs = CAP_MOUTH_Z
-    zt = zs + V_DEPTH + 2.0
+    """Cap rail over the Nano's upper edge, held down at both ends by quarter-turn studs. One
+    flat top face, so it prints upside down without supports. It doesn't touch the Uno, so
+    either board comes out on its own. Built resting on its pillars; the Nano's edge lifts it
+    NANO_PRELOAD in service."""
+    zs = CAP_MOUTH_Z - NANO_PRELOAD
+    zt = zs + CLAMP_T
     hx, hy = nano_anchor()
     fx, fy = FAR_PILLAR
+    pad = WASHER_OD + 0.5
     rail = box(NX0 - 2.0, NY0 - V_WALL, zs, fx, NY0 + NANO_T + V_WALL, zt)
-    rail += cyl(HEAD_D, zt - zs, fx, fy, zs) + box(fx - 3.0, fy - 3.0, zs, fx + 0.1, NY0 + NANO_T, zt)
-    arm = box(hx - 4.0, NY0, zs, hx + 4.5, hy, zt) + cyl(HEAD_D, zt - zs, hx, hy, zs)
+    rail += cyl(pad, zt - zs, fx, fy, zs) + box(fx - 4.0, NY0, zs, fx + 4.0, fy, zt)
+    rail = rail ^ chamfered_square(PLATE - 1.0, PLATE_CHAMFER, 100).translate((0, 0, -10))
+    arm = box(hx - 4.0, NY0, zs, hx + 4.0, hy, zt) + cyl(pad, zt - zs, hx, hy, zs)
     stop = box(NX0 - 2.0, NY0 - 1.0, NZ0 + NANO_W - NANO_STOP_REACH, NX0, NY0 + NANO_T + 1.0, zs + EPS)
     part = rail + arm + stop
     part -= _groove([(-V_MOUTH / 2, -1), (V_MOUTH / 2, -1), (V_MOUTH / 2, 0),
                      (V_APEX / 2, V_DEPTH), (-V_APEX / 2, V_DEPTH), (-V_MOUTH / 2, 0)],
                     NX0 - EPS, NX0 + NANO_L + NANO_END_PLAY + EPS, zs)
     for x, y in ((hx, hy), (fx, fy)):
-        part -= clearance_hole(x, y, zs - 1, zt - zs + 2)
+        part -= cyl(QT_BORE, zt - zs + 2, x, y, zs - 1)
     return part
 
 
@@ -562,6 +640,8 @@ def fit_plate():
     # Solid deck: rim, pads around the mounts, nameplate and axis plate.
     solid = outline - outline.offset(-FIT_RIM, cad.JoinType.Miter)
     solid += features.slice(top + 0.1).offset(FIT_PAD, cad.JoinType.Round, circular_segments=FACETS)
+    for x, y in plate_holes():
+        solid += cad.CrossSection.circle(7.0, FACETS).translate((x, y))
     for r in (NAMEPLATE, AXES_PLATE):
         solid += _rect(*r).offset(1.5, cad.JoinType.Round, circular_segments=FACETS).offset(-1.5, cad.JoinType.Round, circular_segments=FACETS)
 
@@ -598,16 +678,24 @@ def fit_plate():
         panel -= latch_pocket(name).translate((0, 0, dz))
         panel += (latch(name) ^ below).translate((0, 0, dz))
     require(FIT_BASE_T - LATCH_ROOT_DEPTH >= 0.6, "the fit plate is too thin under the latch pockets")
+    # Quarter-turn receptacles, so the fit plate mounts on the bottom piece like the real one.
+    for x, y in plate_holes():
+        panel -= cyl(QT_BORE, FIT_BASE_T + 2, x, y, -1)
+        panel += qt_bar(x, y, 0.0, downward=False)
+    require(QT_BAR_Z + QT_BAR_H <= FIT_BASE_T, "the receptacle bar doesn't fit in the fit plate")
     return panel + features.translate((0, 0, dz))
 
 
-def snap_test():
-    """A short column with a peg, and a tab with the snap hole. Print both together."""
-    base = box(-8, -8, 0, 8, 8, 2.0)
-    column = cyl(COLUMN_OD, 6.0 + EPS, z=2.0 - EPS)
-    body, slot = peg(8.0, PLATE_T)
-    tab = box(-10, -8, 0, 10, 8, PLATE_T) - cyl(SNAP_HOLE, PLATE_T + 2, 0, 0, -1)
-    return base + column + body - slot, tab
+def load_test():
+    """One plate fastener on its own, for a pull test: a column stub on a hanging tab (the
+    bottom piece's face and column) and a plate tab with a receptacle bar and a weight loop."""
+    stack = FACE_T + COLUMN_LENGTH
+    base = box(-8, -8, 0, 24, 8, FACE_T) - cyl(5.0, FACE_T + 2, 18, 0, -1)
+    post = base + cyl(COLUMN_OD, stack, 0, 0, 0)
+    post -= cyl(QT_BORE, stack + 2, 0, 0, -1)
+    tab = box(-8, -8, 0, 24, 8, PLATE_T) - cyl(QT_BORE, PLATE_T + 2, 0, 0, -1) - cyl(5.0, PLATE_T + 2, 18, 0, -1)
+    tab += qt_bar(0, 0, 0.0, downward=False)
+    return post, tab
 
 
 def check(name, solid):
@@ -620,22 +708,6 @@ def check(name, solid):
     if not (mesh.is_watertight and mesh.is_winding_consistent and mesh.is_volume):
         raise ValueError(f"{name}: mesh is not a closed solid")
     return mesh
-
-
-def peg_strain():
-    """Bending strain of one peg half as the barb passes through the hole."""
-    half = (PEG_SHANK - PEG_SLOT) / 2
-    arm = PLATE_T + 0.2 + PEG_LIP + PEG_LEAD + SLOT_INTO_BODY
-    return 1.5 * half * (PEG_BARB - SNAP_HOLE) / 2 / arm ** 2
-
-
-def snap_overlap():
-    """How much wider the barb is than the hole it snaps through (diameter)."""
-    return PEG_BARB - SNAP_HOLE
-
-
-def bore_wall():
-    return PILLAR_OD / 2 - (SCREW_R + SCREW_E + SCREW_CLEAR)
 
 
 def at_least(value, minimum):
@@ -687,20 +759,20 @@ def verify(bottom, plate, clamps):
     require(NANO_SEAT + 0.3 < min(lowest, NANO_W - highest),
             "the V-groove walls reach the parts along the Nano's edges")
 
-    # Snap columns.
-    require(at_least(snap_overlap(), MIN_SNAP_OVERLAP),
-            f"snap barb ({PEG_BARB} mm) overlaps the {SNAP_HOLE} mm hole by {snap_overlap():.2f} mm, "
-            f"less than {MIN_SNAP_OVERLAP} mm, so the peg would not latch")
-    require(SNAP_HOLE > PEG_SHANK, f"snap hole {SNAP_HOLE} mm does not clear the {PEG_SHANK} mm peg shank")
-    require(PEG_SLOT > snap_overlap(), "the peg slot is too narrow for the barb to squeeze through the hole")
-    require(peg_strain() < PLA_STRAIN_LIMIT, f"snap peg strain {peg_strain():.1%} is too high for PLA")
-
-    # Printed screws.
-    require(at_least(bore_wall(), MIN_BORE_WALL),
-            f"pillar wall around the screw is {bore_wall():.2f} mm, less than {MIN_BORE_WALL} mm")
-    require(ENGAGE >= 1.5 * 2 * (SCREW_R + SCREW_E), "screw engages less than 1.5 diameters")
-    require(0 < LOCK_INTERFERENCE < SCREW_E, "the locking band must be tighter than the screw, but not strip it")
-    require(PITCH / 0.3 >= 6, "thread pitch is too fine to print at 0.3 mm layers")
+    # Quarter-turn fasteners.
+    crest = QT_LIFT + QT_DET
+    require(0 < QT_DET < QT_LIFT, "each quarter-turn stud needs a detent smaller than its cam draw-in")
+    require(at_least(PLA_STRAIN_LIMIT, washer_strain()),
+            f"spring washer arms bend {washer_strain():.2%} at the detent crest, over {PLA_STRAIN_LIMIT:.0%}")
+    require(WASHER_FOOT >= crest + NANO_PRELOAD + 0.2, "the washer's feet are too short for its hub to travel")
+    need = PAYLOAD_MASS * 9.81 * DESIGN_G
+    have = 4 * washer_force(QT_LIFT)
+    require(have >= need, f"the four plate fasteners hold {have:.1f} N down, less than the {need:.1f} N "
+            f"the payload weighs at {DESIGN_G:.0f} g, so the plate could rattle")
+    require(QT_TIP >= 1.2, "too little stud left behind the bar to carry the load")
+    # The bar is fused into the hole wall at both ends: fixed-fixed beam, central load, M = F L / 8.
+    bar_stress = washer_force(crest + NANO_PRELOAD) * QT_BORE / 8 / (QT_BAR_W * QT_BAR_H ** 2 / 6)
+    require(bar_stress < 20.0, f"receptacle bar bending stress {bar_stress:.0f} MPa is too high for PLA")
 
     # Plate on the columns.
     seated = plate.rotate((180, 0, 0)).translate((0, 0, FACE_INNER_Z - COLUMN_LENGTH))
@@ -709,15 +781,31 @@ def verify(bottom, plate, clamps):
     require(overlap(seated, bottom) < 1e-3, "payload plate collides with the AMSAT end piece")
     require(seated.bounding_box()[5] <= FACE_INNER_Z - SNAP_TABS_REACH,
             "payload plate does not clear the AMSAT snap tabs")
+    frame = bottom + seated
+    z_head = FACE_INNER_Z + FACE_T + WASHER_H
+    a0 = plate_stud_a0()
+    for x, y in STACK_HOLES:
+        entry = placed_stud(a0, x, y, z_head, 0.0)
+        require(overlap(entry, frame) < 1e-3, "a plate stud can't be pushed in past its receptacle bar")
+        locked = placed_stud(a0, x, y, z_head - 0.02, 90.0)
+        require(overlap(locked, frame) < 1e-3, "a locked plate stud collides with the plate or column")
+        pulled = placed_stud(a0, x, y, z_head + 0.3, 90.0)
+        require(overlap(pulled, frame) > 1e-3, "a locked plate stud isn't held by its bar")
+        outside = cyl(WASHER_OD + 0.5, WASHER_H + QT_HEAD_H, x, y, FACE_INNER_Z + FACE_T + 0.01)
+        require(overlap(outside, bottom) < 1e-3, "a plate stud's washer or head sits on a raised part of the face")
 
     # Board side of the plate, in plate coordinates.
     top = PLATE_T
     features = plate - box(-PLATE, -PLATE, -1, PLATE, PLATE, top)
-    everything = features + lower
+    lower = lower.translate((0, 0, NANO_PRELOAD))          # lifted by the Nano's edge, in service
+    heads = cad.Manifold()
+    for x, y in pillar_positions():
+        heads += cyl(WASHER_OD, WASHER_H + QT_HEAD_H, x, y, CAP_MOUTH_Z + CLAMP_T)
+    everything = features + lower + heads
     for key in keys:
         everything += key
-    for room in barb_rooms():
-        require(overlap(everything, room) < 1e-3, "a part sits where a snap barb comes through")
+    for room in tip_rooms():
+        require(overlap(everything, room) < 1e-3, "a part sits where a plate stud's tip comes through")
     require(overlap(everything, outline_prism(top, 80) ^ everything) >= everything.volume() - 1e-2,
             "a part reaches outside the plate outline, into the frame's corner rails")
 
@@ -730,7 +818,7 @@ def verify(bottom, plate, clamps):
     fixed = features
     for name in LATCHES:
         fixed -= latch(name)
-    in_service = fixed + seated_latches + lower
+    in_service = fixed + seated_latches + lower + heads
     for key in keys:
         in_service += key
     uno = box(ux, uy, pcb_bottom, ux + UNO[0], uy + UNO[1], UNO_TOP_Z)
@@ -783,11 +871,18 @@ def verify(bottom, plate, clamps):
     require(at_least(room, MIN_PLUG_ROOM), f"only {room:.1f} mm from the Nano's USB to the plate edge, "
             f"less than {MIN_PLUG_ROOM} mm for the plug")
 
-    # Every pillar has a threaded hole under its clamp's screw hole.
-    for i, (x, y) in enumerate(pillar_positions()):
-        z = CAP_MOUTH_Z - HEEL_GAP
-        bore = cyl(2 * (SCREW_R + SCREW_E) - 0.2, 4.0, x, y, z - 4.0)
-        require(overlap(plate, bore) < bore.volume() * 0.9, f"pillar {i}: no threaded hole")
+    # Nano clamp studs: pass the bars going in, held by them when locked.
+    design = clamps["lower-clamp"]
+    a0 = clamp_stud_a0()
+    z_head = CAP_MOUTH_Z - NANO_PRELOAD + CLAMP_T + WASHER_H
+    for x, y in pillar_positions():
+        stack = plate + design
+        require(overlap(placed_stud(a0, x, y, z_head, 0.0), stack) < 1e-3,
+                "a Nano clamp stud can't be pushed in past its bar")
+        require(overlap(placed_stud(a0, x, y, z_head - 0.02, 90.0), stack) < 1e-3,
+                "a locked Nano clamp stud collides with its pillar or the clamp")
+        require(overlap(placed_stud(a0, x, y, z_head + 0.3, 90.0), stack) > 1e-3,
+                "a locked Nano clamp stud isn't held by its bar")
 
 
 def export(name, solid):
@@ -806,10 +901,12 @@ def all_clamps():
 
 
 BROKEN_DESIGNS = {
-    "snap hole wider than the barb": {"SNAP_HOLE": 5.8},
-    "snap hole leaves too little overlap": {"SNAP_HOLE": 5.6},
     "plate inside the snap tabs": {"COLUMN_LENGTH": 10.0},
-    "thin pillar wall around the screw": {"PILLAR_OD": 9.0},
+    "spring washer arms too thick to flex": {"WASHER_T": 2.2},
+    "no detent, so a stud could turn loose": {"QT_DET": 0.0},
+    "too little cam draw-in to hold the plate down": {"QT_LIFT": 0.3},
+    "stud tip too short behind the bar": {"QT_TIP": 0.6},
+    "Nano clamp pillar moved into the Nano's USB plug": {"NANO_ANCHOR": (-18.0, -30.5)},
     "latch hooks too short to hold the Uno": {"LATCH_REACH": 0.4},
     "stiff latch arm that would crack": {"LATCH_T": 3.0},
     "lock key too loose to stop a latch opening": {"KEY_CLEAR": 0.3},
@@ -822,7 +919,8 @@ BROKEN_DESIGNS = {
 
 # Designs exactly at a limit must pass: the limits are inclusive.
 BOUNDARY_DESIGNS = {
-    "pillar wall exactly at the 1.2 mm minimum": {"PILLAR_OD": 2 * (SCREW_R + SCREW_E + SCREW_CLEAR + MIN_BORE_WALL)},
+    "spring washer exactly at the 2% strain limit": {
+        "WASHER_T": PLA_STRAIN_LIMIT * washer_arm_length() ** 2 / (3 * (QT_LIFT + QT_DET + NANO_PRELOAD))},
 }
 
 
@@ -877,20 +975,25 @@ if __name__ == "__main__":
     plate = payload_plate()
     clamps = all_clamps()
     verify(bottom, plate, clamps)
-    print(f"checks passed: snap overlap {snap_overlap():.2f} mm, peg strain {peg_strain():.1%}, "
-          f"pillar wall {bore_wall():.2f} mm, Nano edge in each groove {NANO_SEAT:.2f} mm")
+    print(f"checks passed: Nano edge in each groove {NANO_SEAT:.2f} mm")
     print(f"Uno latches: arm strain {latch_strain():.1%}, hook reach {LATCH_REACH} mm, "
           f"opening with key in {2 * KEY_CLEAR:.2f} mm, preload about {latch_preload():.0f} N each, "
           f"key prong strain {key_strain():.1%}")
+    print(f"quarter-turn fasteners: washer strain {washer_strain():.2%} at the detent crest, "
+          f"plate held down with {4 * washer_force(QT_LIFT):.0f} N "
+          f"(payload at {DESIGN_G:.0f} g: {PAYLOAD_MASS * 9.81 * DESIGN_G:.0f} N), "
+          f"Nano clamp {2 * washer_force(QT_LIFT + NANO_PRELOAD):.0f} N")
     # The end piece prints face down, so its columns point up.
     export("bottom-with-columns", bottom.rotate((180, 0, 0)))
     export("payload-plate", plate)
     export("lock-key", key_flat())
     export("lower-clamp", clamps["lower-clamp"].rotate((180, 0, 0)))      # flat top on the bed
-    export("screw", screw())
+    export("qt-stud-plate", qt_stud(plate_stud_a0()))
+    export("qt-stud-clamp", qt_stud(clamp_stud_a0()))
+    export("qt-washer", qt_washer())
     fit = export("fit-plate", fit_plate())
     print(f"fit-plate: {fit.volume / 1000:.1f} cm3 against {check('payload-plate', plate).volume / 1000:.1f} cm3 "
           "for the full payload plate")
-    peg_part, tab_part = snap_test()
-    export("snap-test-peg", peg_part)
-    export("snap-test-tab", tab_part)
+    post, tab = load_test()
+    export("load-test-post", post)
+    export("load-test-tab", tab)
