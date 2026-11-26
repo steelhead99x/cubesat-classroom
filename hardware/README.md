@@ -1,6 +1,6 @@
 # Hardware
 
-Printed 1U CubeSat frames (100 × 100 × 113.5 mm) for a Bambu Lab P1S or a similar printer.
+Printed 1U CubeSat frames (100 × 100 × 113.5 mm) for a Bambu Lab P1S or a similar printer, and the CSC-R1 ground-station receiver board.
 
 | Design | What it is | Start here |
 | --- | --- | --- |
@@ -8,6 +8,7 @@ Printed 1U CubeSat frames (100 × 100 × 113.5 mm) for a Bambu Lab P1S or a simi
 | Teachers in Space frame | The frame TIS uses in its Arduino CubeSat workshops. Files come from TIS. | [Links and comparison](tis/README.md) |
 | Rev A bench box | Closed test box and the M3 screw-fit coupon | [Print guide](p1s/README.md) |
 | Rev B rail-fit set | Printed frame with four corner rails and two end plates. A step toward a printed flight structure. Needs supports. | [Below](#rev-b-rail-fit-set) |
+| CSC-R1 receiver dev kit | Receive-only SDR board for the 2 m and 70 cm satellite bands, around a XIAO. Designed and rule-checked; not built or tested. Plus the plan for a pedal-enclosure version with HaLow. | [Design and review](sdr-receiver/README.md) |
 
 If you're new, build the AMSAT frame with the Arduino payload.
 

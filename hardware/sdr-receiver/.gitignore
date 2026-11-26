@@ -1,0 +1,7 @@
+# generated during gen/build.sh
+kicad/rt.net
+kicad/base.kicad_pcb
+kicad/base.kicad_pro
+kicad/*.kicad_prl
+kicad/*-backups/
+kicad/fp-info-cache
