@@ -1,0 +1,17 @@
+<section id="chain">
+<p class="eyebrow">Rev A · signal chain</p>
+<h2>Antenna to XIAO in seven steps</h2>
+<div class="chain">
+<div class="blk">SMA<span>bias tee</span></div><p class="arrow">→</p>
+<div class="blk">LNA<span>PGA-103+</span></div><p class="arrow">→</p>
+<div class="blk">Filters<span>2 m / 70 cm</span></div><p class="arrow">→</p>
+<div class="blk">I/Q demod<span>LTC5584</span></div><p class="arrow">→</p>
+<div class="blk">ADC<span>TLV320ADC3140</span></div><p class="arrow">→</p>
+<div class="blk">XIAO<span>I²S in</span></div>
+</div>
+<div class="grid2">
+<div class="card"><h3>Direct conversion</h3><p>An ADF4351 synthesizer with a 25 MHz TCXO tunes the demodulator straight to baseband for 144–146 and 435–438 MHz.</p></div>
+<div class="card"><h3>192 kHz of bandwidth</h3><p>About 6 Mbit/s of I/Q at 16 bits: plenty for satellite voice, packet, 9600-baud data and their Doppler shift.</p></div>
+</div>
+<aside>Direct conversion keeps the part count low. The ADC is an audio converter with programmable gain, which probably removes the need for a separate baseband amplifier.</aside>
+</section>

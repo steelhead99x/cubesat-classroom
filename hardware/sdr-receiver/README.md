@@ -21,6 +21,7 @@ Date: 25 November 2026 (Rev A, fix round 1). Tool: KiCad 7.0.11.
 | [`fab/csc-r1-bom.csv`](fab/csc-r1-bom.csv) | Bill of materials (103 lines, 212 fitted parts, 5 not fitted) |
 | `fab/csc-r1-cpl-top.csv` | Pick-and-place positions. All parts are on the top side. |
 | [`fab/drc-report.txt`](fab/drc-report.txt) | KiCad design rule check report |
+| [`deck/`](deck/README.md) | Source of the CSC-R1 slide deck (15 slides), a snapshot of the live deck |
 | [`bench/`](bench/README.md) | Bench scripts, a power-logger sketch, a shopping list and the bench quests for measuring the kit with an RTL-SDR V4 and other low-cost gear |
 | `gen/` | The Python that generates everything. `gen/build.sh` rebuilds it all; `gen/rf_checks.py` repeats the desk calculations below. |
 
