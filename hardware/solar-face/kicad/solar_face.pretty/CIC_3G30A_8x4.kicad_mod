@@ -1,0 +1,98 @@
+(footprint "CIC_3G30A_8x4"
+  (version 20221018)
+  (generator solar_face_gen)
+  (layer "F.Cu")
+  (descr "AZUR SPACE 3G30A-Advanced 8 x 4 cm CIC: rear contact pad (+) and interconnector land (-). Body 80.15 x 40.15 mm. Land pattern NOT VERIFIED (cells.py).")
+  (tags "solar cell")
+  (attr smd)
+  (fp_text reference "REF**"
+    (at -36.075 -17.575)
+    (layer "F.Fab")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (fp_text value "CIC_3G30A_8x4"
+    (at 0 0)
+    (layer "F.Fab")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (fp_text user "NOT VERIFIED: check rear polarity and interconnector edge on the AZUR drawing"
+    (at 0 3)
+    (layer "F.Fab")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (fp_rect
+    (start -40.075 -20.075)
+    (end 40.075 20.075)
+    (stroke
+      (width 0.1)
+      (type solid)
+    )
+    (fill none)
+    (layer "F.Fab")
+  )
+  (fp_rect
+    (start -40.225 -20.225)
+    (end 40.225 20.225)
+    (stroke
+      (width 0.12)
+      (type solid)
+    )
+    (fill none)
+    (layer "F.SilkS")
+  )
+  (fp_rect
+    (start -40.425 -20.425)
+    (end 40.425 23.925)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (fill none)
+    (layer "F.CrtYd")
+  )
+  (fp_text user "+"
+    (at -38.575 -18.675)
+    (layer "F.SilkS")
+    (effects
+      (font
+        (size 1.2 1.2)
+        (thickness 0.18)
+      )
+    )
+  )
+  (fp_text user "-"
+    (at 38.575 22.075)
+    (layer "F.SilkS")
+    (effects
+      (font
+        (size 1.2 1.2)
+        (thickness 0.18)
+      )
+    )
+  )
+  (pad "1" smd rect
+    (at 0 0)
+    (size 76.15 36.15)
+    (layers "F.Cu" "F.Mask")
+  )
+  (pad "2" smd rect
+    (at 0 22.075)
+    (size 76.15 3)
+    (layers "F.Cu" "F.Mask")
+  )
+)

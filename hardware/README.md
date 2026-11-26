@@ -1,12 +1,13 @@
 # Hardware
 
-The printed 1U CubeSat frame (100 × 100 × 113.5 mm) and the CSC-R1 ground-station receiver board.
+The printed 1U CubeSat frame (100 × 100 × 113.5 mm), the 1U solar face and the CSC-R1 ground-station receiver board.
 
 | Design | What it is | Start here |
 | --- | --- | --- |
 | **AMSAT CubeSatSim frame + Arduino payload** | AMSAT's CubeSatSim v2.0 frame with a printed plate for an Arduino Uno R3 and a Nano 33 BLE Sense. 100% printed, no supports, no screws. The payload plate is modeled on the Teachers in Space (TIS) Multiplate. **Status: nearly verified.** The design checks pass in CI; the last print-and-fit checks are wrapping up. | [Build guide](amsat-cubesatsim/README.md) |
 | Teachers in Space frame | The frame TIS uses in its Arduino CubeSat workshops, and the model for our payload plate. Files come from TIS. | [Links and comparison](tis/README.md) |
 | CSC-R1 receiver dev kit | Receive-only SDR board for the 2 m and 70 cm satellite bands, around a XIAO. Designed and rule-checked; not built or tested. Plus the plan for a pedal-enclosure version with HaLow. | [Design and review](sdr-receiver/README.md) |
+| 1U solar face | One 82.5 × 98 mm side-panel board in two versions that differ only in their cells: 24 silicon SolarBITs for the bench, or two AZUR triple-junction space cells for flight. Designed and rule-checked; cell land patterns not yet verified, so no Gerbers yet. | [Design and review](solar-face/README.md) |
 
 Build the AMSAT frame with the Arduino payload. Print its test coupons first.
 

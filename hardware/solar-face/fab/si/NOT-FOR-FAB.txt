@@ -1,0 +1,3 @@
+No Gerbers: the ANYSOLAR KXOB25-05X3F SolarBIT land pattern is not verified.
+The two pads are placed at the ends of the body as a placeholder. Copy the land pattern from the ANYSOLAR data sheet and set verified=True before ordering boards.
+When it is checked, set verified=True for KXOB25_05X3F in gen/cells.py and run gen/build.sh.
