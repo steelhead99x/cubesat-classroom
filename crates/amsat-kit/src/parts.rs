@@ -272,9 +272,9 @@ pub fn board_features(d: &Design, deflect: f64) -> Manifold {
     union_all(&parts)
 }
 
-/// Everything cut through the plate: the snap pins' keyed slots and fingers, the locating hole,
-/// and the slits that free the board hooks' fingers. `tooth_r` moves the teeth, for the checks.
-pub fn plate_cuts(d: &Design, tooth_r: Option<f64>) -> Manifold {
+/// The snap pins' keyed slots and fingers and the locating hole, as cut through any plate that
+/// snaps onto the columns. `tooth_r` moves the teeth, for the checks.
+pub fn column_cuts(d: &Design, tooth_r: Option<f64>) -> Manifold {
     let tooth_r = tooth_r.unwrap_or(d.tooth_r);
     let mut cuts = Vec::new();
     for (i, [x, y]) in d.plate_holes().into_iter().enumerate() {
@@ -291,6 +291,19 @@ pub fn plate_cuts(d: &Design, tooth_r: Option<f64>) -> Manifold {
             ),
         });
     }
+    union_all(&cuts)
+}
+
+/// A notch in the plate's top edge for cables: the battery's, and a USB cable to the boards.
+pub fn cable_notch(d: &Design) -> Manifold {
+    let e = d.plate / 2.0;
+    bx(-23.0, e - 6.0, -1.0, -13.0, e + 1.0, d.plate_t + 1.0)
+}
+
+/// Everything cut through the payload plate: the column cuts, the cable notch, and the slits
+/// that free the board hooks' fingers.
+pub fn plate_cuts(d: &Design, tooth_r: Option<f64>) -> Manifold {
+    let mut cuts = vec![column_cuts(d, tooth_r), cable_notch(d)];
     for (board, edges) in [(d.uno_rect(), &d.uno_hooks), (d.nano_rect(), &d.nano_hooks)] {
         for e in edges {
             cuts.push(hook_cut(d, board, e));

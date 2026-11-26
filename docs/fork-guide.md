@@ -28,7 +28,7 @@ Check your work: `cargo test` passes, `npm run build` finishes, and your home pa
 
 ## Keep the parts that protect students
 
-Whatever you change, keep these from `AGENTS.md`: no personal details from students, an honest label on every result (desk simulation, hardware bench, received RF, and so on), and licensed operators for anything that transmits.
+Whatever you change, keep these from `AGENTS.md`: no personal details from students, an honest label on every result (desk simulation, hardware bench, received RF, and so on), and licensed operators for anything that transmits. Printed parts keep the [hardware design guide](../hardware/DESIGN-GUIDE.md)'s three rules: no loose pieces where possible, rocket-launch ready and durable, and easy enough for kids.
 
 ## Working with AI coding tools (and saving tokens)
 
