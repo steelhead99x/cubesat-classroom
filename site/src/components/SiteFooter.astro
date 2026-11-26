@@ -8,16 +8,17 @@ interface Props {
 const { showHubs = true } = Astro.props;
 const homeFor = (hub: typeof hubs[number]) => hub.home ?? 'https://' + hub.host + (hub.path ?? '/');
 ---
-<footer class="border-t border-line text-sm">
-  <div class="shell flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-6">
-    <p class="text-muted">An independent volunteer project inspired by Teachers in Space and AMSAT.</p>
-    <nav class="flex flex-wrap gap-x-4 gap-y-2" aria-label="Footer">
-      {showHubs && hubs.map(hub => <a class="font-semibold text-ink underline underline-offset-4" href={homeFor(hub)}>{hub.name}</a>)}
-      <a class="font-semibold text-ink underline underline-offset-4" href={missionBriefing}>Mission briefing</a>
-      <a class="font-semibold text-ink underline underline-offset-4" href={repo}>GitHub</a>
+<footer class="site-footer text-sm">
+  <div class="shell flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-7">
+    <p>An independent volunteer project inspired by Teachers in Space and AMSAT.</p>
+    <nav class="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer">
+      {showHubs && hubs.map(hub => <a class="font-semibold underline underline-offset-4" href={homeFor(hub)}>{hub.name}</a>)}
+      <a class="font-semibold underline underline-offset-4" href={missionBriefing}>Mission briefing</a>
+      <a class="font-semibold underline underline-offset-4" href={repo}>GitHub</a>
     </nav>
   </div>
-  <div class="shell border-t border-line py-3 text-xs text-faint">
-    Volunteer site work by <a class="font-normal" href="https://hikd.ai/">hikd.ai</a>.
+  <div class="shell t-src flex flex-wrap justify-between gap-x-6 gap-y-1 border-t border-white/15 py-3.5 text-white/70">
+    <span>Open source · MIT or Apache 2.0</span>
+    <span>Volunteer site work by <a class="font-normal" href="https://hikd.ai/">hikd.ai</a></span>
   </div>
 </footer>

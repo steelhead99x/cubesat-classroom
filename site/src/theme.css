@@ -1,33 +1,37 @@
 @import "tailwindcss";
 
-/* "Ground pass" theme.
-   Everything on the site follows one satellite pass: the sky above the horizon
-   (night, orbit, mission) and the classroom below it (quests, workshops, people).
-   Navy and Orbit Blue come from the CubeSat Classroom brand kit. Horizon amber is the dawn line
-   and the main call to action. Mint, violet and solar are only for status and
-   mission patches, so colour always means something. */
+/* "Mission briefing" theme, matching the CubeSat Classroom briefing and slides.
+   Full-bleed Navy with faint orbit lines above; Mist paper below. Inter for words,
+   IBM Plex Mono for labels, readouts and anything a flight controller would read.
+   Flag red is the one accent: the live dot and the rule at the foot of the sky.
+   Old token names (night, horizon, accent ...) are kept so every page follows. */
 @theme {
-  --color-night: #0b1d3a;
-  --color-dusk: #17325e;
-  --color-navy: #17325e;
+  --color-night: #01017f;
+  --color-dusk: #03038c;
+  --color-navy: #01017f;
+  --color-deep: #00005c;
+  --color-orbit: #2f3fbf;
+  --color-flag: #ea0303;
+  --color-flag-ink: #c40202;
   --color-paper: #ffffff;
-  --color-ground: #eff3f8;
-  --color-ink: #172b43;
+  --color-ground: #f3f4fa;
+  --color-mist: #f3f4fa;
+  --color-ink: #14183a;
   --color-accent: #2f3fbf;
   --color-sky: #a4c9ff;
-  --color-horizon: #ffb547;
-  --color-horizon-deep: #a35f00;
+  --color-horizon: #ffffff;
+  --color-horizon-deep: #c40202;
   --color-signal: #ef6b6c;
   --color-signal-deep: #a7283a;
   --color-solar: #ffd23f;
   --color-mint: #6fd3a0;
   --color-violet: #b9a4ff;
-  --color-line: #d5deeb;
-  --color-muted: #3d5372;
-  --color-faint: #56698a;
-  --font-display: "Atkinson Hyperlegible", system-ui, sans-serif;
-  --font-sans: "Atkinson Hyperlegible", system-ui, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --color-line: #d5d9ea;
+  --color-muted: #4a5072;
+  --color-faint: #5a6085;
+  --font-display: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 @layer base {
@@ -42,29 +46,29 @@
   }
 
   html { scroll-behavior: smooth; }
-  body { color: var(--ink); background: var(--paper); line-height: 1.62; font-size: 1.0625rem; }
+  body { color: var(--ink); background: var(--paper); line-height: 1.62; font-size: 1.0625rem; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }
   nav a { color: #cfdcef; text-decoration: none; }
   nav a:hover { color: #fff; }
   nav [aria-current="page"] { color: #fff; text-decoration: underline; text-decoration-color: var(--color-horizon); text-decoration-thickness: 2px; text-underline-offset: .45em; }
 
-  :focus-visible { outline: 3px solid #2563c9; outline-offset: 3px; border-radius: 4px; }
-  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.06;  }
-  h1 { font-size: clamp(2.55rem, 5.8vw, 4.1rem); letter-spacing: -.025em; }
-  h2 { font-size: clamp(1.65rem, 3vw, 2.2rem); letter-spacing: -.018em; }
-  h3 { font-size: 1.3rem; letter-spacing: -.005em;  }
+  :focus-visible { outline: 3px solid var(--color-orbit); outline-offset: 3px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 750; line-height: 1.06; }
+  h1 { font-size: clamp(2.5rem, 5.4vw, 4.4rem); line-height: 1.03; letter-spacing: -.03em; }
+  h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); letter-spacing: -.025em; }
+  h3 { font-size: 1.25rem; letter-spacing: -.015em; }
   button { cursor: pointer; }
   a { text-underline-offset: .22em; }
-  code { font-family: var(--font-mono); }
+  code, kbd, samp { font-family: var(--font-mono); }
 }
 
 @layer components {
-  .shell { width: min(100% - 2rem, 72rem); margin-inline: auto; }
-  .brand { color: inherit; font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; text-decoration: none;  }
-  .skip { position: fixed; z-index: 10; left: 1rem; top: -5rem; padding: .55rem .85rem; background: #fff; color: var(--ink); border-radius: .5rem; }
+  .shell { width: min(100% - 2.5rem, 76rem); margin-inline: auto; }
+  .brand { color: inherit; font-family: var(--font-display); font-size: 1.15rem; font-weight: 750; letter-spacing: -.02em; text-decoration: none; }
+  .skip { position: fixed; z-index: 10; left: 1rem; top: -5rem; padding: .55rem .85rem; background: #fff; color: var(--ink); border-radius: .25rem; }
   .skip:focus { top: 1rem; }
   .shell section a:not(.button), footer a { text-decoration: underline; font-weight: 700; }
 
-  /* The sky: deep night with a sparse, fixed star field. */
+  /* The sky: mission Navy with a sparse, fixed star field. */
   .night { color: #fff; background-color: var(--color-night); }
   .sky {
     color: #fff;
@@ -78,50 +82,54 @@
       radial-gradient(1.5px 1.5px at 83% 33%, #ffffffb0 50%, transparent 51%),
       radial-gradient(1px 1px at 91% 70%, #ffffff70 50%, transparent 51%),
       radial-gradient(1px 1px at 6% 78%, #ffffff60 50%, transparent 51%),
-      linear-gradient(180deg, var(--color-night) 0%, var(--color-night) 60%, #15305a 100%);
+      linear-gradient(180deg, var(--color-night) 0%, var(--color-night) 55%, var(--color-deep) 100%);
     background-size: 640px 420px, 640px 420px, 640px 420px, 640px 420px, 640px 420px, 640px 420px, 640px 420px, 640px 420px, 100% 100%;
   }
-  .night :focus-visible, .sky :focus-visible, .terminal :focus-visible { outline-color: var(--color-horizon); }
+  .night :focus-visible, .sky :focus-visible, .terminal :focus-visible, .site-header :focus-visible, .site-footer :focus-visible, .briefing :focus-visible { outline-color: #fff; }
 
-  /* The horizon: a thin dawn line where sky meets ground. */
-  .horizon { position: relative; height: 3px; background: linear-gradient(90deg, transparent, var(--color-horizon) 15%, var(--color-horizon) 85%, transparent); box-shadow: 0 0 22px 1px rgb(255 181 71 / .5); }
+  /* The flag rule: where the sky ends, a solid Flag red line, as on the briefing. */
+  .horizon { position: relative; height: 4px; background: var(--color-flag); }
 
-  .kicker { margin-bottom: .75rem; color: #c9d8ee; font-weight: 700; }
-  .night .lede, .sky .lede { color: #d7e3f4; }
-  .intro { max-width: 36rem; color: #d7e3f4; font-size: clamp(1.05rem, 2vw, 1.25rem); }
+  .kicker { margin-bottom: .75rem; color: rgb(255 255 255 / .72); font: 500 .78rem/1.3 var(--font-mono); letter-spacing: .18em; text-transform: uppercase; }
+  .night .lede, .sky .lede { color: rgb(255 255 255 / .86); }
+  .intro { max-width: 36rem; color: rgb(255 255 255 / .86); font-size: clamp(1.05rem, 2vw, 1.25rem); }
   .lede { max-width: 38rem; color: var(--color-muted); font-size: clamp(1.05rem, 2vw, 1.22rem); }
 
-  .button { display: inline-flex; align-items: center; min-height: 2.75rem; gap: .6rem; border-radius: .5rem; padding: .68rem 1.1rem; font-weight: 700; text-decoration: none; }
-  .launch { background: var(--color-horizon); color: var(--color-night); }
-  .launch:hover { background: #ffc46e; }
+  .button { display: inline-flex; align-items: center; min-height: 2.9rem; gap: .75rem; border-radius: .22rem; padding: .7rem 1.2rem; font-weight: 600; letter-spacing: -.005em; text-decoration: none; transition: background-color .15s, box-shadow .15s, color .15s; }
+  .button .arrow { transition: transform .15s; }
+  .button:hover .arrow { transform: translateX(2px); }
+  .launch { background: #fff; color: var(--color-night); }
+  .launch:hover { background: #e4e6f7; }
   .launch:active { transform: translateY(1px); }
-  .quiet { color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
-  .quiet:hover { background: #fff; }
-  .ghost { color: #fff; box-shadow: inset 0 0 0 2px #ffffff66; }
+  .quiet { color: var(--color-night); box-shadow: inset 0 0 0 2px var(--color-night); }
+  .quiet:hover { background: var(--color-mist); }
+  .ghost { color: #fff; box-shadow: inset 0 0 0 2px rgb(255 255 255 / .8); }
   .ghost:hover { box-shadow: inset 0 0 0 2px #fff; }
 
-  .chassis { overflow: hidden; position: relative; border-radius: 1.5rem; background: radial-gradient(circle at 50% 45%, #1d3d70 0, var(--color-night) 72%); }
+  .chassis { overflow: hidden; position: relative; border: 1px solid rgb(255 255 255 / .15); background: radial-gradient(circle at 50% 45%, #1b1ba6 0, var(--color-deep) 75%); }
   .chassis img { width: 100%; height: clamp(13rem, 40vw, 22rem); object-fit: contain; }
-  .chassis figcaption { border-top: 1px solid #ffffff1f; padding: .8rem 1.1rem; color: #d7e3f4; font-size: .92rem; }
+  .chassis figcaption { border-top: 1px solid rgb(255 255 255 / .15); padding: .7rem 1rem; color: rgb(255 255 255 / .75); font: .74rem/1.5 var(--font-mono); letter-spacing: .02em; }
 
-  .start { min-width: 0; padding: clamp(1.3rem, 3vw, 2rem); border-radius: 1.5rem; background: #fff; box-shadow: 0 0 0 1px var(--color-line); }
+  .start { min-width: 0; padding: clamp(1.3rem, 3vw, 2rem); background: #fff; box-shadow: 0 0 0 1px var(--color-line); }
   .start p { color: var(--color-muted); }
-  .terminal { border-radius: 1rem; background: var(--night); color: #eaf2fd; padding: .9rem 1.1rem; }
-  .primary { background: var(--color-accent); color: #fff; }
-  .primary:hover { background: #01017f; }
+  .terminal { border-radius: .22rem; background: var(--color-deep); color: #eef0ff; padding: .9rem 1.1rem; }
+  .primary { background: var(--color-night); color: #fff; }
+  .primary:hover { background: var(--color-orbit); }
 
-  .site-header { background: #fff; color: var(--ink); border-bottom: 1px solid var(--color-line); }
-  .site-header .brand { color: #03038c; }
-  .site-header nav a { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--color-muted); }
-  .site-header nav a:hover, .site-header nav [aria-current="page"] { color: var(--color-accent); }
+  /* Header and footer sit in the sky on every page. */
+  .site-header { background: var(--color-night); color: #fff; border-bottom: 1px solid rgb(255 255 255 / .12); }
+  .site-header .brand { color: #fff; }
+  .site-header nav a { display: inline-flex; align-items: center; min-height: 2.75rem; color: rgb(255 255 255 / .78); font-size: .95rem; font-weight: 500; }
+  .site-header nav a:hover, .site-header nav [aria-current="page"] { color: #fff; }
+  .site-footer { background: var(--color-deep); color: rgb(255 255 255 / .8); border-top: 4px solid var(--color-flag); }
+  .site-footer a { color: #fff; }
   footer nav a { display: inline-flex; align-items: center; min-height: 2.75rem; }
-  .site-header nav [aria-current="page"] { text-decoration-color: var(--color-accent); }
+  .site-header nav [aria-current="page"] { text-decoration-color: var(--color-flag); }
 
-  .classroom-hero { border-bottom: 1px solid var(--color-line); }
-  .field-label { color: var(--color-accent); font-size: .84rem; font-weight: 700; }
-  .bench-figure { overflow: hidden; border: 1px solid var(--color-line); border-radius: .7rem; background-color: #edf4f7; }
+  .field-label { color: var(--color-orbit); font: 500 .78rem/1.3 var(--font-mono); letter-spacing: .18em; text-transform: uppercase; }
+  .bench-figure { position: relative; overflow: hidden; border: 1px solid var(--color-line); background-color: var(--color-mist); }
   .bench-figure img { display: block; width: 100%; height: clamp(14rem, 36vw, 23rem); object-fit: contain; padding: 1.15rem; }
-  .bench-figure figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem 1rem; padding: .8rem 1rem; border-top: 1px solid var(--color-line); background: #fff; font-size: .88rem; color: var(--color-muted); }
+  .bench-figure figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem 1rem; padding: .7rem 1rem; border-top: 1px solid var(--color-line); background: #fff; font: .74rem/1.5 var(--font-mono); letter-spacing: .02em; color: var(--color-muted); }
   .bench-figure figcaption span:first-child { color: var(--ink); font-weight: 700; }
 
   .lesson-outline { border-top: 1px solid var(--color-line); }
@@ -129,20 +137,63 @@
   .lesson-outline li > span { padding-top: .15rem; color: var(--color-accent); font: 700 .82rem var(--font-mono); }
   .lesson-outline p { color: var(--color-muted); font-size: .95rem; }
 
-  .section-band { background: #f4f7fb; border-block: 1px solid var(--color-line); }
-  .resource { border-top: 2px solid var(--color-line); padding-top: 1rem; }
+  .section-band { background: var(--color-mist); border-block: 1px solid var(--color-line); }
+  .resource { border-top: 1px solid var(--color-line); padding-top: 1rem; }
   .reference-panel { border-bottom: 1px solid var(--color-line); padding-bottom: .9rem; }
   .reference-panel summary { cursor: pointer; font-weight: 700; padding-block: .7rem; }
 
   .terminal code { min-width: 0; overflow-wrap: anywhere; font-size: .92rem; }
-  .terminal button { min-height: 2.75rem; border: 1px solid #6b8fc4; border-radius: 999px; padding: .32rem .8rem; color: var(--color-horizon); font-weight: 700; font-size: .85rem; white-space: nowrap; }
-  .terminal button:hover { background: #1d3a68; }
+  .terminal button { min-height: 2.75rem; border: 1px solid rgb(255 255 255 / .35); border-radius: .22rem; padding: .32rem .8rem; color: #fff; font: 500 .74rem var(--font-mono); letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
+  .terminal button:hover { background: var(--color-night); }
 
   .quest-steps ol { display: grid; gap: .85rem; padding-left: 1.6rem; list-style: decimal; }
   .quest-steps li { padding-left: .3rem; }
   .quest-steps li::marker { color: var(--color-horizon-deep); font-family: var(--font-display); font-weight: 800; }
   .quest-steps strong { color: var(--color-ink); }
   .quest-steps code { font-size: .88em; padding: .05rem .3rem; border-radius: .3rem; background: var(--color-ground); color: var(--color-ink); }
+
+  /* Briefing type: mono, uppercase, widely tracked labels; small mono source lines. */
+  .t-label { font: 500 .78rem/1.3 var(--font-mono); letter-spacing: .18em; text-transform: uppercase; }
+  .t-src { font: .74rem/1.5 var(--font-mono); letter-spacing: .01em; }
+  .eyebrow { display: flex; align-items: center; gap: .75rem; margin-bottom: .9rem; color: var(--color-orbit); }
+  .eyebrow::after { content: ""; flex: 1; max-width: 4rem; height: 1px; background: currentcolor; opacity: .45; }
+
+  /* The briefing hero: full-bleed Navy, faint orbit lines, a Flag rule at its foot. */
+  .briefing { position: relative; overflow: hidden; color: #fff; background: var(--color-night); border-bottom: 4px solid var(--color-flag); }
+  .briefing .orbits { position: absolute; pointer-events: none; right: -18rem; top: -16rem; width: 62rem; height: 62rem; opacity: .1; }
+  .briefing .lede { color: rgb(255 255 255 / .88); max-width: 40rem; font-size: clamp(1.1rem, 1.6vw, 1.28rem); }
+  .briefing .note { color: rgb(255 255 255 / .72); }
+  .briefing .t-label { color: rgb(255 255 255 / .72); }
+
+  /* Instrument panel: square, hairline-bordered, on deep Navy. */
+  .panel { border: 1px solid rgb(255 255 255 / .16); background: rgb(0 0 92 / .5); }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .6rem 1rem; border-bottom: 1px solid rgb(255 255 255 / .16); }
+  .readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .readouts > div { padding: .9rem 1rem .8rem; }
+  .readouts > div + div { border-left: 1px solid rgb(255 255 255 / .12); }
+  .readout { font: 600 clamp(1.6rem, 3.6vw, 2.5rem)/1 var(--font-mono); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .readout small { font-size: .5em; font-weight: 500; letter-spacing: 0; color: rgb(255 255 255 / .7); margin-left: .15em; }
+  .readouts .t-label { margin-top: .55rem; color: rgb(255 255 255 / .68); font-size: .7rem; }
+  @media (max-width: 30rem) {
+    .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .readouts > div:nth-child(3) { border-left: 0; }
+    .readouts > div:nth-child(n+3) { border-top: 1px solid rgb(255 255 255 / .12); }
+  }
+
+  /* The live dot: Flag red, pulsing gently. */
+  .live-dot { display: inline-block; width: .45rem; height: .45rem; border-radius: 999px; background: var(--color-flag); box-shadow: 0 0 0 0 rgb(234 3 3 / .6); animation: live 2s ease-in-out infinite; }
+
+  /* HUD frame: corner ticks around a figure or a live view. */
+  .hud { position: relative; }
+  .hud::before { content: ""; position: absolute; inset: 6px; z-index: 1; pointer-events: none; opacity: .55;
+    background:
+      linear-gradient(currentcolor, currentcolor) 0 0 / 12px 1px no-repeat, linear-gradient(currentcolor, currentcolor) 0 0 / 1px 12px no-repeat,
+      linear-gradient(currentcolor, currentcolor) 100% 0 / 12px 1px no-repeat, linear-gradient(currentcolor, currentcolor) 100% 0 / 1px 12px no-repeat,
+      linear-gradient(currentcolor, currentcolor) 0 100% / 12px 1px no-repeat, linear-gradient(currentcolor, currentcolor) 0 100% / 1px 12px no-repeat,
+      linear-gradient(currentcolor, currentcolor) 100% 100% / 12px 1px no-repeat, linear-gradient(currentcolor, currentcolor) 100% 100% / 1px 12px no-repeat; }
+  .bench-figure.hud { color: var(--color-orbit); }
+
+  .emblem { width: min(100%, 21rem); filter: drop-shadow(0 18px 48px rgb(0 0 40 / .5)); }
 
   /* Level-specific content: data-show="beginner intermediate" hides an element unless
      the chosen level is listed. Without JavaScript the beginner level shows. */
@@ -167,9 +218,11 @@
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .patch-just-earned, .pass-sat { animation: none; }
+    .patch-just-earned, .pass-sat, .live-dot { animation: none; }
+    .button .arrow { transition: none; }
   }
 }
 
+@keyframes live { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgb(234 3 3 / .55); } 50% { opacity: .55; box-shadow: 0 0 0 5px rgb(234 3 3 / 0); } }
 @keyframes stamp { 0% { transform: scale(1.25) rotate(-8deg); } 100% { transform: scale(1) rotate(0); } }
 @keyframes pass { from { offset-distance: 8%; opacity: 0; } 12% { opacity: 1; } to { offset-distance: 70%; opacity: 1; } }

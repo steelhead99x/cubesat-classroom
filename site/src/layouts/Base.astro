@@ -1,6 +1,8 @@
 ---
-import '@fontsource/atkinson-hyperlegible/400.css';
-import '@fontsource/atkinson-hyperlegible/700.css';
+import '@fontsource-variable/inter';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/600.css';
 import '../theme.css';
 import rail from '../../../docs/assets/rail-fit.png';
 import { siteOrigin } from '../origin';
@@ -31,7 +33,7 @@ const social = image ?? siteOrigin + rail.src.replace(base, '');
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="description" content={description}>
     {robots && <meta name="robots" content={robots}>}
-    <meta name="theme-color" content="#03038c">
+    <meta name="theme-color" content="#01017f">
     <link rel="icon" type="image/svg+xml" href={base + '/' + mark}>
     {canonical && <link rel="canonical" href={canonical}>}
     <meta property="og:site_name" content="CubeSat Classroom">
