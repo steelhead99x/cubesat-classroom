@@ -5,7 +5,7 @@ Standard library only. Recording needs `rtl_power` from the RTL-SDR Blog
 drivers; every other command works on saved CSV files, so a crew can analyse
 another crew's sweeps without a dongle.
 
-    sweep.py record   --band 2m --label "load, gain 20" --out load.csv
+    sweep.py record   --band 2m --label "load, gain 20" --out load.csv --dc-checked
     sweep.py summary  load.csv
     sweep.py compare  halow-off.csv halow-on.csv
     sweep.py response --ref through.csv --dut stub.csv --at 98e6 145.8e6
@@ -14,7 +14,9 @@ another crew's sweeps without a dongle.
 
 All levels are relative dB from the dongle, not dBm. Differences between two
 sweeps taken with the same dongle, gain and frequencies are meaningful; the
-absolute numbers are not.
+absolute numbers are not. `compare` and `response` refuse two sweeps whose
+receiver, gain, bins or frequency range differ (from the .json labels that
+`record` writes), unless you pass --force.
 """
 
 import argparse
@@ -60,14 +62,21 @@ def load(path):
             except ValueError:
                 continue
             for i, db in enumerate(vals):
-                if math.isnan(db):
+                if math.isnan(db) or db == math.inf:
                     continue
                 fr = round(lo + (i + 0.5) * step)
                 s, n = acc.get(fr, (0.0, 0))
-                acc[fr] = (s + 10 ** (db / 10), n + 1)
+                # rtl_power writes -inf for a bin with zero power: count it as 0 W.
+                acc[fr] = (s + (0.0 if db == -math.inf else 10 ** (db / 10)), n + 1)
     if not acc:
         sys.exit(f"{path}: no rtl_power rows found")
-    return sorted((fr, 10 * math.log10(s / n)) for fr, (s, n) in acc.items())
+    pts = [(fr, 10 * math.log10(s / n)) for fr, (s, n) in acc.items() if s > 0]
+    dropped = len(acc) - len(pts)
+    if dropped:
+        print(f"{path}: skipped {dropped} bins with zero power in every sweep", file=sys.stderr)
+    if not pts:
+        sys.exit(f"{path}: every bin has zero power")
+    return sorted(pts)
 
 
 def meta(path):
@@ -89,6 +98,29 @@ def stats(pts):
         "peak_mhz": peak[0] / 1e6,
         "peak_above_floor_db": peak[1] - statistics.median(dbs),
     }
+
+
+# Settings that must match before two sweeps can be subtracted.
+MUST_MATCH = ("receiver", "gain_db", "bin_hz", "start_hz", "stop_hz", "ppm")
+
+
+def check_compatible(a, b, force=False):
+    """Stop if two sweeps were taken with different settings (from their .json labels)."""
+    ma, mb = meta(a), meta(b)
+    if not ma or not mb:
+        missing = a if not ma else b
+        msg = f"{missing}.json is missing, so gain and bins can't be checked"
+        if not force:
+            sys.exit(f"{msg}. Record with sweep.py record, or pass --force if you know they match.")
+        print(f"warning: {msg}", file=sys.stderr)
+        return
+    diff = [k for k in MUST_MATCH if ma.get(k) != mb.get(k)]
+    if diff:
+        lines = "; ".join(f"{k}: {ma.get(k)} vs {mb.get(k)}" for k in diff)
+        if not force:
+            sys.exit(f"these sweeps can't be compared, settings differ ({lines}). "
+                     "Re-record with the same settings, or pass --force to override.")
+        print(f"warning: settings differ ({lines})", file=sys.stderr)
 
 
 def nearest(pts, f):
@@ -121,10 +153,17 @@ def cmd_record(a):
         lo, hi, step = a.start, a.stop, a.step
     if not shutil.which("rtl_power"):
         sys.exit("rtl_power not found: install the RTL-SDR Blog drivers (see bench/README.md)")
+    if not a.dc_checked:
+        sys.exit("measure the DC on the dongle's SMA centre pin first (see bench/README.md, "
+                 "\"Bias tee\"), then add --dc-checked. A dongle can keep its bias tee on even "
+                 "when software turns it off, and DC can damage a load, filter or noise source.")
     if shutil.which("rtl_biast"):
-        # Never feed DC into a load, a stub, a filter or a noise source.
-        subprocess.run(["rtl_biast", "-b", "0"], check=False,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        r = subprocess.run(["rtl_biast", "-b", "0"], capture_output=True, text=True)
+        if r.returncode != 0:
+            sys.exit("rtl_biast -b 0 failed, so the bias tee may still be on:\n"
+                     + (r.stderr or r.stdout).strip())
+    else:
+        print("rtl_biast not found: relying on your DC measurement", file=sys.stderr)
     cmd = ["rtl_power", "-f", f"{int(lo)}:{int(hi)}:{int(step)}", "-g", str(a.gain),
            "-i", str(a.interval), "-e", f"{a.seconds}s", "-c", "0.2"]
     if a.ppm:
@@ -139,6 +178,7 @@ def cmd_record(a):
         "start_hz": lo, "stop_hz": hi, "bin_hz": step,
         "gain_db": a.gain, "seconds": a.seconds, "ppm": a.ppm,
         "receiver": a.receiver,
+        "dc_checked": True,
         "utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "levels": "relative dB from the dongle, not dBm",
     }
@@ -159,6 +199,7 @@ def cmd_summary(a):
 
 
 def cmd_compare(a):
+    check_compatible(a.base, a.test, a.force)
     base, test = load(a.base), load(a.test)
     rows = pair(base, test)
     diffs = [t - b for _, b, t in rows]
@@ -175,6 +216,7 @@ def cmd_compare(a):
 
 def cmd_response(a):
     """Insertion gain of a device: (noise through device) - (noise straight through)."""
+    check_compatible(a.ref, a.dut, a.force)
     rows = pair(load(a.ref), load(a.dut))
     resp = [(fr, d - r) for fr, r, d in rows]
     if a.out:
@@ -227,6 +269,8 @@ def main(argv=None):
                    choices=["hardware bench", "received RF"])
     r.add_argument("--receiver", default="RTL-SDR Blog V4")
     r.add_argument("--out", required=True)
+    r.add_argument("--dc-checked", action="store_true",
+                   help="you measured under 0.5 V DC on the SMA centre pin with this dongle")
 
     s = sub.add_parser("summary", help="noise floor and strongest signal")
     s.add_argument("files", nargs="+")
@@ -234,12 +278,14 @@ def main(argv=None):
     c = sub.add_parser("compare", help="noise-floor change from one sweep to another")
     c.add_argument("base")
     c.add_argument("test")
+    c.add_argument("--force", action="store_true", help="compare even if settings differ")
 
     q = sub.add_parser("response", help="filter response from a noise source")
     q.add_argument("--ref", required=True, help="noise source straight into the dongle")
     q.add_argument("--dut", required=True, help="noise source through the device")
     q.add_argument("--at", type=float, nargs="*", default=[], help="frequencies to report, Hz")
     q.add_argument("--out")
+    q.add_argument("--force", action="store_true", help="compare even if settings differ")
 
     t = sub.add_parser("stub", help="quarter-wave coax stub length or velocity factor")
     t.add_argument("--freq", type=float, required=True)

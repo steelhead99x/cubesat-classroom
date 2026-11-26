@@ -15,6 +15,7 @@ for r,p in design.parts.items():
         if pins-pads: bad+=1
     seen[p['fp']]=1
 print('problems:',bad)
+if bad: sys.exit(1)
 if len(sys.argv)>1:
     for name in ['Connector_Coaxial:SMA_Samtec_SMA-J-P-X-ST-EM1_EdgeMount','Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical','Package_TO_SOT_SMD:SOT-89-3','Package_TO_SOT_SMD:SOT-363_SC-70-6','Transformer_SMD:Transformer_MiniCircuits_AT224-1A','Connector_USB:USB_C_Receptacle_GCT_USB4125-xx-x_6P_TopMnt_Horizontal','Package_DFN_QFN:QFN-24-1EP_4x4mm_P0.5mm_EP2.6x2.6mm_ThermalVias']:
         f=load(name); print('==',name.split(':')[1])

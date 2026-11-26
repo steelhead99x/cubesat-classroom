@@ -26,7 +26,7 @@ A noise source puts out roughly equal power at every frequency. Sweep it straigh
 2. **Reference sweep.** Noise source → 10 dB → V4. Bias tee off. Try gain 0 and gain 10 first: if the floor rises much less than 10 dB, the dongle is overloading, so swap in the 20 dB attenuator.
 
    ```sh
-   python3 sweep.py record --start 80e6 --stop 120e6 --step 100e3 --gain 10 --label "noise, through" --out through.csv
+   python3 sweep.py record --start 80e6 --stop 120e6 --step 100e3 --gain 10 --label "noise, through" --out through.csv --dc-checked
    ```
 
 3. **Stub sweep.** Put the tee between the attenuator and the V4, with the stub on its third port. Record `--label "noise, stub" --out stub.csv` with the same settings.

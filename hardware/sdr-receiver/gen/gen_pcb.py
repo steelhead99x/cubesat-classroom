@@ -266,7 +266,7 @@ usb=parts['J1'] and 'J1'; put(usb,14.0,H-3.2,0)
 at(one('R','USB_CC1','GND'),'USB_CC1',12.6,H-8.6,270); at(one('R','USB_CC2','GND'),'USB_CC2',15.4,H-8.6,270)
 st=one('J','VEXT_RAW','GND'); put(st,27.0,H-4.6,0)
 qv=one('Q','VEXT_G'); put(qv,35.5,H-4.8,0); at(one('R','VEXT_G','GND'),'VEXT_G',35.5,H-2.2,180)
-tvs=one('D','VUSB'); put(tvs,8.0,H-12.5,0)
+tvs=one('D','VUSB'); put(tvs,8.0,H-12.5,180)   # cathode (pad 1) toward VUSB on the right
 put(one('JP','VUSB','VIN','VEXT'),23.0,H-14.0,90); put(one('F','VIN','+5V'),33.0,H-12.6,0)
 b5=[r for r in sel('C','+5V','GND')]; put(b5[0],37.4,H-12.6,90); put(b5[1],40.0,H-12.6,90); put(b5[2],42.2,H-12.6,90)
 at(one('R','+5V','LED_PWR_A'),'+5V',36.4,H-8.8,0); at(one('D','LED_PWR_A','GND'),'LED_PWR_A',39.0,H-8.8,0)

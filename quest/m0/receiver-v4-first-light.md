@@ -17,13 +17,16 @@ No login is needed.
 The V4 needs the RTL-SDR Blog drivers. Most current SDR apps include them. For the command-line tools, follow the [bench README](/hardware/sdr-receiver/bench/README.md#install). Receiving is legal without a licence. Nothing in this quest transmits.
 
 1. **Check the dongle.** Plug it in and run `rtl_test -t`. Write down the tuner it reports: a V4 reports the R828D.
-2. **Bias tee off.** Run `rtl_biast -b 0`. The bias tee puts DC on the antenna socket, which can damage a load, a short-circuit antenna or a filter. The sweep script turns it off for you each time.
+2. **Check for DC on the antenna socket.** The bias tee puts DC on the socket, which can damage a load, an antenna that is a short circuit at DC, a filter or a noise source.
+   - Run `rtl_biast -b 0`. If it reports an error, stop.
+   - With `rtl_test -t` running (the dongle is open, so a forced-on bias tee would be on), a mentor measures the DC voltage between the SMA's centre pin and its outer shell. It should be under 0.5 V. Several volts means the bias tee is on: stop, and see "Bias tee" in the [bench README](/hardware/sdr-receiver/bench/README.md#bias-tee).
+   - Write the reading in your log. `sweep.py record` won't run until you add `--dc-checked` to say this check was done with this dongle. It also turns the bias tee off before every sweep and stops if that fails.
 3. **Sweep the load.** Screw the 50 Ω load on the SMA. Run:
 
    ```sh
    cd hardware/sdr-receiver/bench
-   python3 sweep.py record --band 2m   --gain 20 --label "50 ohm load" --out load-2m.csv
-   python3 sweep.py record --band 70cm --gain 20 --label "50 ohm load" --out load-70cm.csv
+   python3 sweep.py record --band 2m   --gain 20 --label "50 ohm load" --out load-2m.csv --dc-checked
+   python3 sweep.py record --band 70cm --gain 20 --label "50 ohm load" --out load-70cm.csv --dc-checked
    ```
 
 4. **Sweep the antenna.** Swap the load for the antenna and repeat with `--label "antenna, <where it is>"` and `--out ant-2m.csv`, `ant-70cm.csv`.

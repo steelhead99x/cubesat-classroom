@@ -31,7 +31,15 @@ A mentor checks the wiring before anything is powered.
    | XIAO ESP32-S3 + HaLow board, Wi-Fi off | HaLow at 1, 2 and 4 MHz bandwidth | the same |
 
 4. **Same stream every time.** Send the same thing at the same rate on every link. At the receiving end, write down how many megabytes arrived during the 10 minutes.
-5. **Summarise:** `python3 power_log.py summary *.csv --megabytes <delivered>`, one case at a time. With a PPK2, export CSV and add `--volts 5`.
+5. **Summarise.** Each run delivers its own amount of data, so give each file its own figure:
+
+   ```sh
+   python3 power_log.py summary s3-24-stream.csv --megabytes 180
+   python3 power_log.py summary s3-24-stream.csv c5-5g-stream.csv \
+       --delivered s3-24-stream.csv=180 --delivered c5-5g-stream.csv=210
+   ```
+
+   One `--megabytes` figure for several files is refused. With a PPK2, export CSV and add `--volts 5`.
 6. Repeat every streaming case three times, on a different day if you can. Share a table of the averages and the spread.
 
 ### Check your work

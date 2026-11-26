@@ -8,3 +8,4 @@ for i in $(seq 1 ${1:-8}); do
   [ "$n" -eq 0 ] && break
 done
 cp /tmp/best.kicad_pcb ../kicad/csc-r1.kicad_pcb; echo "best: $best failed"
+[ "$best" -eq 0 ] || { echo "routing incomplete: $best nets failed" >&2; exit 1; }
