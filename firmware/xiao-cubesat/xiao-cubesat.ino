@@ -57,12 +57,14 @@
   #define HAS_USER_LED 1
   const int LED_PIN = LED_BUILTIN;  // GPIO21, lit when LOW
   const int LED_ON = LOW;
-  const int BUTTON_PIN = D1, BUZZER_PIN = A3, SD_CS_PIN = D2;
+  // The buzzer is on XIAO pin 3 (A3/D3). It only needs a digital pin, and ESP32 core 4 no
+  // longer defines A3 on every XIAO, so use D3.
+  const int BUTTON_PIN = D1, BUZZER_PIN = D3, SD_CS_PIN = D2;
 #elif defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_IDF_TARGET_ESP32C3)
   #define BOARD_NAME "XIAO ESP32-C3"
   #define HAS_CHIP_TEMP 1
   #define HAS_USER_LED 0  // this XIAO has no user LED; the OLED and buzzer report status
-  const int BUTTON_PIN = D1, BUZZER_PIN = A3, SD_CS_PIN = D2;
+  const int BUTTON_PIN = D1, BUZZER_PIN = D3, SD_CS_PIN = D2;  // D3: see the S3 note
 #elif defined(ARDUINO_ARCH_RP2040) && !defined(ARDUINO_ARCH_MBED)
   #define BOARD_NAME "XIAO RP2040"
   #define HAS_CHIP_TEMP 1
@@ -83,7 +85,12 @@
 
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
   #define CAMERA_SUPPORTED 1
+  // The camera driver and Adafruit Unified Sensor (used by the BME280 and TSL2561 libraries)
+  // both name a type sensor_t. Rename the camera's copy while its header is read, so the two
+  // never meet. This sketch does not use the camera's sensor_t.
+  #define sensor_t camera_sensor_t
   #include "esp_camera.h"
+  #undef sensor_t
 #else
   #define CAMERA_SUPPORTED 0
 #endif
