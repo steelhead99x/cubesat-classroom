@@ -1,22 +1,30 @@
 # AMSAT CubeSatSim frame with a printed Arduino payload
 
-A real 1U CubeSat frame (100 × 100 × 113.5 mm) that holds an **Arduino Uno R3** and an **Arduino Nano 33 BLE Sense Rev2** (the bare board, ABX00069). Every part is 3D printed, including the fasteners, their springs and the lock keys: no metal hardware.
+A real 1U CubeSat frame (100 × 100 × 113.5 mm) that holds an **Arduino Uno R3** and an **Arduino Nano 33 BLE Sense Rev2** (the bare board, ABX00069). Every part is 3D printed, including every fastener and lock: no screws, springs or metal hardware, and no tools.
 
-The frame is the [AMSAT CubeSat Simulator](https://cubesatsim.org) v2.0 frame, unchanged except for one piece. The payload plate, clamp, fasteners and columns are new parts designed for this kit. They're designed around Arduino's own CAD for both boards (see [reference/](reference/)).
+The frame is the [AMSAT CubeSat Simulator](https://cubesatsim.org) v2.0 frame, unchanged except for one piece. The payload plate, clamp, clips, keys and columns are new parts designed for this kit, around Arduino's own CAD for both boards (see [reference/](reference/)).
 
-**How the boards are held.** No board relies on a flexing part alone. Real CubeSats hold boards rigidly, because a snap that relies only on its own spring can work loose under launch vibration. The Uno's latches flex to snap in, then a lock key stops each one from opening again.
+## How it holds together: snap, then lock
 
-- **Uno R3:** snaps in with no tools. Short pins in its four holes locate it, and four latches click over its edges at the only places Arduino's layout leaves the edge clear. Each hook's underside is angled 20°, so the arm's spring presses the board down onto its posts (about 7 N per latch) and it can't rattle. Then a red **lock key** drops in behind each latch and clips into place. With the key in, a latch can open only 0.2 mm, so it can't let go, the same idea as the secondary lock on an aerospace connector. If a key won't go in, that corner of the board isn't seated.
-- **Nano 33 BLE Sense:** it stands on its long edge like a card in a card cage. V-grooves grip the bottom and top edges along their whole length, and stops at both ends keep it from sliding. The top groove is in a clamp held down by two quarter-turn fasteners, pressing both edges into their V's so the board has no play. The board's own parts face into the CubeSat and never touch the holder.
-- **Quarter-turn fasteners:** the plate and the Nano clamp use the push-and-turn panel fastener of aircraft and spacecraft access panels. Push the slotted stud in past a cross-bar, then turn it 90° clockwise with a flat screwdriver. A spiral cam slot in the stud draws it in against a printed spring washer, then drops the bar into a detent you can feel click. To undo it you have to push in and turn back, so vibration can't turn it loose.
-  - The plate's four studs go in from **outside the bottom face**, up through hollow columns, the way real spacecraft panels are fastened from outside.
-  - Each spring washer is printed flat with two long spiral arms, so the arms bend along their layers, the strong direction for a printed part.
-  - Together the four plate studs hold the plate down with about 21 N, more than the payload weighs at 20 g, a common design load for small-satellite launch. Above that, the washers squeeze and the plate can lift a fraction of a millimetre, but nothing can come apart: the bar and cam are solid stops.
-  - The basic design is decades old and is described here without brand names. This isn't legal advice: check with someone qualified before selling copies.
+Everything snaps together, and is designed to the rules for printed snap fits, so it works on a worn or budget printer, not just a tuned one:
 
-![Section through a quarter-turn fastener](quarter-turn-section.png)
+- **Every part that flexes bends in its own print plane**, along its printed strands, never across its layers. Printed hooks that grow up off the bed are the weak way round, so the Uno's latches are separate clips printed lying flat.
+- **Strain is at most 1.2%**, about 15% of PLA's 8% elongation at break, so a snap can be used over and over without cracking or taking a set.
+- **Nothing that flexes or carries load is thinner than 2 mm**, and the clearances are 0.4 mm.
+- **Every snap closes on a 45° face.** It prints without supports, and it pulls its joint tight whatever the print error, so nothing rattles.
+- **The Uno latches have a secondary lock:** a red key that stops each clip from opening, like the position-assurance clip on an aerospace connector. If a key won't go in, that corner of the board isn't seated.
 
-![Section through a Uno latch](uno-latch-section.png)
+Every part has one big flat face, the face it prints on, so Bambu Studio's auto-orient puts it down the right way.
+
+**Plate to frame: snap pins.** Three of the bottom piece's columns end in a pin with a 45° head; the fourth, next to the Nano, has a plain locating pin. Around each snap pin, the plate has two curved flex fingers with a tooth at their tips. Press the plate straight down: the heads spread the teeth, then they click in under the heads. Each tooth sits 0.35 mm out from rest on the 45° face, so the plate is pulled down onto the columns, and print error within about 0.2 mm only changes how hard. It takes about 30 N to pull the plate off, more than the payload weighs at 20 g (a common design load for small-satellite launch). To take it off, pull firmly and evenly.
+
+**Uno R3: latch clips with lock keys.** Short pins in its four holes locate it on 16 mm posts. Three clips hold its left, right and top edges, at the only places Arduino's layout leaves clear of parts, posts and the frame's columns. Each clip's foot slides into a tunnel in its backstop, and its arm stands beside the board edge with a hook over it. The hook's underside is angled 20°, so the arm's spring presses the board down onto its posts (about 5 N per clip). With the key in behind the arm, a clip can open only 0.2 mm, and its hook keeps 0.35 mm on the board.
+
+**Nano 33 BLE Sense: card cage, hook and snap.** It stands on its long edge like a card in a card cage. V-grooves grip its bottom and top edges along their whole length, and stops at both ends keep it from sliding. The top groove is in the clamp: its far end tucks under a lip with a 45° underside, and its near end snaps onto a pin on a pillar. The board's own parts face into the CubeSat and never touch the holder.
+
+![Section through a snap pin](snap-pin-section.png)
+
+![Section through a Uno latch clip](uno-latch-section.png)
 
 ![Payload plate layout](payload-plate-layout.png)
 
@@ -24,54 +32,49 @@ The frame is the [AMSAT CubeSat Simulator](https://cubesatsim.org) v2.0 frame, u
 
 - **Frame:** AMSAT CubeSatSim v2.0 by Alan Johnston, KU2Y, AMSAT VP Educational Relations. Source: [alanbjohnston/CubeSatSim `hardware/frame/v2.0`](https://github.com/alanbjohnston/CubeSatSim/tree/master/hardware/frame/v2.0), commit `1f6a01c4` (2024-10-07), with the [Onshape CAD](https://cad.onshape.com/documents/ba47819ff100597297d1d967/w/f19409ec7cd5459afb429cb9/e/a0e0cc37dee6fb879c4bcc2b) linked from there.
 - **License:** the CubeSatSim repository is GPL-3.0, so everything in this folder is GPL-3.0 too ([LICENSE](LICENSE)). The rest of CubeSat Classroom keeps its MIT or Apache-2.0 terms.
-- **Changes:** modified by CubeSat Classroom on 2026-11-25. `bottom-with-columns` is the AMSAT top/bottom piece with four hollow standoff columns added where the AMSAT board stack normally screws in. The plate's quarter-turn studs pass through the columns and the 3.2 mm stack holes, which are opened to 6.4 mm. The payload plate, clamp, fasteners, keys and load test are new parts. The files in [upstream/](upstream/) are AMSAT's, byte for byte (SHA-256 below).
+- **Changes:** modified by CubeSat Classroom on 2026-11-25. `bottom-with-columns` is the AMSAT top/bottom piece with four standoff columns added where the AMSAT board stack normally screws in; three end in snap pins and one in a locating pin. The payload plate, clamp, latch clips, keys, fit plate and test coupons are new parts. The files in [upstream/](upstream/) are AMSAT's, byte for byte (SHA-256 below).
 - This is an independent build. It isn't made or endorsed by AMSAT.
 
 ## What to print
 
-There are two Bambu Studio projects. Open either one in Bambu Studio (File → Open Project). Each plate has a name and a preview picture, and every part is already in its print orientation. Both fit any Bambu Lab printer with a 256 mm bed (P1S, P1P, X1 Carbon, X1E, A1).
+There are three Bambu Studio projects. Open any of them in Bambu Studio (File → Open Project). Each plate has a name and a preview picture, and every part is already in its print orientation. They fit any Bambu Lab printer with a 256 mm bed (P1S, P1P, X1 Carbon, X1E, A1).
 
 | File | Plate | What's on it |
 | --- | --- | --- |
-| **[p1s/cubesat-kit.3mf](p1s/cubesat-kit.3mf)** | 1. Payload deck and fasteners | Payload plate with the Uno latches, the Nano clamp, the load test (post and tab), 4 lock keys, 4 plate studs, 2 clamp studs and 6 spring washers |
-| | 2. Frame | Both AMSAT sides (one with the camera hole), the AMSAT top (unchanged) and the bottom with hollow columns |
-| **[p1s/cubesat-fit-plate.3mf](p1s/cubesat-fit-plate.3mf)** (optional) | 1. Fit plate and fasteners | The isogrid fit (display) plate with its own Nano clamp and a full set of keys, studs and washers, so it builds into a second, display-ready payload |
+| **[p1s/cubesat-test-coupons.3mf](p1s/cubesat-test-coupons.3mf)** (print first) | Test coupons | One snap pin and its flex fingers, and one Uno latch with its clip, key and a strip of test board: about 4 g and 5 g |
+| **[p1s/cubesat-kit.3mf](p1s/cubesat-kit.3mf)** | 1. Payload deck, clamp and latches | Payload plate, Nano clamp, 3 latch clips and 3 lock keys |
+| | 2. Frame | Both AMSAT sides (one with the camera hole), the AMSAT top (unchanged) and the bottom with columns |
+| **[p1s/cubesat-fit-plate.3mf](p1s/cubesat-fit-plate.3mf)** (optional) | Fit plate, clamp and latches | The open-truss fit plate with its own clamp, clips and keys |
 
 Before you slice:
 
-- **Printer and process:** the project keeps whatever printer, process and filament you have selected. Pick your printer and nozzle (for example *Bambu Lab P1S 0.6 nozzle*), the matching *0.30mm Standard* process (or *0.20mm Standard* for a 0.4 mm nozzle), and PLA. Supports stay off.
-- **Already set in the file:** the keys, studs, washers and load-test parts print at 100% infill, since they're small and carry the load. Each part is its own object with a numbered name (Lock key 1 to 4, Plate stud 1 to 4 and so on), so Bambu Studio keeps every part on the plate it was placed on.
-- **Colours with an AMS:** select the four lock keys and give them red filament, like flight safety pins. In the fit-plate file, set a filament change at 2.4 mm to white and back at 3.0 mm, so only the raised lettering is white.
-- **Plate 1 first:** run the load test (below) before you assemble anything. If the fasteners need a tweak, regenerate and reprint just those parts; Bambu Studio can skip objects on a plate.
+- **Printer and process:** the projects keep whatever printer, process and filament you have selected. Pick your printer and nozzle (for example *Bambu Lab P1S 0.6 nozzle*), the matching *0.30mm Standard* process (or *0.20mm Standard* for a 0.4 mm nozzle), and PLA. Supports stay off. Auto-orient is fine: each part already lies on its biggest flat face.
+- **Already set in the files:** the clips, keys and pin coupon print at 100% infill, since they flex. Each part is its own object with a numbered name (Latch clip 1 to 3, Lock key 1 to 3 and so on), so Bambu Studio keeps every part on the plate it was placed on.
+- **Colours with an AMS:** give the lock keys red filament, like flight safety pins. The CubeSat Classroom mark and lettering under the Uno stand 0.6 mm proud: add a filament change at **3.0 mm** (white) and another at **3.6 mm** (back to the plate colour), so only they are white.
 
-None of the plates in either file has been sliced for a time estimate yet. For other slicers, every part is in [stl/](stl/) as a separate file, already in print orientation.
+None of the plates has been sliced for a time estimate yet. For other slicers, every part is in [stl/](stl/) as a separate file, already in print orientation.
 
-**Print the load test first, and do a real pull test.** It's one plate fastener on its own: the post is the bottom face and a column, and the tab is a corner of the plate.
+**Print the test coupons first.** They're the two joints on their own, so a class can check a printer with a few grams of plastic instead of a whole plate:
 
-1. Push the stud, with its washer feet down, through the post from the flat end. Then put the tab on, flat side to the post, and push it over the stud's tip so the bar slips into the slot. Turn the stud 90° clockwise with a flat screwdriver until it clicks.
-2. The stud should turn with a firm, even effort and click at the end. If it won't turn, the bar is too tight in the slot: raise `QT_CLEAR` in [generate.py](generate.py) from 0.3 to 0.4. If it turns with no effort and doesn't click, lower it to 0.2. Then regenerate.
-3. Hang the post by its hole and hang weights from the tab's hole, pulling the tab straight off the stud. With about 0.6 kg on it, the washer starts to squeeze and the tab lifts slightly. That's the preload, and it's expected. Keep adding weight up to 2 kg: it should hold without coming apart. That's the whole payload's weight at 20 g on one fastener, four times its share. By hand calculation the bar would start to yield at around 5 kg; if you test further, do it over something soft.
-4. Shake it hard with a weight on it and check the stud hasn't turned. Write down what it held, and report it with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
+1. **Snap pin:** press the tab (flat side down) onto the pin until it clicks. It should take a firm push and stay tight with no rattle. Pull it off: it should take a firm, even pull. If it won't go on, the fingers are too stiff for that printer: print the tab again with one less wall.
+2. **Latch:** slide the clip's foot into the tunnel in the backstop, hook towards the posts. Press the board strip down onto the two posts until the hook clicks over its edge, then push the key in behind the clip until it clicks. The board strip should be held with no play, and the clip shouldn't open with the key in.
 
-**The display plate (plate 3)** has the payload plate's latches, pillars, Nano card cage and quarter-turn receptacles, made by the same code and in the same places, so a fit you check on one holds for the other. It mounts on the bottom piece the same way too. Check that the Uno clicks in and every key clips in, that the Nano goes in, and that all the studs turn and click.
+Write down what you find and report it with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
 
-It's made as a display piece for photos and school projects. It's a 2.4 mm isogrid panel, the triangular rib pattern used on rocket and satellite structures, with a bevelled rim. It has a raised CUBESAT CLASSROOM nameplate under the Uno and a +X/+Y axis marker like a spacecraft body frame. The lettering, nameplate border and arrows stand 0.6 mm proud, so two colours are easy:
+**The fit plate** has the payload plate's posts, latches, card cage, clamp mounts, snap holes and branding, made by the same code and in the same places, on an open triangular truss instead of a solid deck: about 26 g instead of 37 g, solid. A fit you check on it holds for the real plate, and it snaps onto the bottom piece the same way. It also makes a display piece for photos and school projects: dark grey or black with white lettering looks most like flight hardware.
 
-- In Bambu Studio, add a filament change at **2.4 mm** (white) and another at **3.0 mm** (back to the panel colour), so only the lettering is white.
-- With an AMS, Studio does both changes automatically. Without one, the printer pauses for each swap.
-- Dark grey or black for the panel, with white lettering, looks most like flight hardware.
-
-To change the wording, edit `LINES` in [label.py](label.py), run it (it needs `matplotlib` for its bundled DejaVu Sans Bold font), then regenerate. The CAD reads the outlines from `label.json`, so `generate.py` itself doesn't need matplotlib.
+To change the wording, edit `LINES` in [label.py](label.py), run it (it needs `matplotlib` for its bundled DejaVu Sans Bold font), then regenerate. The CAD reads the outlines from `label.json`, and the mark is drawn from the shapes in [docs/mark.svg](../../docs/mark.svg).
 
 ## Assemble
 
-1. **Uno R3:** line its holes up with the four pins, USB-B towards the plate edge on the left, and press straight down near each corner until all four latches click. Then push a lock key into the slot behind each latch, ring hole up, until it clicks. A key that won't go in means that corner isn't seated: press the board down there and try again.
-2. **Nano 33 BLE Sense** (bare board, parts facing the Uno, USB to the left): lower it into the V-groove on the plate so its USB end sits against the small corner stop and its other end against the end wall.
-3. **Lower clamp:** set it on so its groove takes the Nano's top edge. Put a washer (feet down) and a short stud in each of its two holes, push down and turn each stud 90° clockwise until it clicks. The Nano should now be held tight with no play. The clamp doesn't touch the Uno, so either board comes out on its own.
-4. **Plate into the frame:** turn the plate over and set it on the four columns of the bottom piece. From outside the bottom face, push a long stud with its washer into each column, then turn each one 90° clockwise until it clicks. Do the plate before the Uno if you can: the stud under the Uno's USB corner is easier to reach.
-5. **Frame:** snap the two sides onto the bottom, then the top, the same way as AMSAT's frame. AMSAT notes the frame holds together on its own. Skip their optional screws to keep it 100% printed.
+1. **Plate onto the frame:** set the plate, board side up, over the bottom piece's four columns, the locating pin by the Nano's corner, and press straight down over each column until all three snap pins click.
+2. **Uno R3 clips:** slide each clip's foot into the tunnel under its backstop, hook towards the board.
+3. **Uno R3:** line its holes up with the four pins, USB-B towards the plate edge on the left, and press straight down near each corner until all three clips click. Then push a lock key into the slot behind each clip, ring hole up, until it clicks. A key that won't go in means that corner isn't seated: press the board down there and try again.
+4. **Nano 33 BLE Sense** (bare board, parts facing the Uno, USB to the left): lower it into the V-groove on the plate so its USB end sits against the small corner stop and its other end against the end wall.
+5. **Nano clamp:** tuck its far end under the lip past the Nano's far end, lay its groove onto the Nano's top edge, and press its round end down onto the pin until it clicks. The Nano should now be held tight with no play. The clamp doesn't touch the Uno, so either board comes out on its own.
+6. **Frame:** snap the two sides onto the bottom, then the top, the same way as AMSAT's frame. AMSAT notes the frame holds together on its own. Skip their optional screws to keep it 100% printed.
 
-To take the Uno out, pull the four keys (a loop of ribbon through each key's hole helps), push each latch outward a little and lift the board. To take the Nano out, push in and turn its clamp's two studs back a quarter turn. To take the plate out, do the same with the four studs on the bottom face.
+To take the Uno out, pull the three keys (a loop of ribbon through each key's hole helps), push each clip outward a little and lift the board. To take the Nano out, lift the clamp's round end off its pin and slide its far end out from under the lip. To take the plate out, pull it straight off the columns.
 
 The Nano's USB plug needs about 28 mm to the left of the board, and it ends about 1 mm inside the plate edge. Use a right-angle Micro-USB cable if a side panel is in the way. The Nano's sensors face the Uno, 15 mm away, so the light sensor sees the inside of the CubeSat. Take the side panel off for light lessons.
 
@@ -81,32 +84,28 @@ The Nano's USB plug needs about 28 mm to the left of the board, and it ends abou
 | --- | --- |
 | Plate | 88 × 88 × 3 mm with 8 mm corner chamfers (AMSAT's boards are 90.5 mm) |
 | Plate position | 15 mm inside the bottom face, below AMSAT's 12 mm snap tabs |
-| Uno R3 | On 10 mm posts with 2.9 mm locating pins. Four latches 8 mm wide. The 1.8 mm arms are 13.1 mm long, rooted in 1.5 mm pockets in the plate. The hook reaches 0.8 mm, which bends the arm 1.3% snapping in, under a 1.5% limit because the arms print upright and bend across their layers. The hook underside is at 20° with 0.15 mm preload, about 7 N down per latch. Lock keys are 1.8 mm thick with 0.1 mm clearance each side, so a latch opens at most 0.2 mm and keeps 0.45 mm of grip. The keys clip in with two 0.35 mm detents (1.5% prong strain). |
+| Snap pins | 6 mm shaft, 7.8 mm head with a 45° underside. Each finger is 2 mm wide and about 15 mm long; it bends 0.9 mm in the plate's plane to let a head pass (1.16% strain, limit 1.2%). The teeth sit 0.35 mm out from rest on the head's 45° face. About 9.9 N to pull the plate off each pin, 30 N for three, against 20 N for 100 g of payload at 20 g. |
+| Uno R3 | On 16 mm posts with 2.9 mm locating pins. Clips are 6 mm wide, printed lying flat. Their 2 mm arms are 15.2 mm long from the foot; the hook reaches 0.7 mm, bending the arm 0.93% in its print plane snapping in. The hook underside is at 20° with 0.15 mm preload, about 5 N down per clip. Lock keys are 1.8 mm thick with 0.1 mm clearance each side, so a clip opens at most 0.2 mm and keeps 0.35 mm of grip. The keys clip in with two 0.3 mm detents (0.86% prong strain). |
 | Nano 33 BLE Sense Rev2 | 43.18 × 17.78 × 1.59 mm (from Arduino's CAD), on edge in V-grooves 2.4 mm wide at the mouth, 1.4 mm at the bottom and 2.0 mm deep. Each edge sits 1.62 mm in. 0.5 mm end play between the stops (the first fit print at 0.2 mm was a little tight). |
-| Quarter-turn studs | 6.0 mm shank in 6.4 mm holes, 10 mm slotted head. The cross-bar is 2.0 × 1.6 mm. The cam draws the stud in 0.55 mm over the first 75°, then a 0.2 mm detent. At least 1.6 mm of stud stays behind the bar. Plate studs are 27 mm long, clamp studs 13 mm. |
-| Spring washers | 18 mm, printed flat. Two 1.6 × 1.5 mm spiral arms, each about 16 mm long, on three 1.2 mm feet. 1.6% strain at the detent crest, under 2%. About 5.4 N per plate stud and 6.8 N per clamp stud. |
-| Plate hold-down | 4 × 5.4 = 21 N, against 20 N for 100 g of payload at 20 g. The receptacle bar sees about 8 MPa. |
-| Nano clamp | The Nano's edge lifts the clamp 0.15 mm off its pillars, so both washers press the board into its V-grooves: about 14 N. |
+| Nano clamp | 4 mm thick. The Nano's edge lifts it 0.15 mm, so its far end presses up into the lip's 45° face and its near end is held by the snap pin: the board is pressed into both V-grooves. |
 
-[generate.py](generate.py) assembles the parts in frame coordinates and fails if:
+[generate.py](generate.py) assembles the parts and fails if:
 
-- the plate holes don't line up with the columns, or the plate hits the AMSAT piece or its snap tabs
-- a stud can't be pushed in past its bar, collides with anything when locked, or isn't held by its bar; or a plate stud's washer would sit on a raised part of the face
-- the washer arms would bend more than 2%, its feet are too short for the hub to travel, the four plate studs hold less than the payload weighs at 20 g, a stud has no detent or too little material behind the bar, or the bar is overstressed
-- any part sits where a plate stud's tip comes through, or reaches past the plate outline into the frame's corner rails
-- a latch, key or pillar hits any Uno part listed in Arduino's layout (headers, jacks, ICSP, the ATmega socket, capacitors, crystal, reset button, …), or something sits under its solder joints. These checks use the latches bent to their seated position.
-- a latch's hook doesn't reach over the board, the board can't be pushed down past the latches bent open, or a latch arm would bend more than 1.5%
-- a lock key doesn't fit its latch, a latch could open past its key, or a key leaves a latch more than half its grip to open
-- the key prongs would bend more than 2%, or their slot is too narrow for the detents
-- a groove wall, stop or clamp touches a part on the Nano, or the V-groove walls reach its parts
-- the Nano could move 0.3 mm in any direction (up, down, either side, or along it past its end play), or either groove alone fails to hold it sideways
-- the Nano can't be lowered into its groove with the clamp off, or the Uno onto its posts
-- anything blocks the Nano's USB plug, or there's less than 20 mm from its USB to the plate edge
-- a peg would bend more than PLA can take over and over
+- a snap pin's fingers, a latch arm or a key prong would bend more than 1.2%, or anything that flexes or carries load is thinner than 2 mm
+- the teeth would meet a pin head less than 0.2 mm out from rest (so print error could leave it loose), or too near the head's edge to hold, or the three snap pins hold less than 1.5 times the payload's weight at 20 g
+- the plate hits the columns or the AMSAT piece or its snap tabs, can't be pushed down past the pin heads with its fingers spread, isn't pressed down by the teeth, or isn't held when pulled
+- any part stands on a set of flex fingers, sits where a pin head comes through, or reaches past the plate outline into the frame's corner rails
+- the clamp hits the plate's parts, can't be pressed onto its pin, isn't pressed down or held by its pin and the lip, or its tab could lift out from under the lip
+- a clip doesn't fit its backstop and tunnel, its foot isn't held down, its hook doesn't reach over the board, or the board can't be pushed down past the clips bent open
+- a clip, key, clamp or pillar hits any Uno part listed in Arduino's layout (headers, jacks, ICSP, the ATmega socket, capacitors, crystal, reset button, …), or something sits under its solder joints. These checks use the clips bent to their seated position.
+- a lock key doesn't fit behind its clip, a clip could open past its key, or a key leaves a clip more than half its grip to open
+- a groove wall, stop or clamp touches a part on the Nano, the V-groove walls reach its parts, the Nano could move 0.3 mm in any direction, or either groove alone fails to hold it sideways
+- the Nano can't be lowered into its groove with the clamp off, anything blocks its USB plug, or there's less than 20 mm from its USB to the plate edge
+- the snap-pin coupon doesn't fit together the same way
 
-`python generate.py --self-test` breaks the design fourteen ways and checks that each one is caught, and that a design exactly at a limit still passes.
+`python generate.py --self-test` breaks the design seventeen ways and checks that each one is caught, and that flex fingers exactly at the strain limit still pass.
 
-Not yet checked on a real print: the quarter-turn fasteners (do the load test), the Uno latches and keys, and the Nano's grip. The spring and strain figures are hand calculations for PLA, not test results. Report what you find with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
+Not yet checked on a real print: nothing in this version has been printed. The strain and force figures are hand calculations for PLA (a straight-beam estimate for the curved fingers), not test results. Print the coupons first and report what you find with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
 
 ## Regenerate
 
@@ -117,11 +116,11 @@ python3 -m venv /tmp/cubesat-cad
 /tmp/cubesat-cad/bin/python hardware/amsat-cubesatsim/prepare.py
 ```
 
-To redraw the layout image and the two sections, install `matplotlib` too and run `python layout.py`, `python latch_section.py` and `python qt_section.py` from this folder.
+To redraw the layout image and the two sections, install `matplotlib`, `scipy`, `shapely` and `networkx` too and run `python layout.py`, `python latch_section.py` and `python snap_section.py` from this folder.
 
 To rebuild the reference board models in [reference/](reference/), follow [reference/README.md](reference/README.md).
 
-To redraw the website renders (`render-exploded.png`, `render-exploded-dark.png`, `render-exploded-navy.png` and `render-assembled.png`), install `pillow` too and run `python render.py` after `generate.py`. It places every part in the frame coordinates `generate.py` uses, in the CubeSat Classroom brand colours. The Uno and Nano are drawn as simple boxes.
+The website renders (`render-exploded.png`, `render-exploded-dark.png`, `render-exploded-navy.png` and `render-assembled.png`) still show an earlier version of the payload. `render.py` hasn't been updated since the strap-mounted Nano and won't run as it is.
 
 Upstream checksums (SHA-256):
 

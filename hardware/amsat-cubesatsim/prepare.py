@@ -1,9 +1,10 @@
 """Pack the AMSAT frame and the printed payload kit into Bambu Studio projects.
 
-Writes p1s/cubesat-kit.3mf (payload deck and fasteners, frame) and p1s/cubesat-fit-plate.3mf
-(the fit plate with its own clamp and fasteners), for a Bambu Lab printer with a 256 mm bed
-(P1S, P1P, X1C, X1E, A1). Every part is placed in its print orientation, repeated parts
-are copies of one object, small load-carrying parts are set to 100% infill, and each
+Writes p1s/cubesat-kit.3mf (payload deck, clamp and latches; frame), p1s/cubesat-fit-plate.3mf
+(the open-truss fit plate with its own clamp and latches) and p1s/cubesat-test-coupons.3mf (one of
+each joint, about 5 g each), for a Bambu Lab printer with a 256 mm bed
+(P1S, P1P, X1C, X1E, A1). Every part is placed in its print orientation as its own object
+(so Bambu Studio keeps it on its plate), small parts that flex are set to 100% infill, and each
 plate has a preview picture. The file follows Bambu Studio's own project layout
 (src/libslic3r/Format/bbs_3mf.cpp): per-object meshes in 3D/Objects/, plates and object
 settings in Metadata/model_settings.config. It carries no printer or filament profile,
@@ -35,30 +36,34 @@ SOLID = {"sparse_infill_density": "100%"}
 # name: (file, transform, settings, preview colour)
 PARTS = {
     "Payload plate": ("stl/payload-plate.stl", None, {}, (0.62, 0.65, 0.70)),
-    "Display plate": ("stl/fit-plate.stl", None, {}, (0.22, 0.24, 0.27)),
+    "Fit plate": ("stl/fit-plate.stl", None, {}, (0.22, 0.24, 0.27)),
     "Nano clamp": ("stl/lower-clamp.stl", None, {}, (0.90, 0.55, 0.18)),
+    "Latch clip": ("stl/latch-clip.stl", None, SOLID, (0.92, 0.93, 0.95)),
     "Lock key": ("stl/lock-key.stl", None, SOLID, (0.85, 0.15, 0.12)),
-    "Plate stud": ("stl/qt-stud-plate.stl", None, SOLID, (0.80, 0.81, 0.84)),
-    "Clamp stud": ("stl/qt-stud-clamp.stl", None, SOLID, (0.80, 0.81, 0.84)),
-    "Spring washer": ("stl/qt-washer.stl", None, SOLID, (0.95, 0.75, 0.25)),
-    "Load test post": ("stl/load-test-post.stl", None, SOLID, (0.55, 0.60, 0.68)),
-    "Load test tab": ("stl/load-test-tab.stl", None, SOLID, (0.55, 0.60, 0.68)),
+    "Pin coupon base": ("stl/coupon-pin-base.stl", None, SOLID, (0.55, 0.60, 0.68)),
+    "Pin coupon tab": ("stl/coupon-pin-tab.stl", None, SOLID, (0.62, 0.65, 0.70)),
+    "Latch coupon base": ("stl/coupon-latch-base.stl", None, {}, (0.55, 0.60, 0.68)),
+    "Coupon board": ("stl/coupon-board.stl", None, {}, (0.10, 0.45, 0.35)),
     "Side": ("upstream/cubesatsim_frame_side.v2.0.stl", None, {}, (0.62, 0.65, 0.70)),
     "Side with camera hole": ("upstream/cubesatsim_frame_side_camera.v2.0.stl", None, {}, (0.62, 0.65, 0.70)),
     "Top": ("upstream/cubesatsim_frame_top_bottom.v2.0.stl", FLIP, {}, (0.62, 0.65, 0.70)),
     "Bottom with columns": ("stl/bottom-with-columns.stl", None, {}, (0.62, 0.65, 0.70)),
 }
 
-FASTENER_ROWS = [["Lock key"] * 4, ["Plate stud"] * 4 + ["Clamp stud"] * 2, ["Spring washer"] * 6]
+LATCH_ROWS = [["Latch clip"] * 3 + ["Lock key"] * 3]
 
 # File: (title, plates). Each plate: name and rows of parts, top to bottom.
 PROJECTS = {
     "cubesat-kit.3mf": ("CubeSat Classroom kit", [
-        ("Payload deck and fasteners", [["Payload plate", "Nano clamp"], ["Load test post", "Load test tab"]] + FASTENER_ROWS),
+        ("Payload deck, clamp and latches", [["Payload plate", "Nano clamp"]] + LATCH_ROWS),
         ("Frame", [["Side", "Side with camera hole"], ["Top", "Bottom with columns"]]),
     ]),
     "cubesat-fit-plate.3mf": ("CubeSat Classroom fit plate", [
-        ("Fit plate and fasteners", [["Display plate", "Nano clamp"]] + FASTENER_ROWS),
+        ("Fit plate, clamp and latches", [["Fit plate", "Nano clamp"]] + LATCH_ROWS),
+    ]),
+    "cubesat-test-coupons.3mf": ("CubeSat Classroom test coupons", [
+        ("Test coupons", [["Pin coupon base", "Pin coupon tab"],
+                          ["Latch coupon base", "Coupon board", "Latch clip", "Lock key"]]),
     ]),
 }
 

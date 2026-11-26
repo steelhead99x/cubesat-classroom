@@ -50,7 +50,7 @@ def main():
     ax.add_patch(Rectangle((g.NX0, g.NY0), g.NANO_L, g.NANO_T, color="#0b8f8a", zorder=51,
                            label="Nano 33 BLE Sense, on edge"))
     ax.add_patch(Rectangle((g.NX0, g.NY0 + g.NANO_T), g.NANO_L, 2.8, color="#0b8f8a", alpha=0.3, zorder=51))
-    for name, solid in g.all_clamps().items():
+    for name, solid in {"lower-clamp": g.lower_clamp()}.items():
         data = solid.to_mesh()
         mesh = trimesh.Trimesh(data.vert_properties[:, :3], data.tri_verts)
         z = mesh.bounds[1, 2] - 0.5
@@ -60,10 +60,12 @@ def main():
             xy = np.array(poly.exterior.coords)
             pts = trimesh.transform_points(np.c_[xy, np.zeros(len(xy))], to_3d)[:, :2]
             ax.fill(pts[:, 0], pts[:, 1], color="#e39b3b", alpha=0.55, zorder=60)
-    ax.fill([], [], color="#e39b3b", alpha=0.55, label="clamps (screwed down)")
-    for x, y in g.plate_holes():
-        ax.add_patch(Circle((x, y), g.COLUMN_OD / 2, fill=False, ec="#c9382f", lw=1.5, zorder=50))
-    ax.plot([], [], color="#c9382f", label="snap columns from the AMSAT bottom")
+    ax.fill([], [], color="#e39b3b", alpha=0.55, label="Nano clamp (hooked and snapped)")
+    for i, (x, y) in enumerate(g.plate_holes()):
+        ax.add_patch(Circle((x, y), g.COLUMN_OD / 2, fill=False, ec="#c9382f", lw=1.5, zorder=50,
+                            ls="-" if i in g.SNAP_COLUMNS else "--"))
+    ax.plot([], [], color="#c9382f", label="snap-pin columns from the AMSAT bottom")
+    ax.plot([], [], color="#c9382f", ls="--", label="locating-pin column")
 
     ax.set_xlim(-50, 50)
     ax.set_ylim(-50, 50)
