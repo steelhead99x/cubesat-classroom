@@ -395,28 +395,42 @@ void savePhoto() {
   }
 }
 
-void downlinkPhoto(long id) {
+// The photo downlink sends one IMG line per pass through loop(), so sampling, the recorder,
+// the deploy button and commands keep working while a photo goes down (about 3 s for a
+// typical QVGA photo at 115200 baud). Other lines, such as CSC1 readings, can appear between
+// the IMG lines; tools/serial_image.py ignores them.
+const size_t IMG_CHUNK = 48;
+bool downlinkActive = false;
+size_t downlinkOffset = 0;
+
+void startDownlink(long id) {
   Serial.print("IMG BEGIN");
   field("id", id);
   field("n", photoNumber);
   field("bytes", (long)photoLen);
   Serial.print(" crc32=");
   Serial.println(photoCrc, HEX);
-  const size_t CHUNK = 48;
-  for (size_t off = 0; off < photoLen; off += CHUNK) {
-    Serial.print("IMG ");
-    Serial.print((unsigned long)off);
-    Serial.print(' ');
-    for (size_t i = off; i < off + CHUNK && i < photoLen; i++) {
-      if (photo[i] < 16) Serial.print('0');
-      Serial.print(photo[i], HEX);
-    }
-    Serial.println();
-    // Sending blocks the loop for a few seconds (about 3 s for a typical QVGA photo at
-    // 115200 baud). Let the system run its own tasks between lines.
-    yield();
+  downlinkOffset = 0;
+  downlinkActive = true;
+}
+
+// Sends the next IMG line, or IMG END after the last one. Called from loop().
+void stepDownlink() {
+  if (!downlinkActive) return;
+  if (downlinkOffset >= photoLen) {
+    Serial.println("IMG END");
+    downlinkActive = false;
+    return;
   }
-  Serial.println("IMG END");
+  Serial.print("IMG ");
+  Serial.print((unsigned long)downlinkOffset);
+  Serial.print(' ');
+  for (size_t i = downlinkOffset; i < downlinkOffset + IMG_CHUNK && i < photoLen; i++) {
+    if (photo[i] < 16) Serial.print('0');
+    Serial.print(photo[i], HEX);
+  }
+  Serial.println();
+  downlinkOffset += IMG_CHUNK;
 }
 
 // ---- Sensors ---------------------------------------------------------------
@@ -813,6 +827,8 @@ void handleLine(char *text) {
   } else if (strcmp(word, "PHOTO") == 0) {
 #if CAMERA_SUPPORTED
     if (!hasCamera) { nak(id, "PHOTO", "camera not found"); return; }
+    // A new photo would replace the bytes being sent.
+    if (downlinkActive) { nak(id, "PHOTO", "downlink in progress; wait for IMG END"); return; }
     const char *err = takePhoto();
     if (err) { nak(id, "PHOTO", err); return; }
     savePhoto();
@@ -828,7 +844,7 @@ void handleLine(char *text) {
     if (!photo || photoLen == 0) { nak(id, "DOWNLINK", "no photo yet; send PHOTO first"); return; }
     ack(id, "DOWNLINK");
     Serial.println();
-    downlinkPhoto(id);
+    startDownlink(id);  // a DOWNLINK during a downlink starts over; the decoder uses the last block
   } else if (strcmp(word, "HELP") == 0) {
     ack(id, "HELP");
     Serial.println();
@@ -950,6 +966,7 @@ void loop() {
   unsigned long now = millis();
   watchDeploySwitch(now);
   readCommands();
+  stepDownlink();
   updateLed(now);
 
   static unsigned long lastScreen = 0;
