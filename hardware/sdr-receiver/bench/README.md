@@ -49,7 +49,7 @@ Prices are estimates. Check before you buy.
 
 | File | Does |
 | --- | --- |
-| `sweep.py record` | Runs `rtl_power` at a fixed gain. Needs `--dc-checked` (see "Bias tee"), turns the bias tee off first and stops if that fails. Saves the CSV plus a `.json` label (what was connected, gain, bins, time, evidence type). |
+| `sweep.py record` | Runs `rtl_power` at a fixed gain. Needs `--dc-checked` (see "Bias tee"), requests bias off and checks the utility exit status. Saves the CSV plus a `.json` label (what was connected, gain, bins, time, evidence type). |
 | `sweep.py summary` | Noise floor (median) and the strongest signal |
 | `sweep.py compare` | Noise-floor change from one sweep to another, such as HaLow off vs on. Refuses sweeps whose receiver, gain, bins or range differ, unless `--force`. |
 | `sweep.py response` | Filter response: noise through the device minus noise straight through. Same settings check. |
@@ -62,10 +62,10 @@ Prices are estimates. Check before you buy.
 The V4 can put a few volts DC on its antenna socket to power a preamplifier. Turning it off in software isn't enough on its own: a failed command leaves it on, and the dongle's stored settings can keep it on whatever the software asks. So before a load, filter, stub or noise source goes on the socket:
 
 1. Run `rtl_biast -b 0` and check it reports no error.
-2. With `rtl_test -t` running, measure the DC between the SMA centre pin and shell. Under 0.5 V is off.
+2. Start `rtl_test` without flags and confirm it keeps reading samples. While it is running, a mentor measures DC between the SMA centre pin and shell. Continue only if the magnitude is under 0.5 V. Stop `rtl_test` with Ctrl-C before starting the sweep.
 3. If it reads several volts, don't connect anything that DC could harm. Put a DC block (an SMA inline capacitor) in front of the device, or use another dongle.
 
-`sweep.py record` refuses to run without `--dc-checked`, which says you did steps 1 and 2 with this dongle. It also runs `rtl_biast -b 0` before every sweep and stops if that fails.
+`sweep.py record` refuses to run without `--dc-checked`, which says you did steps 1 and 2 with this dongle. It runs `rtl_biast -b 0` when that utility is installed and stops if it reports an error. The meter reading is the check that DC is off.
 
 ## Safety
 

@@ -167,6 +167,27 @@ def test_compare_refuses_mismatched_settings():
     assert refuses(sweep.main, ["compare", a, b])
 
 
+def test_comparison_with_sparse_bins_and_incomplete_labels():
+    with tempfile.TemporaryDirectory() as d:
+        a, b = (os.path.join(d, name) for name in ("a.csv", "b.csv"))
+        for path, levels in ((a, "-10,-inf,-inf,-10"), (b, "-inf,-50,-50,-inf")):
+            with open(path, "w") as f:
+                f.write(f"date,time,0,40,10,1,{levels}\n")
+            with open(path + ".json", "w") as f:
+                json.dump({"label": "incomplete"}, f)
+        for cmd in (["compare", a, b], ["response", "--ref", a, "--dut", b]):
+            with contextlib.redirect_stderr(io.StringIO()):
+                try:
+                    sweep.main(cmd)
+                except SystemExit as e:
+                    assert "incomplete or invalid" in str(e)
+                else:
+                    raise AssertionError("incomplete settings accepted")
+        label(a, 0, 40, 10)
+        label(b, 0, 40, 10)
+        assert refuses(sweep.main, ["compare", a, b])
+
+
 def test_zero_power_bins():
     # Review finding: rtl_power writes -inf for a zero-power bin, and summary crashed.
     d = tempfile.mkdtemp()
@@ -244,7 +265,8 @@ def test_power_megabytes_per_file():
 if __name__ == "__main__":
     for t in (test_sweeps, test_response_stub, test_power, test_power_per_mb_covers_gaps,
               test_power_per_mb_needs_measured_time, test_compare_refuses_mismatched_settings,
-              test_zero_power_bins, test_record_needs_dc_check_and_working_biast,
+              test_zero_power_bins, test_comparison_with_sparse_bins_and_incomplete_labels,
+              test_record_needs_dc_check_and_working_biast,
               test_power_megabytes_per_file):
         t()
         print(f"ok  {t.__name__}")

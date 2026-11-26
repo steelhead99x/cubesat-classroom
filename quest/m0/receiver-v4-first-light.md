@@ -16,11 +16,11 @@ No login is needed.
 
 The V4 needs the RTL-SDR Blog drivers. Most current SDR apps include them. For the command-line tools, follow the [bench README](/hardware/sdr-receiver/bench/README.md#install). Receiving is legal without a licence. Nothing in this quest transmits.
 
-1. **Check the dongle.** Plug it in and run `rtl_test -t`. Write down the tuner it reports: a V4 reports the R828D.
+1. **Check the dongle.** Plug it in. Leave the SMA socket empty until the DC check is complete.
 2. **Check for DC on the antenna socket.** The bias tee puts DC on the socket, which can damage a load, an antenna that is a short circuit at DC, a filter or a noise source.
    - Run `rtl_biast -b 0`. If it reports an error, stop.
-   - With `rtl_test -t` running (the dongle is open, so a forced-on bias tee would be on), a mentor measures the DC voltage between the SMA's centre pin and its outer shell. It should be under 0.5 V. Several volts means the bias tee is on: stop, and see "Bias tee" in the [bench README](/hardware/sdr-receiver/bench/README.md#bias-tee).
-   - Write the reading in your log. `sweep.py record` won't run until you add `--dc-checked` to say this check was done with this dongle. It also turns the bias tee off before every sweep and stops if that fails.
+   - Run `rtl_test` without flags. It should report the R828D tuner and keep running. While it is still reading samples, a mentor measures the DC voltage between the SMA's centre pin and its outer shell. Continue only if the magnitude is under 0.5 V. Otherwise stop and see "Bias tee" in the [bench README](/hardware/sdr-receiver/bench/README.md#bias-tee).
+   - Write the reading in your log. `sweep.py record` won't run until you add `--dc-checked` to say this check was done with this dongle. Press Ctrl-C to stop `rtl_test` before starting the sweep. The script requests bias off and stops if the utility reports an error. The meter reading is the check that DC is off.
 3. **Sweep the load.** Screw the 50 Ω load on the SMA. Run:
 
    ```sh

@@ -58,7 +58,7 @@ def load(path):
                 continue
             try:
                 lo, step = float(row[2]), float(row[4])
-                vals = [float(v) for v in row[6:] if v.strip()]
+                vals = [float(v) if v.strip() else math.nan for v in row[6:]]
             except ValueError:
                 continue
             for i, db in enumerate(vals):
@@ -107,13 +107,22 @@ MUST_MATCH = ("receiver", "gain_db", "bin_hz", "start_hz", "stop_hz", "ppm")
 def check_compatible(a, b, force=False):
     """Stop if two sweeps were taken with different settings (from their .json labels)."""
     ma, mb = meta(a), meta(b)
-    if not ma or not mb:
-        missing = a if not ma else b
-        msg = f"{missing}.json is missing, so gain and bins can't be checked"
-        if not force:
-            sys.exit(f"{msg}. Record with sweep.py record, or pass --force if you know they match.")
-        print(f"warning: {msg}", file=sys.stderr)
-        return
+    for path, label in ((a, ma), (b, mb)):
+        valid = (
+            isinstance(label, dict)
+            and isinstance(label.get("receiver"), str)
+            and bool(label["receiver"].strip())
+            and all(type(label.get(k)) in (int, float) and math.isfinite(label[k])
+                    for k in MUST_MATCH if k != "receiver")
+            and label["bin_hz"] > 0
+            and 0 <= label["start_hz"] < label["stop_hz"]
+        )
+        if not valid:
+            msg = f"{path}.json is missing or has incomplete or invalid sweep settings"
+            if not force:
+                sys.exit(f"{msg}. Record with sweep.py record, or pass --force if you know they match.")
+            print(f"warning: {msg}", file=sys.stderr)
+            return
     diff = [k for k in MUST_MATCH if ma.get(k) != mb.get(k)]
     if diff:
         lines = "; ".join(f"{k}: {ma.get(k)} vs {mb.get(k)}" for k in diff)
@@ -128,21 +137,11 @@ def nearest(pts, f):
 
 
 def pair(a, b):
-    """Match bins of two sweeps by frequency; bins must line up within half a bin."""
-    if len(a) < 2:
-        sys.exit("sweep too short")
-    half = (a[1][0] - a[0][0]) / 2
+    """Match only identical reported frequency centers."""
     bmap = dict(b)
-    bfreqs = sorted(bmap)
-    out = []
-    j = 0
-    for fr, da in a:
-        while j + 1 < len(bfreqs) and abs(bfreqs[j + 1] - fr) <= abs(bfreqs[j] - fr):
-            j += 1
-        if bfreqs and abs(bfreqs[j] - fr) <= half:
-            out.append((fr, da, bmap[bfreqs[j]]))
+    out = [(fr, db, bmap[fr]) for fr, db in a if fr in bmap]
     if not out:
-        sys.exit("the two sweeps share no frequencies: record them with the same band")
+        sys.exit("the sweeps have no shared finite-power bins")
     return out
 
 

@@ -6,7 +6,9 @@ cd "$(dirname "$0")"
 ( cd ../kicad && kicad-cli sch export netlist --format kicadsexpr -o rt.net csc-r1.kicad_sch >/dev/null )
 python3 check_net.py | tail -1
 python3 check_pcb.py | grep -E "mismatches|differs|missing"
-python3 drc.py gate | tail -1
+report=$(mktemp)
+trap 'rm -f -- "$report"' EXIT
+python3 drc.py gate "$report"
 python3 - <<'PY'
 import json, re
 p = json.load(open('../kicad/csc-r1.kicad_pro'))
@@ -22,7 +24,7 @@ rm -rf ../fab/gerbers && mkdir -p ../fab/gerbers
   kicad-cli pcb export pdf -o csc-r1-layout-top.pdf --layers F.Cu,F.SilkS,Edge.Cuts csc-r1.kicad_pcb >/dev/null
   kicad-cli sch export pdf -o csc-r1-schematic.pdf csc-r1.kicad_sch >/dev/null )
 python3 bom.py
-python3 drc.py gate >/dev/null && cp /tmp/drc.rpt ../fab/drc-report.txt
 python3 render.py F.Cu,F.SilkS,Edge.Cuts 0 0 120 78 ../kicad/csc-r1-top.png 300
+cp "$report" ../fab/drc-report.txt
 rm -f ../kicad/rt.net
 echo exported
