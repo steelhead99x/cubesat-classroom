@@ -29,22 +29,22 @@ The frame is the [AMSAT CubeSat Simulator](https://cubesatsim.org) v2.0 frame, u
 
 ## What to print
 
-Everything is in one Bambu Studio project, **[p1s/cubesat-kit.3mf](p1s/cubesat-kit.3mf)**. Open it in Bambu Studio (File → Open Project). It has three plates, each with a name and a preview picture, and every part already in its print orientation. It fits any Bambu Lab printer with a 256 mm bed (P1S, P1P, X1 Carbon, X1E, A1).
+There are two Bambu Studio projects. Open either one in Bambu Studio (File → Open Project). Each plate has a name and a preview picture, and every part is already in its print orientation. Both fit any Bambu Lab printer with a 256 mm bed (P1S, P1P, X1 Carbon, X1E, A1).
 
-| Plate | What's on it |
-| --- | --- |
-| 1. Payload deck and fasteners | Payload plate with the Uno latches, the Nano clamp, the load test (post and tab), 4 lock keys, 4 plate studs, 2 clamp studs and 6 spring washers |
-| 2. Frame | Both AMSAT sides (one with the camera hole), the AMSAT top (unchanged) and the bottom with hollow columns |
-| 3. Display plate (optional) | The isogrid display plate with its own Nano clamp and a full set of keys, studs and washers, so it builds into a second, display-ready payload |
+| File | Plate | What's on it |
+| --- | --- | --- |
+| **[p1s/cubesat-kit.3mf](p1s/cubesat-kit.3mf)** | 1. Payload deck and fasteners | Payload plate with the Uno latches, the Nano clamp, the load test (post and tab), 4 lock keys, 4 plate studs, 2 clamp studs and 6 spring washers |
+| | 2. Frame | Both AMSAT sides (one with the camera hole), the AMSAT top (unchanged) and the bottom with hollow columns |
+| **[p1s/cubesat-fit-plate.3mf](p1s/cubesat-fit-plate.3mf)** (optional) | 1. Fit plate and fasteners | The isogrid fit (display) plate with its own Nano clamp and a full set of keys, studs and washers, so it builds into a second, display-ready payload |
 
 Before you slice:
 
 - **Printer and process:** the project keeps whatever printer, process and filament you have selected. Pick your printer and nozzle (for example *Bambu Lab P1S 0.6 nozzle*), the matching *0.30mm Standard* process (or *0.20mm Standard* for a 0.4 mm nozzle), and PLA. Supports stay off.
-- **Already set in the file:** the keys, studs, washers and load-test parts print at 100% infill, since they're small and carry the load. Each part is its own object with a numbered name (Lock key 1 to 8, Plate stud 1 to 8 and so on), so Bambu Studio keeps every part on the plate it was placed on.
-- **Colours with an AMS:** select the four lock keys and give them red filament, like flight safety pins. On plate 3, set a filament change at 2.4 mm to white and back at 3.0 mm, so only the raised lettering is white.
+- **Already set in the file:** the keys, studs, washers and load-test parts print at 100% infill, since they're small and carry the load. Each part is its own object with a numbered name (Lock key 1 to 4, Plate stud 1 to 4 and so on), so Bambu Studio keeps every part on the plate it was placed on.
+- **Colours with an AMS:** select the four lock keys and give them red filament, like flight safety pins. In the fit-plate file, set a filament change at 2.4 mm to white and back at 3.0 mm, so only the raised lettering is white.
 - **Plate 1 first:** run the load test (below) before you assemble anything. If the fasteners need a tweak, regenerate and reprint just those parts; Bambu Studio can skip objects on a plate.
 
-None of the plates has been sliced for a time estimate yet. For other slicers, every part is in [stl/](stl/) as a separate file, already in print orientation.
+None of the plates in either file has been sliced for a time estimate yet. For other slicers, every part is in [stl/](stl/) as a separate file, already in print orientation.
 
 **Print the load test first, and do a real pull test.** It's one plate fastener on its own: the post is the bottom face and a column, and the tab is a corner of the plate.
 
