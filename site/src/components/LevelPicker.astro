@@ -10,11 +10,11 @@ const { describe = false } = Astro.props;
 <div class="level-picker">
   <fieldset>
     <legend class="text-sm font-bold text-ink">Pick your level</legend>
-    <div class="mt-2 inline-flex flex-wrap gap-1 rounded-lg border border-line bg-white p-1">
+    <div class="mt-2 inline-flex flex-wrap gap-1 rounded-sm border border-line bg-white p-1">
       {levels.map(level => (
         <label class="cursor-pointer">
           <input class="peer sr-only" type="radio" name="level" value={level.id} checked={level.id === 'beginner'}>
-          <span class="grid min-h-11 place-items-center rounded-md px-3 py-2 text-sm font-bold text-muted hover:text-ink peer-checked:bg-accent peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2">{level.name}</span>
+          <span class="grid min-h-11 place-items-center rounded-[2px] px-3 py-2 text-sm font-semibold text-muted hover:text-ink peer-checked:bg-night peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2">{level.name}</span>
         </label>
       ))}
     </div>

@@ -8,7 +8,9 @@ import StationDemo from '../components/StationDemo.astro';
 import MissionFanout from '../components/MissionFanout.astro';
 import ProposalCard from '../components/ProposalCard.astro';
 import QuickStart from '../components/QuickStart.astro';
-import rail from '../../../docs/assets/rail-fit.png';
+import MissionEmblem from '../components/MissionEmblem.astro';
+import exploded from '../../../hardware/amsat-cubesatsim/render-exploded.png';
+import preview from '../../../hardware/amsat-cubesatsim/render-exploded-navy.png';
 import { fundraiser, repo } from '../hubs.mjs';
 import { siteOrigin } from '../origin';
 
@@ -24,7 +26,7 @@ const labs = [
   title="CubeSat Classroom | Satellite operations for ages 13 and up"
   description="Teach space science with free, open-source CubeSat quests, a browser simulator, and hands-on bench labs."
   canonical={site + '/'}
-  image={site + rail.src.replace(base, '')}
+  image={site + preview.src.replace(base, '')}
 >
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Mission', href: base + '/mission/' },
@@ -36,28 +38,47 @@ const labs = [
     { label: 'For teachers', href: '#teachers' },
   ]} />
 
-  <section class="classroom-hero" aria-labelledby="home-title">
-    <div class="shell grid items-center gap-9 py-11 sm:py-16 lg:grid-cols-[1.12fr_1fr] lg:gap-16">
-      <div>
-        <p class="field-label">Open-source space education</p>
-        <h1 id="home-title" class="mt-4">Run a ground station in your classroom</h1>
-        <p class="lede mt-5">Teach space science one quest at a time. Request a reading from a model CubeSat, receive a picture, and see what happens when the link drops.</p>
-        <div class="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <a class="button primary" href={base + '/quests/first-contact/'}>Start the first lesson</a>
-          <a class="font-bold text-accent underline decoration-line underline-offset-4 hover:decoration-current" href={base + '/mission/'}>See the flight, minute by minute</a>
+  <section class="briefing" aria-labelledby="home-title">
+    <svg class="orbits" viewBox="0 0 800 800" fill="none" aria-hidden="true">
+      <circle cx="400" cy="400" r="390" stroke="#fff" />
+      <circle cx="400" cy="400" r="300" stroke="#fff" stroke-dasharray="2 8" />
+      <circle cx="400" cy="400" r="210" stroke="#fff" />
+      <ellipse cx="400" cy="400" rx="390" ry="140" transform="rotate(-24 400 400)" stroke="#fff" />
+    </svg>
+    <div class="shell relative grid items-center gap-10 py-12 sm:py-16 lg:grid-cols-[1fr_auto] lg:gap-16 lg:py-20">
+      <div class="min-w-0">
+        <p class="t-label">Mission · Open-source space education</p>
+        <h1 id="home-title" class="mt-4"><span class="md:block">Run a ground station</span> <span class="md:block">in your classroom.</span></h1>
+        <p class="lede mt-6">Teach space science one quest at a time. Request a reading from a model CubeSat, receive a picture, and see what happens when the link drops.</p>
+
+        <section class="panel mt-8 max-w-[38rem]" aria-labelledby="flight-plan">
+          <div class="panel-head">
+            <p id="flight-plan" class="t-label flex items-center gap-2.5 text-white/85"><span class="live-dot" aria-hidden="true"></span>Flight plan · First lessons</p>
+            <p class="t-label hidden sm:block">Desk simulation</p>
+          </div>
+          <dl class="readouts">
+            <div class="flex flex-col-reverse"><dt class="t-label">Lessons</dt><dd class="readout">05</dd></div>
+            <div class="flex flex-col-reverse"><dt class="t-label">Total time</dt><dd class="readout">35<small>min</small></dd></div>
+            <div class="flex flex-col-reverse"><dt class="t-label">Ages</dt><dd class="readout">13<small>+</small></dd></div>
+            <div class="flex flex-col-reverse"><dt class="t-label">To start</dt><dd class="readout">$0</dd></div>
+          </dl>
+        </section>
+
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a class="button launch" href={base + '/quests/first-contact/'}>Start the first lesson <span class="arrow" aria-hidden="true">→</span></a>
+          <a class="button ghost" href={base + '/mission/'}><span class="live-dot" aria-hidden="true"></span>See the flight, minute by minute <span class="arrow" aria-hidden="true">→</span></a>
         </div>
-        <p class="mt-5 text-sm text-muted">For learners 13 and up, guided by teachers, guardians and mentors. The browser lessons need no account or equipment. Built by volunteers.</p>
+        <p class="t-label note mt-5">No account · No equipment · Built by volunteers</p>
+        <p class="note mt-3 max-w-[40rem] text-[.92rem] leading-relaxed">For learners 13 and up, guided by teachers, guardians and mentors. The browser lessons run entirely in your browser.</p>
       </div>
-      <figure class="bench-figure m-0">
-        <Image src={rail} alt="Exploded CAD view of the CubeSat chassis, camera cover, and base plate" widths={[360, 540, 720]} sizes="(min-width: 1024px) 34rem, 100vw" priority />
-        <figcaption><span>Rev B classroom bench model</span><span>100 × 100 × 113.5 mm</span></figcaption>
-      </figure>
+      <MissionEmblem class="mx-auto lg:w-[19rem] xl:w-[21rem]" />
     </div>
   </section>
 
   <section id="quests" class="shell scroll-mt-6 py-12 sm:py-16" aria-labelledby="lessons-title">
     <div class="grid gap-6 lg:grid-cols-[.8fr_1.2fr] lg:gap-16">
       <div>
+        <p class="eyebrow t-label">01 · Lessons</p>
         <h2 id="lessons-title">Classroom lessons</h2>
         <p class="mt-3 max-w-md text-muted">Five short exercises, about 35 minutes. Take a reading, bring back a picture, lose the signal, decide when data is old, and watch the light change.</p>
         <a class="mt-4 inline-block text-accent" href={base + '/quests/'}>View the lesson sequence</a>
@@ -76,7 +97,8 @@ const labs = [
     <div class="shell py-12 sm:py-16">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2>Ground station simulator</h2>
+          <p class="eyebrow t-label">02 · Simulator · Desk simulation</p>
+        <h2>Ground station simulator</h2>
           <p class="mt-2 text-muted">Request a reading or start the test camera. All data is simulated in your browser.</p>
         </div>
         <LevelPicker />
@@ -87,15 +109,27 @@ const labs = [
   </div>
 
   <section id="labs" class="shell scroll-mt-6 py-12 sm:py-16" aria-labelledby="labs-title">
-    <h2 id="labs-title">Bench and field labs</h2>
-    <div class="resource-grid mt-6 grid gap-x-8 gap-y-6 md:grid-cols-3">
-      {labs.map(lab => (
-        <article class="resource">
-          <h3>{lab.name}</h3>
-          <p class="my-3 text-muted">{lab.text}</p>
-          <a class="text-accent" href={lab.href}>{lab.action}</a>
-        </article>
-      ))}
+    <div class="grid items-start gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
+      <div>
+        <p class="eyebrow t-label">03 · Labs · Hardware bench</p>
+        <h2 id="labs-title">Bench and field labs</h2>
+        <div class="resource-grid mt-6 grid gap-y-6">
+          {labs.map((lab, i) => (
+            <article class="resource grid gap-x-5 sm:grid-cols-[2.2rem_1fr]">
+              <span class="t-src pt-1 text-orbit" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+              <div>
+                <h3>{lab.name}</h3>
+                <p class="my-2 text-muted">{lab.text}</p>
+                <a class="text-accent" href={lab.href}>{lab.action}</a>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+      <figure class="bench-figure hud m-0">
+        <Image src={exploded} alt="Exploded view of the classroom CubeSat: AMSAT CubeSatSim frame ends and sides, and a printed payload plate holding an Arduino Uno and Nano 33 BLE Sense" widths={[480, 720, 1080]} sizes="(min-width: 1024px) 32rem, 100vw" />
+        <figcaption><span>AMSAT CubeSatSim frame · Arduino payload</span><span>1U · 100 × 100 × 113.5 mm · 100% printed</span></figcaption>
+      </figure>
     </div>
     <div id="get-started" class="mt-9"><QuickStart /></div>
   </section>
@@ -103,6 +137,7 @@ const labs = [
   <section id="app" class="shell scroll-mt-6 pb-12 sm:pb-16" aria-labelledby="app-title">
     <div class="grid gap-6 border-t-2 border-line pt-8 lg:grid-cols-[.8fr_1.2fr] lg:gap-16">
       <div>
+        <p class="eyebrow t-label">04 · App · Every screen</p>
         <h2 id="app-title">Follow along on every screen</h2>
         <p class="mt-3 max-w-md text-muted">The CubeSat Classroom app shows the next satellite pass over your school and live readings from a classroom ground station, on phones, in a browser and at a glance on a watch. Every reading shows its age and where it came from, and the app collects no accounts or personal details.</p>
         <p class="mt-3 max-w-md text-muted">It's a developer preview: the practice station works today, and live stations appear once a licensed operator and an approved station are in place.</p>
@@ -125,6 +160,7 @@ const labs = [
   <section id="fork" class="shell scroll-mt-6 pb-12 sm:pb-16" aria-labelledby="fork-title">
     <div class="grid gap-6 border-t-2 border-line pt-8 lg:grid-cols-[.8fr_1.2fr] lg:gap-16">
       <div>
+        <p class="eyebrow t-label">05 · Fork · Your own mission</p>
         <h2 id="fork-title">Start your own club site</h2>
         <p class="mt-3 max-w-md text-muted">CubeSat Classroom is a starting kit, not a competitor. Copy it, rename it, and make it your school's, club's or mission's own.</p>
       </div>
@@ -143,6 +179,7 @@ const labs = [
   <div class="section-band" id="support">
     <section id="teachers" class="shell grid gap-9 py-12 sm:py-16 md:grid-cols-2" aria-labelledby="teacher-title">
       <div>
+        <p class="eyebrow t-label">06 · Teachers and mentors</p>
         <h2 id="teacher-title">For teachers and mentors</h2>
         <p class="mt-3 max-w-lg text-muted">Start with <a class="text-accent" href={base + '/quests/first-contact/'}>First contact</a>. Ask students to record what they measured and what they would check next. Tell us where the lesson could be clearer.</p>
         <a class="mt-4 inline-block text-accent" href={repo + '/blob/main/output/pdf/cubesat-classroom-quick-start.pdf'}>Print the one-page guide</a>

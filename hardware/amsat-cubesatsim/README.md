@@ -71,6 +71,8 @@ python3 -m venv /tmp/cubesat-cad
 
 To redraw the layout image, install `matplotlib` too and run `python layout.py` from this folder.
 
+To redraw the website renders (`render-exploded.png`, `render-exploded-dark.png`, `render-exploded-navy.png` and `render-assembled.png`), install `pillow` too and run `python render.py` after `generate.py`. It places every part in the frame coordinates `generate.py` uses, in the CubeSat Classroom brand colours. The Uno and Nano are drawn as simple boxes.
+
 Upstream checksums (SHA-256):
 
 ```
