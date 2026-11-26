@@ -49,17 +49,27 @@ Prices are estimates. Check before you buy.
 
 | File | Does |
 | --- | --- |
-| `sweep.py record` | Runs `rtl_power` at a fixed gain with the bias tee off. Saves the CSV plus a `.json` label (what was connected, gain, time, evidence type). |
+| `sweep.py record` | Runs `rtl_power` at a fixed gain. Needs `--dc-checked` (see "Bias tee"), requests bias off and checks the utility exit status. Saves the CSV plus a `.json` label (what was connected, gain, bins, time, evidence type). |
 | `sweep.py summary` | Noise floor (median) and the strongest signal |
-| `sweep.py compare` | Noise-floor change from one sweep to another, such as HaLow off vs on |
-| `sweep.py response` | Filter response: noise through the device minus noise straight through |
+| `sweep.py compare` | Noise-floor change from one sweep to another, such as HaLow off vs on. Refuses sweeps whose receiver, gain, bins or range differ, unless `--force`. |
+| `sweep.py response` | Filter response: noise through the device minus noise straight through. Same settings check. |
 | `sweep.py stub` | Quarter-wave coax stub length, or velocity factor from a measured stub |
 | `power-logger/power-logger.ino` | Reads an INA226 and prints raw readings over USB serial |
-| `power_log.py record` / `summary` | Logs the sketch's output, then gives average mW, energy and mJ per MB. Also reads Nordic PPK2 CSV exports. |
+| `power_log.py record` / `summary` | Logs the sketch's output, then gives average mW, energy and mJ per MB. Delivered megabytes are per file: `--megabytes` for one file, `--delivered FILE=MB` for several. Also reads Nordic PPK2 CSV exports. |
+
+## Bias tee
+
+The V4 can put a few volts DC on its antenna socket to power a preamplifier. Turning it off in software isn't enough on its own: a failed command leaves it on, and the dongle's stored settings can keep it on whatever the software asks. So before a load, filter, stub or noise source goes on the socket:
+
+1. Run `rtl_biast -b 0` and check it reports no error.
+2. Start `rtl_test` without flags and confirm it keeps reading samples. While it is running, a mentor measures DC between the SMA centre pin and shell. Continue only if the magnitude is under 0.5 V. Stop `rtl_test` with Ctrl-C before starting the sweep.
+3. If it reads several volts, don't connect anything that DC could harm. Put a DC block (an SMA inline capacitor) in front of the device, or use another dongle.
+
+`sweep.py record` refuses to run without `--dc-checked`, which says you did steps 1 and 2 with this dongle. It runs `rtl_biast -b 0` when that utility is installed and stops if it reports an error. The meter reading is the check that DC is off.
 
 ## Safety
 
 - A mentor checks wiring before anything is powered.
-- The bias tee stays off unless a powered preamplifier is fitted. Loads, stubs, filters and noise sources must not get DC.
+- The bias tee stays off unless a powered preamplifier is fitted, and that is checked with a meter, not just a command (see "Bias tee"). Loads, stubs, filters and noise sources must not get DC.
 - Never connect a transmitter output to a dongle or the kit. That includes HaLow boards, radios and an ADF4351 without attenuators.
 - The ADF4351 test signal stays in its closed tin, into attenuators and a cable, never an antenna. On 145 or 437 MHz a licensed operator approves the frequencies, and the crew follows their lead.

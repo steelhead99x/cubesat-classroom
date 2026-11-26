@@ -17,8 +17,8 @@ FM transmitters are thousands of times more powerful than a satellite, and often
 1. Sweep both bands at the same gain, without moving the antenna:
 
    ```sh
-   python3 sweep.py record --band fm --gain 10 --label "antenna, FM" --out fm.csv
-   python3 sweep.py record --band 2m --gain 10 --label "antenna, 2 m" --out 2m.csv
+   python3 sweep.py record --band fm --gain 10 --label "antenna, FM" --out fm.csv --dc-checked
+   python3 sweep.py record --band 2m --gain 10 --label "antenna, 2 m" --out 2m.csv --dc-checked
    python3 sweep.py summary fm.csv 2m.csv
    ```
 
