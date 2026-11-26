@@ -1,8 +1,8 @@
 [workspace]
 # The ground station is the root package. Small, dependency-light libraries live in crates/.
 # Both are default members, so `cargo test` and `cargo clippy` at the root cover everything.
-members = ["crates/mission-budget", "crates/downlink"]
-default-members = [".", "crates/mission-budget", "crates/downlink"]
+members = ["crates/mission-budget", "crates/downlink", "crates/amsat-kit"]
+default-members = [".", "crates/mission-budget", "crates/downlink", "crates/amsat-kit"]
 resolver = "3"
 
 [workspace.package]
