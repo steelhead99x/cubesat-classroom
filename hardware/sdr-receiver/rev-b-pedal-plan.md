@@ -192,10 +192,28 @@ Controls go on a small lid board, wired to the main board by one cable, so the R
 - Add the lid-board connector and the 9 V input stage
 - Apply whatever Rev A testing shows (matching, filters, baseband gain)
 
+## RF review: receiver and radios in a metal box
+
+A desk review of putting the receiver, the HaLow module and the XIAO's radios in one die-cast box. It is not a substitute for a review by an RF engineer, and none of it has been measured. Each item is a design requirement for Rev B.
+
+| # | Issue | Requirement for Rev B |
+| --- | --- | --- |
+| 1 | No antenna works inside a die-cast box | Every radio gets an external antenna: HaLow on its own panel SMA; the XIAO's Wi-Fi/BLE through a U.FL pigtail to a panel connector. Pick antennas and cables that fit each certified module's grant. |
+| 2 | HaLow (902–928 MHz) transmits while the receiver listens | Two antennas on one small box are only about 10–20 dB apart at 915 MHz (estimate). Put the receive antenna on the mast and bring it in by coax, so only HaLow's antenna sits on the box. Add a sharp low-pass (about 600 MHz) before the LNA: Rev A's 70 cm filter now gives about 46 dB at 915 MHz (calculated). Shield cans over the RF chain and over the HaLow module. Measure desense before layout. |
+| 3 | The box resonates near 2.4 GHz | For about 118 × 62 mm inside, the lowest cavity resonance is about 2.7 GHz (calculated), lower with the board inside: close to the XIAO's 2.4 GHz Wi-Fi. Keep antennas outside and add a piece of RF absorber. It does not affect 145, 435 or 915 MHz. |
+| 4 | Every cable through the wall is an antenna | Filter USB, 9 V and audio where they pass through the wall: ferrites and capacitors to the case. |
+| 5 | Ground loops from pedal habits | An amp on the 1/4 inch OUT plus a laptop on USB gives mains ground two paths: hum in the audio, noise in the receiver. Use a transformer-isolated output or isolated jack washers. |
+| 6 | Lid openings | Knob shafts are fine; the OLED window is the largest opening, a minor leak at these frequencies unless it is very large. Ground the lid to the box. |
+| 7 | Heat and frequency drift | About 2–3 W in the box is fine if the demodulator is pad-coupled to the wall. Keep the TCXO away from hot parts. |
+| 8 | Two transmitters at once | HaLow and the XIAO's Wi-Fi transmitting together is a co-location case for certification and needs its own test. |
+
+Items 1, 2 and 4 shape the layout and the enclosure drilling, so they are decided first.
+
 ## Risks
 
-1. **HaLow transmits next to the receiver while it is receiving.** The pedal's whole job is to stream during a pass, so the HaLow transmitter (902–928 MHz) is on while the receiver listens for very weak signals at 145 and 435 MHz, in the same metal box. The modelled 70 cm filter gives only about 21 dB of rejection at 900 MHz. Plan for:
-   - a sharp low-pass filter (cut-off around 600 MHz) at the receive input, before the LNA
+1. **HaLow transmits next to the receiver while it is receiving.** The pedal's whole job is to stream during a pass, so the HaLow transmitter (902–928 MHz) is on while the receiver listens for very weak signals at 145 and 435 MHz, in the same metal box. Plan for (see the RF review above):
+   - the receive antenna on the mast, by coax, so only HaLow's antenna is on the box
+   - a sharp low-pass filter (cut-off around 600 MHz) at the receive input, before the LNA (Rev A's 70 cm filter now gives about 46 dB at 915 MHz, calculated)
    - the HaLow module in its own shielded compartment
    - the two antennas at opposite ends of the box, or the HaLow antenna on a short cable away from it
    - firmware that marks I/Q samples taken while HaLow is transmitting

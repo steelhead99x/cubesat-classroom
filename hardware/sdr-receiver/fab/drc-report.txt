@@ -1,5 +1,5 @@
-** Drc report for ../out/csc-r1.kicad_pcb **
-** Created on 2026-11-25 23:57:39 **
+** Drc report for ../kicad/csc-r1.kicad_pcb **
+** Created on 2026-11-26 00:34:55 **
 
 ** Found 5 DRC violations **
 [copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.3000 mm; actual 0.1000 mm)

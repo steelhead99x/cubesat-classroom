@@ -4,7 +4,8 @@ OUT='../kicad'; PROJ='csc-r1'; OX,OY=60.0,50.0; mm=pcbnew.FromMM
 b=pcbnew.LoadBoard(f'{OUT}/{PROJ}.kicad_pcb')
 bb=b.GetBoardEdgesBoundingBox(); T=pcbnew.ToMM; W=round(T(bb.GetWidth()),1)-0.1; H=round(T(bb.GetHeight()),1)-0.1
 gnd=b.FindNet('GND').GetNetCode()
-for z in list(b.Zones()): b.Remove(z)
+import sys
+if len(list(b.Zones())): sys.exit('board already has pours: run finish.py once, on the routed board from iterate.sh')
 for layer in (pcbnew.F_Cu,pcbnew.In1_Cu,pcbnew.In2_Cu,pcbnew.B_Cu):
     z=pcbnew.ZONE(b); z.SetLayer(layer); z.SetNetCode(gnd); z.SetZoneName('GND_'+pcbnew.LayerName(layer))
     o=z.Outline(); o.NewOutline()
@@ -20,3 +21,13 @@ text('ANT',1.5,46.5,1.0); text('5V USB-C',8.5,66.5,1.0); text('5V EXT + -',23,69
 pcbnew.ZONE_FILLER(b).Fill(b.Zones())
 pcbnew.SaveBoard(f'{OUT}/{PROJ}.kicad_pcb',b)
 print('zones',len(b.Zones()),'tracks+vias',len(b.GetTracks()))
+# the router can drop two vias of one net on the same spot; keep one (done on the saved text)
+import re
+txt=open(f'{OUT}/{PROJ}.kicad_pcb').read().split('\n'); seen=set(); out=[]; dup=0
+for line in txt:
+    if line.lstrip().startswith('(via ('):
+        k=re.sub(r'\(tstamp [^)]*\)','',line).strip()
+        if k in seen: dup+=1; continue
+        seen.add(k)
+    out.append(line)
+open(f'{OUT}/{PROJ}.kicad_pcb','w').write('\n'.join(out)); print('duplicate vias removed',dup)
