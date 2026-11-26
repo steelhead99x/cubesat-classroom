@@ -136,3 +136,15 @@ pub fn nano_plug(d: &Design) -> Manifold {
         [usb_x, y + thick / 2.0, z + wide / 2.0],
     )
 }
+
+/// Envelope of a USB-B cable plug in the Uno's socket: 16 mm square overmould,
+/// reaching 20 mm out past the socket.
+pub fn uno_plug(d: &Design) -> Manifold {
+    let [x0, y0, _, y1, h] = UNO_PARTS[1].1;
+    let [ox, oy] = d.uno_origin();
+    let (yc, zc) = (oy + (y0 + y1) / 2.0, d.uno_top() + h / 2.0);
+    cuboid(
+        [ox + x0 - 20.0, yc - 8.0, zc - 8.0],
+        [ox + x0, yc + 8.0, zc + 8.0],
+    )
+}

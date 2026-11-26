@@ -27,6 +27,16 @@ The Rust version of [`../arduino-cubesat`](../arduino-cubesat/arduino-cubesat.in
 
 Either way, refitting the jumper puts the CubeSat back to pre-launch and the timer starts again from zero, as §2.3.2.4 requires of a deployment switch.
 
+## Watchdog and reset cause
+
+On orbit nobody can press reset, so a hung satellite stays hung unless the hardware restarts it. The nRF52840's watchdog does that here:
+
+- The main loop and the sensor task each check in. If either stops for **5 seconds** (a sensor holding the I2C bus, a panic, a bug), the watchdog restarts the board. It pauses while a debugger has the processor halted.
+- At boot the firmware reads the reset-reason register, prints `# bench: reset=watchdog` (or `power_on`, `reset_pin`, `software`, `lockup`), and `STATUS` repeats it as `reset=`. A watchdog or lockup restart also prints a warning line.
+- The Arduino bootloader runs before this firmware and may clear the register. If a reset you caused shows as `power_on`, that is why. Test it on the bench before trusting it.
+
+After a restart with the jumper out, the mission starts the deployment timer again from zero. A flight design would save "deployed" in flash so a restart on orbit doesn't wait another 45 minutes. That is a good design question for a crew.
+
 ## Build
 
 ```sh

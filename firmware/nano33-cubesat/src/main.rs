@@ -9,6 +9,10 @@
 //!   Remove-before-flight jumper: one wire from D2 to GND. Nothing else.
 //!
 //! The radio is never switched on. Bluetooth stays off.
+//!
+//! A hardware watchdog restarts the board if the main loop or the sensor task stops
+//! for 5 s (a hung sensor, a panic, a bug). The next boot reports why it started,
+//! so a restart is never silent.
 
 #![no_std]
 #![no_main]
@@ -18,7 +22,7 @@ mod sensors;
 use core::cell::Cell;
 use core::fmt;
 
-use cubesat_mission::{Config, Mission, Present, Readings, Timing};
+use cubesat_mission::{Config, Mission, Present, Readings, ResetCause, Timing};
 use embassy_executor::Spawner;
 use embassy_futures::select::{Either, select};
 use embassy_nrf::gpio::{Input, Level, Output, OutputDrive, Pull};
@@ -26,6 +30,7 @@ use embassy_nrf::saadc::{self, ChannelConfig, Saadc, VddInput};
 use embassy_nrf::twim::{self, Twim};
 use embassy_nrf::usb::Driver;
 use embassy_nrf::usb::vbus_detect::HardwareVbusDetect;
+use embassy_nrf::wdt::{self, HaltConfig, SleepConfig, Watchdog, WatchdogHandle};
 use embassy_nrf::{bind_interrupts, peripherals, usb};
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
@@ -76,14 +81,42 @@ async fn usb_task(mut device: embassy_usb::UsbDevice<'static, UsbDriver>) -> ! {
 }
 
 #[embassy_executor::task]
-async fn sensor_task(mut bus: Twim<'static>, mut adc: Saadc<'static, 1>) -> ! {
+async fn sensor_task(
+    mut bus: Twim<'static>,
+    mut adc: Saadc<'static, 1>,
+    mut dog: WatchdogHandle,
+) -> ! {
     adc.calibrate().await;
     let present = sensors::probe(&mut bus).await;
     PRESENT.signal(present);
     loop {
+        // If a sensor holds the bus forever, this stops and the watchdog restarts us.
         let r = sensors::read(&mut bus, &mut adc, present).await;
         LATEST.lock(|c| c.set(r));
+        dog.pet();
         Timer::after_millis(150).await;
+    }
+}
+
+/// Why the processor started, then clear the register (its bits accumulate and
+/// are cleared by writing ones). Zero means a power-on reset. The Arduino bootloader
+/// runs first and may clear it; then a reset shows as power_on.
+fn reset_cause() -> ResetCause {
+    let reg = nrf_pac::POWER.resetreas();
+    let why = reg.read();
+    reg.write_value(nrf_pac::power::regs::Resetreas(u32::MAX));
+    if why.0 == 0 {
+        ResetCause::PowerOn
+    } else if why.dog() {
+        ResetCause::Watchdog
+    } else if why.lockup() {
+        ResetCause::Lockup
+    } else if why.sreq() {
+        ResetCause::Software
+    } else if why.resetpin() {
+        ResetCause::ResetPin
+    } else {
+        ResetCause::Unknown
     }
 }
 
@@ -114,6 +147,22 @@ async fn main(spawner: Spawner) {
     let mut config = embassy_nrf::config::Config::default();
     config.hfclk_source = embassy_nrf::config::HfclkSource::ExternalXtal; // USB needs the crystal
     let p = embassy_nrf::init(config);
+    let reset = reset_cause();
+
+    // Watchdog: two handles, one for the main loop and one for the sensor task.
+    // Both must check in every 5 s. It pauses while a debugger halts the CPU.
+    let mut dog_config = wdt::Config::default();
+    dog_config.timeout_ticks = 5 * 32_768;
+    dog_config.action_during_sleep = SleepConfig::Run;
+    dog_config.action_during_debug_halt = HaltConfig::Pause;
+    let (_watchdog, [mut main_dog, sensor_dog]) = match Watchdog::try_new(p.WDT, dog_config) {
+        Ok(dog) => dog,
+        // Already running with other settings (it survives a soft reset): stop here
+        // and let it restart the board cleanly.
+        Err(_) => loop {
+            cortex_m::asm::wfe();
+        },
+    };
 
     // Status light: active low. Remove-before-flight jumper on D2 (P1.11): low = fitted.
     let mut red = Output::new(p.P0_24, Level::High, OutputDrive::Standard);
@@ -143,7 +192,7 @@ async fn main(spawner: Spawner) {
         saadc::Config::default(),
         [ChannelConfig::single_ended(VddInput)],
     );
-    spawner.spawn(sensor_task(bus, adc).unwrap());
+    spawner.spawn(sensor_task(bus, adc, sensor_dog).unwrap());
 
     // USB serial: the ground link.
     let driver = Driver::new(p.USBD, Irqs, HardwareVbusDetect::new(Irqs));
@@ -178,13 +227,14 @@ async fn main(spawner: Spawner) {
         len: 0,
     });
     Timer::after_millis(60).await;
-    let mut mission = Mission::boot(CONFIG, present, now_ms(), rbf.is_low(), out);
+    let mut mission = Mission::boot(CONFIG, present, reset, now_ms(), rbf.is_low(), out);
 
     let mut sense = || LATEST.lock(Cell::get);
     let mut rail = || LATEST.lock(Cell::get).volt_mv;
     let mut ticker = Ticker::every(Duration::from_millis(10));
     let mut rx = [0u8; 64];
     loop {
+        main_dog.pet();
         if serial.dtr() {
             match select(serial.read_packet(&mut rx), ticker.next()).await {
                 Either::First(Ok(n)) => {

@@ -3,7 +3,8 @@
 //! Coordinates follow the CubeSat Design Specification (CDS) Rev 14.1 §2.2.1:
 //! origin at the geometric centre, Z along the 113.5 mm length, and the -Z face
 //! goes into the deployer first. The two side panels sit at ±Y, each carrying two
-//! corner rails. The ±X faces stay open for access to the boards and the inhibit.
+//! corner rails. Two covers close the ±X faces; each has a port for the USB plugs
+//! and the inhibit jumper, and slots to vent the inside during launch.
 //!
 //! The payload plate is modelled in its own frame (plate underside at z = 0, board
 //! side up) and moved into place by [`Design::plate_bottom_z`]. Its board mounts,
@@ -121,6 +122,9 @@ pub struct Design {
     // Rails (§2.2.5 at least 8.5 mm wide; §2.2.7 edges rounded at least 1 mm).
     pub rail: f64,
     pub rail_radius: f64,
+    // Panel and cover faces sit this far inside the rail planes, so only the rails
+    // can touch the deployer walls.
+    pub face_recess: f64,
 
     // Side panel.
     pub web_t: f64,
@@ -137,6 +141,18 @@ pub struct Design {
     pub peg_x: f64, // snap points at (±peg_x, ±peg_y) on each end
     pub peg_y: f64,
     pub top_window_d: f64, // opening in the +Z plate
+    pub root_chamfer: f64, // cone at the root of every column and boss
+
+    // ±X covers. Each clips to both end plates like a side panel.
+    pub cover_peg: [f64; 2], // snap points at (±x, ±y) on each end
+    pub cover_lug_half: f64, // half-span (Y) of a cover's end walls
+    // Port in the -X cover for both USB plugs and the D2 jumper, in CDS Y and Z.
+    // It runs out through the cover's -Y edge, beside the Nano's plug.
+    pub port_y: [f64; 2],
+    pub port_z: [f64; 2],
+    pub vent: [f64; 2], // each vent slot, Y by Z
+    pub vent_count: usize,
+    pub vent_center_z: f64,
 
     // Snap peg (first printed on a P1S with a 0.6 mm nozzle: latched well).
     pub peg_shank: f64,
@@ -188,6 +204,7 @@ impl Default for Design {
             length: 113.5,
             rail: 9.0,
             rail_radius: 1.0,
+            face_recess: 0.5,
             web_t: 2.4,
             window: [60.0, 80.0],
             lug_t: 3.0,
@@ -200,6 +217,14 @@ impl Default for Design {
             peg_x: 25.0,
             peg_y: 42.0,
             top_window_d: 30.0,
+            root_chamfer: 1.5,
+            cover_peg: [42.0, 25.0],
+            cover_lug_half: 35.7,
+            port_y: [-42.0, 31.0],
+            port_z: [-31.0, -8.0],
+            vent: [4.0, 30.0],
+            vent_count: 7,
+            vent_center_z: 25.0,
             peg_shank: 5.0,
             peg_barb: 5.7,
             peg_tip: 4.0,
@@ -314,9 +339,13 @@ impl Design {
     pub fn half_z(&self) -> f64 {
         self.length / 2.0
     }
-    /// Inner face of each side panel's web.
+    /// Outer face of each side panel's web and each cover.
+    pub fn face_outer(&self) -> f64 {
+        self.half() - self.face_recess
+    }
+    /// Inner face of each side panel's web and each cover.
     pub fn web_inner_y(&self) -> f64 {
-        self.half() - self.web_t
+        self.face_outer() - self.web_t
     }
     /// Rail inner faces.
     pub fn rail_inner(&self) -> f64 {
@@ -337,6 +366,24 @@ impl Design {
     pub fn peg_points(&self) -> [[f64; 2]; 4] {
         let (x, y) = (self.peg_x, self.peg_y);
         [[-x, y], [x, y], [-x, -y], [x, -y]]
+    }
+    /// Snap points for the ±X covers on each end.
+    pub fn cover_peg_points(&self) -> [[f64; 2]; 4] {
+        let [x, y] = self.cover_peg;
+        [[x, y], [x, -y], [-x, y], [-x, -y]]
+    }
+    /// Every snap point on an end plate: side panels, then covers.
+    pub fn all_peg_points(&self) -> [[f64; 2]; 8] {
+        let (a, b) = (self.peg_points(), self.cover_peg_points());
+        [a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]]
+    }
+    /// Vent slot centres in Y on each cover.
+    pub fn vent_ys(&self) -> Vec<f64> {
+        let n = self.vent_count;
+        let pitch = 2.0 * self.vent[0];
+        (0..n)
+            .map(|i| (i as f64 - (n as f64 - 1.0) / 2.0) * pitch)
+            .collect()
     }
     /// Payload plate underside, in CDS coordinates: the plate's own frame starts here.
     pub fn plate_bottom_z(&self) -> f64 {

@@ -49,8 +49,9 @@ pub fn union_all(parts: &[Manifold]) -> Manifold {
 }
 
 /// A hole along Z for a part that prints with Z lying flat: a circle with a
-/// 45 degree point towards `up_y` (+1 or -1 in Y), so its roof prints without supports.
-pub fn teardrop_hole_z(d: f64, length: f64, center: [f64; 3], up_y: f64) -> Manifold {
+/// 45 degree point towards `up` (a direction in XY: the way up on the print bed),
+/// so its roof prints without supports.
+pub fn teardrop_hole_z(d: f64, length: f64, center: [f64; 3], up: [f64; 2]) -> Manifold {
     let r = d / 2.0;
     let mut pts: Vec<[f64; 2]> = (0..FACETS)
         .map(|i| {
@@ -58,7 +59,9 @@ pub fn teardrop_hole_z(d: f64, length: f64, center: [f64; 3], up_y: f64) -> Mani
             [r * a.cos(), r * a.sin()]
         })
         .collect();
-    pts.push([0.0, up_y.signum() * r * std::f64::consts::SQRT_2]);
+    let n = up[0].hypot(up[1]);
+    let tip = r * std::f64::consts::SQRT_2 / n;
+    pts.push([up[0] * tip, up[1] * tip]);
     Manifold::extrude(&CrossSection::hull_simple_polygon(&pts), length).translate(
         center[0],
         center[1],
@@ -75,4 +78,15 @@ pub fn bounds(m: &Manifold) -> ([f64; 3], [f64; 3]) {
 /// Volume shared by two solids.
 pub fn overlap(a: &Manifold, b: &Manifold) -> f64 {
     a.intersection(b).volume()
+}
+
+/// A cone that widens the root of a post standing on a face at `z`, pointing
+/// `dir` (+1 or -1 in Z): the post's diameter `d` at the tip, `d + 2c` at the root.
+pub fn root_chamfer(d: f64, c: f64, at: [f64; 2], z: f64, dir: f64) -> Manifold {
+    let h = c + EPS;
+    if dir > 0.0 {
+        cylinder(d + 2.0 * c, h, [at[0], at[1], z - EPS], Some(d))
+    } else {
+        cylinder(d, h, [at[0], at[1], z - c], Some(d + 2.0 * c))
+    }
 }
