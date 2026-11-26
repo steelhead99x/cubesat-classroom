@@ -48,10 +48,13 @@ const fn p(name: &'static str, source: &'static str, solid_infill: bool, colour:
     }
 }
 
-const GREY: [f64; 3] = [0.62, 0.65, 0.70];
-const DARK: [f64; 3] = [0.22, 0.24, 0.27];
-const BLUE: [f64; 3] = [0.55, 0.60, 0.68];
-const TPU: [f64; 3] = [0.15, 0.15, 0.16];
+// Monochrome, like a launch vehicle: white structure, black decks inside, grey test coupons.
+// White is held a little under full so its lit faces still show against the white background.
+const WHITE: [f64; 3] = [0.88, 0.88, 0.87];
+const BLACK: [f64; 3] = [0.16, 0.16, 0.17];
+const STEEL: [f64; 3] = [0.62, 0.65, 0.70];
+// The bed in the previews, a warm textured-PEI tone so black and white parts both stand out.
+const PEI: [f64; 3] = [0.55, 0.50, 0.40];
 
 /// File, title, and plates: each plate a name and rows of parts, top to bottom.
 pub type Plates = &'static [(&'static str, &'static [&'static [&'static str]])];
@@ -71,46 +74,42 @@ const PIN_COUPONS: [&str; 4] = [
     "Pin tab 3 dots (loosest)",
 ];
 const PIN_PARTS: [Part; 4] = [
-    p("Pin coupon base", "coupon-pin-base", true, BLUE),
-    p("Pin tab 1 dot (kit fit)", "coupon-pin-tab", true, GREY),
+    p("Pin coupon base", "coupon-pin-base", true, STEEL),
+    p("Pin tab 1 dot (kit fit)", "coupon-pin-tab", true, WHITE),
     p(
         "Pin tab 2 dots (looser)",
         "coupon-pin-tab-2-dots",
         true,
-        GREY,
+        WHITE,
     ),
     p(
         "Pin tab 3 dots (loosest)",
         "coupon-pin-tab-3-dots",
         true,
-        GREY,
+        WHITE,
     ),
 ];
 
 pub const CLASSROOM: Kit = Kit {
     parts: &[
-        p("Payload plate", "payload-plate", false, GREY),
-        p("Fit plate", "fit-plate", false, DARK),
-        p("Battery plate", "battery-plate", false, GREY),
+        p("Payload plate", "payload-plate", false, BLACK),
+        p("Fit plate", "fit-plate", false, BLACK),
+        p("Battery plate", "battery-plate", false, BLACK),
         PIN_PARTS[0],
         PIN_PARTS[1],
         PIN_PARTS[2],
         PIN_PARTS[3],
-        p("Nano coupon", "coupon-nano-base", true, BLUE),
+        p("Nano coupon", "coupon-nano-base", true, STEEL),
         p(
             "Side",
             "upstream/cubesatsim_frame_side.v2.0.stl",
             false,
-            GREY,
+            WHITE,
         ),
-        p(
-            "Side with camera hole",
-            "upstream/cubesatsim_frame_side_camera.v2.0.stl",
-            false,
-            GREY,
-        ),
-        p("Bottom with columns", "bottom-with-columns", false, GREY),
-        p("Top with columns", "bottom-with-columns", false, GREY),
+        p("Side with camera", "side-with-camera", false, WHITE),
+        p("Camera coupon", "coupon-camera", true, STEEL),
+        p("Bottom with columns", "bottom-with-columns", false, WHITE),
+        p("Top with columns", "bottom-with-columns", false, WHITE),
     ],
     projects: &[
         (
@@ -121,7 +120,7 @@ pub const CLASSROOM: Kit = Kit {
                     "Payload plate and bottom",
                     &[&["Payload plate", "Bottom with columns"]],
                 ),
-                ("Sides", &[&["Side", "Side with camera hole"]]),
+                ("Sides", &[&["Side", "Side with camera"]]),
                 (
                     "Top and battery plate",
                     &[&["Top with columns", "Battery plate"]],
@@ -136,15 +135,20 @@ pub const CLASSROOM: Kit = Kit {
         (
             "cubesat-test-coupons.3mf",
             "CubeSat Classroom test coupons",
-            &[("Test coupons", &[&PIN_COUPONS, &["Nano coupon"]])],
+            &[(
+                "Test coupons",
+                &[&PIN_COUPONS, &["Nano coupon", "Camera coupon"]],
+            )],
         ),
     ],
     description: "AMSAT CubeSatSim v2.0 frame with an Arduino Uno R3 and Nano 33 BLE Sense payload and a 3000 mAh \
                   battery. Frame by Alan Johnston, KU2Y (AMSAT). GPL-3.0.",
 };
 
-const OUTDOOR_COUPON_PARTS: [Part; 5] = [
-    p("Tripod thread coupon", "coupon-tripod-thread", true, BLUE),
+const OUTDOOR_COUPON_PARTS: [Part; 7] = [
+    p("Tripod thread coupon", "coupon-tripod-thread", true, STEEL),
+    p("Latch coupon rim", "coupon-latch-rim", true, STEEL),
+    p("Latch coupon lid", "coupon-latch-lid", true, WHITE),
     PIN_PARTS[0],
     PIN_PARTS[1],
     PIN_PARTS[2],
@@ -153,15 +157,16 @@ const OUTDOOR_COUPON_PARTS: [Part; 5] = [
 
 pub const OUTDOOR: Kit = Kit {
     parts: &[
-        p("Box", "outdoor-box", false, GREY),
-        p("Lid", "outdoor-lid", false, GREY),
-        p("Gasket (TPU)", "outdoor-gasket", false, TPU),
-        p("Payload plate", "payload-plate", false, GREY),
+        p("Box", "outdoor-box", false, WHITE),
+        p("Lid", "outdoor-lid", false, WHITE),
+        p("Payload plate", "payload-plate", false, BLACK),
         OUTDOOR_COUPON_PARTS[0],
         OUTDOOR_COUPON_PARTS[1],
         OUTDOOR_COUPON_PARTS[2],
         OUTDOOR_COUPON_PARTS[3],
         OUTDOOR_COUPON_PARTS[4],
+        OUTDOOR_COUPON_PARTS[5],
+        OUTDOOR_COUPON_PARTS[6],
     ],
     projects: &[
         (
@@ -173,7 +178,6 @@ pub const OUTDOOR: Kit = Kit {
                     "Lid and payload plate (ASA or PETG)",
                     &[&["Lid", "Payload plate"]],
                 ),
-                ("Gasket (TPU 95A)", &[&["Gasket (TPU)"]]),
             ],
         ),
         (
@@ -191,16 +195,17 @@ pub const OUTDOOR: Kit = Kit {
 
 pub const OUTDOOR_XIAO: Kit = Kit {
     parts: &[
-        p("Box", "outdoor-box", false, GREY),
-        p("Lid", "outdoor-lid", false, GREY),
-        p("Gasket (TPU)", "outdoor-gasket", false, TPU),
-        p("XIAO plate", "xiao-plate", false, GREY),
-        p("XIAO coupon", "coupon-xiao", true, BLUE),
+        p("Box", "outdoor-box", false, WHITE),
+        p("Lid", "outdoor-lid", false, WHITE),
+        p("XIAO plate", "xiao-plate", false, BLACK),
+        p("XIAO coupon", "coupon-xiao", true, STEEL),
         OUTDOOR_COUPON_PARTS[0],
         OUTDOOR_COUPON_PARTS[1],
         OUTDOOR_COUPON_PARTS[2],
         OUTDOOR_COUPON_PARTS[3],
         OUTDOOR_COUPON_PARTS[4],
+        OUTDOOR_COUPON_PARTS[5],
+        OUTDOOR_COUPON_PARTS[6],
     ],
     projects: &[
         (
@@ -212,7 +217,6 @@ pub const OUTDOOR_XIAO: Kit = Kit {
                     "Lid and XIAO plate (ASA or PETG)",
                     &[&["Lid", "XIAO plate"]],
                 ),
-                ("Gasket (TPU 95A)", &[&["Gasket (TPU)"]]),
             ],
         ),
         (
@@ -391,7 +395,7 @@ pub fn render(items: &[(Mesh, [f64; 3])], size: usize) -> Image {
     let light = [l[0] / ln, l[1] / ln, l[2] / ln];
 
     let bed = bed_mesh();
-    let mut scene: Vec<(&Mesh, [f64; 3])> = vec![(&bed, [0.17, 0.18, 0.20])];
+    let mut scene: Vec<(&Mesh, [f64; 3])> = vec![(&bed, PEI)];
     scene.extend(items.iter().map(|(m, c)| (m, *c)));
     let centred = |v: &[f64; 3]| apply([v[0] - BED / 2.0, v[1] - BED / 2.0, v[2]]);
     let (mut lo, mut hi) = ([f64::INFINITY; 2], [f64::NEG_INFINITY; 2]);

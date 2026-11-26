@@ -4,9 +4,9 @@ A real 1U CubeSat frame (100 × 100 × 113.5 mm) that holds an **Arduino Uno R3*
 
 **There are no loose parts.** The whole kit is AMSAT's frame pieces plus two plates: the payload plate and the battery plate. Every snap, hook and lip is part of a plate or the frame, so there is nothing small to drop, lose or throw away by mistake. The rules behind it are in the [design guide](../DESIGN-GUIDE.md).
 
-**Versions:** v1 (the payload plate, printed and tested) is saved as the [`release/amsat-kit-v1`](https://github.com/steelhead99x/cubesat-classroom/tree/release/amsat-kit-v1) branch. This is v1.1: it adds the battery, a second tight snap pin and a cable notch. Two outdoor cases are built from it: the [outdoor ground station](../outdoor-station/README.md) and the [outdoor XIAO station](../outdoor-xiao/README.md).
+**Versions:** v1 (the payload plate, printed and tested) is saved as the [`release/amsat-kit-v1`](https://github.com/steelhead99x/cubesat-classroom/tree/release/amsat-kit-v1) branch. This is v1.1: it adds the battery, a second tight snap pin, a cable notch, a camera side for a XIAO ESP32-S3 Sense, and isogrid pockets on the battery plate. Two outdoor cases are built from it: the [outdoor ground station](../outdoor-station/README.md) and the [outdoor XIAO station](../outdoor-xiao/README.md).
 
-The frame is the [AMSAT CubeSat Simulator](https://cubesatsim.org) v2.0 frame, unchanged except for one piece. The payload plate and its joints are new, designed around Arduino's own CAD for both boards (see [reference/](reference/)).
+The frame is the [AMSAT CubeSat Simulator](https://cubesatsim.org) v2.0 frame, unchanged except for two pieces: the bottom/top piece gets columns, and the camera side gets a camera cradle. The payload plate and its joints are new, designed around Arduino's own CAD for both boards (see [reference/](reference/)).
 
 ## How it holds together
 
@@ -33,6 +33,12 @@ It takes about 27 N to pull the plate off, against 16 N for an 80 g payload at 2
 
 **The battery: press and click.** The top piece gets the same columns as the bottom (it's the same printed part), and a second keyed plate snaps onto them. The cell lies between two side guides on that plate. Press it straight down: its ends push a snap hook out at each end, and the hooks click back over it. The hooks are the boards' hook with a sturdier post, because they stand the full 14 mm height of the largest cell. The plate holds the largest cell MakerFocus's listing allows (67 × 36 × 12 mm plus 2 mm each way). A smaller cell sits loose by up to 2 mm: stick a strip of foam tape under it. To take it out, push one hook outward and lift that end. The cell's wire leaves beside the top hook and passes the payload plate through the notch in its top edge.
 
+**The camera: press and click.** The camera side is AMSAT's plain side with its middle window filled in, a 10 mm lens port with a chamfer that leaves a 75° view clear, and a cradle for a **Seeed XIAO ESP32-S3 Sense with the OV5640 camera** (an open-source, Arduino-programmable board, not a Raspberry Pi). Press the XIAO straight down into the cradle, lens first into the port, until a snap hook clicks over each long edge. It's the battery's push-down hook, because the XIAO and its camera board stand 15 mm tall. Side guides stop it sliding. To take it out, push one hook outward and lift. It looks out a side, about 47–67 mm up the cube, clear of the payload plate's boards below and the battery above.
+
+- **The OV5640** takes 1080p and up to 5 MP (2592 × 1944) stills, with autofocus. At 1080p the ESP32-S3 manages only a few frames a second, so treat it as a stills and slow-video camera.
+- **Assumed, not measured** (the camera coupon checks them): the XIAO with its Sense board is 21 × 17.8 × 15 mm; the lens sits in the middle of that footprint; the camera module is about 9 × 9 mm with an 8 mm lens barrel; and nothing on the XIAO's top is within 2 mm of its long edges. If yours differs, measure it and tell us: each is one number in `Camera` in [camera.rs](../../crates/amsat-kit/src/camera.rs).
+- **Power:** the XIAO has its own LiPo charger. Run it from the Uno's 5 V or its own USB-C; a mentor checks any wiring to the battery (wire one cell to one charger only).
+
 ![Section through a snap pin](snap-pin-section.svg)
 
 ![Section through a board snap hook](board-hook-section.svg)
@@ -43,7 +49,7 @@ It takes about 27 N to pull the plate off, against 16 N for an 80 g payload at 2
 
 - **Frame:** AMSAT CubeSatSim v2.0 by Alan Johnston, KU2Y, AMSAT VP Educational Relations. Source: [alanbjohnston/CubeSatSim `hardware/frame/v2.0`](https://github.com/alanbjohnston/CubeSatSim/tree/master/hardware/frame/v2.0), commit `1f6a01c4` (2024-10-07), with the [Onshape CAD](https://cad.onshape.com/documents/ba47819ff100597297d1d967/w/f19409ec7cd5459afb429cb9/e/a0e0cc37dee6fb879c4bcc2b) linked from there.
 - **License:** the CubeSatSim repository is GPL-3.0, so everything in this folder is GPL-3.0 too ([LICENSE](LICENSE)). The rest of CubeSat Classroom keeps its MIT or Apache-2.0 terms.
-- **Changes:** modified by CubeSat Classroom on 2026-11-25. `bottom-with-columns` is the AMSAT top/bottom piece with four standoff columns added where the AMSAT board stack normally screws in; three end in snap pins and one in a locating pin. The payload plate, battery plate, fit plate and test coupons are new parts. The kit prints `bottom-with-columns` twice: once for the bottom, once for the top. The files in [upstream/](upstream/) are AMSAT's, byte for byte (SHA-256 below).
+- **Changes:** modified by CubeSat Classroom on 2026-11-25 and 2026-11-26. `bottom-with-columns` is the AMSAT top/bottom piece with four standoff columns added where the AMSAT board stack normally screws in; three end in snap pins and one in a locating pin. `side-with-camera` is AMSAT's plain side with its middle window filled in, a lens port and a camera cradle; it replaces AMSAT's side with the camera hole. The payload plate, battery plate, fit plate and test coupons are new parts. The kit prints `bottom-with-columns` twice: once for the bottom, once for the top. The files in [upstream/](upstream/) are AMSAT's, byte for byte (SHA-256 below).
 - **Payload plate design:** modeled on the `Multiplate` from the [Teachers in Space](https://www.tis.org/) (TIS) 1U frame, the frame TIS uses in its Arduino CubeSat workshops. TIS publishes its files without a license, so none are copied here; see [tis/README.md](../tis/README.md).
 - This is an independent build. It isn't made or endorsed by AMSAT or TIS.
 
@@ -53,9 +59,9 @@ There are three Bambu Studio projects. Open any of them in Bambu Studio (File �
 
 | File | Plate | What's on it |
 | --- | --- | --- |
-| **[p1s/cubesat-test-coupons.3mf](p1s/cubesat-test-coupons.3mf)** (print first) | Test coupons | A snap pin with a fit ladder of three tabs (about 5 g), and the Nano mount on its own (about 4 g) |
+| **[p1s/cubesat-test-coupons.3mf](p1s/cubesat-test-coupons.3mf)** (print first) | Test coupons | A snap pin with a fit ladder of three tabs (about 5 g), the Nano mount on its own (about 4 g), and the camera cradle on its own (about 8 g) |
 | **[p1s/cubesat-kit.3mf](p1s/cubesat-kit.3mf)** | 1. Payload plate and bottom | The payload plate and the bottom piece with columns |
-| | 2. Sides | Both AMSAT sides (one with the camera hole), unchanged |
+| | 2. Sides | AMSAT's plain side, and the camera side |
 | | 3. Top and battery plate | The same columns piece again, as the top, and the battery plate |
 | **[p1s/cubesat-fit-plate.3mf](p1s/cubesat-fit-plate.3mf)** (optional) | Fit plate | The open-truss fit plate |
 
@@ -71,8 +77,9 @@ None of the plates has been sliced for a time estimate yet. For other slicers, e
 
 1. **Snap pin fit ladder:** one pin and three tabs, marked with raised dots on their middle tongue. 1 dot is the kit's fit: 0.1 mm clearance on the flats. 2 and 3 dots are looser (0.2 and 0.3 mm on the flats, with their teeth 0.1 and 0.2 mm further out), for printers that print holes small. Line a tab's slot up with the pin's flats, dots up, and press it straight down until it clicks. The right fit drops onto the flats without forcing, clicks with a firm push, and doesn't wobble or rattle once on. If 2 or 3 dots feels better on your printer, tell us: the kit's fit is one number (`pin_fit`), and the files can be regenerated for it.
 2. **Nano mount:** the plate's Nano 33 BLE Sense mount on its own, the same pads, corner stops, lips and hooks in the same places, sized for the bare board (43.18 × 17.78 mm, no headers). Hold the Nano parts up, with its USB end towards the small raised arrow. Tuck the long edge under the two lips, then press the other edge down until both hooks click. It should sit flat on its pads with only a little end play, and lifting it shouldn't pop the hooks. To take it out, push the hooks outward with a fingertip.
+3. **Camera cradle:** the camera side's port, guides and hooks on a small piece of side. Press your XIAO ESP32-S3 Sense in, lens first, until both hooks click. The lens should sit centred in the port, and the board shouldn't slide.
 
-**Printed so far (hardware bench, Nov 26, Bambu Lab P1S, PLA):** of the three tabs, 1 dot fit best, so it's the kit's fit. The bare Nano 33 BLE Sense Rev2 fit its coupon well and snapped in. The kit plate's slots are the 1-dot tab's. The fingers (on the plate and the tabs) are now 0.5 mm longer, 14.5 mm, with 0.1 mm more room behind them, to keep the strain under the limit with the tighter teeth.
+**Printed so far (hardware bench, Nov 26, Bambu Lab P1S, PLA):** the full v1 cube frame printed and went together fine. Of the three tabs, 1 dot fit best, so it's the kit's fit. The bare Nano 33 BLE Sense Rev2 fit its coupon well and snapped in. The kit plate's slots are the 1-dot tab's. The fingers (on the plate and the tabs) are now 0.5 mm longer, 14.5 mm, with 0.1 mm more room behind them, to keep the strain under the limit with the tighter teeth.
 
 Write down what you find and share it through the [contribution guide](../../CONTRIBUTING.md).
 
@@ -87,7 +94,8 @@ The lettering is stored as outlines in [label.json](label.json) (DejaVu Sans Bol
 3. **Nano 33 BLE Sense** (bare board, parts up, USB end towards the right): tuck the long edge nearest the Uno under the two lips, then press the other long edge down until both hooks click.
 4. **Battery plate onto the top:** press it onto the top piece's columns the same way as the payload plate (one way round, three clicks).
 5. **Battery:** a mentor checks the cell first (see the [battery safety quest](../../quest/m1/battery-safety.md)). Lay it between the guides, wire towards the gap beside the top hook, and press it straight down until both end hooks click.
-6. **Frame:** snap the two sides onto the bottom, then the top, the same way as AMSAT's frame. Run the battery wire down the frame's side and through the payload plate's notch. AMSAT notes the frame holds together on its own. Skip their optional screws to keep it 100% printed.
+6. **Camera:** press the XIAO ESP32-S3 Sense into the camera side's cradle, lens first into the port, until both hooks click.
+7. **Frame:** snap the two sides onto the bottom, then the top, the same way as AMSAT's frame. Run the battery wire down the frame's side and through the payload plate's notch. AMSAT notes the frame holds together on its own. Skip their optional screws: this kit uses none.
 
 To take a board out, push its hooks outward and lift that edge, then slide the other edge out from under its lips. To take the plate out, pull it straight off the columns.
 
@@ -122,9 +130,9 @@ The checks in [crates/amsat-kit/src/checks.rs](../../crates/amsat-kit/src/checks
 - anything hits a part in Arduino's layout for either board, a column's pin head comes up under the Uno's solder joints, or anything blocks the Nano's USB plug or leaves less than 20 mm from it to the plate edge
 - any of the three fit tabs doesn't go on, press, and sit at its own clearance on the flats, or the bare Nano doesn't go into its coupon and stay held the same way as on the plate
 
-`cargo run --release -p amsat-kit -- self-test` (and `cargo test -p amsat-kit`) breaks the classroom kit twenty-five ways and the outdoor cases fourteen ways, and checks that each one is caught, and that hook fingers exactly at the strain limit still pass.
+`cargo run --release -p amsat-kit -- self-test` (and `cargo test -p amsat-kit`) breaks the classroom kit twenty-five ways, the camera side five ways and the outdoor cases nineteen ways, and checks that each one is caught, and that hook fingers exactly at the strain limit still pass.
 
-**Verification status: nearly verified.** The design checks above pass in CI, and the keyed-pin fit ladder and the Nano coupon have printed well (see above). The kit plates, the battery plate and the fit plate in this version haven't been printed yet. The checks are design checks, not measurements, and the strain and force figures are hand calculations for PLA (straight-beam estimates), not test results. Print the coupons first and share what you find through the [contribution guide](../../CONTRIBUTING.md).
+**Verification status: nearly verified.** The design checks above pass in CI, the full v1 cube frame printed and went together fine, and the keyed-pin fit ladder and the Nano coupon have printed well (see above). The battery plate, the fit plate, the camera side and the camera coupon in this version haven't been printed yet. The checks are design checks, not measurements, and the strain and force figures are hand calculations for PLA (straight-beam estimates), not test results. Print the coupons first and share what you find through the [contribution guide](../../CONTRIBUTING.md).
 
 ## Regenerate
 

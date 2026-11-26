@@ -10,6 +10,7 @@
 use std::path::Path;
 use std::process::ExitCode;
 
+use amsat_kit::camera::{self, Camera};
 use amsat_kit::checks::{boundary_designs, broken_designs, verify};
 use amsat_kit::design::Design;
 use amsat_kit::geom::{Mesh, closed_solid};
@@ -102,32 +103,48 @@ fn build_classroom(d: &Design) -> Result<(), String> {
     ];
     solids.extend(pin_coupons(d));
     solids.push(("coupon-nano-base", parts::coupon_nano_base(d, 0.0)));
+    let cam = Camera::default();
+    camera::verify(d, &cam)?;
+    solids.push(("side-with-camera", camera::side_with_camera(d, &cam, 0.0)?));
+    solids.push(("coupon-camera", camera::coupon(d, &cam)?));
     let meshes = write_meshes(&dir, solids)?;
     bambu::write_projects(&dir, &bambu::CLASSROOM, &meshes)?;
     drawing::write_all(d, &dir)?;
     Ok(())
 }
 
-/// The parts both outdoor cases share: box, lid, gasket and the tripod-thread coupon.
+/// The parts both outdoor cases share: box, lid, and the tripod-thread and latch coupons.
 fn outdoor_parts(d: &Design, o: &Outdoor) -> Result<Vec<(&'static str, Manifold)>, String> {
+    let (rim, lid_piece) = outdoor::latch_coupon(d, o)?;
     Ok(vec![
         ("outdoor-box", outdoor::body(d, o, o.thread_clear)),
-        ("outdoor-lid", outdoor::lid(d, o)?),
-        ("outdoor-gasket", outdoor::gasket(o)),
+        ("outdoor-lid", outdoor::lid_to_print(d, o)?),
         ("coupon-tripod-thread", outdoor::thread_coupon(o)),
+        ("coupon-latch-rim", rim),
+        ("coupon-latch-lid", lid_piece),
     ])
 }
 
 fn report_outdoor(d: &Design, o: &Outdoor) {
     println!(
-        "box: {:.0} x {:.0} mm outside the rim, {:.0} mm tall with the lid; gasket squeezed {:.0}%; \
-         plate {:.1} mm over the back; {} ports",
+        "box: {:.0} x {:.0} mm outside the rim, {:.0} mm tall with the lid; plate {:.1} mm over the \
+         back; {} ports",
         o.cavity + 2.0 * (o.wall + o.flange),
         o.cavity + 2.0 * (o.wall + o.flange),
         o.top + o.lid_t,
-        outdoor::gasket_squeeze(o) * 100.0,
         o.plate_z(d),
         o.ports.len()
+    );
+    let (length, id) = o.oring();
+    println!(
+        "seal: {} mm O-ring squeezed {:.0}%, groove {:.0}% full; groove bottom {:.0} mm round, so an \
+         O-ring about {:.0} mm inside diameter; latches bend {:.2}%",
+        o.oring_d,
+        o.oring_squeeze() * 100.0,
+        o.groove_fill() * 100.0,
+        length,
+        id,
+        o.latch_strain() * 100.0
     );
 }
 
@@ -164,6 +181,7 @@ fn build_xiao(d: &Design) -> Result<(), String> {
 
 fn check_all(d: &Design) -> Result<(), String> {
     verify(d)?;
+    camera::verify(d, &Camera::default())?;
     report(d);
     outdoor_checks::verify_uno_nano(d, &Outdoor::default())?;
     outdoor_checks::verify_xiao(d, &Outdoor::xiao())?;
@@ -180,6 +198,13 @@ fn self_test() -> Result<(), String> {
     let mut missed = Vec::new();
     for (label, d) in broken_designs() {
         match verify(&d) {
+            Ok(()) => missed.push(label),
+            Err(e) => println!("rejected {label}: {e}"),
+        }
+    }
+    let d0 = Design::default();
+    for (label, c) in camera::broken_designs() {
+        match camera::verify(&d0, &c) {
             Ok(()) => missed.push(label),
             Err(e) => println!("rejected {label}: {e}"),
         }

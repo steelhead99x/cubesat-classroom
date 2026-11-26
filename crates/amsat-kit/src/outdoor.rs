@@ -1,7 +1,10 @@
 //! Outdoor ground-station cases: a sealed box with the kit's columns and keyed snap pins inside,
 //! so the same plates snap in. The 3000 mAh cell lies in a pocket on a deck under the plate,
-//! held in by the plate itself. A gasket in a groove round the rim seals a lid held by eight
-//! captive screws. Cables come in through glands in the wall that faces down, antennas leave
+//! held in by the plate itself. There are no screws: an O-ring on a skirt under the lid seals
+//! sideways against the box's inner wall, so the seal doesn't need clamping, and four reusable
+//! snap latches hold the lid on. Each latch is a long finger in the lid's own plane that clicks
+//! under a lug on the rim; push its tab inward to let go. Cables come in through glands in the
+//! wall that faces down, antennas leave
 //! through the wall that faces up, a breathable vent stops condensation, and a 1/4"-20 camera
 //! thread in the middle of the back takes a tripod.
 //!
@@ -11,7 +14,11 @@
 use manifold_csg::{CrossSection, Manifold};
 
 use crate::design::Design;
-use crate::geom::{EPS, FACETS, bx, chamfered_square, cone, cyl, offset, union_all};
+use manifold_csg::JoinType;
+
+use crate::geom::{
+    EPS, FACETS, bx, chamfered_square, cone, cyl, offset, poly, round_corners, union_all,
+};
 use crate::joints::{locating_pin, pin};
 use crate::parts::branding;
 
@@ -77,21 +84,36 @@ pub struct Outdoor {
     /// 45 degree slope, so it prints without supports.
     pub flange: f64,
     pub flange_h: f64,
-    /// Gasket groove: centre, from the cavity; width; depth. The gasket is a printed TPU ring
-    /// (or 2.5 mm silicone cord).
-    pub groove_at: f64,
-    pub groove_w: f64,
-    pub groove_d: f64,
-    pub gasket: f64,
-    /// Screws: centre from the cavity; heat-set insert hole and depth; screw clearance and head.
-    pub screw_at: f64,
-    pub insert_d: f64,
-    pub insert_depth: f64,
-    pub screw_clear: f64,
-    /// The bottom of each lid hole is this narrow, so a screw cuts through once and stays in.
-    pub screw_captive: f64,
-    pub screw_head: f64,
+    /// Rounding on the cavity's corners, so an O-ring can follow them.
+    pub cavity_round: f64,
+    /// The lid: how far past the cavity its edge reaches, and its thickness.
+    pub lid_over: f64,
     pub lid_t: f64,
+    /// The skirt under the lid that goes into the box: its height, its clearance to the box's
+    /// inner wall, and its wall behind the O-ring groove.
+    pub skirt_h: f64,
+    pub skirt_clear: f64,
+    pub skirt_wall: f64,
+    /// O-ring cross-section; the radial gap it's squeezed into (groove bottom to the box's inner
+    /// wall); the groove's width at the skirt's face; how far below the lid its centre is.
+    pub oring_d: f64,
+    pub gland: f64,
+    pub groove_w: f64,
+    pub groove_z: f64,
+    /// Lid latches, one on each side: finger width, slit behind it, and its length to the lug's
+    /// middle and on to its tip, where a thumb pushes it in.
+    pub latch_w: f64,
+    pub latch_slit: f64,
+    pub latch_to_lug: f64,
+    pub latch_tab: f64,
+    /// The lugs on the rim: width along the side, thickness, gap to the lid's edge, and how far
+    /// their catch reaches over the lid.
+    pub lug_w: f64,
+    pub lug_t: f64,
+    pub lug_gap: f64,
+    pub lug_reach: f64,
+    /// Gap between the lid's top and the lugs' catch.
+    pub lug_clear: f64,
     /// Tripod thread, 1/4"-20 UNC, printed: printed holes come out small, so the thread is cut
     /// larger by this much on the diameter.
     pub thread_major: f64,
@@ -119,19 +141,27 @@ impl Default for Outdoor {
             wall: 3.0,
             floor: 3.0,
             top: 76.0,
-            flange: 10.0,
+            flange: 7.0,
             flange_h: 6.0,
-            groove_at: 4.5,
-            groove_w: 3.0,
-            groove_d: 1.9,
-            gasket: 2.6,
-            screw_at: 9.5,
-            insert_d: 4.0,
-            insert_depth: 6.0,
-            screw_clear: 3.4,
-            screw_captive: 2.7,
-            screw_head: 6.2,
+            cavity_round: 5.0,
+            lid_over: 5.5,
             lid_t: 4.0,
+            skirt_h: 9.0,
+            skirt_clear: 0.3,
+            skirt_wall: 2.0,
+            oring_d: 2.5,
+            gland: 1.9,
+            groove_w: 5.0,
+            groove_z: 4.6,
+            latch_w: 2.4,
+            latch_slit: 1.4,
+            latch_to_lug: 20.0,
+            latch_tab: 6.0,
+            lug_w: 8.0,
+            lug_t: 2.4,
+            lug_gap: 0.3,
+            lug_reach: 1.0,
+            lug_clear: 0.1,
             thread_major: 6.35,
             thread_minor: 5.35,
             thread_pitch: 1.27,
@@ -183,7 +213,65 @@ impl Outdoor {
     }
 
     pub fn cavity_outline(&self) -> CrossSection {
-        chamfered_square(self.cavity, self.cavity_chamfer)
+        round_corners(
+            &chamfered_square(self.cavity, self.cavity_chamfer),
+            self.cavity_round,
+        )
+    }
+
+    /// A crisp, mitred offset of the cavity, for the outside faces.
+    pub fn crisp(&self, by: f64) -> CrossSection {
+        chamfered_square(self.cavity, self.cavity_chamfer).offset(by, JoinType::Miter, 4.0, 0)
+    }
+
+    /// O-ring squeeze, and how full its groove is.
+    pub fn oring_squeeze(&self) -> f64 {
+        (self.oring_d - self.gland) / self.oring_d
+    }
+
+    pub fn groove_depth(&self) -> f64 {
+        self.gland - self.skirt_clear
+    }
+
+    pub fn groove_fill(&self) -> f64 {
+        let depth = self.groove_depth();
+        // Flat on the lid side, 45 degrees on the far side, so it prints.
+        let area = (self.groove_w + (self.groove_w - depth)) / 2.0 * depth;
+        std::f64::consts::PI * self.oring_d * self.oring_d / 4.0 / area
+    }
+
+    /// The O-ring's size: the groove bottom's length, and an inside diameter that stretches it
+    /// about 3% onto the skirt.
+    pub fn oring(&self) -> (f64, f64) {
+        let bottom = offset(&self.cavity_outline(), -self.gland, FACETS);
+        let length: f64 = bottom
+            .to_polygons()
+            .iter()
+            .map(|p| {
+                (0..p.len())
+                    .map(|i| {
+                        let (a, b) = (p[i], p[(i + 1) % p.len()]);
+                        ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2)).sqrt()
+                    })
+                    .sum::<f64>()
+            })
+            .fold(0.0, f64::max);
+        (length, length / std::f64::consts::PI / 1.03)
+    }
+
+    /// Latch strain: the finger bends by the lug's reach (plus 0.1 mm) at the lug.
+    pub fn latch_strain(&self) -> f64 {
+        1.5 * self.latch_w * (self.lug_reach + 0.1) / self.latch_to_lug.powi(2)
+    }
+
+    /// The four latches: each side's outward direction, in degrees.
+    pub fn latch_angles(&self) -> [f64; 4] {
+        [0.0, 90.0, 180.0, 270.0]
+    }
+
+    /// The lid's edge, from the middle.
+    pub fn lid_edge(&self) -> f64 {
+        self.cavity / 2.0 + self.lid_over
     }
 
     /// The plate's underside: over the deck, the largest cell and its clearance.
@@ -194,23 +282,6 @@ impl Outdoor {
     /// Where the 45 degree slope under the flange starts.
     pub fn flare_z(&self) -> f64 {
         self.top - self.flange_h - self.flange
-    }
-
-    /// The eight screws: the chamfers' middles and the sides' middles.
-    pub fn screws(&self) -> Vec<[f64; 2]> {
-        let a = self.cavity / 2.0 + self.screw_at;
-        let c = (self.cavity - self.cavity_chamfer) / 2.0 + self.screw_at / 2f64.sqrt();
-        let mut s = Vec::new();
-        for (sx, sy) in [(1.0, 1.0), (-1.0, 1.0), (-1.0, -1.0), (1.0, -1.0)] {
-            s.push([sx * c, sy * c]);
-        }
-        s.extend([[a, 0.0], [0.0, a], [-a, 0.0], [0.0, -a]]);
-        s
-    }
-
-    fn ring(&self, at: f64, w: f64) -> CrossSection {
-        let outline = self.cavity_outline();
-        offset(&outline, at + w / 2.0, FACETS).difference(&offset(&outline, at - w / 2.0, FACETS))
     }
 
     /// The wall a port goes through: its outside face's y, and which way is out.
@@ -361,74 +432,225 @@ pub fn columns(d: &Design, o: &Outdoor) -> Manifold {
     union_all(&parts)
 }
 
-/// The box: walls, flange, groove, insert holes, columns, battery pocket, ports and tripod
-/// socket. `clear` is the tripod thread's clearance.
+/// A latch's frame: the side's outward direction `a` (degrees); u outward from the middle, v
+/// along the side. Builds a box in (u, v, z) and turns it into place.
+fn on_side(a: f64, u0: f64, v0: f64, z0: f64, u1: f64, v1: f64, z1: f64) -> Manifold {
+    bx(u0, v0, z0, u1, v1, z1).rotate(0.0, 0.0, a)
+}
+
+/// The lugs on the rim, each with a flat catch over the lid and a 45 degree lead-in on top.
+pub fn lugs(o: &Outdoor) -> Manifold {
+    let e = o.lid_edge();
+    let (z0, zc) = (o.top - EPS, o.top + o.lid_t + o.lug_clear);
+    let (u0, u1) = (e + o.lug_gap, e + o.lug_gap + o.lug_t);
+    let lead = 0.5;
+    let top = zc + lead + o.lug_reach + o.lug_gap;
+    let v = o.latch_to_lug - o.latch_to_lug / 2.0;
+    let mut parts = Vec::new();
+    for a in o.latch_angles() {
+        let (v0, v1) = (v - o.lug_w / 2.0, v + o.lug_w / 2.0);
+        // Profile in (u, z): post, then the catch reaching in over the lid.
+        let profile = poly(&[
+            [u1, z0],
+            [u1, top],
+            [u0, top],
+            [e - o.lug_reach, zc + lead],
+            [e - o.lug_reach, zc],
+            [u0, zc],
+            [u0, z0],
+        ]);
+        let lug = profile
+            .extrude(v1 - v0)
+            .rotate(90.0, 0.0, 0.0)
+            .translate(0.0, v1, 0.0);
+        parts.push(lug.rotate(0.0, 0.0, a));
+    }
+    union_all(&parts)
+}
+
+/// The box: walls with crisp chamfered faces, the rim with its lugs, columns, battery pocket,
+/// ports and tripod socket. `clear` is the tripod thread's clearance.
 pub fn body(d: &Design, o: &Outdoor, clear: f64) -> Manifold {
     let outline = o.cavity_outline();
-    let wall = offset(&outline, o.wall, FACETS);
-    let rim = offset(&outline, o.wall + o.flange, FACETS);
+    let wall = o.crisp(o.wall);
+    let rim = o.crisp(o.wall + o.flange);
     let zf = o.flare_z();
     let outer = wall.extrude(zf + EPS).union(&Manifold::batch_hull(&[
         wall.extrude(EPS).translate(0.0, 0.0, zf),
         rim.extrude(o.flange_h)
             .translate(0.0, 0.0, o.top - o.flange_h),
     ]));
+    // A lead-in round the top of the cavity, so the O-ring slides in.
+    let lead = Manifold::batch_hull(&[
+        offset(&outline, 1.2, FACETS)
+            .extrude(EPS)
+            .translate(0.0, 0.0, o.top),
+        outline.extrude(EPS).translate(0.0, 0.0, o.top - 1.2),
+    ]);
     let mut cuts = vec![
         outline.extrude(o.top).translate(0.0, 0.0, o.floor),
-        o.ring(o.groove_at, o.groove_w)
-            .extrude(o.groove_d + 1.0)
-            .translate(0.0, 0.0, o.top - o.groove_d),
+        lead,
         socket_cut(o, clear),
     ];
-    for [x, y] in o.screws() {
-        cuts.push(cyl(
-            o.insert_d,
-            o.insert_depth + 1.0,
-            x,
-            y,
-            o.top - o.insert_depth,
-        ));
-    }
     for p in &o.ports {
         cuts.push(port_hole(o, p));
     }
-    let shell = outer.difference(&union_all(&cuts));
+    let shell = outer.difference(&union_all(&cuts)).union(&lugs(o));
     let inside =
         union_all(&[columns(d, o), battery_pocket(d, o)]).difference(&socket_cut(o, clear));
     shell.union(&inside)
 }
 
-/// The lid, printed sealing face down: captive screw holes, and the branding on top.
-pub fn lid(d: &Design, o: &Outdoor) -> Result<Manifold, String> {
-    let rim = offset(&o.cavity_outline(), o.wall + o.flange, FACETS);
+/// The slits that free each latch finger, in the lid's frame (z = 0 is its underside).
+fn latch_slits(o: &Outdoor) -> Manifold {
+    let e = o.lid_edge();
+    let (w, s) = (o.latch_w, o.latch_slit);
+    let (root, tip) = (-o.latch_to_lug / 2.0, o.latch_to_lug / 2.0 + o.latch_tab);
     let mut cuts = Vec::new();
-    for [x, y] in o.screws() {
-        cuts.push(cyl(o.screw_captive, 1.0 + EPS, x, y, -EPS));
-        cuts.push(cyl(o.screw_clear, o.lid_t, x, y, 1.0));
-        cuts.push(cyl(o.screw_head, 1.6 + EPS, x, y, o.lid_t - 1.6));
+    for a in o.latch_angles() {
+        cuts.push(on_side(
+            a,
+            e - w - s,
+            root,
+            -1.0,
+            e - w,
+            tip + s,
+            o.lid_t + 1.0,
+        ));
+        cuts.push(on_side(
+            a,
+            e - w - s,
+            tip,
+            -1.0,
+            e + 1.0,
+            tip + s,
+            o.lid_t + 1.0,
+        ));
     }
-    let relief = branding(d)?
+    union_all(&cuts)
+}
+
+/// The latch fingers themselves (lid frame), for moving them in the checks.
+fn latch_fingers(o: &Outdoor) -> Manifold {
+    let e = o.lid_edge();
+    let (root, tip) = (-o.latch_to_lug / 2.0, o.latch_to_lug / 2.0 + o.latch_tab);
+    union_all(&o.latch_angles().map(|a| {
+        on_side(
+            a,
+            e - o.latch_w,
+            root + 0.5,
+            -EPS,
+            e + EPS,
+            tip,
+            o.lid_t + EPS,
+        )
+    }))
+}
+
+/// The lid in its own frame: z = 0 is the underside that sits on the rim, the skirt hangs below
+/// it. `deflect` pushes the latch fingers inward, for the checks.
+pub fn lid(d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, String> {
+    let outline = o.cavity_outline();
+    let plate = o.crisp(o.lid_over).extrude(o.lid_t);
+    let face = offset(&outline, -o.skirt_clear, FACETS);
+    let inner = offset(&outline, -(o.gland + o.skirt_wall), FACETS);
+    // The skirt, with a lead-in at its bottom edge.
+    let skirt = Manifold::batch_hull(&[
+        face.extrude(o.skirt_h - 1.0)
+            .translate(0.0, 0.0, -(o.skirt_h - 1.0)),
+        offset(&face, -1.0, FACETS)
+            .extrude(EPS)
+            .translate(0.0, 0.0, -o.skirt_h),
+    ])
+    .difference(
+        &inner
+            .extrude(o.skirt_h + 2.0)
+            .translate(0.0, 0.0, -o.skirt_h - 1.0),
+    );
+    // The O-ring groove: flat on the lid's side, 45 degrees on the far side.
+    let depth = o.groove_depth();
+    let (g0, g1) = (
+        -o.groove_z + o.groove_w / 2.0,
+        -o.groove_z - o.groove_w / 2.0,
+    );
+    let ring = |by: f64| offset(&outline, by, FACETS);
+    let bottom = ring(-o.gland);
+    let groove = Manifold::batch_hull(&[
+        ring(1.0)
+            .extrude(g0 - (g1 + depth))
+            .translate(0.0, 0.0, g1 + depth),
+        ring(1.0).extrude(EPS).translate(0.0, 0.0, g1),
+    ])
+    .difference(
+        &bottom
+            .extrude(o.groove_w + 2.0)
+            .translate(0.0, 0.0, g1 - 1.0),
+    );
+    let grooved = skirt.difference(&groove);
+    // Branding pressed into the top face, which prints on the bed.
+    let mark = branding(d)?
         .extrude(0.6 + EPS)
-        .translate(0.0, 0.0, o.lid_t - EPS);
-    Ok(rim
-        .extrude(o.lid_t)
-        .difference(&union_all(&cuts))
-        .union(&relief))
+        .translate(0.0, 0.0, o.lid_t - 0.6);
+    let body = plate
+        .union(&grooved)
+        .difference(&latch_slits(o))
+        .difference(&mark);
+    if deflect == 0.0 {
+        return Ok(body);
+    }
+    let fingers = body.intersection(&latch_fingers(o));
+    let mut moved = Vec::new();
+    for a in o.latch_angles() {
+        let e = o.lid_edge();
+        let one = fingers.intersection(&on_side(a, e - 10.0, -30.0, -50.0, e + 10.0, 30.0, 50.0));
+        let r = a.to_radians();
+        moved.push(one.translate(-deflect * r.cos(), -deflect * r.sin(), 0.0));
+    }
+    Ok(body.difference(&latch_fingers(o)).union(&union_all(&moved)))
 }
 
 /// The lid in place on the box.
-pub fn lid_in_place(d: &Design, o: &Outdoor) -> Result<Manifold, String> {
-    Ok(lid(d, o)?.translate(0.0, 0.0, o.top))
+pub fn lid_in_place(d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, String> {
+    Ok(lid(d, o, deflect)?.translate(0.0, 0.0, o.top))
 }
 
-/// The gasket: a printed TPU ring for the groove.
-pub fn gasket(o: &Outdoor) -> Manifold {
-    o.ring(o.groove_at, o.gasket).extrude(o.gasket)
+/// The lid as it prints: top face down, skirt up.
+pub fn lid_to_print(d: &Design, o: &Outdoor) -> Result<Manifold, String> {
+    Ok(lid(d, o, 0.0)?.rotate(180.0, 0.0, 0.0))
 }
 
-/// Gasket squeeze with the lid down.
-pub fn gasket_squeeze(o: &Outdoor) -> f64 {
-    (o.gasket - o.groove_d) / o.gasket
+/// The latch coupon: one side of the box's rim with its lug, and the matching piece of lid with
+/// its finger and a stretch of skirt and O-ring groove.
+pub fn latch_coupon(d: &Design, o: &Outdoor) -> Result<(Manifold, Manifold), String> {
+    let e = o.lid_edge();
+    let (v0, v1) = (
+        -o.latch_to_lug / 2.0 - 6.0,
+        o.latch_to_lug / 2.0 + o.latch_tab + 6.0,
+    );
+    let rim_cut = bx(
+        o.cavity / 2.0 - 4.0,
+        v0,
+        o.top - 12.0,
+        e + 12.0,
+        v1,
+        o.top + 10.0,
+    );
+    let rim =
+        body(d, o, o.thread_clear)
+            .intersection(&rim_cut)
+            .translate(0.0, 0.0, -(o.top - 12.0));
+    let lid_cut = bx(
+        o.cavity / 2.0 - 8.0,
+        v0,
+        -o.skirt_h - 1.0,
+        e + 3.0,
+        v1,
+        o.lid_t + 1.0,
+    );
+    let piece = lid(d, o, 0.0)?
+        .intersection(&lid_cut)
+        .rotate(180.0, 0.0, 0.0);
+    Ok((rim, piece))
 }
 
 /// A tripod-thread coupon: two sockets, the box's clearance and 0.15 mm looser, in a block as

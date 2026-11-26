@@ -33,6 +33,6 @@ Describe each kit as data: parts (name, mesh source, flip, solid infill, preview
 
 ## Plates people can print
 
-- **Group by material:** for example ASA box; ASA lid and plate; TPU gasket. Say the material in each plate's name.
+- **Group by material:** for example ASA box; ASA lid and plate; PLA coupons. Say the material in each plate's name.
 - **Coupons first:** a separate project of test coupons, printed before the real parts.
 - **Keep plates small** enough that a failed print wastes little plastic.

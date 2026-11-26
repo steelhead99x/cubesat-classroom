@@ -7,12 +7,12 @@
 //! the largest cell that allows. A smaller cell sits loose by up to 2 mm each way: a strip of
 //! foam tape under it takes that up.
 
-use manifold_csg::{CrossSection, Manifold};
+use manifold_csg::Manifold;
 
 use crate::design::{Design, Edge, Side};
 use crate::geom::{EPS, FACETS, bx, offset, rect, union_all};
 use crate::joints::{hook_cut, hook_post, hook_zone};
-use crate::parts::{cable_notch, column_cuts, plate_outline};
+use crate::parts::{cable_notch, column_cuts, isogrid_pockets, plate_outline};
 
 /// One hook over each end of the cell. The wire leaves the top end beside its hook.
 pub const CELL_HOOKS: [Edge; 2] = [
@@ -123,21 +123,10 @@ pub fn battery_plate(d: &Design, tooth_r: Option<f64>, deflect: f64) -> Result<M
         .union(&rect(x0 + 2.0, y0, x0 + 8.0, y0 + h))
         .union(&rect(x0 + w - 8.0, y0, x0 + w - 2.0, y0 + h))
         .union(&rect(x0, y0 + h / 2.0 - 3.0, x0 + w, y0 + h / 2.0 + 3.0));
-    let windows = offset(&offset(&outline.difference(&keep), -1.0, 16), 1.0, 16);
-    let big: Vec<Vec<[f64; 2]>> = windows
-        .to_polygons()
-        .into_iter()
-        .filter(|p| {
-            CrossSection::from_polygons(std::slice::from_ref(p))
-                .area()
-                .abs()
-                > 12.0
-        })
-        .collect();
-    let slab = outline.extrude(d.plate_t).difference(&cuts).difference(
-        &CrossSection::from_polygons(&big)
-            .extrude(d.plate_t + 2.0)
-            .translate(0.0, 0.0, -1.0),
-    );
+    let windows = isogrid_pockets(d, &outline, &keep);
+    let slab = outline
+        .extrude(d.plate_t)
+        .difference(&cuts)
+        .difference(&windows);
     Ok(slab.union(&features(d, deflect)))
 }

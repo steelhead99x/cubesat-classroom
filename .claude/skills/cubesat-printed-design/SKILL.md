@@ -9,9 +9,9 @@ Every CubeSat Classroom 3D design follows these rules, in every repository and f
 
 ## The three rules, in priority order (safety always first)
 
-1. **No loose pieces wherever possible.** Every snap, hook, lip and pin is part of a plate or the frame. If a part must be separate (a gasket, a lid's screws), make it captive once built, and say why it can't be avoided.
+1. **No loose pieces wherever possible, and no screws.** Every snap, hook, lip, pin and latch is part of a plate, the frame or the case, and every joint comes apart and goes back together. If a part must be separate (an O-ring), make it captive once built, and say why it can't be avoided.
 2. **Rocket-launch ready and durable.** Joints hold at the 20 g design load with margin. Nothing that flexes or carries load is under 2 mm. Every snap holds its part tight, so nothing rattles. Outdoor parts are printed in ASA or PETG, not PLA.
-3. **Easy enough for kids.** A 13-year-old can build it on a budget printer, without tools. Parts go together one way round, and a click says each step is done. Adult steps (soldering, heat-set inserts, battery wiring) are marked as mentor steps.
+3. **Easy enough for kids.** A 13-year-old can build it on a budget printer, without tools. Parts go together one way round, and a click says each step is done. Adult steps (soldering, battery wiring) are marked as mentor steps.
 
 ## Joints to reach for, in this order
 
@@ -20,7 +20,9 @@ Every CubeSat Classroom 3D design follows these rules, in every repository and f
 | Keyed snap pin | Plates onto columns | A pin with two flats and a 45° head in a keyed slot: rigid walls on the flats, two straight flex fingers either side with teeth under the head. Drops on one way, centred; clicks. |
 | Lips + snap hooks | Circuit boards | Tuck one edge under fixed lips, swing down, and hooks on in-plane fingers click over the other edge. Hook underside at 10°, under PLA's ~17° friction angle, so it locks itself. |
 | Push-down end hooks | Thick parts: batteries | Press straight down between side guides until a hook clicks over each end. Tuck-and-swing fails for thick parts, because their bottom edge swings into the lips. |
-| Captive screws | Only where a seal needs clamping force | The lid's hole is narrow at the bottom, so the screw cuts through once and stays. |
+| Lid latches | Lids, sealed ones too | Press the lid down: an in-plane finger cut into each lid edge bends over a lug on the rim (45° lead-in) and clicks under it. Thumb each finger outward to lift it off. |
+
+No screws, inserts or nuts hold printed parts together. A seal that needs no clamping force (a radial O-ring) lets a lid latch on.
 
 ## Numbers that worked
 
@@ -32,9 +34,13 @@ Every CubeSat Classroom 3D design follows these rules, in every repository and f
 - **Launch:** FS 2 on stresses, with PLA across layers assumed to be 15 MPa. Snap retention ≥ 1.5 × the launch load, confirmed by a pull test (a luggage scale on a coupon).
 - **Batteries:** hold the largest cell the listing allows, never clamp a pouch cell, and use foam tape to take up a smaller cell. The default cell is the MakerFocus 3.7 V 3000 mAh flat LiPo, 67 × 36 × 12 mm ±2, JST PH 2.0.
 - **Outdoor:**
-  - **Seal:** gasket squeezed 20–30%, with every screw outside it.
+  - **Seal:** a radial O-ring in a groove round a skirt under the lid, squeezed 18–30% against the box wall, groove ≤ 85% full.
   - **Ports:** glands face down, antennas point up, and a breathable vent stops condensation.
   - **Tripod:** a 1/4"-20 UNC socket in a sealed boss, so water can't get in through it. A printed thread is fine if tested with a coupon.
+
+## Look (all versions)
+
+Clean and engineered, like a modern launch vehicle, without copying anyone's names or logos: white structure and black decks, crisp mitred chamfers on outer edges, triangular isogrid pockets (2.4 mm ribs at 60°) instead of free-form holes, flush faces with nothing showing, debossed lettering. The look never costs strength, fit or printability.
 
 ## Printability
 
@@ -50,6 +56,6 @@ Every CubeSat Classroom 3D design follows these rules, in every repository and f
 4. Write every rule as a check, and prove each check can fail with a deliberately broken design (see the rust-cad-with-checks skill).
 5. Package prints with names, plates and settings (see the bambu-studio-projects skill).
 6. **Label every result**: design check, desk simulation or hardware bench. Never present a check as a measurement, and say in the README what has been printed and what hasn't.
-7. Run the checklist: no loose pieces, one way round, no supports, snap rules, locating, launch, material, coupon, checks, labels.
+7. Run the checklist: no loose pieces or screws, one way round, no supports, snap rules, locating, launch, material, coupon, checks, look, labels.
 
 When an existing design doesn't meet the guide, say so in its README rather than hiding it.
