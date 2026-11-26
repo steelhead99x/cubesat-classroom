@@ -1,7 +1,7 @@
 ---
-// In-person workshops are the project's main goal: three a year. Dates, places
-// and costs are set with partners and announced when confirmed.
-import { fundraiser, repo } from '../hubs.mjs';
+// Proposed in-person workshops. Dates, places, count, and costs are set
+// only if partners agree and announced when confirmed.
+import { repo } from '../hubs.mjs';
 
 interface Props {
   id?: string;
@@ -24,11 +24,10 @@ const funds = [
   <div class="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
     <div>
       <h2 id={id + '-title'}>Proposed in-person workshops</h2>
-      <p class="mt-4 text-lg text-muted">The proposal calls for three workshops a year. Teachers, students, and radio mentors would assemble a model, run the station, and compare measurements.</p>
+      <p class="mt-4 text-lg text-muted">Proposed if partners agree: teachers, students, and radio mentors would assemble a model, run the station, and compare measurements.</p>
       <p class="mt-4 text-muted">Dates and venues are pending.</p>
       <div class="mt-6 flex flex-wrap gap-3">
         <a class="button launch" href={host}>Host or attend a workshop</a>
-        <a class="button quiet" href={fundraiser}>Donate</a>
       </div>
     </div>
     <ol class="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
@@ -48,6 +47,6 @@ const funds = [
     <ul class="mt-3 grid gap-x-8 gap-y-2 text-muted sm:grid-cols-2">
       {funds.map(item => <li class="flex gap-2"><span class="mt-2 size-1.5 shrink-0 rounded-full bg-signal-deep" aria-hidden="true"></span>{item}</li>)}
     </ul>
-    <p class="mt-4 text-sm text-muted">Donations go directly to Teachers in Space for its teacher training and flight program. CubeSat Classroom workshop budgets are pending.</p>
+    <p class="mt-4 text-sm text-muted">Workshop dates, budgets, and any partner fundraiser links are pending agreement.</p>
   </div>
 </section>

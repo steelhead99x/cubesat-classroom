@@ -2,7 +2,6 @@
 // See docs/fork-guide.md.
 export const repo = 'https://github.com/steelhead99x/cubesat-classroom';
 export const missionBriefing = 'https://hikd.ai/tis/';
-export const fundraiser = 'https://givebutter.com/fund-stem-training-for-100-educators-s14sb0';
 export const classroomHost = 'cubesatclass.org';
 // The public site. Canonical URLs, the installer address and redirects all point here.
 export const publicOrigin = 'https://' + classroomHost;
@@ -80,7 +79,6 @@ export const hubs = [
     links: [
       ['Pick a contribution quest', repo + '/tree/main/quest'],
       ['Read the volunteer guide', repo + '/blob/main/CONTRIBUTING.md'],
-      ['Donate directly to Teachers in Space', fundraiser],
     ],
   },
 ];
