@@ -576,7 +576,24 @@ where
     if is_live_pseudo_file(path) {
         return Ok((super::read_integer(path)?, now));
     }
-    let modified = std::fs::metadata(path)
+    // One open file for both the time and the value. A writer that replaces the file
+    // atomically (write a temp file, then rename) swaps the directory entry, but this handle
+    // stays on the file it opened, so the value can never be paired with another write's time.
+    let file = std::fs::File::open(path).with_context(|| format!("open {}", path.display()))?;
+    fresh_integer_from(file, path, now)
+}
+
+/// The value and modification time of one open sensor file, with the freshness checks.
+fn fresh_integer_from<T: std::str::FromStr>(
+    mut file: std::fs::File,
+    path: &std::path::Path,
+    now: u64,
+) -> Result<(T, u64)>
+where
+    T::Err: std::error::Error + Send + Sync + 'static,
+{
+    let modified = file
+        .metadata()
         .and_then(|meta| meta.modified())
         .with_context(|| format!("read the modification time of {}", path.display()))?;
     let at = u64::try_from(
@@ -600,7 +617,13 @@ where
             at - now
         );
     }
-    let value = super::read_integer(path)?;
+    let mut text = String::new();
+    std::io::Read::read_to_string(&mut file, &mut text)
+        .with_context(|| format!("read {}", path.display()))?;
+    let value = text
+        .trim()
+        .parse()
+        .with_context(|| format!("parse integer from {}", path.display()))?;
     Ok((value, at.min(now)))
 }
 
@@ -840,6 +863,30 @@ mod tests {
             .set_modified(when)
             .unwrap();
         path
+    }
+
+    #[test]
+    fn an_atomic_replace_mid_read_never_mixes_value_and_time() {
+        // Review finding: the time came from one lookup and the value from a second open, so a
+        // rename in between paired the new value with the old time. Both now come from one
+        // open file: here the file is replaced after it is opened, and the old handle still
+        // gives the old value with the old time.
+        let path = sensor_file("swap", "1111\n", Duration::from_millis(1500), false);
+        let file = std::fs::File::open(&path).unwrap();
+        let old_at = unix_ms().unwrap() - 1500;
+        let next = path.with_extension("next");
+        std::fs::write(&next, "2222\n").unwrap();
+        std::fs::rename(&next, &path).unwrap();
+        let now = unix_ms().unwrap();
+        let (value, at): (u32, u64) = fresh_integer_from(file, &path, now).unwrap();
+        assert_eq!(value, 1111);
+        assert!(
+            at.abs_diff(old_at) < 250,
+            "time {at} should be the old write, near {old_at}"
+        );
+        let (value, at): (u32, u64) = read_fresh_integer(&path, now).unwrap();
+        assert_eq!(value, 2222);
+        assert!(at > old_at + 1000, "the new file has the new time");
     }
 
     #[test]

@@ -1,0 +1,12 @@
+<section id="findings" class="alt">
+<p class="eyebrow">Rev A · review findings</p>
+<h2>Fix round 1: six of ten closed at the desk</h2>
+<table>
+<tr><th>Status</th><th>Findings</th></tr>
+<tr><td>Fixed</td><td class="dim">Loop filter (phase margin 33–45° → 59–67°) · band filters (FM rejection at 98 MHz −9 → −22 dB) · LTC5584 footprint to its package drawing · match pad added · USB surge clamp · reverse-polarity FET</td></tr>
+<tr><td>Resolved from sources</td><td class="dim">ADC clocks itself at 192 kHz (TI app note SBAA382) · SMA footprint suits 1.6 mm · 50 Ω width on the stated stackup</td></tr>
+<tr><td>Open: needs a person</td><td class="dim">RF layout review · ADC AREG/DREG capacitor values · matching values and their positions</td></tr>
+<tr><td>Open: needs a bench</td><td class="dim">LO level at the demodulator · 5 V headroom under load · TCXO land pattern against the part chosen</td></tr>
+</table>
+<aside>The full table, with what was done for each finding, is in hardware/sdr-receiver/README.md. Everything marked fixed is still a calculation or a drawing change: nothing has been measured.</aside>
+</section>

@@ -70,6 +70,28 @@ class SerialImageTests(unittest.TestCase):
         code, _ = run(capture(FIXTURE, drop={last}))
         self.assertEqual(code, 1)
 
+    def test_readings_between_image_lines_are_ignored(self):
+        # The firmware keeps sampling during a downlink, so CSC1 lines can sit between IMG lines.
+        lines = capture(FIXTURE).splitlines()
+        mixed = []
+        for line in lines:
+            mixed.append(line)
+            if line.startswith("IMG ") and not line.startswith(("IMG BEGIN", "IMG END")):
+                mixed.append("CSC1 seq=9 temp_mc=21500 volt_mv=3900 light_lux=400")
+        code, image = run("\n".join(mixed) + "\n")
+        self.assertEqual(code, 0)
+        self.assertEqual(image, FIXTURE)
+
+    def test_empty_photo_is_not_intact(self):
+        with self.assertRaises(SystemExit) as raised:
+            run("IMG BEGIN n=1 bytes=0 crc32=0\nIMG END\n")
+        self.assertIn("no photo bytes", str(raised.exception.code))
+
+    def test_huge_byte_count_is_refused_without_allocating(self):
+        with self.assertRaises(SystemExit) as raised:
+            run("IMG BEGIN n=1 bytes=99999999999999 crc32=0\nIMG END\n")
+        self.assertIn("garbled", str(raised.exception.code))
+
     def test_gap_finder(self):
         self.assertEqual(serial_image.find_gaps([(0, 10), (20, 30)], 40), [(10, 20), (30, 40)])
         self.assertEqual(serial_image.find_gaps([(0, 10), (5, 40)], 40), [])

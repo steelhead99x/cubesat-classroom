@@ -88,6 +88,41 @@ An 11-pin XIAO has to carry the ADC's I²S, I²C, the synthesizer and the HaLow 
 - **Audio OUT has no pin left** on 11-pin XIAOs. The S3 Plus gives it one from its extra pads. On other XIAOs the pedal is silent but still streams.
 - The ADC master clock comes from the on-board oscillator.
 
+## Operating modes: unlicensed (default) and licensed
+
+Rev B has two operating modes. It ships in **unlicensed mode**, and a student powering it on cannot leave that mode. **Licensed mode** can only be turned on from inside the box.
+
+| Item | Unlicensed (Part 15), the factory default | Licensed (Part 97) |
+| --- | --- | --- |
+| Who can operate it | Anyone | Only with a licensed control operator present (97.105) |
+| Transmitters | HaLow (MM6108 in the certified Quectel FGH100M-H, at its certified power and antennas), XIAO Wi-Fi and BLE, and LoRa if fitted, all within Part 15 limits | The 902–928 MHz radio operates as an amateur station in the 33 cm band. What else licensed mode turns on is still to decide. |
+| Amateur-band transmit | None | Only on bands and power the control operator's license allows |
+| 2 m / 70 cm receive chain | Receive-only | Receive-only |
+| Frames | Ordinary Part 15 traffic | Cleartext, with no codes or ciphers that hide the meaning (97.113(a)(4)), and the station's callsign at least every 10 minutes and at the end of each transmission (97.119) |
+| How to enter it | Default after manufacture, after a reset, and when the mode config is unreadable | Internal USB-C port only (see below) |
+
+**Enabling licensed mode.** The only way in is a USB-C port on the main board, reachable only after taking the 125B enclosure apart. Over that port, a setup tool writes a mode flag together with the control operator's callsign to the XIAO's storage. The outside USB-C on the top end, the controls, BLE, Wi-Fi, HaLow and the MoQ link cannot change the mode, so there is no front-panel or over-the-air way to enable it.
+
+**Mode isolation.**
+
+- In both modes, Part 15 links (HaLow, Wi-Fi, BLE, LoRa) never feed or key an amateur transmitter, and nothing they receive is passed on as an amateur transmission.
+- The mode is saved and survives power cycles.
+- The current mode always shows: `LICENSED` and the callsign on the OLED, plus a dedicated mode indicator (an LED colour or a lit legend; to pick). Unlicensed mode shows nothing extra.
+- A factory reset, or a mode config that is missing, corrupt or fails its check, falls back to unlicensed mode.
+- No knob, switch or footswitch combination unlocks licensed mode, so it can't be unlocked by accident.
+
+**Limits to check before licensed mode is built** (47 CFR 97.303 and 97.313):
+
+- 97.303(n): on 33 cm, amateurs are secondary to US Government stations, the Location and Monitoring Service and other nations' fixed service. No 33 cm transmitting from the Texas/New Mexico area bounded by 31°41′–34°30′ N and 104°11′–107°30′ W, or from outside the US and its Region 2 insular areas. In the Colorado/Wyoming area bounded by 39°–42° N and 103°–108° W, 902.4–902.6, 904.3–904.7, 925.3–925.7 and 927.3–927.7 MHz are off-limits. The firmware should block these where the location is known.
+- 97.313: use the minimum power needed (97.313(a)), within the 1500 W PEP cap (97.313(b)).
+- 97.305 and 97.307 for the emission type and bandwidth, and 97.311 if LoRa (chirp spread spectrum) is used in licensed mode.
+
+**Open questions for the RF reviewer.**
+
+1. Is firmware enough, or does licensed mode also need a hardware jumper or switch on the main board, next to the internal USB-C port?
+2. Does any change to the certified modules' firmware, power settings or antennas for licensed mode affect their Part 15 grants or Rev B's own Part 15 certification? The MM6108 module itself is not modified in either mode.
+3. In licensed mode, should the Part 15 radios be switched off entirely, rather than only kept apart from the amateur transmitter?
+
 ## Pedal conventions
 
 | Convention | How Rev B follows it |
@@ -97,7 +132,7 @@ An 11-pin XIAO has to carry the ADC's I²S, I²C, the synthesizer and the HaLow 
 | 9 V DC, 2.1 mm barrel, center-negative | Power jack on the top end, so it runs from a pedalboard supply. USB-C also powers it. |
 | Knobs at the top, footswitch at the bottom | Keeps a foot clear of the knobs |
 | Status LED above the footswitch | Lit when the receiver is engaged |
-| Mini toggle for modes | BAND toggle, 2 m / 70 cm |
+| Mini toggle for modes | BAND toggle, 2 m / 70 cm (the licensed/unlicensed mode is not on the panel; see Operating modes) |
 | Standard enclosure | Hammond 125B-style die-cast aluminum box |
 | Printed enclosure art | A faceplate print per batch |
 
@@ -157,10 +192,28 @@ Controls go on a small lid board, wired to the main board by one cable, so the R
 - Add the lid-board connector and the 9 V input stage
 - Apply whatever Rev A testing shows (matching, filters, baseband gain)
 
+## RF review: receiver and radios in a metal box
+
+A desk review of putting the receiver, the HaLow module and the XIAO's radios in one die-cast box. It is not a substitute for a review by an RF engineer, and none of it has been measured. Each item is a design requirement for Rev B.
+
+| # | Issue | Requirement for Rev B |
+| --- | --- | --- |
+| 1 | No antenna works inside a die-cast box | Every radio gets an external antenna: HaLow on its own panel SMA; the XIAO's Wi-Fi/BLE through a U.FL pigtail to a panel connector. Pick antennas and cables that fit each certified module's grant. |
+| 2 | HaLow (902–928 MHz) transmits while the receiver listens | Two antennas on one small box are only about 10–20 dB apart at 915 MHz (estimate). Put the receive antenna on the mast and bring it in by coax, so only HaLow's antenna sits on the box. Add a sharp low-pass (about 600 MHz) before the LNA: Rev A's 70 cm filter now gives about 46 dB at 915 MHz (calculated). Shield cans over the RF chain and over the HaLow module. Measure desense before layout. |
+| 3 | The box resonates near 2.4 GHz | For about 118 × 62 mm inside, the lowest cavity resonance is about 2.7 GHz (calculated), lower with the board inside: close to the XIAO's 2.4 GHz Wi-Fi. Keep antennas outside and add a piece of RF absorber. It does not affect 145, 435 or 915 MHz. |
+| 4 | Every cable through the wall is an antenna | Filter USB, 9 V and audio where they pass through the wall: ferrites and capacitors to the case. |
+| 5 | Ground loops from pedal habits | An amp on the 1/4 inch OUT plus a laptop on USB gives mains ground two paths: hum in the audio, noise in the receiver. Use a transformer-isolated output or isolated jack washers. |
+| 6 | Lid openings | Knob shafts are fine; the OLED window is the largest opening, a minor leak at these frequencies unless it is very large. Ground the lid to the box. |
+| 7 | Heat and frequency drift | About 2–3 W in the box is fine if the demodulator is pad-coupled to the wall. Keep the TCXO away from hot parts. |
+| 8 | Two transmitters at once | HaLow and the XIAO's Wi-Fi transmitting together is a co-location case for certification and needs its own test. |
+
+Items 1, 2 and 4 shape the layout and the enclosure drilling, so they are decided first.
+
 ## Risks
 
-1. **HaLow transmits next to the receiver while it is receiving.** The pedal's whole job is to stream during a pass, so the HaLow transmitter (902–928 MHz) is on while the receiver listens for very weak signals at 145 and 435 MHz, in the same metal box. The modelled 70 cm filter gives only about 21 dB of rejection at 900 MHz. Plan for:
-   - a sharp low-pass filter (cut-off around 600 MHz) at the receive input, before the LNA
+1. **HaLow transmits next to the receiver while it is receiving.** The pedal's whole job is to stream during a pass, so the HaLow transmitter (902–928 MHz) is on while the receiver listens for very weak signals at 145 and 435 MHz, in the same metal box. Plan for (see the RF review above):
+   - the receive antenna on the mast, by coax, so only HaLow's antenna is on the box
+   - a sharp low-pass filter (cut-off around 600 MHz) at the receive input, before the LNA (Rev A's 70 cm filter now gives about 46 dB at 915 MHz, calculated)
    - the HaLow module in its own shielded compartment
    - the two antennas at opposite ends of the box, or the HaLow antenna on a short cable away from it
    - firmware that marks I/Q samples taken while HaLow is transmitting

@@ -15,6 +15,15 @@ use crate::frame::{AirFrame, AirKind, FrameFault, decode};
 const MAX_INCOMPLETE: usize = 128;
 /// Ignore a shard this many sequence numbers behind the newest of its kind.
 const WINDOW: u32 = 128;
+/// Refuse a shard this far ahead of the newest of its kind. The CRC is not authentication,
+/// and one frame claiming sequence 4294967295 would otherwise make every real frame after
+/// it "late" until the sender started a new session. About a day of frames at 12 per second
+/// still fits, so a long gap between passes is fine.
+const MAX_FORWARD_JUMP: u32 = 1 << 20;
+/// After this many frames in a row are refused as too old or too far ahead, the newest
+/// sequence is taken to be wrong (one spoofed or garbled frame set it) and the window moves
+/// to the incoming frames. Real late copies come in ones and twos, not in a run like this.
+const REANCHOR_AFTER: u32 = 16;
 /// Finished object keys kept so a late copy is a duplicate, not a new object.
 const RECENT: usize = 4096;
 
@@ -213,6 +222,8 @@ pub struct Assembler {
     recent: HashSet<GroupKey>,
     recent_order: VecDeque<GroupKey>,
     newest: std::collections::BTreeMap<(u16, AirKind), u32>,
+    /// Frames refused in a row for being outside the window, per (session, kind).
+    refused_run: std::collections::BTreeMap<(u16, AirKind), u32>,
     relay_stats: Vec<RelayStats>,
     metrics: Metrics,
 }
@@ -231,6 +242,7 @@ impl Assembler {
             recent: HashSet::new(),
             recent_order: VecDeque::new(),
             newest: std::collections::BTreeMap::new(),
+            refused_run: std::collections::BTreeMap::new(),
             relay_stats: Vec::new(),
             metrics: Metrics::default(),
         }
@@ -287,14 +299,31 @@ impl Assembler {
             self.count_duplicate(relay);
             return None;
         }
-        if let Some(newest) = self.newest.get(&(frame.session, frame.kind))
-            && frame.sequence.saturating_add(WINDOW) < *newest
-        {
-            self.metrics.late += 1;
-            return None;
+        let stream = (frame.session, frame.kind);
+        if let Some(&newest) = self.newest.get(&stream) {
+            let late = frame.sequence.saturating_add(WINDOW) < newest;
+            let jump = frame.sequence > newest.saturating_add(MAX_FORWARD_JUMP);
+            if late || jump {
+                let run = self.refused_run.entry(stream).or_insert(0);
+                *run += 1;
+                if *run < REANCHOR_AFTER {
+                    if late {
+                        self.metrics.late += 1;
+                    } else {
+                        // Counted as malformed: the header passed the CRC but is not usable.
+                        self.metrics.malformed += 1;
+                    }
+                    return None;
+                }
+                // A long run of refusals: the newest sequence was the bad one. Start over
+                // from this frame. This also recovers when the very first frame of a
+                // session was the spoofed one, which no bound can catch on arrival.
+                self.newest.insert(stream, frame.sequence);
+            }
         }
+        self.refused_run.remove(&stream);
         self.newest
-            .entry((frame.session, frame.kind))
+            .entry(stream)
             .and_modify(|newest| *newest = (*newest).max(frame.sequence))
             .or_insert(frame.sequence);
 
@@ -424,6 +453,64 @@ mod tests {
         assert_eq!(metrics.duplicates, 1);
         assert_eq!(metrics.relays[1].duplicates, 1);
         assert_eq!(metrics.relays[0].rssi_dbm, -90.0);
+    }
+
+    #[test]
+    fn a_far_future_sequence_cannot_make_real_frames_late() {
+        let one = |sequence: u32| {
+            encode_object(
+                &AirConfig {
+                    parity: 0,
+                    ..AirConfig::default()
+                },
+                AirKind::Telemetry,
+                sequence,
+                b"snapshot",
+            )
+            .unwrap()
+            .remove(0)
+        };
+        let mut assembler = Assembler::new();
+        assert!(assembler.push(heard(0, one(10))).is_some());
+        // A CRC-valid frame claiming the last sequence number is refused...
+        assert!(assembler.push(heard(0, one(u32::MAX))).is_none());
+        assert_eq!(assembler.metrics().malformed, 1);
+        // ...so the next real frame is still accepted, not counted late.
+        assert!(assembler.push(heard(0, one(11))).is_some());
+        assert_eq!(assembler.metrics().late, 0);
+        // A long but plausible gap between passes is fine.
+        assert!(assembler.push(heard(0, one(11 + 50_000))).is_some());
+    }
+
+    #[test]
+    fn a_spoofed_first_frame_is_outlived() {
+        let one = |sequence: u32| {
+            encode_object(
+                &AirConfig {
+                    parity: 0,
+                    ..AirConfig::default()
+                },
+                AirKind::Telemetry,
+                sequence,
+                b"snapshot",
+            )
+            .unwrap()
+            .remove(0)
+        };
+        let mut assembler = Assembler::new();
+        // The first frame heard claims a huge sequence, so there is no newest to compare with.
+        assert!(assembler.push(heard(0, one(4_000_000_000))).is_some());
+        // Real frames are refused as late at first...
+        for sequence in 1..REANCHOR_AFTER {
+            assert!(assembler.push(heard(0, one(sequence))).is_none());
+        }
+        assert_eq!(assembler.metrics().late, u64::from(REANCHOR_AFTER - 1));
+        // ...then the run of refusals moves the window, and real frames flow again.
+        assert!(assembler.push(heard(0, one(REANCHOR_AFTER))).is_some());
+        assert!(assembler.push(heard(0, one(REANCHOR_AFTER + 1))).is_some());
+        // Normal rules apply again: a second copy is a duplicate.
+        assert!(assembler.push(heard(0, one(REANCHOR_AFTER))).is_none());
+        assert!(assembler.metrics().duplicates >= 1);
     }
 
     #[test]

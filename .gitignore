@@ -3,5 +3,8 @@
 __pycache__/
 /site/node_modules/
 /site/dist/
+/site/dist-github/
+/site/.wrangler/
+/.wrangler/
 /site/.astro/
 /site/.cloudflare/

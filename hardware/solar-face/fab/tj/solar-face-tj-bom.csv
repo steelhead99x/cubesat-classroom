@@ -1,0 +1,6 @@
+Qty,References,Value,Footprint,Part,Note
+2,SC1 SC2,3G30A 8x4,CIC_3G30A_8x4,AZUR SPACE 3G30A-Advanced 8 x 4 cm CIC,bond with silicone adhesive; mentor step
+1,D1,SS14,D_SMA,"SS14 Schottky, 1 A 40 V, SMA",blocking diode: stops a battery or charger driving current back into the cells in the dark
+1,JP1,BYPASS D1,SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm,,open = diode in; bridge with solder to measure the cells without the diode drop
+1,TH1,10k NTC,R_0603_1608Metric,"Murata NCP18XH103F03RB (10 kOhm, B 3380 K, 0603)",behind the cells; reader supplies the pull-up
+1,J1,PV OUT,JST_PH_B3B-PH-SM4-TB_1x03-1MP_P2.00mm_Vertical,JST B3B-PH-SM4-TB (mates with PHR-3),"1 PV+, 2 GND, 3 NTC"

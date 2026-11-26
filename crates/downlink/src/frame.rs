@@ -87,8 +87,9 @@ pub enum Service {
     /// Built as a Part 15 (unlicensed) exercise. Station ID is optional.
     /// Not an FCC certification.
     Part15,
-    /// Built as a Part 97 (amateur) exercise. Station ID is required and the
-    /// payload stays readable. Not permission to transmit.
+    /// Built as a Part 97 (amateur) exercise. The payload stays readable
+    /// (97.113(a)(4)), and this design puts the station's call sign on every frame,
+    /// more often than 97.119's ten-minute rule needs. Not permission to transmit.
     Part97,
 }
 

@@ -1,0 +1,21 @@
+<section id="halow" data-flat style="display:flex; flex-direction:column; gap:40px; padding:128px; background:#0b0d10">
+  <p style="flex:0 0 auto; font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; line-height:1.45; letter-spacing:3px; text-transform:uppercase; color:#39ff9c; opacity:1">Rev B · links</p>
+  <h2 style="flex:0 0 auto; font-family:'Space Grotesk', Arial, sans-serif; font-size:72px; font-weight:700; line-height:1.08; color:#e8ecef; opacity:1">HaLow is the long-range fallback</h2>
+  <table style="width:1664px; flex:0 0 auto; font-family:Inter, Arial, sans-serif; font-size:28px; line-height:1.35; color:#e8ecef; opacity:1">
+    <tr><th style="padding:18px 20px; width:8%; color:#39ff9c">Order</th><th style="padding:18px 20px; width:26%; color:#39ff9c">Link</th><th style="padding:18px 20px; width:36%; color:#39ff9c">From</th><th style="padding:18px 20px; width:30%; color:#39ff9c">Carries</th></tr>
+    <tr><td style="padding:18px 20px; color:#e8ecef">1</td><td style="padding:18px 20px; color:#e8ecef">USB</td><td style="padding:18px 20px; color:#bfc7d0">XIAO ESP32-S3</td><td style="padding:18px 20px; color:#bfc7d0">Raw I/Q to SDR++ or SatDump</td></tr>
+    <tr><td style="padding:18px 20px; color:#e8ecef">2</td><td style="padding:18px 20px; color:#e8ecef">2.4 / 5 GHz Wi-Fi</td><td style="padding:18px 20px; color:#bfc7d0">The XIAO you insert (5 GHz on the C5)</td><td style="padding:18px 20px; color:#bfc7d0">Raw I/Q, stats, audio</td></tr>
+    <tr><td style="padding:18px 20px; color:#e8ecef">3</td><td style="padding:18px 20px; color:#e8ecef">Wi-Fi HaLow, 902–928 MHz</td><td style="padding:18px 20px; color:#bfc7d0">On-board MM6108 (Quectel FGH100M-H)</td><td style="padding:18px 20px; color:#bfc7d0">Stats, Opus audio, decimated I/Q</td></tr>
+  </table>
+  <div style="display:grid; gap:32px; grid-template-columns:1fr 1fr; flex:0 0 auto; opacity:1">
+    <div style="display:flex; flex-direction:column; gap:16px; min-width:min-content; padding:36px; background:#1c2027; border:2px solid #2b3038; border-radius:16px">
+      <h3 style="flex:0 0 auto; font-family:'Space Grotesk', Arial, sans-serif; font-size:36px; font-weight:700; line-height:1.15; color:#e8ecef">One copy out, relay fans out</h3>
+      <p style="flex:0 0 auto; font-family:Inter, Arial, sans-serif; font-size:26px; line-height:1.45; color:#bfc7d0">The pedal publishes once over QUIC/MoQ. The classroom relay or moq.pro distributes to every viewer.</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:16px; min-width:min-content; padding:36px; background:#1c2027; border:2px solid #2b3038; border-radius:16px">
+      <h3 style="flex:0 0 auto; font-family:'Space Grotesk', Arial, sans-serif; font-size:36px; font-weight:700; line-height:1.15; color:#e8ecef">Raw I/Q doesn’t fit HaLow</h3>
+      <p style="flex:0 0 auto; font-family:Inter, Arial, sans-serif; font-size:26px; line-height:1.45; color:#bfc7d0">Lab boards measured 2.7–3.3 Mbit/s at 4 MHz, centimetres apart. Raw I/Q needs about 6.1.</p>
+    </div>
+  </div>
+  <aside>The MM6108 is the chip the project's Rust HaLow firmware already drives. Bluetooth LE is for setup only. HaLow carries ordinary IP, so the same MoQ publisher runs over it unchanged.</aside>
+</section>

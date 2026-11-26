@@ -1,0 +1,6 @@
+Qty,References,Value,Footprint,Part,Note
+24,SC1 SC2 SC3 SC4 SC5 SC6 SC7 SC8 SC9 SC10 SC11 SC12 SC13 SC14 SC15 SC16 SC17 SC18 SC19 SC20 SC21 SC22 SC23 SC24,SolarBIT,KXOB25_05X3F,ANYSOLAR KXOB25-05X3F SolarBIT,reflow or hot-air; mentor step
+1,D1,SS14,D_SMA,"SS14 Schottky, 1 A 40 V, SMA",blocking diode: stops a battery or charger driving current back into the cells in the dark
+1,JP1,BYPASS D1,SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm,,open = diode in; bridge with solder to measure the cells without the diode drop
+1,TH1,10k NTC,R_0603_1608Metric,"Murata NCP18XH103F03RB (10 kOhm, B 3380 K, 0603)",behind the cells; reader supplies the pull-up
+1,J1,PV OUT,JST_PH_B3B-PH-SM4-TB_1x03-1MP_P2.00mm_Vertical,JST B3B-PH-SM4-TB (mates with PHR-3),"1 PV+, 2 GND, 3 NTC"

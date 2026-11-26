@@ -12,7 +12,9 @@ const [, owner, name] = new URL(repo).pathname.split('/');
 const base = cname ? '/' : `/${name}`;
 console.log(`GitHub Pages build for ${cname ? `https://${cname}` : `https://${owner}.github.io/${name}`}`);
 
-const astro = spawnSync('npx', ['astro', 'build', '--base', base], {
+// It builds into dist-github/, never dist/, so a Worker deploy right after this can't ship
+// the GitHub Pages base path by mistake.
+const astro = spawnSync('npx', ['astro', 'build', '--base', base, '--outDir', 'dist-github'], {
   stdio: 'inherit',
 });
 if (astro.status !== 0) process.exit(astro.status ?? 1);
