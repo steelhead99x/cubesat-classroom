@@ -122,7 +122,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Geometry => f.write_str(
-                "require positive finite altitude, elevation 0–90 and nonnegative sublight radial speed",
+                "require altitude above 0 and up to 400000 km (past the Moon), elevation 0–90 and nonnegative sublight radial speed",
             ),
             Self::Parse(error) => write!(f, "invalid link budget scenario: {error}"),
             Self::Profile { name, field } => {
@@ -141,9 +141,13 @@ impl std::error::Error for Error {
     }
 }
 
+/// Highest altitude a budget accepts, km: a little past the Moon (about 384400 km). Far
+/// larger values overflow the slant-range arithmetic and print infinite margins.
+pub const MAX_ALTITUDE_KM: f64 = 400_000.0;
+
 impl Geometry {
-    /// Validate a pass geometry: positive finite altitude, elevation 0–90° and a
-    /// nonnegative radial speed below the speed of light.
+    /// Validate a pass geometry: altitude above 0 and up to [`MAX_ALTITUDE_KM`],
+    /// elevation 0–90° and a nonnegative radial speed below the speed of light.
     ///
     /// # Errors
     ///
@@ -156,6 +160,7 @@ impl Geometry {
         // Written so that NaN fails every comparison and is rejected.
         let valid = altitude_km.is_finite()
             && altitude_km > 0.0
+            && altitude_km <= MAX_ALTITUDE_KM
             && (0.0..=90.0).contains(&elevation_deg)
             && (0.0..C_M_S / 1000.0).contains(&radial_speed_km_s);
         if valid {
@@ -327,6 +332,13 @@ mod tests {
             information_bps: 9600.0,
             required_ebn0_db: 9.0,
         }
+    }
+
+    #[test]
+    fn absurd_altitudes_are_refused() {
+        assert!(Geometry::new(1e308, 15.0, 7.0).is_err());
+        assert!(Geometry::new(400_001.0, 15.0, 7.0).is_err());
+        assert!(Geometry::new(384_400.0, 15.0, 1.0).is_ok());
     }
 
     #[test]

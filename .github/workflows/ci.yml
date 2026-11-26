@@ -30,6 +30,21 @@ jobs:
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
 
+  advisories:
+    # Runs deny.toml: security advisories, licences, banned crates and sources. A new
+    # advisory can fail this job on a PR that changed nothing; read it, then upgrade or add
+    # a reasoned ignore to deny.toml.
+    name: Rust advisories and licences
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - run: cargo install --locked cargo-deny
+      - run: cargo deny check
+
   site:
     name: Website and Worker
     runs-on: ubuntu-latest

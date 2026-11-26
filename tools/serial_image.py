@@ -45,6 +45,11 @@ def last_block(lines):
         yield header, block  # the END line never arrived
 
 
+# The firmware refuses photos over 120000 bytes. Anything far larger is a garbled header,
+# and believing it would try to allocate gigabytes.
+MAX_PHOTO_BYTES = 1_000_000
+
+
 def find_gaps(have, expected):
     """Byte ranges [start, end) not covered by any received chunk."""
     gaps, position = [], 0
@@ -64,8 +69,13 @@ def rebuild(header, chunks):
         crc_sent = int(header["crc32"], 16)
     except (KeyError, ValueError) as err:
         raise ValueError("The IMG BEGIN line is missing bytes= or crc32=.") from err
-    if expected < 0:
-        raise ValueError("The IMG BEGIN line has a negative byte count.")
+    if expected <= 0:
+        raise ValueError("The IMG BEGIN line has no photo bytes. Send PHOTO again, then DOWNLINK.")
+    if expected > MAX_PHOTO_BYTES:
+        raise ValueError(
+            f"The IMG BEGIN line claims {expected} bytes, more than the {MAX_PHOTO_BYTES} a CubeSat photo can be. "
+            "The line was probably garbled: send DOWNLINK again."
+        )
 
     image = bytearray(expected)
     have = []

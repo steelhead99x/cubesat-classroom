@@ -5,7 +5,7 @@ Design-review budgets for CubeSat Classroom. **Work in progress.** These are pla
 | Module | CLI | Replaces |
 | --- | --- | --- |
 | `link` | `cargo run --locked -- link-budget hardware/rf-example.json [--altitude-km 550] [--elevation-deg 15] [--radial-speed-km-s 7] [--json]` | `scripts/link_budget.py` |
-| `energy` | `cargo run --locked -- energy-budget [--json]` | `tools/energy_budget.py` |
+| `energy` | `cargo run --locked -- energy-budget [--json]` | `tools/energy_budget.py` (removed) |
 
 ## Link budget
 

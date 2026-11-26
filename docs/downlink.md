@@ -22,7 +22,7 @@ Phones and school apps subscribe to Media over QUIC. A beta LoRa board with an O
 
 In the United States that range is used under FCC Part 15 (unlicensed, emission limits apply) or under Part 97 (the 33 cm amateur band). Picking `--service part15` or `--service part97` only changes the frame rules in this desk exercise. It is not a certification, a license check, or permission to transmit.
 
-Part 97 frames are unencrypted and carry the control operator's station ID in the clear, in line with 47 CFR 97.113(a)(4) and 97.119. The CRC-32 and the Reed-Solomon parity exist so a damaged copy can be detected or rebuilt. A listener can read a data shard without the parity. This program does not use LoRaWAN. LoRaWAN encrypts the payload, which is the wrong shape for an amateur cleartext downlink.
+Part 97 frames are unencrypted, as 47 CFR 97.113(a)(4) requires, and each carries the station's call sign in the clear. Putting it on every frame is this design's choice: 97.119 requires the station's assigned call sign at the end of a communication and at least every 10 minutes, not on every frame. Amateurs are secondary users of 902–928 MHz (97.303). The CRC-32 and the Reed-Solomon parity exist so a damaged copy can be detected or rebuilt. A listener can read a data shard without the parity. This program does not use LoRaWAN. LoRaWAN encrypts the payload, which is the wrong shape for an amateur cleartext downlink.
 
 `N0CALL` in examples is a documentation placeholder, not an assigned call sign. Do not put a student's name or call sign in the field.
 
@@ -55,7 +55,7 @@ part97 desk
 
 `Telemetry::oled_lines` builds those lines. There is no firmware here. A keyboard, if the beta board has one, only changes the local screen.
 
-Time on the air is whole seconds. Temperature on the air is 0.01 °C and voltage is 1 mV. `live-feed` publishes the expanded JSON and CBOR from this body, so a phone and the OLED are showing the same quantized snapshot. `evidence` on that JSON is `desk-simulation`.
+Time on the air is whole seconds. Temperature on the air is 0.01 °C and voltage is 1 mV. `live-feed` publishes the expanded JSON and CBOR from this body, so a phone and the OLED are showing the same quantized snapshot. `evidence` on that JSON is `desk-simulation` for the built-in formula and `hardware-bench` when the body's sensor bit says the numbers came from sensor files. The OLED's last line shows `desk` or `bench`.
 
 ## What the virtual channel does
 

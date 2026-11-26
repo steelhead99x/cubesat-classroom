@@ -26,6 +26,8 @@ CSC1 temp_mc=21500 volt_mv=3912 light_lux=460
 
 Before power goes on, a mentor checks the wiring, the battery voltage on the divider (no more than twice the board's reference voltage, as the sketch explains) and that nothing gets hot.
 
+The temperature and battery inputs start turned off (`USE_TMP36` and `USE_BATTERY` at the top of the sketch), because an analog pin with nothing connected still reads a believable number. After the mentor's check, set both to `true` and upload again. The BH1750 is detected by itself.
+
 The station's `sensor-bridge` command turns those lines into the files the station already publishes. Unknown keys and out-of-range values are dropped, and a reading older than five seconds is removed so the station reports it missing instead of showing an old number. When the bridge stops, it removes all its files for the same reason.
 
 The classroom station needs all three readings: temperature, voltage and light. If one sensor is missing or fails, the station answers "A sensor input is unavailable" rather than inventing a value.
