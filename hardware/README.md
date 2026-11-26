@@ -40,6 +40,6 @@ python3 -m venv /tmp/cubesat-cad
 /tmp/cubesat-cad/bin/python hardware/drawing.py
 ```
 
-The AMSAT kit has its own [generate.py](amsat-cubesatsim/generate.py) and [prepare.py](amsat-cubesatsim/prepare.py). CI runs all of them and fails if the committed files differ from the output.
+The AMSAT kit is built in Rust: `cargo run --release -p amsat-kit` (see [its README](amsat-cubesatsim/README.md#regenerate)). CI runs all of them and fails if the committed files differ from the output.
 
 Printer reference: the P1S has a 256 × 256 × 256 mm build volume and prints PLA and ASA ([Bambu Lab P1S quick start](https://cdn1.bambulab.com/documentation/quick-start-59b0cefdc0fc4/P1S/English%20version-Quick%20Start%20Guide%20for%20P1S.pdf)). For the limits of printed parts in flight, see [NASA CubeSat 101](https://science.nasa.gov/wp-content/uploads/2023/06/nasa_csli_cubesat_101_508.pdf).

@@ -1,0 +1,15 @@
+[package]
+name = "amsat-kit"
+version = "0.1.0"
+description = "Printed Arduino payload for the AMSAT CubeSatSim frame: CAD, checks and Bambu Studio projects"
+edition.workspace = true
+rust-version.workspace = true
+# A derivative of the AMSAT CubeSatSim frame (GPL-3.0); see hardware/amsat-cubesatsim/LICENSE.
+license = "GPL-3.0-only"
+publish.workspace = true
+
+[dependencies]
+manifold-csg = "0.4.2"
+serde_json.workspace = true
+flate2 = "1"
+crc32fast = "1"
