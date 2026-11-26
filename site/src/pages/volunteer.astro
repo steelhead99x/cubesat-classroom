@@ -9,7 +9,7 @@ import { Image } from 'astro:assets';
 import Workshops from '../components/Workshops.astro';
 import exploded from '../../../hardware/amsat-cubesatsim/render-exploded-dark.png';
 import preview from '../../../hardware/amsat-cubesatsim/render-exploded-navy.png';
-import { classroomHost, fundraiser, repo } from '../hubs.mjs';
+import { classroomHost, repo } from '../hubs.mjs';
 import { siteOrigin } from '../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -31,7 +31,6 @@ const roles = [
   <SiteHeader slot="header" brand="CubeSat Club" mark="club-mark.svg" home={canonical} links={[
     { label: 'Quick start', href: '#start' },
     { label: 'Volunteer', href: '#volunteer' },
-    { label: 'Donate', href: '#give' },
     { label: 'Classroom', href: 'https://' + classroomHost + '/' },
   ]} />
       <PageHero class="grid gap-9 lg:grid-cols-[1.3fr_1fr] lg:items-center">
@@ -61,9 +60,8 @@ const roles = [
           </div>
         </section>
         <section id="give" class="mt-10 border-t border-line pt-6" aria-labelledby="give-title">
-          <h2 id="give-title">Support Teachers in Space</h2>
-          <p class="mt-3 max-w-2xl text-muted">CubeSat Classroom is an open-source contribution to space education, built and supported by volunteers. Give directly to Teachers in Space to help fund its teacher flight program.</p>
-          <a class="mt-4 inline-block font-semibold text-signal-deep underline underline-offset-4" href={fundraiser}>Donate directly to Teachers in Space</a>
+          <h2 id="give-title">Funding and partner review</h2>
+          <p class="mt-3 max-w-2xl text-muted">CubeSat Classroom is a free, open-source volunteer project. Partner fundraising links and workshop budgets are on hold until reviewed and agreed.</p>
         </section>
         <div class="mt-14"><Workshops id="club-workshops" /></div>
         <div class="mt-14"><RelatedProjects /></div>

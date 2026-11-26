@@ -27,8 +27,8 @@ const plans = [
   },
   {
     name: 'Crew Plus',
-    price: '$19.99',
-    note: 'per teacher or mentor per month, proposed',
+    price: 'TBD',
+    note: 'hosted option, price not set yet (draft proposal)',
     tone: 'bg-night text-white',
     items: ['Everything in Run it yourself, hosted for your class', 'A quest guide that only talks about the mission', 'Students join with a class code, no student accounts', 'Daily limits per student that you control'],
     action: { label: 'Tell us what you think', href: feedback('Crew Plus') },
@@ -36,11 +36,10 @@ const plans = [
 ];
 const perks = [
   ['Early beta access', 'Try new station features, demos and the mobile app before anyone else.'],
-  ['New quest packs first', 'Hardware quests and lessons arrive in Crew Plus before the public board.'],
   ['Class progress', 'See which patches each crew has earned, by nickname only.'],
   ['Crew log export', 'Download logs as PDF or CSV for grading and portfolios.'],
   ['Teacher controls', 'Set the level, daily limits and which topics the guide covers.'],
-  ['Workshop seats first', 'Early registration for the three in-person workshops each year.'],
+  ['Workshop seats', 'Early notice when partner workshops are scheduled.'],
   ['Roadmap vote', 'Help choose the next quest, lab or feature.'],
 ];
 const guardrails = [
@@ -52,7 +51,7 @@ const guardrails = [
   'Built to Anthropic’s safeguards for products used by minors, with a COPPA review before launch.',
 ];
 ---
-<Base title="Plans | CubeSat Classroom" description="A draft for discussion: try it free in the browser, run it yourself free, or a proposed $19.99 Crew Plus plan with a guarded quest guide." canonical={siteOrigin + '/plans/'}>
+<Base title="Plans | CubeSat Classroom" description="A draft for discussion: try it free in the browser, run it yourself free, or a proposed hosted Crew Plus plan (pricing to be decided)." canonical={siteOrigin + '/plans/'}>
   <SiteHeader slot="header" home={base + '/'} links={[
     { label: 'Home', href: base + '/' },
     { label: 'Quests', href: base + '/quests/' },
@@ -111,7 +110,7 @@ const guardrails = [
     <section class="grid gap-8 lg:grid-cols-2" aria-labelledby="feedback-title">
       <div>
         <h2 id="feedback-title">Help us shape this</h2>
-        <p class="mt-3 max-w-xl text-muted">The proposal is that anything left after API and hosting costs funds the three in-person workshops each year. Price, benefits, limits and who runs it are still open. The full framework, with open questions for reviewers, is in the repository.</p>
+        <p class="mt-3 max-w-xl text-muted">The proposal is that anything left after API and hosting costs helps fund proposed in-person workshops, if partners agree. Price, benefits, limits and who runs it are still open. The full framework, with open questions for reviewers, is in the repository.</p>
       </div>
       <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start lg:justify-end">
         <a class="button launch" href={feedback('General')}>Give feedback</a>
