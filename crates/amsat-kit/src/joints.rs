@@ -1,7 +1,8 @@
 //! The kit's three joints, all printed as part of the plate or the end piece: nothing loose.
 //!
-//! - **Snap pin**, plate to frame: a pin with a 45 degree head on each column; two curved flex
-//!   fingers in the plate round it, with teeth that spring in under the head.
+//! - **Snap pin**, plate to frame: a pin with two flats and a 45 degree head on each column. The
+//!   plate has a keyed slot round it: rigid walls on the flats, and two straight flex fingers
+//!   with teeth that spring in under the head.
 //! - **Snap hook**, board to plate: a straight flex finger cut into the plate beside a board edge,
 //!   with a post on its tip and a hook over the board's edge.
 //! - **Fixed lip**, board to plate: a rigid post with a lip the board's opposite edge tucks under.
@@ -12,39 +13,79 @@
 use manifold_csg::{CrossSection, Manifold};
 
 use crate::design::{Design, Edge, Rect, Side};
-use crate::geom::{EPS, FACETS, arc_band, bx, cone, cyl, rect, round_corners, uz_prism};
+use crate::geom::{EPS, FACETS, bx, cone, cyl, rect, round_corners, uz_prism};
 
 // ---------- snap pin ----------
+//
+// Local frame of one snap pin: the pin at the origin, its two lobes (the round sides that carry
+// the catch) facing +x and -x, its two flats facing +y and -y. In the plate, two straight flex
+// fingers run along x = +-xi from their roots at -y up to their tips beside the head, each with a
+// tooth facing in. Rigid walls of the plate face the flats with `pin_fit` clearance, so the plate
+// drops onto the pin one way only, centred, and can't turn. `angle` turns the whole joint.
+
+/// The slot's half-width: the fingers' inner faces.
+fn slot_x(d: &Design) -> f64 {
+    d.pin_head_r + d.finger_clear
+}
+
+/// The rigid walls facing the flats, for a fit clearance.
+fn wall_y(d: &Design, fit: f64) -> f64 {
+    d.pin_flat + fit
+}
+
+/// The fingers' tips: just past their teeth, so the joint reaches little past the pin.
+fn tip_y(d: &Design) -> f64 {
+    d.tooth_half + 0.4
+}
+
+/// Height of the head's lead-in, from its full radius up to its tip.
+fn lead_h(d: &Design) -> f64 {
+    (d.pin_head_r - d.pin_tip_r) / d.pin_lead_angle.to_radians().tan()
+}
+
+fn place_pin(local: Manifold, x: f64, y: f64, angle: f64) -> Manifold {
+    local.rotate(0.0, 0.0, angle).translate(x, y, 0.0)
+}
 
 /// Snap pin standing on a shoulder, for a part `part_t` thick. The head's 45 degree underside
-/// starts `pin_bite` below the part's top face, so the teeth meet it there.
-pub fn pin(d: &Design, x: f64, y: f64, z_shoulder: f64, part_t: f64) -> Manifold {
+/// starts `pin_bite` below the part's top face, so the teeth meet it there. The top is a gentle
+/// lead-in cone, and two flats are cut down the whole pin.
+pub fn pin(d: &Design, x: f64, y: f64, angle: f64, z_shoulder: f64, part_t: f64) -> Manifold {
     let z_c = z_shoulder + part_t - d.pin_bite;
     let flank = d.pin_head_r - d.pin_r;
     let (r, hr) = (d.pin_r, d.pin_head_r);
-    Manifold::batch_union(&[
+    let round = Manifold::batch_union(&[
         cyl(
             2.0 * r,
             z_c - z_shoulder + 2.0 * EPS,
-            x,
-            y,
+            0.0,
+            0.0,
             z_shoulder - EPS,
         ),
-        cone(2.0 * r, 2.0 * hr, flank, x, y, z_c),
-        cyl(2.0 * hr, d.pin_cap + 2.0 * EPS, x, y, z_c + flank - EPS),
+        cone(2.0 * r, 2.0 * hr, flank, 0.0, 0.0, z_c),
+        cyl(2.0 * hr, d.pin_cap + 2.0 * EPS, 0.0, 0.0, z_c + flank - EPS),
         cone(
             2.0 * hr,
-            2.0 * (hr - d.pin_lead),
-            d.pin_lead,
-            x,
-            y,
+            2.0 * d.pin_tip_r,
+            lead_h(d),
+            0.0,
+            0.0,
             z_c + flank + d.pin_cap,
         ),
-    ])
+    ]);
+    let flats = bx(
+        -10.0,
+        -d.pin_flat,
+        z_shoulder - 2.0 * EPS,
+        10.0,
+        d.pin_flat,
+        z_c + 20.0,
+    );
+    place_pin(round.intersection(&flats), x, y, angle)
 }
 
 pub fn pin_top(d: &Design, z_shoulder: f64, part_t: f64) -> f64 {
-    z_shoulder + part_t - d.pin_bite + (d.pin_head_r - d.pin_r) + d.pin_cap + d.pin_lead
+    z_shoulder + part_t - d.pin_bite + (d.pin_head_r - d.pin_r) + d.pin_cap + lead_h(d)
 }
 
 pub fn locating_pin(d: &Design, x: f64, y: f64, z_shoulder: f64, part_t: f64) -> Manifold {
@@ -66,29 +107,23 @@ pub fn locating_pin(d: &Design, x: f64, y: f64, z_shoulder: f64, part_t: f64) ->
     ))
 }
 
-/// Where the teeth meet the head's 45 degree face: at the part's top face.
+/// Radius of the head's 45 degree face at the part's top face, where the teeth meet it.
 pub fn contact_r(d: &Design) -> f64 {
     d.pin_r + d.pin_bite
 }
 
-/// Head clearance, finger outer radius, slit outer radius.
-pub fn finger_radii(d: &Design) -> (f64, f64, f64) {
-    let r_clear = d.pin_head_r + d.finger_clear;
-    (
-        r_clear,
-        r_clear + d.finger_w,
-        r_clear + d.finger_w + d.finger_slit,
-    )
-}
-
+/// The fingers' length, root to tip.
 pub fn finger_length(d: &Design) -> f64 {
-    let (r_clear, r_out, _) = finger_radii(d);
-    (r_clear + r_out) / 2.0 * d.finger_span.to_radians()
+    d.finger_len
 }
 
-/// How far each tooth springs out while the head passes.
+/// How far each finger bends to let the head pass: the tooth's face, shaped to the head at rest
+/// plus preload, has to clear the head (plus 0.1 mm) all along its length.
 pub fn finger_pass(d: &Design) -> f64 {
-    d.pin_head_r + 0.1 - d.tooth_r
+    let y = d.tooth_half;
+    let preload = contact_r(d) - d.tooth_r;
+    let head = d.pin_head_r + 0.1;
+    (head * head - y * y).sqrt() - (contact_r(d).powi(2) - y * y).sqrt() + preload
 }
 
 pub fn finger_strain(d: &Design) -> f64 {
@@ -96,36 +131,66 @@ pub fn finger_strain(d: &Design) -> f64 {
 }
 
 /// Pull to lift a part off one snap pin, N: both teeth pushed out to the head's full radius
-/// along its 45 degree face, against friction. A straight-beam estimate for curved fingers.
+/// along its 45 degree face, against friction. A straight-beam estimate.
 pub fn pin_retention(d: &Design, part_t: f64) -> f64 {
     let k = 3.0 * d.pla_e * (part_t * d.finger_w.powi(3) / 12.0) / finger_length(d).powi(3);
     let radial = k * (d.pin_head_r - contact_r(d));
     2.0 * radial * (45f64.to_radians() + d.friction.atan()).tan()
 }
 
-/// Cut round a snap pin: the head's clearance, the slits that free two curved fingers and the
-/// gaps at their tips, less the teeth. `tooth_r` places the teeth where the checks want them.
-pub fn finger_cut(d: &Design, cx: f64, cy: f64, a0: f64, tooth_r: Option<f64>) -> CrossSection {
-    let tooth_r = tooth_r.unwrap_or(d.tooth_r);
-    let (r_clear, r_out, r_slit) = finger_radii(d);
-    let mut cut = CrossSection::circle(r_clear, FACETS);
-    let mut teeth = CrossSection::empty();
-    for k in 0..2 {
-        let root = a0 + 180.0 * f64::from(k);
-        let tip = root + d.finger_span;
+/// Cut through a part round a snap pin: the keyed slot, the slits that free the two fingers,
+/// less the teeth. `tooth_r` is where each tooth's face crosses the lobe axis (`d.tooth_r` at
+/// rest; the checks move it to model bent fingers). `fit` is the clearance on the flats.
+pub fn finger_cut(
+    d: &Design,
+    cx: f64,
+    cy: f64,
+    angle: f64,
+    tooth_r: f64,
+    fit: f64,
+) -> CrossSection {
+    let (xi, w, s, si) = (slot_x(d), d.finger_w, d.finger_slit, d.finger_slit_in);
+    let top = wall_y(d, fit);
+    let tip = tip_y(d);
+    let root = tip - d.finger_len;
+    let g = d.finger_tip_gap;
+    let mut cut = rect(-xi, -top, xi, top);
+    for sx in [1.0, -1.0] {
+        let band = |a: f64, b: f64, y0: f64, y1: f64| {
+            let (u, v) = (sx * a, sx * b);
+            rect(u.min(v), y0, u.max(v), y1)
+        };
         cut = cut
-            .union(&arc_band(r_out, r_slit, root, tip + d.finger_gap))
-            .union(&arc_band(r_clear - EPS, r_slit, tip, tip + d.finger_gap));
-        teeth = teeth.union(&arc_band(tooth_r, r_clear + EPS, tip - d.tooth_span, tip));
+            .union(&band(xi + w, xi + w + s, root, tip + g))
+            .union(&band(xi - EPS, xi + w + s, tip, tip + g))
+            .union(&band(xi - si, xi + EPS, root, -top + EPS));
     }
-    round_corners(&cut, 0.5)
-        .difference(&teeth)
-        .translate(cx, cy)
+    let cut = round_corners(&cut, 0.3);
+    // Each tooth's face is the head's contact circle, offset so it crosses the axis at tooth_r:
+    // with the plate seated, it meets the 45 degree face along its whole length.
+    let mut teeth = CrossSection::empty();
+    let c = contact_r(d);
+    for sx in [1.0, -1.0] {
+        let face = CrossSection::circle(c, FACETS * 2).translate(sx * (tooth_r - c), 0.0);
+        let x0 = if sx > 0.0 { 0.0 } else { -xi - EPS };
+        let reach = rect(x0, -d.tooth_half, x0 + xi + EPS, d.tooth_half);
+        teeth = teeth.union(&reach.difference(&face));
+    }
+    cut.difference(&teeth).rotate(angle).translate(cx, cy)
 }
 
 /// Room the fingers need: nothing else may stand on them.
-pub fn finger_zone(d: &Design, cx: f64, cy: f64, z0: f64, h: f64) -> Manifold {
-    cyl(2.0 * finger_radii(d).2 + 1.0, h, cx, cy, z0)
+pub fn finger_zone(d: &Design, cx: f64, cy: f64, angle: f64, z0: f64, h: f64) -> Manifold {
+    let (tip, top) = (tip_y(d), wall_y(d, d.pin_fit));
+    let x = slot_x(d) + d.finger_w + d.finger_slit + 0.5;
+    let y1 = (tip + d.finger_tip_gap).max(top) + 0.5;
+    let local = bx(-x, tip - d.finger_len - 0.5, z0, x, y1, z0 + h);
+    place_pin(local, cx, cy, angle)
+}
+
+/// The joint's cut at the kit's fit: its slits must stay inside the part's outline.
+pub fn finger_outline(d: &Design, cx: f64, cy: f64, angle: f64) -> CrossSection {
+    finger_cut(d, cx, cy, angle, d.tooth_r, d.pin_fit)
 }
 
 // ---------- board edges ----------

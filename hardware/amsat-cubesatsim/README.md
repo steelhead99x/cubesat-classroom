@@ -16,7 +16,13 @@ Every joint follows the usual rules for printed snap fits, so it works on a worn
 - **Every snap closes on an angled face that prints without supports.** It pulls the joint tight whatever the print error, so nothing rattles.
 - **Every part has one big flat face** to print on, so Bambu Studio's auto-orient puts it down the right way.
 
-**Plate to frame: snap pins.** Three of the bottom piece's columns end in a pin with a 45° head. The fourth, next to the Nano, has a plain locating pin. Around each snap pin the plate has two curved flex fingers with a tooth at their tips. Press the plate straight down: the heads spread the teeth, then the teeth click in under the heads. Each tooth sits 0.35 mm out from rest on the 45° face, so the plate is pulled down onto the columns. It takes about 30 N to pull the plate off, against 16 N for an 80 g payload at 20 g (a common design load for small-satellite launch).
+**Plate to frame: keyed snap pins.** Three of the bottom piece's columns end in a pin with two flat sides and a 45° head. The fourth, next to the Nano, has a plain locating pin. Around each snap pin the plate has a keyed slot:
+
+- **Rigid walls face the pin's flats** with 0.2 mm clearance, so the plate drops on one way only, already centred, and can't turn or slide.
+- **Two straight flex fingers** run either side of the slot, each with a tooth facing the head's round side. A rigid tongue between them stays put.
+- **Press straight down:** the head's gentle 30° lead-in spreads the teeth, then they click in under the 45° face. Each tooth stays 0.25 mm out from rest on that face, so the plate is pulled down onto the columns and can't rattle.
+
+It takes about 30 N to pull the plate off, against 16 N for an 80 g payload at 20 g (a common design load for small-satellite launch). The first print used a round pin with curved fingers; it was hard to seat because nothing lined the plate up, so the pin now has flats.
 
 **Both boards: tuck and click.** Each board has fixed lips on one edge and snap hooks on the other. Tuck the lip edge under its lips, then swing the board down: its far edge pushes the hooks out sideways, and they spring back over it. Each hook is a post on an 18 mm finger cut into the plate, so it bends in the plate's plane. The hook's underside is angled 10°, less than the 17° friction angle of PLA on a circuit board, so lifting the board can't push a hook open. To take a board out, push its hooks outward with a fingertip and lift.
 
@@ -42,7 +48,7 @@ There are three Bambu Studio projects. Open any of them in Bambu Studio (File �
 
 | File | Plate | What's on it |
 | --- | --- | --- |
-| **[p1s/cubesat-test-coupons.3mf](p1s/cubesat-test-coupons.3mf)** (print first) | Test coupons | A snap pin with its flex-finger tab, and a board hook and lip with a strip of test board: about 4 g and 3 g |
+| **[p1s/cubesat-test-coupons.3mf](p1s/cubesat-test-coupons.3mf)** (print first) | Test coupons | A snap pin with a fit ladder of three tabs (about 5 g), and the Nano mount on its own (about 4 g) |
 | **[p1s/cubesat-kit.3mf](p1s/cubesat-kit.3mf)** | 1. Payload plate and bottom | The payload plate and the bottom piece with columns |
 | | 2. Sides and top | Both AMSAT sides (one with the camera hole) and the AMSAT top (unchanged) |
 | **[p1s/cubesat-fit-plate.3mf](p1s/cubesat-fit-plate.3mf)** (optional) | Fit plate | The open-truss fit plate |
@@ -50,25 +56,25 @@ There are three Bambu Studio projects. Open any of them in Bambu Studio (File �
 Before you slice:
 
 - **Printer and process:** the projects keep whatever printer, process and filament you have selected. Pick your printer and nozzle (for example *Bambu Lab P1S 0.4 nozzle*), the matching *0.20mm Standard* process, and PLA. Supports stay off. Auto-orient is fine.
-- **Already set in the files:** the coupon bases and the pin tab print at 100% infill, since they flex. Each part is its own object, so Bambu Studio keeps every part on the plate it was placed on.
+- **Already set in the files:** the coupons print at 100% infill, since they flex. Each part is its own object, so Bambu Studio keeps every part on the plate it was placed on.
 - **Colours with an AMS:** the CubeSat Classroom mark and lettering stand 0.6 mm proud of the plate. Add a filament change at **3.0 mm** (white) and another at **3.6 mm** (back to the plate colour), so only they are white.
 
 None of the plates has been sliced for a time estimate yet. For other slicers, every generated part is in [stl/](stl/), already in print orientation.
 
 **Print the test coupons first.** They're the two joints on their own, so a class can check a printer with a few grams of plastic instead of a whole plate:
 
-1. **Snap pin:** press the tab (flat side down) onto the pin until it clicks. It should take a firm push and stay tight with no rattle. Pull it off: it should take a firm, even pull. If it won't go on, the fingers are too stiff for that printer: print the tab again with one less wall.
-2. **Board hook:** tuck the left end of the board strip under the lip, then press the right end down until the hook clicks over it. The strip should be held with no play. Push the hook outward with a fingertip to let it go.
+1. **Snap pin fit ladder:** one pin and three tabs, marked with raised dots on their middle tongue. The tabs differ only in how tight they fit: 1 dot is 0.1 mm clearance on the flats (tight), 2 dots is 0.2 mm (the kit's fit), 3 dots is 0.3 mm (loose). Line a tab's slot up with the pin's flats, dots up, and press it straight down until it clicks. Try all three. The right fit drops onto the flats without forcing, clicks with a firm push, and doesn't wobble or rattle once on. If 1 or 3 dots feels best on your printer, tell us: the kit's fit is one number (`pin_fit`) and the files can be regenerated for it.
+2. **Nano mount:** the plate's Nano 33 BLE Sense mount on its own, the same pads, corner stops, lips and hooks in the same places, sized for the bare board (43.18 × 17.78 mm, no headers). Hold the Nano parts up, with its USB end towards the small raised arrow. Tuck the long edge under the two lips, then press the other edge down until both hooks click. It should sit flat on its pads with only a little end play, and lifting it shouldn't pop the hooks. To take it out, push the hooks outward with a fingertip.
 
 Write down what you find and report it with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
 
-**The fit plate** has the payload plate's posts, pads, lips, hooks, snap fingers and branding, made by the same code and in the same places, on an open triangular truss instead of a solid deck: 14.4 cm³ of plastic instead of 23.1 cm³. A fit you check on it holds for the real plate, and it snaps onto the bottom piece the same way. It also makes a display piece for photos and school projects: dark grey or black with white lettering looks most like flight hardware.
+**The fit plate** has the payload plate's posts, pads, lips, hooks, snap slots and branding, made by the same code and in the same places, on an open triangular truss instead of a solid deck: 14.9 cm³ of plastic instead of 23.2 cm³. A fit you check on it holds for the real plate, and it snaps onto the bottom piece the same way. It also makes a display piece for photos and school projects: dark grey or black with white lettering looks most like flight hardware.
 
 The lettering is stored as outlines in [label.json](label.json) (DejaVu Sans Bold), and the mark is drawn from the shapes in [docs/mark.svg](../../docs/mark.svg).
 
 ## Assemble
 
-1. **Plate onto the frame:** set the plate, board side up, over the bottom piece's four columns, the locating pin by the Nano's corner, and press straight down over each column until all three snap pins click.
+1. **Plate onto the frame:** set the plate, board side up, over the bottom piece's four columns, the locating pin by the Nano's corner. The slots only line up with the pins' flats one way round. Press straight down over each column until all three snap pins click.
 2. **Uno R3:** tuck its left edge (USB-B and DC jack side) under the lip, line its holes up with the pins, and press the right side down until both hooks click.
 3. **Nano 33 BLE Sense** (bare board, parts up, USB end towards the right): tuck the long edge nearest the Uno under the two lips, then press the other long edge down until both hooks click.
 4. **Frame:** snap the two sides onto the bottom, then the top, the same way as AMSAT's frame. AMSAT notes the frame holds together on its own. Skip their optional screws to keep it 100% printed.
@@ -81,9 +87,9 @@ The Nano's USB plug needs room beyond the plate edge. Use a right-angle Micro-US
 
 | Check | Value |
 | --- | --- |
-| Plate | 88 × 88 × 3 mm with 8 mm corner chamfers (AMSAT's boards are 90.5 mm), 23.1 cm³ |
+| Plate | 88 × 88 × 3 mm with 8 mm corner chamfers (AMSAT's boards are 90.5 mm), 23.2 cm³ |
 | Plate position | 15 mm inside the bottom face, below AMSAT's 12 mm snap tabs |
-| Snap pins | 6 mm shaft, 7.8 mm head with a 45° underside. Each finger is 2 mm wide and bends 0.9 mm in the plate's plane to let a head pass (1.16% strain, limit 1.2%). The teeth sit 0.35 mm out from rest on the head's 45° face. About 30 N to pull the plate off three pins. |
+| Snap pins | 6 mm shaft and 7.4 mm head, 4.8 mm across the flats, with a 45° underside and a 30° lead-in. Walls 0.2 mm off each flat. Two straight fingers per pin, 14 mm long and 2 mm wide, bend 0.73 mm in the plate's plane to let a head pass (1.12% strain, limit 1.2%). The teeth stay 0.25 mm out from rest on the 45° face. About 30 N to pull the plate off three pins. |
 | Board hooks | 18 mm fingers, 2.2 mm wide. Each hook reaches 0.8 mm over the board edge, bending its finger 0.92% to let the board pass. Underside at 10° with 0.1 mm preload, about 2.7 N down per hook. |
 | Lips | 6 mm wide with a 45° underside, reaching 0.8 mm over the board edge. |
 | Uno R3 | On 5.5 mm posts with 2.9 mm locating pins. One lip on the left edge, hooks on the right and top edges. |
@@ -92,17 +98,19 @@ The Nano's USB plug needs room beyond the plate edge. Use a right-angle Micro-US
 The checks in [crates/amsat-kit/src/checks.rs](../../crates/amsat-kit/src/checks.rs) build the parts and fail if:
 
 - a snap finger or hook finger would bend more than 1.2%, or anything that flexes or carries load is thinner than 2 mm
+- the snap pins' flats are cut too deep (under 4 mm across), the teeth run onto the flats, the fit is outside 0.05 to 0.4 mm, or the plate can slide on its columns
+- a snap pin's slot comes within 2 mm of the plate edge
 - the snap-pin teeth would meet a head less than 0.2 mm out from rest (so print error could leave it loose), or too near the head's edge to hold, or the three pins hold less than 1.5 times the payload's weight at 20 g
 - the plate hits the columns or the AMSAT piece or its snap tabs, or reaches past the plate outline into the frame's corner rails
 - any part stands on a set of flex fingers or a hook finger
 - a hook underside isn't safely under the friction angle, or a hook or lip reaches less than 0.6 mm over its board
 - a board can't be swung down past its hooks from under its lips, isn't held once seated, or hits a post, pad, lip or hook
 - anything hits a part in Arduino's layout for either board, a column's pin head comes up under the Uno's solder joints, or anything blocks the Nano's USB plug or leaves less than 20 mm from it to the plate edge
-- the coupons don't fit together the same way as the plate
+- any of the three fit tabs doesn't go on, press, and sit at its own clearance on the flats, or the bare Nano doesn't go into its coupon and stay held the same way as on the plate
 
-`cargo run --release -p amsat-kit -- self-test` (and `cargo test -p amsat-kit`) breaks the design seventeen ways and checks that each one is caught, and that hook fingers exactly at the strain limit still pass.
+`cargo run --release -p amsat-kit -- self-test` (and `cargo test -p amsat-kit`) breaks the design twenty-one ways and checks that each one is caught, and that hook fingers exactly at the strain limit still pass.
 
-Not yet checked on a real print: nothing in this version has been printed. These are design checks, not measurements. The strain and force figures are hand calculations for PLA (a straight-beam estimate for the curved fingers), not test results. Print the coupons first and report what you find with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
+Not yet checked on a real print: nothing in this version has been printed (the first snap-pin coupon, with a round pin, was). These are design checks, not measurements. The strain and force figures are hand calculations for PLA (straight-beam estimates), not test results. Print the coupons first and report what you find with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
 
 ## Regenerate
 

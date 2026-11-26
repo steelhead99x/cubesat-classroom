@@ -39,7 +39,7 @@ struct Part {
 
 const GREY: [f64; 3] = [0.62, 0.65, 0.70];
 
-const PARTS: [Part; 10] = [
+const PARTS: [Part; 11] = [
     Part {
         name: "Payload plate",
         source: "payload-plate",
@@ -62,25 +62,32 @@ const PARTS: [Part; 10] = [
         colour: [0.55, 0.60, 0.68],
     },
     Part {
-        name: "Pin coupon tab",
+        name: "Pin tab 1 dot (tight)",
+        source: "coupon-pin-tab-tight",
+        flip: false,
+        solid_infill: true,
+        colour: GREY,
+    },
+    Part {
+        name: "Pin tab 2 dots (kit fit)",
         source: "coupon-pin-tab",
         flip: false,
         solid_infill: true,
         colour: GREY,
     },
     Part {
-        name: "Hook coupon base",
-        source: "coupon-hook-base",
+        name: "Pin tab 3 dots (loose)",
+        source: "coupon-pin-tab-loose",
+        flip: false,
+        solid_infill: true,
+        colour: GREY,
+    },
+    Part {
+        name: "Nano coupon",
+        source: "coupon-nano-base",
         flip: false,
         solid_infill: true,
         colour: [0.55, 0.60, 0.68],
-    },
-    Part {
-        name: "Coupon board",
-        source: "coupon-board",
-        flip: false,
-        solid_infill: false,
-        colour: [0.10, 0.45, 0.35],
     },
     Part {
         name: "Side",
@@ -140,8 +147,13 @@ const PROJECTS: [(&str, &str, Plates); 3] = [
         &[(
             "Test coupons",
             &[
-                &["Pin coupon base", "Pin coupon tab"],
-                &["Hook coupon base", "Coupon board"],
+                &[
+                    "Pin coupon base",
+                    "Pin tab 1 dot (tight)",
+                    "Pin tab 2 dots (kit fit)",
+                    "Pin tab 3 dots (loose)",
+                ],
+                &["Nano coupon"],
             ],
         )],
     ),

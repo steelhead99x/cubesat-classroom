@@ -8,9 +8,10 @@ use std::path::Path;
 use manifold_csg::Manifold;
 
 use crate::design::Design;
-use crate::geom::bx;
-use crate::joints::{contact_r, finger_pass, finger_strain, hook_strain};
-use crate::parts::{self, COUPON_BOARD, coupon_board_top, coupon_edges, to_plate};
+
+use crate::boards::nano_board;
+use crate::joints::{contact_r, edge_frame, finger_pass, finger_strain, hook_strain};
+use crate::parts::{self, COUPON_PIN_AT};
 
 const INK: &str = "#1d2228";
 const FRAME: &str = "#8d96a3";
@@ -210,102 +211,108 @@ fn section(solid: &Manifold, x: f64, y: f64, angle: f64) -> Vec<Vec<[f64; 2]>> {
 }
 
 fn snap_pin(d: &Design) -> Result<String, String> {
-    let column = d.snap_columns[0].0;
-    let [x, y] = d.plate_holes()[column];
-    let a0 = d
-        .snap_a0(column)
-        .ok_or("the first snap column has no fingers")?;
-    // Cut through both teeth.
-    let angle = a0 + d.finger_span - d.tooth_span / 2.0;
-    let columns = to_plate(d, &parts::bottom_with_columns(d)?);
-    let window = |lift: f64| {
-        bx(
-            x - 12.0,
-            y - 12.0,
-            -6.0 + lift,
-            x + 12.0,
-            y + 12.0,
-            10.0 + lift,
-        )
+    // On the coupon: the pin's lobes face +-x, its flats +-y.
+    let base = parts::coupon_pin_base(d);
+    let tab = |tooth: Option<f64>, lift: f64| {
+        parts::coupon_pin_tab(d, d.pin_fit, 2, tooth).translate(0.0, 0.0, COUPON_PIN_AT + lift)
     };
     let head = d.pin_head_r + 0.1;
+    let z0 = COUPON_PIN_AT;
     let mut panels = Vec::new();
     for (i, (caption, lift, tooth)) in [
         (
-            "1. Push the plate down: the head spreads the two teeth",
+            "1. Push down: the gentle lead-in spreads the teeth",
             1.6,
-            head,
+            Some(head),
         ),
         (
             "2. Click: the teeth spring in under the 45° face",
             0.0,
-            contact_r(d),
+            None,
         ),
     ]
     .into_iter()
     .enumerate()
     {
-        let mut p = Panel::new(30.0, [-11.0, -6.0], [11.0, 9.5]);
+        let mut p = Panel::new(30.0, [-11.0, z0 - 4.0], [11.0, z0 + 9.0]);
         p.grid(2.0);
-        p.polygons(
-            &section(&columns.intersection(&window(0.0)), x, y, angle),
-            FRAME,
-        );
-        let plate = parts::payload_plate(d, Some(tooth), 0.0)?.translate(0.0, 0.0, lift);
-        p.polygons(
-            &section(&plate.intersection(&window(lift)), x, y, angle),
-            PLATE,
-        );
-        if i == 0 {
-            p.note(
-                [-10.5, 8.6],
-                &[
-                    format!("each finger bends {:.1} mm", finger_pass(d)),
-                    format!(
-                        "({:.2}% strain, limit {:.1}%),",
-                        finger_strain(d) * 100.0,
-                        d.strain_limit * 100.0
-                    ),
-                    "in the plate's own plane".into(),
-                ],
-                Some(([-4.0, 7.4], [-head - 0.2, d.plate_t + 1.8])),
-            );
+        p.polygons(&section(&base, 0.0, 0.0, 0.0), FRAME);
+        p.polygons(&section(&tab(tooth, lift), 0.0, 0.0, 0.0), PLATE);
+        let lines = if i == 0 {
+            vec![
+                format!("each finger bends {:.2} mm", finger_pass(d)),
+                format!(
+                    "({:.2}% strain, limit {:.1}%),",
+                    finger_strain(d) * 100.0,
+                    d.strain_limit * 100.0
+                ),
+                "in the plate's own plane".into(),
+            ]
         } else {
-            p.note(
-                [-10.5, 8.6],
-                &[
-                    format!(
-                        "tooth pushed {:.2} mm out from rest:",
-                        contact_r(d) - d.tooth_r
-                    ),
-                    "the 45° face pulls the plate down,".into(),
-                    "whatever the print error".into(),
-                ],
-                Some(([-4.0, 7.4], [-contact_r(d) - 0.1, d.plate_t + 0.2])),
-            );
-        }
+            vec![
+                format!(
+                    "tooth held {:.2} mm out from rest:",
+                    contact_r(d) - d.tooth_r
+                ),
+                "the 45° face pulls the tab down,".into(),
+                "so it can't rattle".into(),
+            ]
+        };
+        let target = if i == 0 {
+            [-head - 0.1, z0 + d.plate_t + lift - 0.3]
+        } else {
+            [-contact_r(d) - 0.1, z0 + d.plate_t - 0.1]
+        };
+        p.note([-10.5, z0 + 8.2], &lines, Some(([-6.0, z0 + 6.9], target)));
         panels.push((caption.to_string(), p));
     }
+    // Seen from above, cut through the middle of the tab.
+    let z = z0 + d.plate_t / 2.0;
+    let mut p = Panel::new(30.0, [-11.0, -14.5], [11.0, 7.0]);
+    p.grid(2.0);
+    p.polygons(&tab(None, 0.0).slice_at_z(z), PLATE);
+    p.polygons(&base.slice_at_z(z), FRAME);
+    let wall = d.pin_flat + d.pin_fit;
+    p.note(
+        [-10.5, 6.4],
+        &[
+            format!("flats sit {} mm from rigid walls:", d.pin_fit),
+            "the tab goes on one way, centred".into(),
+        ],
+        Some(([-2.0, 5.0], [0.0, wall + 0.1])),
+    );
+    p.note(
+        [-10.5, -12.6],
+        &[
+            "fingers bend out; the tongue between".into(),
+            "them stays put".into(),
+        ],
+        Some(([2.0, -11.0], [d.pin_head_r + d.finger_clear + 1.0, -7.0])),
+    );
+    panels.push(("3. From above: the keyed slot".to_string(), p));
     Ok(page(
-        "Snap pin, plate to frame: a cut through one column, its pin head and both teeth (mm)",
+        "Snap pin: cut through the pin and both teeth, and seen from above (mm)",
         &panels,
         &[
-            (FRAME, "column and snap pin (AMSAT bottom piece)"),
-            (PLATE, "payload plate and its flex fingers"),
+            (FRAME, "column and keyed snap pin"),
+            (
+                PLATE,
+                "plate (here the coupon tab) with its slot and flex fingers",
+            ),
         ],
     ))
 }
 
 fn board_hook(d: &Design) -> String {
-    let [x0, y0, w, _] = COUPON_BOARD;
-    let (_, hook) = coupon_edges();
-    let cut_y = y0 + hook.along;
-    let top = coupon_board_top(d);
+    let rect = d.nano_rect();
+    let edge = d.nano_hooks[0];
+    let (angle, [ox, oy], _) = edge_frame(rect, &edge);
+    let top = d.nano_top();
     let mut panels = Vec::new();
     for (i, (caption, lift, deflect)) in [
         (
-            "1. Swing the board down: its edge bends the hook out",
-            d.pcb_uno + 0.3,
+            "1. Swing the Nano down: its edge bends the hook out",
+            d.pcb_nano + 0.3,
             d.hook_reach,
         ),
         ("2. Click: the hook springs back over the board", 0.0, 0.0),
@@ -313,47 +320,40 @@ fn board_hook(d: &Design) -> String {
     .into_iter()
     .enumerate()
     {
-        let mut p = Panel::new(22.0, [x0 - 4.0, -1.0], [x0 + w + 6.0, top + 7.0]);
+        let mut p = Panel::new(30.0, [-9.0, -1.0], [6.0, top + 6.0]);
         p.grid(2.0);
         p.polygons(
-            &section(&parts::coupon_hook_base(d, deflect), 0.0, cut_y, 0.0),
+            &section(&parts::coupon_nano_base(d, deflect), ox, oy, angle),
             PLATE,
         );
-        let board = parts::coupon_board(d).translate(0.0, 0.0, top - d.pcb_uno + lift);
-        p.polygons(&section(&board, 0.0, cut_y, 0.0), BOARD);
-        let edge = x0 + w;
-        if i == 0 {
-            p.note(
-                [x0 - 3.5, top + 6.2],
-                &[format!(
-                    "the finger bends {} mm ({:.2}% strain)",
-                    d.hook_reach,
-                    hook_strain(d) * 100.0
-                )],
-                Some(([x0 + 14.0, top + 5.2], [edge + deflect + 0.2, top + 1.0])),
-            );
+        let board = nano_board(d).translate(0.0, 0.0, lift);
+        p.polygons(&section(&board, ox, oy, angle), BOARD);
+        let lines = if i == 0 {
+            vec![format!(
+                "the finger bends {} mm ({:.2}% strain)",
+                d.hook_reach,
+                hook_strain(d) * 100.0
+            )]
         } else {
-            p.note(
-                [x0 - 3.5, top + 6.2],
-                &[
-                    format!(
-                        "hook underside at {:.0}°, under the {:.0}° friction angle:",
-                        d.hook_angle,
-                        d.friction_angle()
-                    ),
-                    "lifting the board can't push it open".into(),
-                ],
-                Some(([x0 + 16.0, top + 4.4], [edge - 0.2, top + 0.4])),
-            );
-        }
+            vec![
+                format!("hook underside at {:.0}°, under the", d.hook_angle),
+                format!("{:.0}° friction angle: lifting the", d.friction_angle()),
+                "board can't push it open".into(),
+            ]
+        };
+        p.note(
+            [-8.6, top + 5.2],
+            &lines,
+            Some(([-1.0, top + 3.6], [deflect - 0.3, top + 0.6])),
+        );
         panels.push((caption.to_string(), p));
     }
     page(
-        "Board snap hook: a cut through the hook on the test coupon (mm)",
+        "Board snap hook: a cut through a hook on the Nano coupon, with the bare Nano (mm)",
         &panels,
         &[
-            (PLATE, "coupon base: pads and the snap hook (right)"),
-            (BOARD, "1.6 mm board"),
+            (PLATE, "Nano coupon: a pad and the snap hook"),
+            (BOARD, "Nano 33 BLE Sense Rev2, 1.59 mm"),
         ],
     )
 }
