@@ -29,18 +29,22 @@ The frame is the [AMSAT CubeSat Simulator](https://cubesatsim.org) v2.0 frame, u
 
 ## What to print
 
-Use the P1S profile for your nozzle (0.20mm Standard for 0.4 mm, 0.30mm Standard for 0.6 mm), PLA, and **supports off**. Each 3MF opens with every part already in its print orientation.
+Everything is in one Bambu Studio project, **[p1s/cubesat-kit.3mf](p1s/cubesat-kit.3mf)**. Open it in Bambu Studio (File → Open Project). It has three plates, each with a name and a preview picture, and every part already in its print orientation. It fits any Bambu Lab printer with a 256 mm bed (P1S, P1P, X1 Carbon, X1E, A1).
 
-| Plate | Parts | 0.6 mm nozzle |
-| --- | --- | --- |
-| [01-load-test](p1s/01-load-test.3mf) | One plate fastener on its own: a column stub, a plate tab, a stud and a washer | not yet sliced |
-| [02-sides](p1s/02-sides.3mf) | AMSAT side and side with camera hole | 1 h 40 min, 58 g |
-| [03-top-and-bottom](p1s/03-top-and-bottom.3mf) | AMSAT top (unchanged) and bottom with hollow columns | not yet sliced |
-| [04-payload-plate](p1s/04-payload-plate.3mf) | Payload plate with the Uno latches, and the lower clamp (the Nano's cap) | not yet sliced |
-| [05-fit-plate](p1s/05-fit-plate.3mf) (optional) | Fit plate and lower clamp: the payload plate's mounts on an isogrid display panel, about 80% of the plastic | not yet sliced |
-| [06-fasteners](p1s/06-fasteners.3mf) | Four Uno lock keys, four plate studs, two clamp studs and six spring washers. Print the keys in red, like flight safety pins. | not yet sliced |
+| Plate | What's on it |
+| --- | --- |
+| 1. Payload deck and fasteners | Payload plate with the Uno latches, the Nano clamp, the load test (post and tab), 4 lock keys, 4 plate studs, 2 clamp studs and 6 spring washers |
+| 2. Frame | Both AMSAT sides (one with the camera hole), the AMSAT top (unchanged) and the bottom with hollow columns |
+| 3. Display plate (optional) | The isogrid display plate with its own Nano clamp and a full set of keys, studs and washers, so it builds into a second, display-ready payload |
 
-Plate 02 was sliced with a 0.6 mm nozzle. The others changed on 25 November 2026 and haven't been sliced yet. The lower clamp prints upside down (flat top on the bed), the studs print head down, and the keys and washers print flat. Print the studs and washers solid (100% infill), since they're small and carry the load.
+Before you slice:
+
+- **Printer and process:** the project keeps whatever printer, process and filament you have selected. Pick your printer and nozzle (for example *Bambu Lab P1S 0.6 nozzle*), the matching *0.30mm Standard* process (or *0.20mm Standard* for a 0.4 mm nozzle), and PLA. Supports stay off.
+- **Already set in the file:** the keys, studs, washers and load-test parts print at 100% infill, since they're small and carry the load. Repeated parts are copies of one object, so a change to one applies to all of its copies.
+- **Colours with an AMS:** select the four lock keys and give them red filament, like flight safety pins. On plate 3, set a filament change at 2.4 mm to white and back at 3.0 mm, so only the raised lettering is white.
+- **Plate 1 first:** run the load test (below) before you assemble anything. If the fasteners need a tweak, regenerate and reprint just those parts; Bambu Studio can skip objects on a plate.
+
+None of the plates has been sliced for a time estimate yet. For other slicers, every part is in [stl/](stl/) as a separate file, already in print orientation.
 
 **Print the load test first, and do a real pull test.** It's one plate fastener on its own: the post is the bottom face and a column, and the tab is a corner of the plate.
 
@@ -49,9 +53,9 @@ Plate 02 was sliced with a 0.6 mm nozzle. The others changed on 25 November 2026
 3. Hang the post by its hole and hang weights from the tab's hole, pulling the tab straight off the stud. With about 0.6 kg on it, the washer starts to squeeze and the tab lifts slightly. That's the preload, and it's expected. Keep adding weight up to 2 kg: it should hold without coming apart. That's the whole payload's weight at 20 g on one fastener, four times its share. By hand calculation the bar would start to yield at around 5 kg; if you test further, do it over something soft.
 4. Shake it hard with a weight on it and check the stud hasn't turned. Write down what it held, and report it with the [P1S case quests](../../quest/README.md#bambu-p1s-case-test-track).
 
-**Then, if you like, print the fit plate and plate 06.** The fit plate has the payload plate's latches, pillars, Nano card cage and quarter-turn receptacles, made by the same code and in the same places, so a fit you check on it holds for plate 04. It mounts on the bottom piece the same way too. Check that the Uno clicks in and every key clips in, that the Nano goes in, and that all the studs turn and click, before you print plate 04.
+**The display plate (plate 3)** has the payload plate's latches, pillars, Nano card cage and quarter-turn receptacles, made by the same code and in the same places, so a fit you check on one holds for the other. It mounts on the bottom piece the same way too. Check that the Uno clicks in and every key clips in, that the Nano goes in, and that all the studs turn and click.
 
-The fit plate also makes a display piece for photos and school projects. It's a 2.4 mm isogrid panel, the triangular rib pattern used on rocket and satellite structures, with a bevelled rim. It has a raised CUBESAT CLASSROOM nameplate under the Uno and a +X/+Y axis marker like a spacecraft body frame. The lettering, nameplate border and arrows stand 0.6 mm proud, so two colours are easy:
+It's made as a display piece for photos and school projects. It's a 2.4 mm isogrid panel, the triangular rib pattern used on rocket and satellite structures, with a bevelled rim. It has a raised CUBESAT CLASSROOM nameplate under the Uno and a +X/+Y axis marker like a spacecraft body frame. The lettering, nameplate border and arrows stand 0.6 mm proud, so two colours are easy:
 
 - In Bambu Studio, add a filament change at **2.4 mm** (white) and another at **3.0 mm** (back to the panel colour), so only the lettering is white.
 - With an AMS, Studio does both changes automatically. Without one, the printer pauses for each swap.
