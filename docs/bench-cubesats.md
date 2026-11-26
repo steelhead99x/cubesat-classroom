@@ -102,7 +102,7 @@ It must be the **Rev2** board. Rev2 replaced the motion sensors (BMI270 and BMM1
 
 | Subsystem | On this build | What a flight CubeSat adds |
 | --- | --- | --- |
-| Structure | The [Rev B rail frame](../hardware/README.md#rev-b-rail-fit-set) holds the board on the base plate | Qualified material, retainers, a deployer interface |
+| Structure | The [AMSAT frame with the printed payload plate](../hardware/amsat-cubesatsim/README.md) holds the boards | Qualified material, retainers, a deployer interface |
 | Power (EPS) | USB 5 V, regulated to 3.3 V on the board. The sketch measures that 3.3 V rail itself and enters safe mode if it falls below 3.0 V. | Solar cells, a battery, charge control and separate power switches |
 | Flight computer | nRF52840 running the sketch | A watchdog, radiation tolerance, flight-qualified firmware |
 | Payload | HS3003 temperature and humidity, LPS22HB pressure, APDS9960 light and color | The mission instrument |
@@ -191,7 +191,7 @@ The camera sensor varies by batch. Seeed has shipped the S3 Sense with OV2640, O
 
 ## Mounting either CubeSat in the Rev B frame
 
-The [Rev B rail frame](../hardware/README.md#rev-b-rail-fit-set) is 100 × 100 × 113.5 mm outside. From the CAD values in `hardware/generate.py`, the inside is about 88 mm square between the side walls (about 82 mm clear of the corner rails) and about 98 mm between the end-plate locator tabs. These are nominal CAD numbers, so measure your print.
+The [Rev B rail frame](../hardware/ARCHIVE.md#rev-b-rail-fit-set) is 100 × 100 × 113.5 mm outside. From the CAD values in `hardware/generate.py`, the inside is about 88 mm square between the side walls (about 82 mm clear of the corner rails) and about 98 mm between the end-plate locator tabs. These are nominal CAD numbers, so measure your print.
 
 - The Nano 33 BLE Sense is 45 × 18 mm. The XIAO is 21 × 17.8 mm, and the Grove sensor boards are about 20 × 20 to 20 × 40 mm. The Expansion Board's size isn't on its wiki page, so measure it. Seeed describes it as half the size of a Raspberry Pi 4.
 - For the bench, hold the boards to the base plate with double-sided foam tape or cable ties. Leave the USB connector reachable through a gap between the side walls. Point the light sensor at the camera-plate aperture so the class can shade it.

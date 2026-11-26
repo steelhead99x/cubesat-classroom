@@ -69,27 +69,65 @@ pub struct Design {
     pub design_g: f64,
     pub retention_margin: f64,
 
-    // Snap pins (plate to frame): a pin with a 45 degree head, two curved flex fingers round it.
+    // Snap pins (plate to frame): a pin with two flats and a 45 degree head; a keyed slot in the
+    // plate with rigid walls on the flats and two straight flex fingers either side.
     pub pin_r: f64,
     pub pin_head_r: f64,
     /// The head's 45 degree face starts this far below the plate's top.
     pub pin_bite: f64,
     pub pin_cap: f64,
-    pub pin_lead: f64,
+    /// Radius at the top of the lead-in cone.
+    pub pin_tip_r: f64,
+    /// Lead-in slope from vertical, degrees: gentler than 45 so the head starts the fingers apart
+    /// without a hard push.
+    pub pin_lead_angle: f64,
+    /// Half the distance across the flats.
+    pub pin_flat: f64,
+    /// Clearance between each flat and its wall at the tight pins: the fit. 0.1 mm, the 1-dot
+    /// tab, fit best on the first coupon print (a P1S, PLA). The fit-ladder coupon tries others.
+    pub pin_fit: f64,
+    /// The tight snap columns: at least half the snap pins, two of them on opposite corners.
+    /// Two tight pins far apart set where the plate sits and stop it turning.
+    pub pin_tight: Vec<usize>,
+    /// Extra clearance on the other snap pins' flats, so an error in hole spacing between the
+    /// frame and the plate can't make it bind.
+    pub pin_spacing_allow: f64,
     pub locate_clear: f64,
     /// Locating pin above the plate: low enough for the Nano's USB plug to pass over it.
     pub locate_above: f64,
+    /// Head to the fingers' inner faces.
     pub finger_clear: f64,
     pub finger_w: f64,
+    /// Behind each finger: room to bend.
     pub finger_slit: f64,
-    /// Degrees of arc per finger.
-    pub finger_span: f64,
-    /// Degrees from a finger's tip to the next one's root.
-    pub finger_gap: f64,
+    /// Between each finger and the rigid tongue between them.
+    pub finger_slit_in: f64,
+    /// Root to tip.
+    pub finger_len: f64,
+    pub finger_tip_gap: f64,
+    /// Where each tooth's face crosses the lobe axis, at rest.
     pub tooth_r: f64,
-    pub tooth_span: f64,
-    /// Stack holes with snap pins (the one by the Nano locates), with each one's finger angle.
+    /// Each tooth runs this far either side of the lobe axis.
+    pub tooth_half: f64,
+    /// Stack holes with snap pins (the one by the Nano locates), with each joint's angle: the
+    /// way its fingers' roots point is this angle less 90 degrees.
     pub snap_columns: Vec<(usize, f64)>,
+
+    // Battery: a MakerFocus flat 3.7 V 3000 mAh LiPo (JST PH 2.0), listed at 67 x 36 x 12 mm,
+    // +-2 mm. Every case holds the largest cell that listing allows.
+    pub cell: [f64; 3],
+    pub cell_tol: f64,
+    /// A heavy 3000 mAh pouch cell, for the load checks.
+    pub cell_mass: f64,
+    /// Lower-left corner of the largest cell, plate coordinates; it lies along y between the
+    /// columns.
+    pub cell_at: [f64; 2],
+    /// Design load for launch: the 20 g quasi-static load the Rev C frame uses (classroom
+    /// rockets reach about 10 g), with a factor of safety.
+    pub launch_g: f64,
+    pub launch_fs: f64,
+    /// PLA strength across layers: an assumption, as in the Rev C loads.
+    pub interlayer_mpa: f64,
 
     // Board snap hooks: a straight flex finger cut into the plate beside a board edge, with a
     // post on its tip and a hook over the board. The finger bends in the plate's plane.
@@ -181,20 +219,33 @@ impl Default for Design {
             design_g: 20.0,
             retention_margin: 1.5,
             pin_r: 3.0,
-            pin_head_r: 3.9,
-            pin_bite: 0.45,
-            pin_cap: 0.8,
-            pin_lead: 1.5,
+            pin_head_r: 3.7,
+            pin_bite: 0.35,
+            pin_cap: 0.6,
+            pin_tip_r: 2.5,
+            pin_lead_angle: 30.0,
+            pin_flat: 2.4,
+            pin_fit: 0.1,
+            pin_tight: vec![0, 2],
+            pin_spacing_allow: 0.15,
             locate_clear: 0.4,
             locate_above: 0.5,
-            finger_clear: 0.4,
+            finger_clear: 0.3,
             finger_w: 2.0,
-            finger_slit: 1.4,
-            finger_span: 165.0,
-            finger_gap: 7.0,
-            tooth_r: 3.1,
-            tooth_span: 28.0,
-            snap_columns: vec![(0, 100.0), (1, 260.0), (2, 0.0)],
+            finger_slit: 1.2,
+            finger_slit_in: 0.8,
+            finger_len: 14.5,
+            finger_tip_gap: 0.7,
+            tooth_r: 3.0,
+            tooth_half: 1.3,
+            snap_columns: vec![(0, 183.0), (1, 8.0), (2, 356.5)],
+            cell: [67.0, 36.0, 12.0],
+            cell_tol: 2.0,
+            cell_mass: 0.065,
+            cell_at: [-21.0, -34.5],
+            launch_g: 20.0,
+            launch_fs: 2.0,
+            interlayer_mpa: 15.0,
             hook_len: 18.0,
             hook_w: 2.0,
             hook_post_w: 4.0,
@@ -248,8 +299,32 @@ impl Design {
         self.stack_holes.map(|[x, y]| [x, -y])
     }
 
-    /// The snap pin's finger angle at a column, if it has one.
-    pub fn snap_a0(&self, column: usize) -> Option<f64> {
+    /// The largest cell the listing allows: x0, y0, width (x), length (y).
+    pub fn cell_rect(&self) -> Rect {
+        let t = self.cell_tol;
+        [
+            self.cell_at[0],
+            self.cell_at[1],
+            self.cell[1] + t,
+            self.cell[0] + t,
+        ]
+    }
+
+    pub fn cell_thick(&self) -> f64 {
+        self.cell[2] + self.cell_tol
+    }
+
+    /// Clearance on the flats at a snap column: tight at the tight pins, looser at the others.
+    pub fn column_fit(&self, column: usize) -> f64 {
+        if self.pin_tight.contains(&column) {
+            self.pin_fit
+        } else {
+            self.pin_fit + self.pin_spacing_allow
+        }
+    }
+
+    /// The snap pin's angle at a column, if it has one.
+    pub fn snap_angle(&self, column: usize) -> Option<f64> {
         self.snap_columns
             .iter()
             .find(|(c, _)| *c == column)

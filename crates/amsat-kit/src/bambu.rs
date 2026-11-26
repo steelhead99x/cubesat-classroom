@@ -28,136 +28,220 @@ const MARGIN: f64 = 8.0;
 const APP: &str = "BambuStudio-02.00.00.00";
 const DATE: &str = "2026-11-25";
 
-struct Part {
-    name: &'static str,
+#[derive(Clone, Copy)]
+pub struct Part {
+    pub name: &'static str,
     /// A generated mesh's name, or an AMSAT upstream file.
-    source: &'static str,
-    flip: bool,
-    solid_infill: bool,
-    colour: [f64; 3],
+    pub source: &'static str,
+    pub flip: bool,
+    pub solid_infill: bool,
+    pub colour: [f64; 3],
+}
+
+const fn p(name: &'static str, source: &'static str, solid_infill: bool, colour: [f64; 3]) -> Part {
+    Part {
+        name,
+        source,
+        flip: false,
+        solid_infill,
+        colour,
+    }
 }
 
 const GREY: [f64; 3] = [0.62, 0.65, 0.70];
-
-const PARTS: [Part; 10] = [
-    Part {
-        name: "Payload plate",
-        source: "payload-plate",
-        flip: false,
-        solid_infill: false,
-        colour: GREY,
-    },
-    Part {
-        name: "Fit plate",
-        source: "fit-plate",
-        flip: false,
-        solid_infill: false,
-        colour: [0.22, 0.24, 0.27],
-    },
-    Part {
-        name: "Pin coupon base",
-        source: "coupon-pin-base",
-        flip: false,
-        solid_infill: true,
-        colour: [0.55, 0.60, 0.68],
-    },
-    Part {
-        name: "Pin coupon tab",
-        source: "coupon-pin-tab",
-        flip: false,
-        solid_infill: true,
-        colour: GREY,
-    },
-    Part {
-        name: "Hook coupon base",
-        source: "coupon-hook-base",
-        flip: false,
-        solid_infill: true,
-        colour: [0.55, 0.60, 0.68],
-    },
-    Part {
-        name: "Coupon board",
-        source: "coupon-board",
-        flip: false,
-        solid_infill: false,
-        colour: [0.10, 0.45, 0.35],
-    },
-    Part {
-        name: "Side",
-        source: "upstream/cubesatsim_frame_side.v2.0.stl",
-        flip: false,
-        solid_infill: false,
-        colour: GREY,
-    },
-    Part {
-        name: "Side with camera hole",
-        source: "upstream/cubesatsim_frame_side_camera.v2.0.stl",
-        flip: false,
-        solid_infill: false,
-        colour: GREY,
-    },
-    Part {
-        name: "Top",
-        source: "upstream/cubesatsim_frame_top_bottom.v2.0.stl",
-        flip: true,
-        solid_infill: false,
-        colour: GREY,
-    },
-    Part {
-        name: "Bottom with columns",
-        source: "bottom-with-columns",
-        flip: false,
-        solid_infill: false,
-        colour: GREY,
-    },
-];
+const DARK: [f64; 3] = [0.22, 0.24, 0.27];
+const BLUE: [f64; 3] = [0.55, 0.60, 0.68];
+const TPU: [f64; 3] = [0.15, 0.15, 0.16];
 
 /// File, title, and plates: each plate a name and rows of parts, top to bottom.
-type Plates = &'static [(&'static str, &'static [&'static [&'static str]])];
-const PROJECTS: [(&str, &str, Plates); 3] = [
-    (
-        "cubesat-kit.3mf",
-        "CubeSat Classroom kit",
-        &[
-            (
-                "Payload plate and bottom",
-                &[&["Payload plate", "Bottom with columns"]],
-            ),
-            (
-                "Sides and top",
-                &[&["Side", "Side with camera hole"], &["Top"]],
-            ),
-        ],
+pub type Plates = &'static [(&'static str, &'static [&'static [&'static str]])];
+pub type Project = (&'static str, &'static str, Plates);
+
+/// One kit: its parts, its Bambu Studio projects, and the description they carry.
+pub struct Kit {
+    pub parts: &'static [Part],
+    pub projects: &'static [Project],
+    pub description: &'static str,
+}
+
+const PIN_COUPONS: [&str; 4] = [
+    "Pin coupon base",
+    "Pin tab 1 dot (kit fit)",
+    "Pin tab 2 dots (looser)",
+    "Pin tab 3 dots (loosest)",
+];
+const PIN_PARTS: [Part; 4] = [
+    p("Pin coupon base", "coupon-pin-base", true, BLUE),
+    p("Pin tab 1 dot (kit fit)", "coupon-pin-tab", true, GREY),
+    p(
+        "Pin tab 2 dots (looser)",
+        "coupon-pin-tab-2-dots",
+        true,
+        GREY,
     ),
-    (
-        "cubesat-fit-plate.3mf",
-        "CubeSat Classroom fit plate",
-        &[("Fit plate", &[&["Fit plate"]])],
-    ),
-    (
-        "cubesat-test-coupons.3mf",
-        "CubeSat Classroom test coupons",
-        &[(
-            "Test coupons",
-            &[
-                &["Pin coupon base", "Pin coupon tab"],
-                &["Hook coupon base", "Coupon board"],
-            ],
-        )],
+    p(
+        "Pin tab 3 dots (loosest)",
+        "coupon-pin-tab-3-dots",
+        true,
+        GREY,
     ),
 ];
 
-fn part(name: &str) -> &'static Part {
-    PARTS
+pub const CLASSROOM: Kit = Kit {
+    parts: &[
+        p("Payload plate", "payload-plate", false, GREY),
+        p("Fit plate", "fit-plate", false, DARK),
+        p("Battery plate", "battery-plate", false, GREY),
+        PIN_PARTS[0],
+        PIN_PARTS[1],
+        PIN_PARTS[2],
+        PIN_PARTS[3],
+        p("Nano coupon", "coupon-nano-base", true, BLUE),
+        p(
+            "Side",
+            "upstream/cubesatsim_frame_side.v2.0.stl",
+            false,
+            GREY,
+        ),
+        p(
+            "Side with camera hole",
+            "upstream/cubesatsim_frame_side_camera.v2.0.stl",
+            false,
+            GREY,
+        ),
+        p("Bottom with columns", "bottom-with-columns", false, GREY),
+        p("Top with columns", "bottom-with-columns", false, GREY),
+    ],
+    projects: &[
+        (
+            "cubesat-kit.3mf",
+            "CubeSat Classroom kit",
+            &[
+                (
+                    "Payload plate and bottom",
+                    &[&["Payload plate", "Bottom with columns"]],
+                ),
+                ("Sides", &[&["Side", "Side with camera hole"]]),
+                (
+                    "Top and battery plate",
+                    &[&["Top with columns", "Battery plate"]],
+                ),
+            ],
+        ),
+        (
+            "cubesat-fit-plate.3mf",
+            "CubeSat Classroom fit plate",
+            &[("Fit plate", &[&["Fit plate"]])],
+        ),
+        (
+            "cubesat-test-coupons.3mf",
+            "CubeSat Classroom test coupons",
+            &[("Test coupons", &[&PIN_COUPONS, &["Nano coupon"]])],
+        ),
+    ],
+    description: "AMSAT CubeSatSim v2.0 frame with an Arduino Uno R3 and Nano 33 BLE Sense payload and a 3000 mAh \
+                  battery. Frame by Alan Johnston, KU2Y (AMSAT). GPL-3.0.",
+};
+
+const OUTDOOR_COUPON_PARTS: [Part; 5] = [
+    p("Tripod thread coupon", "coupon-tripod-thread", true, BLUE),
+    PIN_PARTS[0],
+    PIN_PARTS[1],
+    PIN_PARTS[2],
+    PIN_PARTS[3],
+];
+
+pub const OUTDOOR: Kit = Kit {
+    parts: &[
+        p("Box", "outdoor-box", false, GREY),
+        p("Lid", "outdoor-lid", false, GREY),
+        p("Gasket (TPU)", "outdoor-gasket", false, TPU),
+        p("Payload plate", "payload-plate", false, GREY),
+        OUTDOOR_COUPON_PARTS[0],
+        OUTDOOR_COUPON_PARTS[1],
+        OUTDOOR_COUPON_PARTS[2],
+        OUTDOOR_COUPON_PARTS[3],
+        OUTDOOR_COUPON_PARTS[4],
+    ],
+    projects: &[
+        (
+            "outdoor-station.3mf",
+            "CubeSat Classroom outdoor ground station",
+            &[
+                ("Box (ASA or PETG)", &[&["Box"]]),
+                (
+                    "Lid and payload plate (ASA or PETG)",
+                    &[&["Lid", "Payload plate"]],
+                ),
+                ("Gasket (TPU 95A)", &[&["Gasket (TPU)"]]),
+            ],
+        ),
+        (
+            "outdoor-test-coupons.3mf",
+            "CubeSat Classroom outdoor test coupons",
+            &[(
+                "Test coupons (ASA or PETG)",
+                &[&["Tripod thread coupon"], &PIN_COUPONS],
+            )],
+        ),
+    ],
+    description: "Outdoor, sealed CubeSat Classroom ground station for an Arduino Uno R3, a Nano 33 BLE Sense \
+                  and a 3000 mAh battery, with a 1/4-20 tripod thread. GPL-3.0.",
+};
+
+pub const OUTDOOR_XIAO: Kit = Kit {
+    parts: &[
+        p("Box", "outdoor-box", false, GREY),
+        p("Lid", "outdoor-lid", false, GREY),
+        p("Gasket (TPU)", "outdoor-gasket", false, TPU),
+        p("XIAO plate", "xiao-plate", false, GREY),
+        p("XIAO coupon", "coupon-xiao", true, BLUE),
+        OUTDOOR_COUPON_PARTS[0],
+        OUTDOOR_COUPON_PARTS[1],
+        OUTDOOR_COUPON_PARTS[2],
+        OUTDOOR_COUPON_PARTS[3],
+        OUTDOOR_COUPON_PARTS[4],
+    ],
+    projects: &[
+        (
+            "outdoor-xiao.3mf",
+            "CubeSat Classroom outdoor XIAO station",
+            &[
+                ("Box (ASA or PETG)", &[&["Box"]]),
+                (
+                    "Lid and XIAO plate (ASA or PETG)",
+                    &[&["Lid", "XIAO plate"]],
+                ),
+                ("Gasket (TPU 95A)", &[&["Gasket (TPU)"]]),
+            ],
+        ),
+        (
+            "outdoor-xiao-test-coupons.3mf",
+            "CubeSat Classroom outdoor XIAO test coupons",
+            &[(
+                "Test coupons (ASA or PETG)",
+                &[&["XIAO coupon"], &["Tripod thread coupon"], &PIN_COUPONS],
+            )],
+        ),
+    ],
+    description: "Outdoor, sealed CubeSat Classroom station for a XIAO ESP32-S3 on the Wi-Fi HaLow board, a XIAO \
+                  MG24 Sense and a 3000 mAh battery, with a 1/4-20 tripod thread. GPL-3.0.",
+};
+
+fn part(kit: &Kit, name: &str) -> &'static Part {
+    kit.parts
         .iter()
         .find(|p| p.name == name)
-        .expect("every placed part is listed in PARTS")
+        .expect("every placed part is listed in the kit")
 }
 
 /// Each part's mesh, centred on the bed and standing on it.
-fn load_meshes(generated: &[(&str, Mesh)]) -> Result<BTreeMap<&'static str, Mesh>, String> {
+fn load_meshes(
+    kit: &Kit,
+    generated: &[(&str, Mesh)],
+) -> Result<BTreeMap<&'static str, Mesh>, String> {
     let mut out = BTreeMap::new();
-    for p in &PARTS {
+    for p in kit.parts {
         let mut mesh = match p.source.strip_prefix("upstream/") {
             Some(file) => upstream(file)?,
             None => generated
@@ -530,6 +614,7 @@ fn place_objects(meshes: &BTreeMap<&str, Mesh>, plates: Plates) -> Result<Vec<Pl
 }
 
 fn project(
+    kit: &Kit,
     title: &str,
     plates: Plates,
     meshes: &BTreeMap<&str, Mesh>,
@@ -557,12 +642,7 @@ fn project(
         ("Application", APP.to_string()),
         ("BambuStudio:3mfVersion", "1".to_string()),
         ("CreationDate", DATE.to_string()),
-        (
-            "Description",
-            "AMSAT CubeSatSim v2.0 frame with an Arduino Uno R3 and Nano 33 BLE Sense payload. Frame by Alan \
-             Johnston, KU2Y (AMSAT). GPL-3.0."
-                .to_string(),
-        ),
+        ("Description", kit.description.to_string()),
         ("Designer", "CubeSat Classroom".to_string()),
         ("License", "GPL-3.0".to_string()),
         ("ModificationDate", DATE.to_string()),
@@ -603,7 +683,7 @@ fn project(
         let _ = writeln!(cfg, "  <object id=\"{obj_id}\">");
         let _ = writeln!(cfg, "    <metadata key=\"name\" value=\"{label}\"/>");
         let _ = writeln!(cfg, "    <metadata key=\"extruder\" value=\"1\"/>");
-        if part(o.part).solid_infill {
+        if part(kit, o.part).solid_infill {
             let _ = writeln!(
                 cfg,
                 "    <metadata key=\"sparse_infill_density\" value=\"100%\"/>"
@@ -651,7 +731,7 @@ fn project(
             .map(|o| {
                 (
                     meshes[o.part].translated([o.x, o.y, 0.0]),
-                    part(o.part).colour,
+                    part(kit, o.part).colour,
                 )
             })
             .collect();
@@ -778,12 +858,12 @@ fn check(
 }
 
 /// Write every Bambu Studio project into `dir/p1s/`.
-pub fn write_projects(dir: &Path, generated: &[(&str, Mesh)]) -> Result<(), String> {
-    let meshes = load_meshes(generated)?;
+pub fn write_projects(dir: &Path, kit: &Kit, generated: &[(&str, Mesh)]) -> Result<(), String> {
+    let meshes = load_meshes(kit, generated)?;
     let out = dir.join("p1s");
     std::fs::create_dir_all(&out).map_err(|e| e.to_string())?;
-    for (file, title, plates) in PROJECTS {
-        let (data, objects) = project(title, plates, &meshes)?;
+    for &(file, title, plates) in kit.projects {
+        let (data, objects) = project(kit, title, plates, &meshes)?;
         // The model and config go into the archive as written: check what Bambu Studio will read.
         let (model, cfg) = read_back(&data)?;
         check(&model, &cfg, plates.len(), &objects, &meshes)?;

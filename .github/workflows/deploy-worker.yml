@@ -1,3 +1,8 @@
+# NOTE: GitHub Actions is disabled for this repository (Settings > Actions; CI moved to PrairieDog,
+# see .prairiedog.toml), so this workflow does not run. A run started while Actions is off
+# stays "queued" with no jobs. Deploy by hand from site/ (see site/README.md) until Actions is
+# turned back on.
+#
 # Deploys the Cloudflare Worker (the Worker domains: cubesatclass.org, cubesat.club and the
 # other hubs) after CI passes on main, or when started by hand. GitHub Pages deploys docs/
 # on its own.

@@ -1,0 +1,4119 @@
+(kicad_sch
+  (version 20230121)
+  (generator solar_face_gen)
+  (uuid "50a0f0ce-0000-4000-8000-000000000051")
+  (paper "User" 420 130)
+  (title_block
+    (title "1U solar face, silicon (KXOB25-05X3F x 24)")
+    (date "2026-11-26")
+    (rev "A")
+    (company "cubesat-classroom")
+    (comment 1 "Nets are joined by label name. Generated from gen/design.py.")
+    (comment 2 "UNBUILT, UNTESTED. Cell land patterns NOT VERIFIED (gen/cells.py).")
+  )
+  (lib_symbols
+    (symbol "Device:Solar_Cell"
+      (pin_numbers hide)
+      (pin_names
+        (offset 0) hide
+      )
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "SC"
+        (at 2.54 2.54 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+          (justify left)
+        )
+      )
+      (property "Value" "Solar_Cell"
+        (at 2.54 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+          (justify left)
+        )
+      )
+      (property "Footprint" ""
+        (at 0 1.524 90)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "Datasheet" "~"
+        (at 0 1.524 90)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_keywords" "solar cell"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_description" "Single solar cell"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (symbol "Solar_Cell_0_1"
+        (rectangle
+          (start -2.032 1.778)
+          (end 2.032 1.524)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type outline)
+          )
+        )
+        (rectangle
+          (start -1.3208 1.1938)
+          (end 1.27 0.6858)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type outline)
+          )
+        )
+        (polyline
+          (pts
+            (xy -2.032 2.286)
+            (xy -3.556 3.81)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy -0.762 2.794)
+            (xy -2.286 4.318)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy 0 0.762)
+            (xy 0 0)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy 0 1.778)
+            (xy 0 2.54)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy 0.254 2.667)
+            (xy 1.27 2.667)
+          )
+          (stroke
+            (width 0.254)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy 0.762 3.175)
+            (xy 0.762 2.159)
+          )
+          (stroke
+            (width 0.254)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy -2.032 3.048)
+            (xy -2.032 2.286)
+            (xy -2.794 2.286)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy -0.762 3.556)
+            (xy -0.762 2.794)
+            (xy -1.524 2.794)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+      )
+      (symbol "Solar_Cell_1_1"
+        (pin passive line
+          (at 0 5.08 270)
+          (length 2.54)
+          (name "+"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+        (pin passive line
+          (at 0 -2.54 90)
+          (length 2.54)
+          (name "-"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+      )
+    )
+    (symbol "Device:D_Schottky"
+      (pin_numbers hide)
+      (pin_names
+        (offset 1.016) hide
+      )
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "D"
+        (at 0 2.54 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Value" "D_Schottky"
+        (at 0 -2.54 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_keywords" "diode Schottky"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_description" "Schottky diode"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_fp_filters" "TO-???* *_Diode_* *SingleDiode* D_*"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (symbol "D_Schottky_0_1"
+        (polyline
+          (pts
+            (xy 1.27 0)
+            (xy -1.27 0)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy 1.27 1.27)
+            (xy 1.27 -1.27)
+            (xy -1.27 0)
+            (xy 1.27 1.27)
+          )
+          (stroke
+            (width 0.254)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy -1.905 0.635)
+            (xy -1.905 1.27)
+            (xy -1.27 1.27)
+            (xy -1.27 -1.27)
+            (xy -0.635 -1.27)
+            (xy -0.635 -0.635)
+          )
+          (stroke
+            (width 0.254)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+      )
+      (symbol "D_Schottky_1_1"
+        (pin passive line
+          (at -3.81 0 0)
+          (length 2.54)
+          (name "K"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+        (pin passive line
+          (at 3.81 0 180)
+          (length 2.54)
+          (name "A"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+      )
+    )
+    (symbol "Jumper:SolderJumper_2_Open"
+      (pin_names
+        (offset 0) hide
+      )
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "JP"
+        (at 0 2.032 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Value" "SolderJumper_2_Open"
+        (at 0 -2.54 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_keywords" "solder jumper SPST"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_description" "Solder Jumper, 2-pole, open"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_fp_filters" "SolderJumper*Open*"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (symbol "SolderJumper_2_Open_0_1"
+        (arc
+          (start -0.254 1.016)
+          (mid -1.2656 0)
+          (end -0.254 -1.016)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (arc
+          (start -0.254 1.016)
+          (mid -1.2656 0)
+          (end -0.254 -1.016)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type outline)
+          )
+        )
+        (polyline
+          (pts
+            (xy -0.254 1.016)
+            (xy -0.254 -1.016)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy 0.254 1.016)
+            (xy 0.254 -1.016)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (arc
+          (start 0.254 -1.016)
+          (mid 1.2656 0)
+          (end 0.254 1.016)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (arc
+          (start 0.254 -1.016)
+          (mid 1.2656 0)
+          (end 0.254 1.016)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type outline)
+          )
+        )
+      )
+      (symbol "SolderJumper_2_Open_1_1"
+        (pin passive line
+          (at -3.81 0 0)
+          (length 2.54)
+          (name "A"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+        (pin passive line
+          (at 3.81 0 180)
+          (length 2.54)
+          (name "B"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+      )
+    )
+    (symbol "Device:Thermistor_NTC"
+      (pin_numbers hide)
+      (pin_names
+        (offset 0)
+      )
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "TH"
+        (at -4.445 0 90)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Value" "Thermistor_NTC"
+        (at 3.175 0 90)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Footprint" ""
+        (at 0 1.27 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "Datasheet" "~"
+        (at 0 1.27 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_keywords" "thermistor NTC resistor sensor RTD"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_description" "Temperature dependent resistor, negative temperature coefficient"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_fp_filters" "*NTC* *Thermistor* PIN?ARRAY* bornier* *Terminal?Block* R_*"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (symbol "Thermistor_NTC_0_1"
+        (arc
+          (start -3.048 2.159)
+          (mid -3.0495 2.3143)
+          (end -3.175 2.413)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (arc
+          (start -3.048 2.159)
+          (mid -2.9736 1.9794)
+          (end -2.794 1.905)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (arc
+          (start -3.048 2.794)
+          (mid -2.9736 2.6144)
+          (end -2.794 2.54)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (arc
+          (start -2.794 1.905)
+          (mid -2.6144 1.9794)
+          (end -2.54 2.159)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (arc
+          (start -2.794 2.54)
+          (mid -2.4393 2.5587)
+          (end -2.159 2.794)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (arc
+          (start -2.794 3.048)
+          (mid -2.9736 2.9736)
+          (end -3.048 2.794)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (arc
+          (start -2.54 2.794)
+          (mid -2.6144 2.9736)
+          (end -2.794 3.048)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (rectangle
+          (start -1.016 2.54)
+          (end 1.016 -2.54)
+          (stroke
+            (width 0.254)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy -2.54 2.159)
+            (xy -2.54 2.794)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy -1.778 2.54)
+            (xy -1.778 1.524)
+            (xy 1.778 -1.524)
+            (xy 1.778 -2.54)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (polyline
+          (pts
+            (xy -2.54 -3.683)
+            (xy -2.54 -1.397)
+            (xy -2.794 -2.159)
+            (xy -2.286 -2.159)
+            (xy -2.54 -1.397)
+            (xy -2.54 -1.651)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type outline)
+          )
+        )
+        (polyline
+          (pts
+            (xy -1.778 -1.397)
+            (xy -1.778 -3.683)
+            (xy -2.032 -2.921)
+            (xy -1.524 -2.921)
+            (xy -1.778 -3.683)
+            (xy -1.778 -3.429)
+          )
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type outline)
+          )
+        )
+      )
+      (symbol "Thermistor_NTC_1_1"
+        (pin passive line
+          (at 0 3.81 270)
+          (length 1.27)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+        (pin passive line
+          (at 0 -3.81 90)
+          (length 1.27)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+      )
+    )
+    (symbol "Connector_Generic:Conn_01x03"
+      (pin_names
+        (offset 1.016) hide
+      )
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "J"
+        (at 0 5.08 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Value" "Conn_01x03"
+        (at 0 -5.08 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_keywords" "connector"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_description" "Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_fp_filters" "Connector*:*_1x??_*"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (symbol "Conn_01x03_1_1"
+        (rectangle
+          (start -1.27 -2.413)
+          (end 0 -2.667)
+          (stroke
+            (width 0.1524)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (rectangle
+          (start -1.27 0.127)
+          (end 0 -0.127)
+          (stroke
+            (width 0.1524)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (rectangle
+          (start -1.27 2.667)
+          (end 0 2.413)
+          (stroke
+            (width 0.1524)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+        (rectangle
+          (start -1.27 3.81)
+          (end 1.27 -3.81)
+          (stroke
+            (width 0.254)
+            (type default)
+          )
+          (fill
+            (type background)
+          )
+        )
+        (pin passive line
+          (at -5.08 2.54 0)
+          (length 3.81)
+          (name "Pin_1"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+        (pin passive line
+          (at -5.08 0 0)
+          (length 3.81)
+          (name "Pin_2"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+        (pin passive line
+          (at -5.08 -2.54 0)
+          (length 3.81)
+          (name "Pin_3"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "3"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+      )
+    )
+    (symbol "Connector:TestPoint"
+      (pin_numbers hide)
+      (pin_names
+        (offset 0.762) hide
+      )
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "TP"
+        (at 0 6.858 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Value" "TestPoint"
+        (at 0 5.08 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          )
+        )
+      )
+      (property "Footprint" ""
+        (at 5.08 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "Datasheet" "~"
+        (at 5.08 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_keywords" "test point tp"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_description" "test point"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (property "ki_fp_filters" "Pin* Test*"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27)
+          ) hide
+        )
+      )
+      (symbol "TestPoint_0_1"
+        (circle
+          (center 0 3.302)
+          (radius 0.762)
+          (stroke
+            (width 0)
+            (type default)
+          )
+          (fill
+            (type none)
+          )
+        )
+      )
+      (symbol "TestPoint_1_1"
+        (pin passive line
+          (at 0 0 90)
+          (length 2.54)
+          (name "1"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 30.48 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "7d391f07-cbef-4170-a0cd-1b064e62e81b")
+    (property "Reference" "SC1"
+      (at 27.98 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 27.98 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 30.48 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 30.48 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 30.48 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 30.48 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "6473aba7-d197-4c3b-a85c-1cf57699251c")
+    )
+    (pin "2"
+      (uuid "e38e8258-3fc7-4fc5-a96a-152e2e934df2")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 25.4 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "22487753-17ed-44c4-af89-04317c9aa28e")
+  )
+  (label "S1_1"
+    (at 33.02 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "0a76031a-b670-4a9e-b683-e40a9171de9e")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 50.8 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "7ce8da13-323f-4260-b274-6d38ce0934f7")
+    (property "Reference" "SC2"
+      (at 48.3 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 48.3 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 50.8 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 50.8 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 50.8 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 50.8 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "22c66e3e-f72b-4d7e-81f4-2a80cf3ca989")
+    )
+    (pin "2"
+      (uuid "a718d405-885f-4494-addb-e32e71ebbdb7")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC2")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S1_1"
+    (at 45.72 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "34ffabb6-1cd7-438e-b212-da426dbd8838")
+  )
+  (label "S1_2"
+    (at 53.34 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "81b86685-f808-4c9f-8af1-c19df1f6536e")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 71.12 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "da477d6b-9ce8-4517-9d56-d8f2d54bf44b")
+    (property "Reference" "SC3"
+      (at 68.62 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 68.62 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 71.12 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 71.12 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 71.12 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 71.12 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "17cee505-7cfa-4268-943a-1ab11932354c")
+    )
+    (pin "2"
+      (uuid "422a498d-1f2e-4d3d-bec9-e3ea2873a78c")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC3")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S1_2"
+    (at 66.04 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "2c355569-7481-4206-83a9-4f0303f52901")
+  )
+  (label "GND"
+    (at 73.66 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "ac696141-640d-48e3-87d1-aefd6be7cde3")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 92.71 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "fb9f322f-0db5-41c5-93d3-148f6f9f8efa")
+    (property "Reference" "SC4"
+      (at 90.21 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 90.21 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 92.71 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 92.71 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 92.71 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 92.71 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "ce2f2066-3c18-41d6-8213-d5af638902a3")
+    )
+    (pin "2"
+      (uuid "9855284c-9fa5-4c7c-824d-5c9980342f5e")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC4")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 87.63 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "6a069171-bc85-4a4b-b672-7366f8d013ca")
+  )
+  (label "S2_1"
+    (at 95.25 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "8cc15a30-33ee-4ed2-b938-9e9ba8ce5fa4")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 113.03 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "cd227119-59f9-4514-8fc1-a37a3d1a4a25")
+    (property "Reference" "SC5"
+      (at 110.53 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 110.53 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 113.03 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 113.03 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 113.03 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 113.03 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "8ab7bf04-e664-4cc9-9b3b-bfef3a60eed5")
+    )
+    (pin "2"
+      (uuid "42b10bcb-19ac-495b-97c5-fd9305a09fc4")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC5")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S2_1"
+    (at 107.95 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "3e4b9b2c-2fee-42e2-b243-b02a9ecc7017")
+  )
+  (label "S2_2"
+    (at 115.57 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "41d01643-be7e-407d-8322-e1bea4cc1f60")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 133.35 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "8db6d33e-9e8c-4073-a17c-df635295bda8")
+    (property "Reference" "SC6"
+      (at 130.85 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 130.85 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 133.35 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 133.35 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 133.35 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 133.35 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "7b4fb131-42a4-4146-9e1a-65cc27bdb3e4")
+    )
+    (pin "2"
+      (uuid "4c98ec00-3e47-436e-b7b5-b423e2f57339")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC6")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S2_2"
+    (at 128.27 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "2041b0c0-a884-4136-bbce-d9a3ff0e5982")
+  )
+  (label "GND"
+    (at 135.89 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "c89d50a6-5b10-4cdb-a4b6-c9d44a27e1ba")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 153.67 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "5eb60654-7342-4657-a9ec-38a549e75141")
+    (property "Reference" "SC7"
+      (at 151.17 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 151.17 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 153.67 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 153.67 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 153.67 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 153.67 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "d28307e4-4392-44a6-8033-979aa3c753db")
+    )
+    (pin "2"
+      (uuid "70d82c6a-e0d3-420f-88b9-d49aefa98c99")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC7")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 148.59 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "d1f10974-2095-4bb3-a70d-93c56a51a47e")
+  )
+  (label "S3_1"
+    (at 156.21 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "5caf5019-0336-4b7b-98e5-cfe7ae69b482")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 173.99 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "cc0aa832-43b2-42c3-a25d-5a46007ee056")
+    (property "Reference" "SC8"
+      (at 171.49 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 171.49 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 173.99 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 173.99 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 173.99 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 173.99 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "effd3545-3466-472d-8ace-475764b04747")
+    )
+    (pin "2"
+      (uuid "4c4d1f44-b4ca-4282-9559-2d79fd288b78")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC8")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S3_1"
+    (at 168.91 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "08649d3d-f41b-4994-ac24-3fcfdf4d3d28")
+  )
+  (label "S3_2"
+    (at 176.53 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "167d2056-e612-4aba-83d1-36b68d952b81")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 194.31 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "921d20a6-0242-4ce8-aab1-00e9367988b5")
+    (property "Reference" "SC9"
+      (at 191.81 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 191.81 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 194.31 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 194.31 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 194.31 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 194.31 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "20a8f39f-6ab7-4b51-a619-6abb8849b265")
+    )
+    (pin "2"
+      (uuid "46210a5a-b611-4e4e-a61a-45b6e78ebdcb")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC9")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S3_2"
+    (at 189.23 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "a452f7cd-a599-4ea3-9838-e7ca661ee120")
+  )
+  (label "GND"
+    (at 196.85 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "32b91aea-4f89-40c7-95e3-91b018692b0e")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 215.9 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "814212b4-9bbd-4d04-8c72-464f2563e75d")
+    (property "Reference" "SC10"
+      (at 213.4 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 213.4 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 215.9 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 215.9 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 215.9 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 215.9 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "8e6e31e1-267a-4376-8e6a-fe3a9557dca4")
+    )
+    (pin "2"
+      (uuid "b68dafbe-ebc8-409c-baef-b98478cfe101")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC10")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 210.82 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "7b801751-c2a1-453b-ab2e-f66aa0d9e777")
+  )
+  (label "S4_1"
+    (at 218.44 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "76de1564-35d0-4d18-9eaf-846e27d9d7eb")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 236.22 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "a12de1f6-f9df-42a8-a7c1-877018ba49aa")
+    (property "Reference" "SC11"
+      (at 233.72 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 233.72 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 236.22 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 236.22 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 236.22 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 236.22 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "4d23a8b1-9229-4e5b-8739-2a9c771bf624")
+    )
+    (pin "2"
+      (uuid "6747fc09-470d-4029-9e14-7acf896a15da")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC11")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S4_1"
+    (at 231.14 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "e57950b0-2440-4ee1-b002-a69d909fdfdf")
+  )
+  (label "S4_2"
+    (at 238.76 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "e2eeae06-b1bc-4b3c-9181-7ee0b9c82778")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 256.54 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "b3ca90fe-af50-4ebe-a4d2-61c875b25634")
+    (property "Reference" "SC12"
+      (at 254.04 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 254.04 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 256.54 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 256.54 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 256.54 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 256.54 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "fc9041a8-5bfc-4e15-9134-2116a9863771")
+    )
+    (pin "2"
+      (uuid "b5d37e16-7bda-4513-b0da-92db75242cbb")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC12")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S4_2"
+    (at 251.46 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "935b12b9-d086-4885-880d-3323977bfdcb")
+  )
+  (label "GND"
+    (at 259.08 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "a10f0d3e-f3a5-4ffb-95a7-d53d3de49520")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 276.86 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "3ee338c5-0276-4e1f-a73c-44cf6f24ad17")
+    (property "Reference" "SC13"
+      (at 274.36 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 274.36 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 276.86 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 276.86 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 276.86 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 276.86 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "e58cb021-0ff6-4ce7-92f0-4440040a4d1b")
+    )
+    (pin "2"
+      (uuid "2d3704a0-dddb-470f-8cbb-888ece2cc19d")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC13")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 271.78 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "3863a67d-004f-4850-b204-7a8cfc630c23")
+  )
+  (label "S5_1"
+    (at 279.4 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "b25743f0-62e7-47e0-99ac-d9bd9e5d3f46")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 297.18 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "97663dd6-21c3-4e16-b1c2-433fbff92f80")
+    (property "Reference" "SC14"
+      (at 294.68 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 294.68 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 297.18 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 297.18 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 297.18 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 297.18 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "61c9ba6b-43a2-4faa-89a3-cb7e7c31ffb5")
+    )
+    (pin "2"
+      (uuid "6310501e-6af5-41f6-a5e5-ee0c041fdaea")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC14")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S5_1"
+    (at 292.1 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "c2c09bf6-8e62-4291-8ec9-1cbc5bf882ab")
+  )
+  (label "S5_2"
+    (at 299.72 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "da312aa8-8d5a-4b94-9653-a065043d7d8e")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 317.5 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "6c9b7fc6-1884-488c-80b2-570ceb1dacd0")
+    (property "Reference" "SC15"
+      (at 315 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 315 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 317.5 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 317.5 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 317.5 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 317.5 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "cd6f6659-b8b7-4bc4-95d5-66f1c758cba1")
+    )
+    (pin "2"
+      (uuid "236c271e-792f-489f-ac1f-a29271f87627")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC15")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S5_2"
+    (at 312.42 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "45b81654-1a08-4639-9eab-35c6b7b61d98")
+  )
+  (label "GND"
+    (at 320.04 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "adf0de4a-7c6b-4165-b942-f4c4b93030c7")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 339.09 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "589fbaaa-4671-40c4-936d-ac0b521c69d1")
+    (property "Reference" "SC16"
+      (at 336.59 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 336.59 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 339.09 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 339.09 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 339.09 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 339.09 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "707da4a4-22c5-4949-ac53-69ae9cbdfbe1")
+    )
+    (pin "2"
+      (uuid "2a1877ec-bf58-430a-8474-3f83e2f3c15c")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC16")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 334.01 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "f95fb21c-60c1-4309-a4bc-64cfad039053")
+  )
+  (label "S6_1"
+    (at 341.63 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "20a39148-e867-47bd-8258-8490600cf9c9")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 359.41 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "c787bc54-1b7f-4f15-9c34-2b0a5343d378")
+    (property "Reference" "SC17"
+      (at 356.91 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 356.91 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 359.41 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 359.41 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 359.41 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 359.41 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "8dfb0a08-592a-4114-a926-f4b46855f7ab")
+    )
+    (pin "2"
+      (uuid "cf3ae1d0-fce6-468b-9df7-b43091b3670b")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC17")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S6_1"
+    (at 354.33 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "9106c537-6662-48b9-a3e3-95aea2e40ca1")
+  )
+  (label "S6_2"
+    (at 361.95 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "9f7a96ff-ac7c-4e53-a285-ee89d3fde4df")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 379.73 39.37 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "d8817ef8-c2d8-4307-b799-f6eb16f5d45d")
+    (property "Reference" "SC18"
+      (at 377.23 33.17 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 377.23 34.77 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 379.73 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 379.73 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 379.73 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 379.73 39.37 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "1c70db5b-bb63-4cc0-92c3-02488fe50a2d")
+    )
+    (pin "2"
+      (uuid "94898e73-6ffb-444e-882c-53e233041c01")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC18")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S6_2"
+    (at 374.65 39.37 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "4ebb7dd1-c98c-4931-8f1b-48197acc8c8f")
+  )
+  (label "GND"
+    (at 382.27 39.37 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "fc0ee49c-6fcd-48a5-9ae8-54fba22bb315")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 30.48 54.61 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "346ce99a-aad5-448c-b913-221dab1f41cc")
+    (property "Reference" "SC19"
+      (at 27.98 48.41 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 27.98 50.01 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 30.48 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 30.48 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 30.48 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 30.48 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "0f81b98f-c110-483a-9d3d-44fd63fa2591")
+    )
+    (pin "2"
+      (uuid "8930170d-6349-44f9-8904-fca59c449c14")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC19")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 25.4 54.61 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "5c64e6bb-5ade-4214-b099-d5dd1c31ead1")
+  )
+  (label "S7_1"
+    (at 33.02 54.61 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "d770054a-9f14-43b9-a654-4363ff13ca00")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 50.8 54.61 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "1f003c18-6901-481c-a3d0-5d32652c20a1")
+    (property "Reference" "SC20"
+      (at 48.3 48.41 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 48.3 50.01 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 50.8 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 50.8 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 50.8 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 50.8 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "1c17df26-334f-449e-8966-eed84dd99af7")
+    )
+    (pin "2"
+      (uuid "0faddd9d-e0f7-440b-88a3-e93de3bed5eb")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC20")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S7_1"
+    (at 45.72 54.61 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "b570f659-5385-453b-ab64-1805944d2c4f")
+  )
+  (label "S7_2"
+    (at 53.34 54.61 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "9b9c3765-cd0c-4048-bfff-0096335f5f85")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 71.12 54.61 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "bee4643f-de71-414d-9d84-794704401dab")
+    (property "Reference" "SC21"
+      (at 68.62 48.41 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 68.62 50.01 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 71.12 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 71.12 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 71.12 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 71.12 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "16a4775b-24aa-4275-b292-9ee8a4910434")
+    )
+    (pin "2"
+      (uuid "d71fb3cc-82e2-440a-bc42-7bbf1b16d171")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC21")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S7_2"
+    (at 66.04 54.61 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "1b3a1690-d167-42aa-85fa-1d9e30fab00e")
+  )
+  (label "GND"
+    (at 73.66 54.61 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "2efa6627-9002-4c3f-a9fb-d7a313f782b1")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 92.71 54.61 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "5ed5c361-b0ec-4ec1-bddc-7c39e9597742")
+    (property "Reference" "SC22"
+      (at 90.21 48.41 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 90.21 50.01 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 92.71 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 92.71 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 92.71 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 92.71 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "42de606e-dd33-47e4-b107-8bd4ee11938c")
+    )
+    (pin "2"
+      (uuid "cfd685fc-b18c-4921-b589-0bdccd069bdd")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC22")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 87.63 54.61 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "6bd3d37d-396e-4b3d-a135-747b51a75f80")
+  )
+  (label "S8_1"
+    (at 95.25 54.61 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "223611e9-a81c-40dd-98dc-928b84625639")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 113.03 54.61 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "7cabb297-cfc5-4dc5-9313-8fb15ce09c56")
+    (property "Reference" "SC23"
+      (at 110.53 48.41 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 110.53 50.01 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 113.03 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 113.03 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 113.03 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 113.03 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "f0176b93-94ca-4204-9e12-b076a6825acc")
+    )
+    (pin "2"
+      (uuid "d801f90d-1a47-4bf3-97a7-19b19ad190b6")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC23")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S8_1"
+    (at 107.95 54.61 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "888b3a96-2f81-43e9-bc58-87fbfd42ffa3")
+  )
+  (label "S8_2"
+    (at 115.57 54.61 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "ed8a7a4b-cb06-4173-b71a-de913c8a34ef")
+  )
+  (symbol
+    (lib_id "Device:Solar_Cell")
+    (at 133.35 54.61 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "dc24bc4b-886f-43c4-a19f-aa77c34d4e38")
+    (property "Reference" "SC24"
+      (at 130.85 48.41 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SolarBIT"
+      (at 130.85 50.01 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "solar_face:KXOB25_05X3F"
+      (at 133.35 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 133.35 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "ANYSOLAR KXOB25-05X3F SolarBIT"
+      (at 133.35 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "reflow or hot-air; mentor step"
+      (at 133.35 54.61 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "fe7067e7-e4b1-4ecc-b1bd-0ea27fe26002")
+    )
+    (pin "2"
+      (uuid "fc652052-377c-43e2-8c83-61e873e87a28")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "SC24")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "S8_2"
+    (at 128.27 54.61 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "f7a0373b-8979-4594-8b29-d6d09646896e")
+  )
+  (label "GND"
+    (at 135.89 54.61 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "40497ac0-c586-4c5b-a63f-103ddd46ae5d")
+  )
+  (symbol
+    (lib_id "Device:D_Schottky")
+    (at 29.21 86.36 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "5d57b779-8028-46f3-a719-9cddca35cd84")
+    (property "Reference" "D1"
+      (at 19.7 80.16 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "SS14"
+      (at 19.7 81.76 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "Diode_SMD:D_SMA"
+      (at 29.21 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 29.21 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "SS14 Schottky, 1 A 40 V, SMA"
+      (at 29.21 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "blocking diode: stops a battery or charger driving current back into the cells in the dark"
+      (at 29.21 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "34c3e6cc-2b52-4372-b971-c88a03d94e27")
+    )
+    (pin "2"
+      (uuid "3978fc99-82cb-4b51-9e46-0e8b4b8d9d55")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "D1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_OUT"
+    (at 25.4 86.36 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "eb9e40e8-b88c-4347-8673-27c6d5e68ea3")
+  )
+  (label "PV_RAW"
+    (at 33.02 86.36 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "cd741efe-9505-4c8e-b374-59d402b41d89")
+  )
+  (symbol
+    (lib_id "Jumper:SolderJumper_2_Open")
+    (at 53.34 86.36 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "7372696e-729b-4289-a862-7fcd91f5d6f4")
+    (property "Reference" "JP1"
+      (at 43.83 80.16 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "BYPASS D1"
+      (at 43.83 81.76 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm"
+      (at 53.34 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 53.34 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" ""
+      (at 53.34 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "open = diode in; bridge with solder to measure the cells without the diode drop"
+      (at 53.34 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "a1a5a120-0721-46a2-8f22-1c5196931bdb")
+    )
+    (pin "2"
+      (uuid "37abc443-4d3b-4397-b5a4-04b88bc9c6b2")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "JP1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 49.53 86.36 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "93b33ba7-68fc-45c3-b23c-ebd3c08e018d")
+  )
+  (label "PV_OUT"
+    (at 57.15 86.36 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "f251739d-d9fc-468f-9c99-9d8af7dc223b")
+  )
+  (symbol
+    (lib_id "Device:Thermistor_NTC")
+    (at 74.93 86.36 90)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "df36d6cb-7aac-41e9-a00e-7237f7ce3aad")
+    (property "Reference" "TH1"
+      (at 72.43 80.16 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "10k NTC"
+      (at 72.43 81.76 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+      (at 74.93 86.36 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 74.93 86.36 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "Murata NCP18XH103F03RB (10 kOhm, B 3380 K, 0603)"
+      (at 74.93 86.36 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "behind the cells; reader supplies the pull-up"
+      (at 74.93 86.36 90)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "209192c0-cfb1-44fd-81e3-40a2222c7501")
+    )
+    (pin "2"
+      (uuid "bef44809-0a63-4502-ad3c-09b5569a3efc")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "TH1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "NTC"
+    (at 71.12 86.36 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "7f47fcff-8830-49fc-ab14-169347e39fa2")
+  )
+  (label "GND"
+    (at 78.74 86.36 0)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify left bottom)
+    )
+    (uuid "229da7e9-04a3-4867-8c07-1d473989717c")
+  )
+  (symbol
+    (lib_id "Connector_Generic:Conn_01x03")
+    (at 96.52 87.63 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "367d9808-a707-4487-8aa2-3a8d753bf629")
+    (property "Reference" "J1"
+      (at 85.74 80.89 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "PV OUT"
+      (at 85.74 82.49 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "Connector_JST:JST_PH_B3B-PH-SM4-TB_1x03-1MP_P2.00mm_Vertical"
+      (at 96.52 87.63 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 96.52 87.63 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" "JST B3B-PH-SM4-TB (mates with PHR-3)"
+      (at 96.52 87.63 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "1 PV+, 2 GND, 3 NTC"
+      (at 96.52 87.63 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "8ced9391-72b5-4b9c-b586-d2128d2a766f")
+    )
+    (pin "2"
+      (uuid "8fead944-e40d-4c27-ae73-2a6d76ba0cf5")
+    )
+    (pin "3"
+      (uuid "32121d22-ea94-4eea-8651-d5d52adef91c")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "J1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_OUT"
+    (at 91.44 85.09 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "a196d994-7f64-4cd7-b0f9-255851573f80")
+  )
+  (label "GND"
+    (at 91.44 87.63 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "90c973b3-1e28-462e-91c0-69b187cac66e")
+  )
+  (label "NTC"
+    (at 91.44 90.17 180)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "40ac9e48-19de-49f6-b0c2-37622143a7eb")
+  )
+  (symbol
+    (lib_id "Connector:TestPoint")
+    (at 107.95 86.36 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "19dc503d-bc0e-436c-927f-06fb73cc1484")
+    (property "Reference" "TP1"
+      (at 104.95 80.16 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "PV+"
+      (at 104.95 81.76 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+      (at 107.95 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 107.95 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" ""
+      (at 107.95 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" ""
+      (at 107.95 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "b0cf9710-94a3-490e-9314-6a3482a58f31")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "TP1")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_OUT"
+    (at 107.95 86.36 270)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "29a5c6f2-130a-4b45-abeb-e3ddb1e3e4e6")
+  )
+  (symbol
+    (lib_id "Connector:TestPoint")
+    (at 119.38 86.36 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "e0086259-a235-4b44-ab22-abb2de24c1a7")
+    (property "Reference" "TP2"
+      (at 116.38 80.16 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "GND"
+      (at 116.38 81.76 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+      (at 119.38 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 119.38 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" ""
+      (at 119.38 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" ""
+      (at 119.38 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "a6e2f87b-ab5b-46b7-9a60-34bfa31e112b")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "TP2")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "GND"
+    (at 119.38 86.36 270)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "8d3ff9d4-86d3-4bcd-8b5b-39e5a43880cf")
+  )
+  (symbol
+    (lib_id "Connector:TestPoint")
+    (at 129.54 86.36 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "f62848c1-9ac0-492b-8158-6f9028699f0b")
+    (property "Reference" "TP3"
+      (at 126.54 80.16 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Value" "CELLS"
+      (at 126.54 81.76 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left)
+      )
+    )
+    (property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+      (at 129.54 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Datasheet" "~"
+      (at 129.54 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "MPN" ""
+      (at 129.54 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (property "Note" "before the diode"
+      (at 129.54 86.36 0)
+      (effects
+        (font
+          (size 1 1)
+        )
+        (justify left) hide
+      )
+    )
+    (pin "1"
+      (uuid "e53537a7-0cee-4bac-b57b-91a309bec908")
+    )
+    (instances
+      (project "solar-face-si"
+        (path "/50a0f0ce-0000-4000-8000-000000000051"
+          (reference "TP3")
+          (unit 1)
+        )
+      )
+    )
+  )
+  (label "PV_RAW"
+    (at 129.54 86.36 270)
+    (effects
+      (font
+        (size 1 1)
+      )
+      (justify right bottom)
+    )
+    (uuid "2a23ac51-60e6-40df-bb51-6d1eca36955c")
+  )
+  (rectangle
+    (start 15 22)
+    (end 405 63)
+    (stroke
+      (width 0.2)
+      (type dash)
+    )
+    (fill
+      (type none)
+    )
+    (uuid "6f527d0e-a2b9-4fc3-b745-0e9ce233429a")
+  )
+  (text "1 Cells"
+    (at 18 28 0)
+    (effects
+      (font
+        (size 3 3) bold
+      )
+      (justify left bottom)
+    )
+    (uuid "90cd2150-8135-4366-83aa-b549877ea898")
+  )
+  (rectangle
+    (start 15 69)
+    (end 405 99.2)
+    (stroke
+      (width 0.2)
+      (type dash)
+    )
+    (fill
+      (type none)
+    )
+    (uuid "9e2caf6c-f11b-41f3-ae7a-bb825d12d5f0")
+  )
+  (text "2 Output"
+    (at 18 75 0)
+    (effects
+      (font
+        (size 3 3) bold
+      )
+      (justify left bottom)
+    )
+    (uuid "749892c3-3880-4913-9550-89b81bd7215e")
+  )
+  (sheet_instances
+    (path "/"
+      (page "1")
+    )
+  )
+)

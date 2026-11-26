@@ -1,0 +1,12 @@
+<section id="risks">
+<p class="eyebrow">Risks</p>
+<h2>What could go wrong</h2>
+<table>
+<tr><th>Risk</th><th>Why it matters</th><th>Plan</th></tr>
+<tr><td>HaLow transmits while receiving</td><td class="dim">915 MHz in the same box as signals near the noise floor; antennas on one box are only 10–20 dB apart</td><td class="dim">Receive antenna on the mast; 70 cm filter now −46 dB at 915 MHz (calculated); shield cans; measure desense early</td></tr>
+<tr><td>Not enough pins</td><td class="dim">An 11-pin XIAO must carry I²S, I²C, synthesizer and HaLow SPI</td><td class="dim">Share the SPI bus; slow lines on a 16-bit expander; audio OUT needs the S3 Plus</td></tr>
+<tr><td>Pedalboard power</td><td class="dim">About 0.4–0.6 A at 9 V, more than many outlets give</td><td class="dim">Measure Rev A; filter the buck regulator; USB-C as the clean option</td></tr>
+<tr><td>Certification grows</td><td class="dim">Rev B now has transmitters</td><td class="dim">Certified modules only; integration testing after prototypes</td></tr>
+</table>
+<aside>The receiver stays receive-only. HaLow and Wi-Fi are Part 15 ground links carrying the received stream, never anything to an amateur transmitter.</aside>
+</section>

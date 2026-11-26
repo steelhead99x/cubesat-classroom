@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "CSC_R1")(type "KiCad")(uri "${KIPRJMOD}/CSC_R1.pretty")(options "")(descr "CSC-R1 project footprints"))
+)

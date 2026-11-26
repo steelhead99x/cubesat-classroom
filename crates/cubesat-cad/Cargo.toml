@@ -1,0 +1,16 @@
+[package]
+name = "cubesat-cad"
+version = "0.1.0"
+description = "Rev C printed 1U CubeSat frame: parametric CAD, CubeSat Design Specification checks and P1S print files"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+# Safe Rust bindings to the Manifold geometry kernel (the same kernel the Python kits use).
+manifold-csg = { version = "=0.4.2", default-features = false }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+[lints.rust]
+unsafe_code = "forbid"
