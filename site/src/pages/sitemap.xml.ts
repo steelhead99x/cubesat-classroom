@@ -21,6 +21,8 @@ export async function GET() {
     '/plans/',
     '/open-source/',
     '/volunteer/',
+    '/privacy/',
+    '/terms/',
     '/hub/mobile/',
     '/hub/lessons/',
     '/hub/station/',
