@@ -27,11 +27,11 @@ test('2 to 4 players only', () => {
   for (const n of [2, 3, 4]) assert.equal(begin(n).field.units.length, n);
 });
 
-test('rockoons start apart, on the ground, at full health', () => {
+test('rockoons start apart, on the ground', () => {
   const m = begin(4);
   const xs = m.field.units.map(u => u.x).sort((a, b) => a - b);
   for (let i = 1; i < xs.length; i++) assert.ok(xs[i] - xs[i - 1] > 60);
-  for (const u of m.field.units) { assert.equal(u.hp, 100); assert.equal(u.y, m.field.terrain[u.x]); }
+  for (const u of m.field.units) { assert.equal(u.y, m.field.terrain[u.x]); }
 });
 
 test('a straight-up shot with no wind comes back down near the shooter', () => {
@@ -55,51 +55,30 @@ test('more power goes farther', () => {
   m.field.wind = 0;
   m.field.terrain.fill(50);
   const u = m.field.units[m.turn]; u.y = 50;
-  const others = m.field.units.filter(o => o !== u); for (const o of others) o.alive = false;
   u.x = 100;
   const near = R.trajectory(m, u, 45, 30).end, far = R.trajectory(m, u, 45, 50).end;
   assert.ok(Math.abs(far.x - u.x) > Math.abs(near.x - u.x));
 });
 
-test('a blast digs a crater and dirt builds a hill', () => {
-  const t = new Array(R.W).fill(100);
-  R.carve(t, 300, 100, 20);
-  assert.equal(t[300], 80);
-  assert.equal(t[100], 100);
-  const d = new Array(R.W).fill(100);
-  R.carve(d, 300, 100, 20, true);
-  assert.equal(d[300], 120);
+test('rocket releases above its pad and scores against the ring only', () => {
+  for (const [offset, points] of [[0, 3], [20, 1], [50, 0]]) {
+    const m = begin();
+    m.field.wind = 0;
+    const [pad, other] = m.field.units;
+    other.x = pad.x; other.y = pad.y;
+    const ground = [...m.field.terrain];
+    const release = pad.y + R.LIFT + R.PIVOT_Y + 14;
+    m.field.target = { x: pad.x + offset, y: release + 20 };
+    const result = R.fire(m, { angle: 90, power: 50, weapon: 'baby' });
+    assert.ok(Math.abs(result.path[0][1] - release) < 1e-8);
+    assert.equal(m.players[0].score, points);
+    assert.equal(m.players[0].credits, R.START_CREDITS + 50 * points);
+    assert.equal(m.players[1].score, 0);
+    assert.deepEqual(m.field.terrain, ground);
+  }
 });
 
-test('a direct hit damages, a kill pays, and the last one standing wins the round', () => {
-  const m = begin(2, 11, 2);
-  m.field.wind = 0;
-  const [a, b] = m.field.units;
-  // Put the target right under a straight-up shot.
-  const shooter = m.turn, target = 1 - shooter;
-  m.field.units[target].x = m.field.units[shooter].x; m.field.units[target].y = m.field.units[shooter].y;
-  m.field.units[target].hp = 10;
-  const before = m.players[shooter].credits;
-  const { events } = R.fire(m, { angle: 90, power: 30, weapon: 'baby' });
-  assert.ok(events.some(e => e.type === 'kill' && e.who === target));
-  assert.ok(events.some(e => e.type === 'round' && e.winner === shooter) || !m.field.units[shooter].alive);
-  assert.ok(m.players[shooter].credits > before || !m.field.units[shooter].alive);
-  assert.equal(m.phase, 'shop');
-  void a; void b;
-});
-
-test('turns go round the living players only', () => {
-  const m = begin(3, 9);
-  const first = m.turn;
-  const dead = (first + 1) % 3;
-  m.field.units[dead].alive = false;
-  R.skip(m);
-  assert.equal(m.turn, (first + 2) % 3);
-  R.skip(m);
-  assert.equal(m.turn, first);
-});
-
-test('ammo is spent, and an empty weapon fires a Baby Rocket', () => {
+test('ammo is spent, and an empty weapon uses the free Scout', () => {
   const m = R.createMatch({ seed: 4, players: players(2) });
   assert.ok(R.buy(m, 0, 'rocket'));
   assert.equal(m.players[0].ammo.rocket, 5);
@@ -136,10 +115,7 @@ test('a whole match replays identically from the seed and the shots', () => {
 
 test('the match ends after the last round with the top score winning', () => {
   const m = begin(2, 1, 1);
-  m.field.units[1 - m.turn].hp = 1;
-  m.field.units[1 - m.turn].x = m.field.units[m.turn].x + 40;
-  m.field.units[1 - m.turn].alive = false;
-  R.skip(m);
+  for (let i = 0; i < 2 * R.LAUNCHES; i++) R.skip(m);
   assert.equal(m.phase, 'over');
   assert.equal(m.players[m.winner].score, Math.max(...m.players.map(p => p.score)));
 });
@@ -303,30 +279,14 @@ test('drag to aim: point at where you want to shoot, farther means more power', 
   assert.ok(Number.isInteger(a.angle) && Number.isInteger(a.power) && a.angle === 45);
 });
 
-test('a Dirt Ball never buries a rockoon', () => {
-  for (let seed = 1; seed <= 40; seed++) {
-    const m = R.createMatch({ seed, players: players(2) });
-    m.players[m.turn].ammo.dirt = 1;
-    R.startRound(m);
-    const shooter = m.turn, target = 1 - shooter;
-    const t = m.field.units[target];
-    // Pile dirt straight onto the target, as an aimed shot would.
-    R.carve(m.field.terrain, t.x, t.y + 8, R.WEAPON.dirt.radius, true);
-    R.settle(m, shooter);
-    const u = m.field.units[target];
-    let ground = 0;
-    for (let dx = -6; dx <= 6; dx++) ground = Math.max(ground, m.field.terrain[Math.max(0, Math.min(R.W - 1, u.x + dx))]);
-    assert.ok(u.y >= ground || !u.alive, `seed ${seed}: rockoon at ${u.y} under ground ${ground}`);
-  }
-});
-
 test('a tied top score is a shared win', () => {
   const m = R.createMatch({ seed: 4, players: players(3), rounds: 1 });
   R.startRound(m);
-  // Player 2 will win the round (+2 points) and tie player 1.
-  m.players[0].score = 4; m.players[1].score = 2; m.players[2].score = 0;
-  m.field.units.forEach((u, i) => { if (i !== 1) u.alive = false; });
-  R.skip(m);
+  m.players[0].score = 4; m.players[1].score = 4;
+  for (let i = 0; i < 3 * R.LAUNCHES; i++) {
+    assert.equal(m.turn, i % 3);
+    R.skip(m);
+  }
   assert.equal(m.phase, 'over');
   assert.deepEqual(m.winners, [0, 1]);
   assert.equal(m.winner, 0);

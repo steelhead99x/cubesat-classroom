@@ -1,4 +1,4 @@
-// Rockoon Wars: the page's game. Rules live in logic.mjs, online rooms in room.mjs and net.ts,
+// Rockoon Battle: the page's game. Rules live in logic.mjs, online rooms in room.mjs and net.ts,
 // and the canvas drawing in render.ts. Hot-seat and online play share one path: every move is
 // written into a player's snapshot and room.mjs decides what happens next, so both modes run
 // the very same rules.
@@ -11,19 +11,12 @@ type Snap = { cs: string; joined: number; creator?: boolean; turns: Record<numbe
 type Host = { seed: number; rounds: number; order: string[]; names: Record<string, string> };
 type Match = ReturnType<typeof G.createMatch>;
 type Field = NonNullable<Match['field']>;
-type Events = { type: string; who?: number; winner?: number; dmg?: number }[];
+type Events = { type: string; points?: number }[];
 
-/** A plain-words line for each rocket, for the shop cards. */
-export const ROCKET_SAY: Record<string, string> = {
-  baby: 'Small boom. Free, never runs out.',
-  rocket: 'Bigger boom.',
-  big: 'Big boom.',
-  mega: 'Huge boom!',
-  dirt: 'Makes a hill instead of a hole.',
-};
 const ROUNDS = 3;
-const HOWTO_KEY = 'rockoon-wars:how-to-seen';
+const HOWTO_KEY = 'rockoon-battle:how-to-seen';
 const FLIGHT_SPEED = 1.6; // path points are 1/60 s of game time; play a little faster than real
+const LIFT_TIME = 1.1;
 const BOOM_TIME = 0.45, SETTLE_TIME = 0.5;
 
 const root = document.querySelector<HTMLElement>('[data-rw]');
@@ -62,7 +55,7 @@ function start(root: HTMLElement) {
   let me = '';
   let paused = false;
   let howto = !seenHowto();
-  let anim: null | { phase: 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; after: Field; blast: { x: number; y: number; r: number; dirt: boolean } | null; events: Events; shooter: number } = null;
+  let anim: null | { phase: 'lift' | 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; blast: { x: number; y: number; r: number; dirt: boolean } | null; events: Events; shooter: number } = null;
   /** Each player's last shot this round, drawn faintly so they can correct for the wind. */
   let ghosts: { round: number; paths: Record<number, number[][]> } = { round: -1, paths: {} };
   let banner: null | { title: string; text: string } = null; // round or match results, until dismissed
@@ -180,7 +173,7 @@ function start(root: HTMLElement) {
 
   /** Runs every action that is ready. Shots animate one at a time. */
   function step() {
-    if (!match || !host || anim || paused) return render();
+    if (!match || !host || anim || paused || banner) return render();
     for (let guard = 0; guard < 50; guard++) {
       // The host records each turn once; everyone, the host included, then plays that record.
       if (amHost() && Room.commit(match, host, snaps, goneIds())) publish();
@@ -193,12 +186,15 @@ function start(root: HTMLElement) {
         if (ghosts.round !== match.round) ghosts = { round: match.round, paths: {} };
         ghosts.paths[shooterIndex] = result.path;
         // match.field is the same object until the next round starts, so keep a copy to draw.
-        anim = { phase: 'flight', t: 0, pos: 0, path: result.path, before, after: structuredClone(match.field!) as Field, blast: result.blast, events: result.events, shooter: shooterIndex };
+        anim = { phase: 'lift', t: 0, pos: 0, path: result.path, before, blast: result.blast, events: result.events, shooter: shooterIndex };
         drag = null;
-        beep('fire');
         return render();
       }
-      if (action.kind === 'shop' || action.kind === 'skip') { Room.apply(match, action); shopPick = {}; continue; }
+      if (action.kind === 'shop' || action.kind === 'skip') {
+        Room.apply(match, action); shopPick = {};
+        if (action.kind === 'skip' && match.phase !== 'play') { shotNote = 'Turn skipped.'; showRoundResult(); break; }
+        continue;
+      }
       break;
     }
     render();
@@ -242,7 +238,9 @@ function start(root: HTMLElement) {
   function advance(dt: number) {
     const a = anim!;
     a.t += dt;
-    if (a.phase === 'flight') {
+    if (a.phase === 'lift') {
+      if (a.t >= LIFT_TIME) { a.phase = 'flight'; a.t = 0; beep('fire'); renderHud(); }
+    } else if (a.phase === 'flight') {
       const prev = Math.floor(a.pos);
       a.pos = Math.min(a.path.length - 1, a.pos + dt * 60 * (reduced ? 4 : FLIGHT_SPEED));
       for (let i = prev + 1; i <= Math.floor(a.pos); i += 2) view.trailPuff(a.path[i][0], a.path[i][1]);
@@ -256,17 +254,10 @@ function start(root: HTMLElement) {
     else if (a.phase === 'rest' && a.t >= 0.35) finishShot();
   }
 
-  /** Damage numbers over every rockoon that was hit, and a burst for each one knocked out. */
   function hitFeedback(a: NonNullable<typeof anim>) {
-    const dmg = new Map<number, number>();
-    for (const e of a.events) if (e.type === 'hit') dmg.set(e.who!, (dmg.get(e.who!) ?? 0) + (e.dmg ?? 0));
-    for (const [i, d] of dmg) { const u = a.before.units[i]; view.float(u.x, u.y + 30, `−${d}`); }
-    for (const e of a.events) if (e.type === 'kill') {
-      const u = a.before.units[e.who!];
-      view.pop(u.x, u.y + 40, match!.players[e.who!].color);
-      view.float(u.x, u.y + 60, 'Out!', '#ffe27a');
-    }
-    if (!dmg.size && a.blast && !a.blast.dirt) view.float(a.blast.x, a.blast.y + 12, 'Miss', '#c9d2ff');
+    const points = a.events.find(e => e.type === 'scan')?.points ?? 0;
+    const { x, y } = a.before.target;
+    view.float(x, y + 22, points ? `+${points}` : 'Miss');
   }
 
   /** What the canvas shows right now, including a shot in progress. */
@@ -274,62 +265,35 @@ function start(root: HTMLElement) {
     if (!match?.field) return null;
     const names = match.players.map(p => p.name), colors = match.players.map(p => p.color);
     if (anim) {
-      const { before, after, phase, t } = anim;
-      const e = phase === 'settle' ? easeOut(Math.min(1, t / SETTLE_TIME)) : phase === 'rest' ? 1 : 0;
-      const fall = phase === 'settle' ? Math.min(1, (t / SETTLE_TIME) ** 2) : phase === 'rest' ? 1 : 0;
-      const terrain = e === 0 ? before.terrain : e === 1 ? after.terrain : before.terrain.map((h, i) => h + (after.terrain[i] - h) * e);
-      const hit = phase !== 'flight';
-      const units = before.units.map((u, i) => ({ ...u, y: u.y + (after.units[i].y - u.y) * fall, hp: hit ? after.units[i].hp : u.hp, alive: hit ? after.units[i].alive : u.alive }));
-      return { terrain, units, wind: before.wind, colors, names, active: -1, preview: null, drag: null, shot: phase === 'flight' ? { path: anim.path, pos: anim.pos } : null, settling: e > 0 && e < 1 };
+      const { before, phase, t, shooter } = anim;
+      const lift = phase === 'lift' ? Math.min(1, t / LIFT_TIME) : 1;
+      const units = before.units.map((u, i) => i === shooter ? { ...u, y: u.y + G.LIFT * lift } : u);
+      return { ...before, units, colors, names, released: phase === 'lift' ? undefined : shooter, active: -1, preview: null, drag: null,
+        shot: phase === 'flight' ? { path: anim.path, pos: anim.pos } : null };
     }
     const act = canAct() && match.phase === 'play';
     return {
-      terrain: match.field.terrain, units: match.field.units, wind: match.field.wind, colors, names,
+      target: match.field.target, terrain: match.field.terrain, units: match.field.units, wind: match.field.wind, colors, names,
       active: match.phase === 'play' ? match.turn : -1,
       preview: act ? G.aimPreview(match, 40) : null, drag: act ? drag : null, shot: null,
       ghost: act && ghosts.round === match.round ? ghosts.paths[match.turn] ?? null : null,
     };
   }
-  const easeOut = (x: number) => 1 - (1 - x) * (1 - x);
-
   function finishShot() {
-    const { events, path, shooter: who, after } = anim!;
+    const points = anim!.events.find(e => e.type === 'scan')?.points ?? 0;
+    shotNote = points === 3 ? 'Through the ring! +3 points.' : points === 1 ? 'Outer scan! +1 point.' : 'Missed the ring. Check your last trail.';
     anim = null;
-    const names = (i: number) => match!.players[i]?.name ?? '';
-    const said: string[] = [];
-    for (const e of events) {
-      if (e.type === 'kill') said.push(`${names(e.who!)} is out!`);
-      if (e.type === 'round') {
-        const over = match!.phase === 'over';
-        const winner = e.winner! >= 0 ? `${names(e.winner!)} wins round ${match!.round}!` : `Round ${match!.round} is a tie.`;
-        const top = (match!.winners ?? [match!.winner!]).map(names);
-        const gameTitle = top.length > 1 ? `🏆 It's a tie! ${top.join(' and ')} share the win!` : `🏆 ${top[0]} wins the game!`;
-        banner = over
-          ? { title: gameTitle, text: winner }
-          : { title: `🏆 ${winner}`, text: 'Everyone gets 100 credits. The winner gets 300 more credits and 2 points. Time to shop!' };
-      }
-    }
-    const hits = events.filter(e => e.type === 'hit').length;
-    shotNote = said.join(' ') || (hits ? 'Hit!' : missNote(path, who, after));
+    if (match!.phase !== 'play') showRoundResult();
     say(shotNote, true);
     step();
   }
 
-  /** A miss that teaches: how far off the shot landed, and which way the wind pushed it. */
-  function missNote(path: number[][], who: number, field: Field) {
-    const end = path[path.length - 1];
-    const wind = field.wind;
-    const windNote = Math.abs(wind) >= 1 ? ` The wind is pushing ${wind > 0 ? 'right ▶' : '◀ left'}.` : '';
-    if (!end || end[0] < 0 || end[0] >= G.W) return `Missed. The shot flew off the edge.${windNote}`;
-    const me = field.units[who];
-    const others = field.units.map((u, i) => ({ u, i })).filter(({ u, i }) => i !== who && u.alive);
-    if (!me || !others.length) return 'Missed.';
-    const near = others.reduce((a, b) => (Math.abs(b.u.x - end[0]) < Math.abs(a.u.x - end[0]) ? b : a));
-    const dx = Math.round(end[0] - near.u.x);
-    const name = match!.players[near.i]?.name ?? 'them';
-    // "Short" is toward the shooter, "long" is past the target.
-    const toward = Math.sign(me.x - near.u.x) === Math.sign(dx) ? 'short of' : 'past';
-    return `Missed by ${Math.abs(dx)} m, ${toward} ${name}.${windNote}`;
+  function showRoundResult() {
+    const top = match!.winners.map(i => match!.players[i].name);
+    const title = match!.phase === 'over'
+      ? (top.length > 1 ? `${top.join(' and ')} share the win!` : `${top[0]} wins!`)
+      : `Round ${match!.round} complete`;
+    banner = { title, text: [shotNote, match!.phase === 'shop' ? 'Each crew gets 100 credits for the next round.' : ''].filter(Boolean).join(' ') };
   }
 
   // ---- the HTML around the canvas (changed only when the game changes, never per frame) ----
@@ -359,9 +323,7 @@ function start(root: HTMLElement) {
     }
     hud.round.textContent = match ? `Round ${Math.max(1, match.round)}/${match.rounds}` : '';
     const board = match ? match.players.map((pl, i) => {
-      const unit = anim ? null : match!.field?.units[i];
-      const hp = unit ? (unit.alive ? unit.hp : 0) : null;
-      const cls = [i === turn && !anim ? 'now' : '', hp === 0 ? 'out' : ''].join(' ').trim();
+      const cls = i === turn && !anim ? 'now' : '';
       return `<li${cls ? ` class="${cls}"` : ''} style="--c:${pl.color}"><b>${esc(pl.name)}</b><span class="cr" title="Credits">🪙 ${pl.credits}</span><span class="pt" title="Points">⭐ ${pl.score}</span></li>`;
     }).join('') : '';
     if (hud.board.dataset.html !== board) { hud.board.innerHTML = board; hud.board.dataset.html = board; }
@@ -372,7 +334,7 @@ function start(root: HTMLElement) {
     let wait = '';
     if (playing && !act) {
       const a = waitingOn();
-      if (anim) wait = '🚀 Whoosh…';
+      if (anim) wait = anim.phase === 'lift' ? 'Balloon rising…' : 'Rocket released';
       else if (paused) wait = 'Paused';
       else if (a?.kind === 'wait' && a.sent) wait = 'Sending the shot…';
       else if (a?.kind === 'wait' && !mine.includes(a.ids[0])) wait = `Waiting for ${p!.name}…`;
@@ -430,9 +392,9 @@ function start(root: HTMLElement) {
   function howtoHtml() {
     return `<h3>How to play</h3>
       <ol class="steps">
-        <li><span class="pic" aria-hidden="true">👆</span><b>1. Aim</b><span>Drag from your rockoon toward where you want to shoot. Farther means more power. Or use the ◀ ▶ and − + buttons.</span></li>
+        <li><span class="pic" aria-hidden="true">👆</span><b>1. Aim</b><span>Drag from your pad toward the sky ring. Farther means more power. Or use the ◀ ▶ and − + buttons.</span></li>
         <li><span class="pic" aria-hidden="true">🌬️</span><b>2. Mind the wind</b><span>The arrow at the top shows the wind. It pushes your rocket. The yellow dots show how it starts.</span></li>
-        <li><span class="pic" aria-hidden="true">🚀</span><b>3. Fire!</b><span>Press FIRE. Hit the other rockoons. The last one flying wins the round.</span></li>
+        <li><span class="pic" aria-hidden="true">🚀</span><b>3. Launch</b><span>Press Launch. Your balloon lifts off, then releases its rocket. Fly through the ring for 3 points.</span></li>
       </ol>
       <div class="row"><button type="button" class="go big" data-act="howto">Got it!</button></div>`;
   }
@@ -452,8 +414,8 @@ function start(root: HTMLElement) {
         <p class="small" role="alert">${esc(menuNote)}</p>
         <div class="row"><button type="button" data-act="back">◀ Back</button></div>`;
     }
-    return `<p class="logo" aria-hidden="true">🎈🚀</p><h3 class="title">Rockoon Wars</h3>
-      <p>Launch rockets from balloons. Hit the other rockoons. The last one flying wins!</p>
+    return `<p class="logo" aria-hidden="true">🎈🚀</p><h3 class="title">Rockoon Battle</h3>
+      <p>Lift off from the hillside. Send your rocket through the sky ring. Highest score after three rounds wins.</p>
       <div class="row col"><button type="button" class="go big" data-act="to-local">🖥️ Play on this computer</button><button type="button" class="go big alt" data-act="to-online">🌐 Play online</button></div>`;
   }
 
@@ -500,7 +462,7 @@ function start(root: HTMLElement) {
     const cards = G.WEAPONS.filter(w => w.price).map(w => {
       const have = p.ammo[w.id as keyof typeof p.ammo] + picks.filter(x => x === w.id).length * w.pack;
       const poor = credits < w.price;
-      return `<li class="card${poor ? ' poor' : ''}">${rocketSvg(w.id, 48)}<b>${esc(w.name)}</b><span class="say">${esc(ROCKET_SAY[w.id])}</span>
+      return `<li class="card${poor ? ' poor' : ''}">${rocketSvg(w.id, 48)}<b>${esc(w.name)}</b><span class="say">${esc(`Scans ${w.radius} pixels beyond the ring.`)}</span>
         <span class="price">${w.pack} for 🪙 ${w.price}</span><span class="have">You have ${have}</span>
         <button type="button" data-act="buy" data-w="${w.id}"${poor ? ' disabled' : ''} aria-label="Buy ${w.pack} ${esc(w.name)} for ${w.price} credits">${poor ? 'Not enough' : 'Buy'}</button></li>`;
     }).join('');
