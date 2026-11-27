@@ -10,8 +10,9 @@ Run: python3 rf_checks.py
 import math
 import re
 import numpy as np
-import design
+import boardcfg
 from calc import s21
+design = boardcfg.design()
 
 UNIT = {'p': 1e-12, 'n': 1e-9, 'u': 1e-6}
 

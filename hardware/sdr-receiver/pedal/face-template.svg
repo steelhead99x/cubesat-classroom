@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="222.7mm" height="185.2mm" viewBox="0 0 222.7 185.2" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="white"/>
+<text x="12.00" y="7.00" font-size="3.0" text-anchor="start" font-weight="bold">CSC-R1P satellite pedal: drilling template, Hammond 1590N1 (125B). Print at 100 %. Check every hole against your box and parts.</text>
+<rect x="12.0" y="12.0" width="65.5" height="121.2" rx="3" fill="none" stroke="black" stroke-width="0.4"/>
+<text x="44.75" y="138.20" font-size="2.8" text-anchor="middle" font-weight="bold">FACE (seen from outside; top end at the top)</text>
+<circle cx="27.75" cy="32.00" r="3.75" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M22.50 32.00H33.00M27.75 26.75V37.25" stroke="black" stroke-width="0.15"/>
+<text x="27.75" y="26.05" font-size="2.2" text-anchor="middle" font-weight="normal">GAIN  7.5 mm</text>
+<text x="27.75" y="39.15" font-size="1.8" text-anchor="middle" font-weight="normal">15.8, 20.0</text>
+<circle cx="44.75" cy="32.00" r="3.75" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M39.50 32.00H50.00M44.75 26.75V37.25" stroke="black" stroke-width="0.15"/>
+<text x="44.75" y="26.05" font-size="2.2" text-anchor="middle" font-weight="normal">TUNE  7.5 mm</text>
+<text x="44.75" y="39.15" font-size="1.8" text-anchor="middle" font-weight="normal">32.8, 20.0</text>
+<circle cx="61.75" cy="32.00" r="3.75" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M56.50 32.00H67.00M61.75 26.75V37.25" stroke="black" stroke-width="0.15"/>
+<text x="61.75" y="26.05" font-size="2.2" text-anchor="middle" font-weight="normal">LEVEL  7.5 mm</text>
+<text x="61.75" y="39.15" font-size="1.8" text-anchor="middle" font-weight="normal">49.8, 20.0</text>
+<circle cx="44.75" cy="67.60" r="2.50" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M40.75 67.60H48.75M44.75 63.60V71.60" stroke="black" stroke-width="0.15"/>
+<text x="44.75" y="62.90" font-size="2.2" text-anchor="middle" font-weight="normal">ENGAGE LED  5.0 mm</text>
+<text x="44.75" y="73.50" font-size="1.8" text-anchor="middle" font-weight="normal">32.8, 55.6</text>
+<circle cx="57.75" cy="99.60" r="3.25" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M53.00 99.60H62.50M57.75 94.85V104.35" stroke="black" stroke-width="0.15"/>
+<text x="63.00" y="94.15" font-size="2.2" text-anchor="start" font-weight="normal">BAND toggle  6.5 mm</text>
+<text x="57.75" y="106.25" font-size="1.8" text-anchor="middle" font-weight="normal">45.8, 87.6</text>
+<circle cx="44.75" cy="112.60" r="6.10" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M37.15 112.60H52.35M44.75 105.00V120.20" stroke="black" stroke-width="0.15"/>
+<text x="44.75" y="104.30" font-size="2.2" text-anchor="middle" font-weight="normal">ENGAGE footswitch  12.2 mm</text>
+<text x="44.75" y="122.10" font-size="1.8" text-anchor="middle" font-weight="normal">32.8, 100.6</text>
+<rect x="32.35" y="46.00" width="25.0" height="9.0" fill="none" stroke="black" stroke-width="0.25" stroke-dasharray="1 0.6"/>
+<text x="44.85" y="44.80" font-size="2.0" text-anchor="middle" font-weight="normal">OLED window (check your module)</text>
+<rect x="89.5" y="18.0" width="65.5" height="39.8" fill="none" stroke="black" stroke-width="0.4"/>
+<text x="122.25" y="15.50" font-size="2.6" text-anchor="middle" font-weight="bold">TOP END wall (face edge at the top)</text>
+<circle cx="109.50" cy="30.00" r="4.00" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M104.00 30.00H115.00M109.50 24.50V35.50" stroke="black" stroke-width="0.15"/>
+<text x="109.50" y="37.20" font-size="1.9" text-anchor="middle" font-weight="normal">DC 9 V (2.1 mm, centre negative)</text>
+<rect x="119.50" y="27.00" width="12" height="6" rx="2" fill="none" stroke="black" stroke-width="0.25"/>
+<text x="125.50" y="40.40" font-size="1.9" text-anchor="middle" font-weight="normal">USB-C panel extension</text>
+<circle cx="139.50" cy="30.00" r="3.25" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M134.75 30.00H144.25M139.50 25.25V34.75" stroke="black" stroke-width="0.15"/>
+<text x="139.50" y="36.45" font-size="1.9" text-anchor="middle" font-weight="normal">Wi-Fi antenna RP-SMA (XIAO U.FL pigtail)</text>
+<rect x="89.5" y="71.8" width="121.2" height="39.8" fill="none" stroke="black" stroke-width="0.4"/>
+<text x="150.10" y="69.30" font-size="2.6" text-anchor="middle" font-weight="bold">LEFT wall (face edge at the top)</text>
+<circle cx="129.50" cy="85.80" r="4.75" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M123.25 85.80H135.75M129.50 79.55V92.05" stroke="black" stroke-width="0.15"/>
+<text x="129.50" y="93.75" font-size="1.9" text-anchor="middle" font-weight="normal">OUT 1/4 inch mono jack</text>
+<rect x="89.5" y="125.6" width="121.2" height="39.8" fill="none" stroke="black" stroke-width="0.4"/>
+<text x="150.10" y="123.10" font-size="2.6" text-anchor="middle" font-weight="bold">RIGHT wall (face edge at the top)</text>
+<circle cx="129.50" cy="139.60" r="3.25" fill="none" stroke="black" stroke-width="0.25"/>
+<path d="M124.75 139.60H134.25M129.50 134.85V144.35" stroke="black" stroke-width="0.15"/>
+<text x="129.50" y="146.05" font-size="1.9" text-anchor="middle" font-weight="normal">ANT SMA bulkhead (U.FL pigtail)</text>
+<path d="M12.0 173.2H62.0M12.0 171.2V175.2M62.0 171.2V175.2" stroke="black" stroke-width="0.4"/>
+<text x="37.00" y="170.20" font-size="2.4" text-anchor="middle" font-weight="normal">this bar must measure 50 mm</text>
+<text x="72.00" y="174.20" font-size="2.2" text-anchor="start" font-weight="normal">Coordinates are mm from the face's top-left outside corner. Desk design: nothing here has been test-fitted.</text>
+</svg>

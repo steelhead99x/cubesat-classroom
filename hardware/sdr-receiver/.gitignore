@@ -8,3 +8,9 @@ kicad/fp-info-cache
 
 # export.sh staging folder (removed on exit)
 .fab-stage.*/
+# Pedal boards: the same intermediates
+pedal/kicad/*-base.kicad_pcb
+pedal/kicad/*-base.kicad_pro
+pedal/kicad/*-rt.net
+pedal/kicad/*.kicad_prl
+pedal/kicad/fp-info-cache

@@ -142,6 +142,8 @@ Each step has a bench quest with scripts and a low-cost way to measure it: see t
 
 ## Rev B: satellite stompbox
 
+The first pedal build is [CSC-R1P](pedal/README.md): this receiver, unchanged in its RF blocks, on boards that fit a 125B box with knobs, a display, a footswitch and a ¼ inch output. It has no HaLow radio. Its routing is not finished yet.
+
 The plan for a pedal-enclosure version with knobs, a footswitch, an audio output and a Wi-Fi HaLow fallback link is in [rev-b-pedal-plan.md](rev-b-pedal-plan.md). It includes a desk RF review of putting the receiver and its radios in a metal box.
 
 ## Rebuilding

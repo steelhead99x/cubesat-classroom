@@ -1,13 +1,14 @@
 """Independent parity check: board pads vs the schematic netlist exported by KiCad (not vs design.py)."""
 import sys, pcbnew; sys.setrecursionlimit(100000)
 from sexp import parse, find, first
-t=parse(open('../kicad/rt.net').read())
+import boardcfg
+t=parse(open(boardcfg.NET).read())
 sch={}
 for n in find(first(t,'nets'),'net'):
     name=first(n,'name')[1].lstrip('/')
     for x in find(n,'node'): sch[(first(x,'ref')[1],first(x,'pin')[1])]=name
 comps={first(c,'ref')[1]:first(c,'footprint')[1] for c in find(first(t,'components'),'comp')}
-b=pcbnew.LoadBoard(sys.argv[1] if len(sys.argv)>1 else '../kicad/csc-r1.kicad_pcb'); bad=0; seen=set()
+b=pcbnew.LoadBoard(sys.argv[1] if len(sys.argv)>1 else boardcfg.PCB); bad=0; seen=set()
 for f in b.GetFootprints():
     r=f.GetReference(); seen.add(r)
     fp=str(f.GetFPID().GetLibNickname())+':'+str(f.GetFPID().GetLibItemName())
