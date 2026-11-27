@@ -97,3 +97,35 @@ test('HS256 and Ed25519 keys work too', async () => {
     assert.equal(part(new URL((await res.json()).url).searchParams.get('jwt'), 0).alg, alg);
   }
 });
+
+test('Rockoon Wars tokens are scoped to one room, joined by code', async () => {
+  const room = 'K7QX2';
+  const body = await (await ask(configured, { body: { game: 'rockoon-wars', room } })).json();
+  const url = new URL(body.url);
+  assert.equal(url.pathname, `/proj/games/rockoon-wars/${room}`);
+  const claims = part(url.searchParams.get('jwt'), 1);
+  assert.equal(claims.root, `proj/games/rockoon-wars/${room}`);
+  assert.deepEqual(claims.put, [body.player]);
+  assert.equal(body.room, room);
+  assert.match(body.ticket, /^[A-Za-z0-9_-]{43}$/);
+  for (const bad of [undefined, '', 'k7qx2', 'K7QX', 'K7QX2/../x', 'O0O0O', '../live']) {
+    assert.equal((await ask(configured, { body: { game: 'rockoon-wars', room: bad } })).status, 400, String(bad));
+  }
+});
+
+test('a seat ticket keeps the same player id in the same room, and only there', async () => {
+  const first = await (await ask(configured, { body: { game: 'rockoon-wars', room: 'K7QX2' } })).json();
+  const again = await (await ask(configured, { body: { game: 'rockoon-wars', room: 'K7QX2', player: first.player, ticket: first.ticket } })).json();
+  assert.equal(again.player, first.player);
+  assert.equal(again.callsign, first.callsign);
+  const forged = await (await ask(configured, { body: { game: 'rockoon-wars', room: 'K7QX2', player: first.player, ticket: 'x'.repeat(43) } })).json();
+  assert.notEqual(forged.player, first.player);
+  const otherRoom = await (await ask(configured, { body: { game: 'rockoon-wars', room: 'ZZZZ2', player: first.player, ticket: first.ticket } })).json();
+  assert.notEqual(otherRoom.player, first.player);
+});
+
+test('Catch the Pass stays on its one shared sky', async () => {
+  const body = await (await ask(configured, { body: { game: 'catch-the-pass', room: 'K7QX2' } })).json();
+  assert.equal(new URL(body.url).pathname, '/proj/games/catch-the-pass/live');
+  assert.equal(body.ticket, undefined);
+});

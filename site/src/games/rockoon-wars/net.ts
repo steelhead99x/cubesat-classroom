@@ -1,0 +1,190 @@
+// Rockoon Wars rooms over Media over QUIC (MoQ).
+//
+// The site's Worker hands out a short-lived token (POST /api/games/moq-token) scoped to one room,
+// hikd/games/rockoon-wars/<CODE>, that lets this player publish only under its own id. Each
+// player publishes one broadcast with one track, `state`: its whole snapshot (see room.mjs),
+// rewritten every few seconds so players who join late or reconnect catch up. Everyone replays
+// the same snapshots, so nothing but angles, powers, weapons and shop lists crosses the relay.
+import * as Moq from '@moq/net';
+import { cleanSnapshot } from './room.mjs';
+
+export type LinkStatus = 'off' | 'connecting' | 'live' | 'offline';
+export interface LinkEvents {
+  status(status: LinkStatus, detail?: string): void;
+  peer(id: string, snapshot: Snapshot): void;
+  leave(id: string): void;
+}
+// The shape room.mjs's cleanSnapshot returns.
+export type Snapshot = NonNullable<ReturnType<typeof cleanSnapshot>>;
+
+interface Token { url: string; player: string; callsign: string; expires: number; ticket?: string }
+
+const HEARTBEAT_MS = 3_000;
+
+export class RoomLink {
+  status: LinkStatus = 'off';
+  callsign = '';
+  player = '';
+  readonly room: string;
+  #ticket = '';
+  #events: LinkEvents;
+  #endpoint: string;
+  #stop = false;
+  #connection?: Moq.Connection.Established;
+  #origin?: Moq.Origin.Producer;
+  #track?: Moq.Track.Producer;
+  #peers = new Map<string, () => void>();
+  #snapshot: unknown = null;
+  #beat?: ReturnType<typeof setInterval>;
+  #retry = 0;
+  #ready?: (ok: boolean) => void;
+
+  constructor(room: string, events: LinkEvents, endpoint = '/api/games/moq-token') {
+    this.room = room;
+    this.#events = events;
+    this.#endpoint = endpoint;
+  }
+
+  #set(status: LinkStatus, detail?: string) {
+    this.status = status;
+    if (status === 'live') { this.#ready?.(true); this.#ready = undefined; }
+    if (status === 'offline' || status === 'off') { this.#ready?.(false); this.#ready = undefined; }
+    this.#events.status(status, detail);
+  }
+
+  /** Resolves true once connected (the player id and call sign are then known), false if not. */
+  start(): Promise<boolean> {
+    const ready = new Promise<boolean>(r => { this.#ready = r; });
+    void this.#run();
+    return ready;
+  }
+
+  async #run() {
+    this.#stop = false;
+    while (!this.#stop) {
+      this.#set('connecting');
+      let token: Token;
+      try {
+        token = await this.#token();
+      } catch (error) {
+        this.#set('offline', (error as Error).message);
+        return;
+      }
+      try {
+        const expiresIn = token.expires * 1000 - Date.now();
+        await this.#session(token, Math.max(30_000, expiresIn - 30_000));
+        this.#retry = 0;
+      } catch {
+        this.#retry++;
+        this.#cleanup();
+        if (this.#stop) return;
+        if (this.#retry > 3) { this.#set('offline', 'The relay could not be reached.'); return; }
+        this.#set('connecting', 'Reconnecting…');
+        await new Promise(r => setTimeout(r, 1000 * this.#retry));
+      }
+    }
+  }
+
+  stop() {
+    this.#stop = true;
+    this.#cleanup();
+    this.#set('off');
+  }
+
+  async #token(): Promise<Token> {
+    // After the first token, keep the same seat (player id) with the Worker's seat ticket.
+    const seat = this.player && this.#ticket ? { player: this.player, ticket: this.#ticket } : {};
+    const res = await fetch(this.#endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ game: 'rockoon-wars', room: this.room, ...seat }),
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || typeof body.url !== 'string') throw new Error(body.error ?? 'Online play is not available.');
+    if (new URL(body.url).protocol !== 'https:') throw new Error('The relay must use https.');
+    return body as Token;
+  }
+
+  async #session(token: Token, lifetimeMs: number) {
+    this.player = token.player;
+    this.callsign = token.callsign;
+    this.#ticket = token.ticket ?? '';
+    const origin = new Moq.Origin.Producer();
+    this.#origin = origin;
+    const connection = await Moq.Connection.connect({
+      url: new URL(token.url), publish: origin.consume(), consume: origin, signal: AbortSignal.timeout(6_000),
+    });
+    this.#connection = connection;
+    const broadcast = origin.createBroadcast(Moq.Path.from(token.player));
+    this.#track = broadcast.createTrack('state', { priority: 1 });
+    broadcast.announce();
+    this.#set('live');
+    this.#write();
+    this.#beat = setInterval(() => this.#write(), HEARTBEAT_MS);
+    void this.#discover(origin, token.player);
+    const timer = new Promise<'renew'>(r => setTimeout(() => r('renew'), lifetimeMs));
+    const result = await Promise.race([connection.closed, timer]);
+    this.#cleanup();
+    if (result !== 'renew' && result) throw result;
+  }
+
+  async #discover(origin: Moq.Origin.Producer, self: string) {
+    for await (const update of origin.announced()) {
+      const id = Moq.Path.parts(update.prefix)[0] ?? '';
+      if (!/^[0-9a-f]{12}$/.test(id) || id === self) continue;
+      if (update.kind === 'retracted') {
+        this.#peers.get(id)?.();
+        this.#peers.delete(id);
+        this.#events.leave(id);
+        continue;
+      }
+      if (!this.#peers.has(id)) this.#follow(origin, id);
+    }
+  }
+
+  #follow(origin: Moq.Origin.Producer, id: string) {
+    const request = origin.request(Moq.Path.from(id));
+    const subs: { close(): void }[] = [];
+    const stopWatch = request.active.subscribe(broadcast => {
+      for (const s of subs.splice(0)) s.close();
+      if (!broadcast) return;
+      const state = broadcast.track('state').subscribe({ priority: 1 }).ordered();
+      subs.push(state);
+      void (async () => {
+        for (;;) {
+          const msg = await state.readJson().catch(() => undefined);
+          if (msg === undefined) break;
+          const clean = cleanSnapshot(msg);
+          if (clean) this.#events.peer(id, clean as Snapshot);
+        }
+      })();
+    });
+    this.#peers.set(id, () => { stopWatch(); for (const s of subs.splice(0)) s.close(); request.close(); });
+  }
+
+  /** Sets this player's snapshot and sends it now (and again with every heartbeat). */
+  publish(snapshot: unknown) {
+    this.#snapshot = snapshot;
+    this.#write();
+  }
+
+  #write() {
+    if (this.#track && this.status === 'live' && this.#snapshot) {
+      try { this.#track.writeJson(this.#snapshot); } catch { /* the session is closing */ }
+    }
+  }
+
+  #cleanup() {
+    clearInterval(this.#beat);
+    for (const [id, close] of this.#peers) { close(); this.#events.leave(id); }
+    this.#peers.clear();
+    try { this.#track?.close(); } catch { /* already closed */ }
+    try { this.#connection?.close(); } catch { /* already closed */ }
+    try { this.#origin?.close(); } catch { /* already closed */ }
+    this.#track = undefined;
+    this.#connection = undefined;
+    this.#origin = undefined;
+  }
+}

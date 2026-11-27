@@ -14,6 +14,7 @@ export async function GET() {
     ...quests.map(quest => `/quests/${quest.id}/`),
     '/games/',
     '/games/catch-the-pass/',
+    '/games/rockoon-wars/',
     '/hardware/',
     '/wiki/',
     ...terms.map(term => `/wiki/${term.id}/`),
