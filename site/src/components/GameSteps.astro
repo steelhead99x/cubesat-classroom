@@ -1,4 +1,5 @@
 ---
+import { icon } from '../games/icons.mjs';
 // Step-by-step instructions, like a building-instructions booklet: one action per step, a
 // picture, the controls to press, and a link to that exact step (#step-<id>) that a teacher can
 // share or put on a slide. Opening a step's link highlights it.
@@ -16,9 +17,9 @@ const { steps, keysNote, heading = 'How to play', listId = 'steps-list' } = Astr
       <li id={`step-${s.id}`} class="step" aria-labelledby={`step-${s.id}-title`}>
         <div class="step-top">
           <span class="step-n">Step {i + 1}</span>
-          <a class="step-link" href={`#step-${s.id}`} data-step-link aria-label={`Copy link to step ${i + 1}: ${s.title}`}>Copy link</a>
+          <a class="step-link" href={`#step-${s.id}`} data-step-link aria-label={`Copy link to step ${i + 1}: ${s.title}`}><Fragment set:html={icon('link', 16)} /><span data-step-link-text>Copy link</span></a>
         </div>
-        <span class="step-pic" aria-hidden="true">{s.pic}</span>
+        <span class="step-pic" set:html={icon(s.pic, 30)} />
         <h3 id={`step-${s.id}-title`}>{s.title}</h3>
         <p>{s.text}</p>
         {s.keys.length > 0 && (
@@ -42,9 +43,10 @@ const { steps, keysNote, heading = 'How to play', listId = 'steps-list' } = Astr
         await navigator.clipboard.writeText(url);
         e.preventDefault();
         history.replaceState(null, '', url);
-        link.textContent = 'Link copied';
+        const label = link.querySelector('[data-step-link-text]')!;
+        label.textContent = 'Link copied';
         if (status) status.textContent = 'Link to this step copied.';
-        setTimeout(() => { link.textContent = 'Copy link'; }, 2000);
+        setTimeout(() => { label.textContent = 'Copy link'; }, 2000);
       } catch { /* no clipboard: follow the link instead */ }
     });
   }
@@ -59,8 +61,8 @@ const { steps, keysNote, heading = 'How to play', listId = 'steps-list' } = Astr
   .step:target { border-color: var(--color-flag); border-top-color: var(--color-flag); box-shadow: 0 0 0 3px rgb(234 3 3 / .18); }
   .step-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
   .step-n { font: 600 .8rem var(--font-mono); letter-spacing: .08em; color: var(--color-accent); }
-  .step-link { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 .2rem; font-size: .85rem; font-weight: 600; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
-  .step-pic { font-size: 2.2rem; line-height: 1; }
+  .step-link { display: inline-flex; align-items: center; gap: .3rem; min-height: 2.75rem; padding: 0 .2rem; font-size: .85rem; font-weight: 600; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
+  .step-pic { display: inline-grid; place-items: center; width: 3rem; height: 3rem; border-radius: 50%; color: #fff; background: var(--color-navy); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .18), 0 0 0 1px var(--color-navy); }
   .step h3 { font-size: 1.15rem; }
   .step p { color: var(--color-ink); line-height: 1.5; }
   .step-keys { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .15rem; }

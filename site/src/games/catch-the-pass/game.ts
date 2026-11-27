@@ -2,6 +2,8 @@
 import * as G from './logic.mjs';
 import { inputPercent } from '../../lib/pedal.mjs';
 import { STEPS } from './steps.mjs';
+import { icon } from '../icons.mjs';
+import { patch } from '../patches.mjs';
 import type { LiveSky, StationState, PacketNote, SkyStatus } from './net';
 
 type Game = ReturnType<typeof G.createGame>;
@@ -73,7 +75,7 @@ function init(root: HTMLElement) {
     soundOn = !soundOn;
     if (soundOn && !audio) audio = new AudioContext();
     (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(soundOn));
-    (e.currentTarget as HTMLElement).textContent = soundOn ? '🔊' : '🔇';
+    (e.currentTarget as HTMLElement).innerHTML = icon(soundOn ? 'sound-on' : 'sound-off');
     (e.currentTarget as HTMLElement).setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off');
     beep(660, 80);
   });
@@ -166,7 +168,7 @@ function init(root: HTMLElement) {
     show(`<h3>${mode === 'live' ? 'Live sky' : `Level ${levelIndex + 1}: ${G.LEVELS[levelIndex].name}`}</h3>
       <p>${currentLevel().tip}</p>
       <p class="goal">Goal: ${currentLevel().goal.map((g, i) => `${'★'.repeat(i + 1)} ${g} packets`).join(' · ')}</p>
-      <button type="button" class="go" data-go>▶ Start</button>`);
+      <button type="button" class="go" data-go>${icon('start')} Start</button>`);
     hud(); draw();
     // Shown on a first visit without moving focus: the page has only just loaded, so keyboard
     // and screen-reader users start at the top (skip link, header) like on every other page.
@@ -189,9 +191,9 @@ function init(root: HTMLElement) {
     setHelp(true);
     // The key steps from the page's step-by-step instructions (steps.mjs), with their numbers.
     const pick = ['start', 'track', 'radio'].map(id => [STEPS.findIndex(s => s.id === id), STEPS.find(s => s.id === id)!] as const);
-    show(`<h3>How to play</h3>
+    show(`<div class="logo">${patch('pass', 'Catch the Pass')}</div><h3>How to play</h3>
       <ol class="steps">
-        ${pick.map(([i, s]) => `<li><span class="pic" aria-hidden="true">${s.pic}</span><b>Step ${i + 1}: ${s.title}</b><span>${s.text}</span></li>`).join('')}
+        ${pick.map(([i, s]) => `<li><span class="pic">${icon(s.pic, 34)}</span><b>Step ${i + 1}: ${s.title}</b><span>${s.text}</span></li>`).join('')}
       </ol>
       <p class="small"><a href="#steps">See all ${STEPS.length} steps</a>, each with its own link to share.</p>
       <button type="button" class="go" data-howto>Got it!</button>`);
@@ -594,7 +596,7 @@ function init(root: HTMLElement) {
     snr: $('[data-snr]'), bar: $<HTMLElement>('[data-snr-bar]'), floor: $<HTMLElement>('[data-snr-floor]'),
     battery: $('[data-battery]'), batteryBar: $<HTMLElement>('[data-battery-bar]'),
     rx: $('[data-rx]'), score: $('[data-score]'), streak: $('[data-streak]'), time: $('[data-time]'),
-    tx: $('[data-tx]'), light: $('[data-light]'), log: $('[data-log]'), board: $('[data-board]'),
+    tx: $('[data-tx]'), txLabel: $('[data-tx] [data-tx-label]'), light: $('[data-light]'), log: $('[data-log]'), board: $('[data-board]'),
   };
   const pct = (snr: number) => Math.max(0, Math.min(100, (snr + 30) / 40 * 100));
   let lastBoard = 0;
@@ -617,7 +619,7 @@ function init(root: HTMLElement) {
     put(hudEl.time, left.toFixed(0) + ' s');
     put(hudEl.light, G.inEclipse(game.level, game.t / game.level.duration) ? 'In Earth\u2019s shadow' : 'Sunlit');
     hudEl.tx.setAttribute('aria-pressed', String(game.transmit));
-    put(hudEl.tx, game.transmit ? '📡 Sending: on' : '📡 Sending: resting');
+    put(hudEl.txLabel, game.transmit ? 'Sending: on' : 'Sending: resting');
     const antenna = G.ANTENNAS[game.antenna as Antenna];
     put(antennaNote, `${antenna.name} · ${antenna.note}`);
     const { peak, status } = G.readReceiver(game);
