@@ -15,8 +15,11 @@
 // fetches are refused, and the GAME_TOKEN_LIMIT rate limiter caps requests per network address.
 
 export const TOKEN_TTL = 600;
-const GAMES = new Set(['catch-the-pass']);
+// Catch the Pass has one shared sky. Rockoon Wars has rooms, joined by a five-letter code.
+const GAMES = { 'catch-the-pass': { rooms: false }, 'rockoon-wars': { rooms: true } };
 const ROOM = 'live';
+const ROOM_CODE = /^[A-HJ-NP-Z2-9]{5}$/;
+const PLAYER_ID = /^[0-9a-f]{12}$/;
 
 const enc = new TextEncoder();
 const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -56,13 +59,32 @@ export async function signJwt(claims, raw) {
   return body + '.' + b64url(sig);
 }
 
-/** A random player id and a matching call sign. No names: players are anonymous. */
-function player() {
-  const bytes = crypto.getRandomValues(new Uint8Array(6));
-  const id = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+/** The call sign that goes with a player id. No names: players are anonymous. */
+export function callsignFor(id) {
+  const bytes = id.match(/../g).map(h => parseInt(h, 16));
   const letters = 'ABCDEFGHJKLMNPRSTUVWXYZ';
-  const callsign = 'GS-' + letters[bytes[0] % letters.length] + letters[bytes[1] % letters.length] + (bytes[2] % 10);
-  return { id, callsign };
+  return 'GS-' + letters[bytes[0] % letters.length] + letters[bytes[1] % letters.length] + (bytes[2] % 10);
+}
+
+function newPlayerId() {
+  return [...crypto.getRandomValues(new Uint8Array(6))].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * A seat ticket lets a player who renews a token (or reconnects) keep the same id in the same
+ * room, so a match in progress still knows them. It is an HMAC made with the signing secret, so
+ * nobody can claim another player's id.
+ */
+export async function seatTicket(secret, game, room, id) {
+  const key = await crypto.subtle.importKey('raw', enc.encode('seat:' + String(secret)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return b64url(await crypto.subtle.sign('HMAC', key, enc.encode(`${game}/${room}/${id}`)));
+}
+
+function sameText(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
 export async function gameToken(request, env) {
@@ -83,11 +105,22 @@ export async function gameToken(request, env) {
 
   const body = await request.json().catch(() => null);
   const game = String(body?.game ?? '');
-  if (!GAMES.has(game)) return reply({ error: 'Unknown game.' }, 400);
+  if (!Object.hasOwn(GAMES, game)) return reply({ error: 'Unknown game.' }, 400);
+  let room = ROOM;
+  if (GAMES[game].rooms) {
+    room = String(body?.room ?? '');
+    if (!ROOM_CODE.test(room)) return reply({ error: 'That room code is not valid.' }, 400);
+  }
 
-  const { id, callsign } = player();
+  let id = newPlayerId();
+  if (GAMES[game].rooms && PLAYER_ID.test(String(body?.player ?? ''))) {
+    // Keep the same seat only with a valid ticket for this room; otherwise start a new one.
+    const expected = await seatTicket(env.MOQ_GAMES_SIGNING_KEY, game, room, body.player);
+    if (sameText(String(body?.ticket ?? ''), expected)) id = body.player;
+  }
+  const callsign = callsignFor(id);
   const now = Math.floor(Date.now() / 1000);
-  const scope = `${root}/${game}/${ROOM}`;
+  const scope = `${root}/${game}/${room}`;
   // The older moq-token claim form (put/get prefixes), which every relay version accepts:
   // publish only under this player's id, subscribe to the whole room.
   const claims = { root: scope, put: [id], get: [''], iat: now, exp: now + TOKEN_TTL };
@@ -98,5 +131,6 @@ export async function gameToken(request, env) {
     console.error(JSON.stringify({ event: 'game_token_failed', error: String(error?.name ?? 'Error') }));
     return reply({ offline: true, error: 'The live sky is not available right now.' }, 503);
   }
-  return reply({ url: `${relay}/${scope}?jwt=${jwt}`, player: id, callsign, room: ROOM, expires: claims.exp });
+  const ticket = GAMES[game].rooms ? await seatTicket(env.MOQ_GAMES_SIGNING_KEY, game, room, id) : undefined;
+  return reply({ url: `${relay}/${scope}?jwt=${jwt}`, player: id, callsign, room, expires: claims.exp, ticket });
 }
