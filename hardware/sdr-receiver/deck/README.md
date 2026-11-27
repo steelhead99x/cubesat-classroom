@@ -3,7 +3,7 @@
 This folder holds the source of the "CSC-R1 satellite receiver" deck. It has 15 slides covering why we're building our own receiver, the Rev A dev kit and its checks, the Rev B stompbox with HaLow, the metal-box RF review, risks, the bench-on-a-budget slide and next steps.
 
 - **Live deck:** <https://claude.ai/artifact/2kUVSxTBFG2pXpMxAtsiCV>. It's private to its owner until shared. You can export it to PowerPoint or PDF from there.
-- These files are a snapshot of the live deck at version `1795720958-8564` (26 Nov 2026). Edit the live deck, then copy the files back here in a pull request.
+- These files are a snapshot of the live deck at version `1795748111-0b2b` (26 Nov 2026). Edit the live deck, then copy the files back here in a pull request.
 
 | File | What it is |
 | --- | --- |
