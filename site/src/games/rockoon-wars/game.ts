@@ -14,7 +14,6 @@ type Snap = { cs: string; joined: number; creator?: boolean; turns: Record<numbe
 type Host = { seed: number; rounds: number; order: string[]; names: Record<string, string> };
 type Match = ReturnType<typeof G.createMatch>;
 type Field = NonNullable<Match['field']>;
-type Events = { type: string; points?: number }[];
 
 /** At least three rounds, and one per crew, so every crew launches once from every slot. */
 const roundsFor = (crews: number) => Math.max(3, crews);
@@ -66,7 +65,7 @@ function start(root: HTMLElement) {
   let remoteRise: { key: string; since: number } | null = null;
   const NUDGE_AFTER = 8; // seconds at the release point before the button pulses
   const AUTO_RELEASE_AFTER = 15; // and before the rocket goes by itself
-  let anim: null | { phase: 'lift' | 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; after: Field; blast: ReturnType<typeof G.fire>['blast']; weapon: string; events: Events; shooter: number } = null;
+  let anim: null | { phase: 'lift' | 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; after: Field; blast: ReturnType<typeof G.fire>['blast']; weapon: string; hit: ReturnType<typeof G.fire>['hit']; scored: boolean; shooter: number } = null;
   /** Each player's last shot this round, drawn faintly so they can correct for the wind. */
   let ghosts: { round: number; paths: Record<number, number[][]> } = { round: -1, paths: {} };
   let banner: null | { title: string; text: string } = null; // round or match results, until dismissed
@@ -211,7 +210,7 @@ function start(root: HTMLElement) {
         if (ghosts.round !== match.round) ghosts = { round: match.round, paths: {} };
         ghosts.paths[shooterIndex] = result.path;
         // match.field is the same object until the next round starts, so keep a copy to draw.
-        anim = { phase: staged ? 'flight' : 'lift', t: 0, pos: 0, path: result.path, before, after: match.field!, blast: result.blast, weapon: result.weapon, events: result.events, shooter: shooterIndex };
+        anim = { phase: staged ? 'flight' : 'lift', t: 0, pos: 0, path: result.path, before, after: match.field!, blast: result.blast, weapon: result.weapon, hit: result.hit, scored: false, shooter: shooterIndex };
         drag = null;
         if (staged) beep('fire');
         return render();
@@ -308,12 +307,16 @@ function start(root: HTMLElement) {
       if (a.t >= LIFT_TIME) { a.phase = 'flight'; a.t = 0; beep('fire'); renderHud(); }
     } else if (a.phase === 'flight') {
       const prev = Math.floor(a.pos);
-      a.pos = Math.min(a.path.length - 1, a.pos + dt * 60 * (reduced ? 4 : FLIGHT_SPEED));
+      a.pos = Math.min(a.path.length - 1, a.pos + dt * G.FLIGHT_SAMPLES_PER_SECOND * (reduced ? 4 : FLIGHT_SPEED));
       for (let i = prev + 1; i <= Math.floor(a.pos); i += 2) view.trailPuff(a.path[i][0], a.path[i][1]);
+      if (!a.scored && a.hit.points && a.pos >= a.hit.at) {
+        a.scored = true;
+        hitFeedback(a);
+      }
       if (a.pos >= a.path.length - 1) {
         a.phase = 'boom'; a.t = 0;
         if (a.blast) { view.boom(a.blast.x, a.blast.y, a.blast.r, true); beep('boom'); }
-        hitFeedback(a);
+        if (!a.scored) hitFeedback(a);
       }
     } else if (a.phase === 'boom' && a.t >= (a.blast ? BOOM_TIME : 0.2)) { a.phase = 'settle'; a.t = 0; }
     else if (a.phase === 'settle' && a.t >= SETTLE_TIME) { a.phase = 'rest'; a.t = 0; }
@@ -321,9 +324,10 @@ function start(root: HTMLElement) {
   }
 
   function hitFeedback(a: NonNullable<typeof anim>) {
-    const points = a.events.find(e => e.type === 'scan')?.points ?? 0;
-    const { x, y } = a.before.target;
-    view.float(x, y + 22, points ? `+${points}` : 'Miss');
+    const { hit } = a;
+    const frame = hit.points ? hit.at : a.pos;
+    const { x, y } = G.targetPosition(a.before, frame / G.FLIGHT_SAMPLES_PER_SECOND);
+    view.float(x, y + 22, hit.points ? `${hit.label} +${hit.points}` : 'Miss', hit.bullseye ? '#fff4af' : '#ffdd87');
   }
 
   /** What the canvas shows right now, including a shot in progress. */
@@ -350,7 +354,7 @@ function start(root: HTMLElement) {
           : { ...pad, ...G.balloonPosition(before.units[i], before.wind, lift) };
       });
       const away = phase === 'flight' || phase === 'boom' || phase === 'settle';
-      return { ...before, terrain: reshaped ? after.terrain : before.terrain, pads, units, colors, names, released: away ? shooter : undefined, active: -1, preview: null, drag: null,
+      return { ...before, target: G.targetPosition(before, anim.pos / G.FLIGHT_SAMPLES_PER_SECOND), terrain: reshaped ? after.terrain : before.terrain, pads, units, colors, names, released: away ? shooter : undefined, active: -1, preview: null, drag: null,
         shot: phase === 'flight' ? { path: anim.path, pos: anim.pos } : null };
     }
     const act = canAct() && match.phase === 'play';
@@ -368,16 +372,17 @@ function start(root: HTMLElement) {
     const units = progress > 0 ? pads.map((u, i) => i === match!.turn
       ? { ...u, ...G.balloonPosition(u, match!.field!.wind, progress) } : u) : pads;
     return {
-      target: match.field.target, terrain: match.field.terrain, pads, units, wind: match.field.wind, colors, names,
+      target: G.targetPosition(match.field), terrain: match.field.terrain, pads, units, wind: match.field.wind, colors, names,
       active: match.phase === 'play' ? match.turn : -1,
-      preview: act ? G.aimPreview(match, 40) : null, drag: act ? drag : null, shot: null,
+      preview: act ? G.aimPreview(match, 40) : null,
+      targetPreview: act ? Array.from({ length: 9 }, (_, i) => G.targetPosition(match!.field!, i / 4)) : undefined, drag: act ? drag : null, shot: null,
       ghost: act && ghosts.round === match.round ? ghosts.paths[match.turn] ?? null : null,
     };
   }
   function finishShot() {
-    const points = anim!.events.find(e => e.type === 'scan')?.points ?? 0;
-    const score = points === 3 ? 'Through the ring! +3 points.' : points === 1 ? 'Outer scan! +1 point.' : 'Missed the ring.';
-    const { blast, weapon } = anim!;
+    const { blast, weapon, hit } = anim!;
+    const score = hit.bullseye ? `Bullseye award! +${hit.points} points.`
+      : hit.points ? `${hit.label}! +${hit.points} points.` : 'Missed the target.';
     const impact = blast?.cutDepth
       ? `${G.WEAPON[weapon].name} impact: ${G.WEAPON[weapon].impact.name.toLowerCase()}.`
       : blast ? 'Hit bedrock.' : '';
@@ -580,7 +585,7 @@ function start(root: HTMLElement) {
 
   function scoresHtml() {
     return `<ol class="people">${[...match!.players].sort((a, b) => b.score - a.score)
-      .map(p => `<li><i style="background:${p.color}"></i> ${esc(p.name)}: ${p.score} points, ${p.credits} credits</li>`).join('')}</ol>`;
+      .map(p => `<li><i style="background:${p.color}"></i> ${esc(p.name)}: ${p.score} points, ${p.bullseyes} bullseyes, ${p.credits} credits</li>`).join('')}</ol>`;
   }
 
   function shopHtml() {

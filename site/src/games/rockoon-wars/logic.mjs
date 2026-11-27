@@ -30,7 +30,27 @@ export function balloonPosition(pad, wind, progress) {
 /** Where a crew's balloon releases its rocket this round (the launch tube's base). */
 export const releasePoint = (pad, wind) => balloonPosition(pad, wind, 1);
 
-export const TARGET_RADIUS = 16;
+export const TARGET_RADIUS = 22;
+export const TARGET_RINGS = [
+  { radius: 3, points: 10, label: 'Bullseye', color: '#fff4af' },
+  { radius: 8, points: 6, label: 'Inner ring', color: '#ff8c6b' },
+  { radius: 15, points: 4, label: 'Middle ring', color: '#eea337' },
+  { radius: TARGET_RADIUS, points: 2, label: 'Outer ring', color: '#ffe27a' },
+];
+export const FLIGHT_SAMPLES_PER_SECOND = 60;
+
+/** A tethered target drifts downwind and sways. Flight time drives both the drawing and score. */
+export function targetPosition(field, flightSeconds = 0) {
+  const { target, targetTime = 0, wind } = field;
+  if (target.phase === undefined) return target;
+  const seconds = targetTime + flightSeconds;
+  const wave = target.phase + seconds * 52;
+  const drift = wind * Math.min(seconds, 3) * 0.8;
+  const x = target.x + drift + 19 * (sinDeg(wave) - sinDeg(target.phase));
+  const y = target.y + 6 * (sinDeg(wave * 1.4) - sinDeg(target.phase * 1.4));
+  const gap = TARGET_RADIUS + 6;
+  return { x: Math.max(gap, Math.min(W - gap, x)), y: Math.min(H - gap, y) };
+}
 /** The ring keeps this far from every crew's release point whenever the field has room. */
 export const RING_CLEARANCE = 80;
 export const LAUNCHES = 3;
@@ -108,7 +128,7 @@ export function createMatch({ seed, players, rounds = 3 }) {
   return {
     seed: seed >>> 0, rounds, round: 0, phase: 'shop', turn: 0,
     players: players.map((p, i) => ({
-      id: p.id, name: p.name, color: COLORS[i], credits: START_CREDITS, score: 0,
+      id: p.id, name: p.name, color: COLORS[i], credits: START_CREDITS, score: 0, bullseyes: 0,
       ammo: { baby: Infinity, rocket: 0, big: 0, mega: 0, dirt: 0 },
     })),
     field: null, winner: null, winners: /** @type {number[]} */ ([]), log: [],
@@ -147,7 +167,8 @@ export function startRound(match) {
     units[pi] = { x, y, angle: x < W / 2 ? 60 : 120, power: 55, weapon: 'baby' };
   });
   const wind = Math.round((r() - 0.5) * 20);
-  match.field = { terrain, units, target: placeRing(terrain, units, wind, r), launches: 0, wind };
+  const target = placeRing(terrain, units, wind, r);
+  match.field = { terrain, units, target: { ...target, phase: Math.round(r() * 360) }, targetTime: 0, launches: 0, wind };
   match.phase = 'play';
   match.turn = (match.round - 1) % n;
   return match;
@@ -289,6 +310,30 @@ function crater(field, end, { radius, depth, shove }) {
   return { cutDepth, moved };
 }
 
+/** Find the closest approach in the target's moving frame, including between path samples. */
+export function targetHit(field, path, scanRadius) {
+  let distance = Infinity, at = 0;
+  let previous = null;
+  for (const [i, [x, y]] of path.entries()) {
+    const target = targetPosition(field, i / FLIGHT_SAMPLES_PER_SECOND);
+    const offset = { x: x - target.x, y: y - target.y };
+    const start = previous ?? offset;
+    const vx = offset.x - start.x, vy = offset.y - start.y;
+    const length = vx * vx + vy * vy;
+    const fraction = length ? Math.max(0, Math.min(1, -(start.x * vx + start.y * vy) / length)) : 1;
+    const dx = start.x + vx * fraction, dy = start.y + vy * fraction;
+    const d = dx * dx + dy * dy;
+    if (d < distance) { distance = d; at = Math.max(0, i - 1 + fraction); }
+    previous = offset;
+  }
+  const ring = TARGET_RINGS.find(r => distance <= r.radius * r.radius);
+  if (ring) return { points: ring.points, label: ring.label, bullseye: ring === TARGET_RINGS[0], at };
+  const outer = TARGET_RADIUS + scanRadius;
+  return distance <= outer * outer
+    ? { points: 1, label: 'Near scan', bullseye: false, at }
+    : { points: 0, label: 'Miss', bullseye: false, at };
+}
+
 export function fire(match, shot) {
   if (match.phase !== 'play') throw new Error('not in play');
   const shooter = match.turn, me = match.players[shooter], unit = match.field.units[shooter];
@@ -300,22 +345,17 @@ export function fire(match, shot) {
   unit.weapon = weapon;
   const w = WEAPON[weapon];
   const { path, end } = trajectory(match, unit, unit.angle, unit.power);
-  const target = match.field.target;
-  let closest = Infinity;
-  for (const [x, y] of path) {
-    const dx = x - target.x, dy = y - target.y;
-    closest = Math.min(closest, dx * dx + dy * dy);
-  }
-  const outer = TARGET_RADIUS + w.radius;
-  const points = closest <= TARGET_RADIUS * TARGET_RADIUS ? 3 : closest <= outer * outer ? 1 : 0;
-  me.score += points;
-  me.credits += points * 50;
-  const events = [{ type: 'scan', points }];
+  const hit = targetHit(match.field, path, w.radius);
+  me.score += hit.points;
+  me.credits += hit.points * 50;
+  if (hit.bullseye) me.bullseyes++;
+  const events = [{ type: 'scan', points: hit.points }];
+  match.field.targetTime += (path.length - 1) / FLIGHT_SAMPLES_PER_SECOND;
   const radius = craterRadius(weapon);
   const blast = end ? { ...end, r: radius, ...crater(match.field, end, w.impact) } : null;
   match.log.push({ round: match.round, player: shooter, angle: unit.angle, power: unit.power, weapon });
   endTurn(match, events);
-  return { path, blast, events, weapon };
+  return { path, blast, events, weapon, hit };
 }
 
 function endTurn(match, events) {
@@ -349,9 +389,10 @@ export function fingerprint(match) {
   let h = 2166136261;
   const add = v => { h ^= Math.round(v) & 0xffff; h = Math.imul(h, 16777619) >>> 0; };
   add(match.round); add(match.turn);
-  for (const p of match.players) { add(p.credits); add(p.score); }
+  for (const p of match.players) { add(p.credits); add(p.score); add(p.bullseyes); }
   if (match.field) {
     add(match.field.launches); add(match.field.target.x); add(match.field.target.y);
+    add(match.field.target.phase); add(match.field.targetTime * FLIGHT_SAMPLES_PER_SECOND);
     for (const u of match.field.units) { add(u.x); add(u.y); }
     for (const height of match.field.terrain) add(height);
   }
