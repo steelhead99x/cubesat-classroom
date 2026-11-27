@@ -5,8 +5,8 @@
 <div class="grid2">
 <div class="card"><p class="tag">Main board · 54 × 104 mm</p><p>Rev A’s radio, unchanged and checked part by part, plus 9 V protection, a 2.1 MHz buck and audio out.</p></div>
 <div class="card"><p class="tag">Control board · 54 × 72 mm</p><p>OLED, TUNE encoder, GAIN and LEVEL pots, footswitch and toggle. The placer checks all 8 stacking pins.</p></div>
-<div class="card"><p class="tag">Fixed this round</p><p>Self-crossing outline at a lid-post notch, design rules lost after routing, a track through a switch pin.</p></div>
-<div class="card"><p class="tag" style="color:#FFB020">Routing: not finished</p><div class="bar"><div class="fill" style="width:85%"></div></div><p class="barlabel">Main: about 15 connections left, 99 nets</p><div class="bar"><div class="fill" style="width:94%"></div></div><p class="barlabel">Control: 1 left, 18 nets</p></div>
+<div class="card"><p class="tag">Control board · DRC pass</p><p>Routed and filled. KiCad found 0 violations and 0 open connections.</p></div>
+<div class="card"><p class="tag" style="color:#FFB020">Main board · routing open</p><p>KiCad found 393 open connections in the checked-in layout. Finish routing and review both boards before fabrication.</p></div>
 </div>
 </div>
 <!-- end view, exploded: knobs 0-104, face 170, control board 290, standoffs and header 304-494, main board 494, back plate 640 -->
@@ -35,5 +35,5 @@
 <p class="lbl" style="left:410px;top:628px;width:190px">Back plate</p>
 <p class="lbl" style="left:0;top:700px;width:600px;color:#8A94A0">End view, exploded, not to scale. Drilling template: hardware/sdr-receiver/pedal</p>
 </div>
-<aside>The drawing is an end view with the layers pulled apart. The control board hangs from the face by the pot and encoder nuts. The main board sits on three 15 mm standoffs, joined to the control board by a 2×4 header. Placement is clean: no overlaps and no design-rule errors apart from the unrouted connections. The same synthesizer nets fail on every router pass, so this is a floorplan problem, not bad luck. hardware/sdr-receiver/pedal/README.md lists the ways to finish.</aside>
+<aside>The drawing is an end view with the layers pulled apart. The control board hangs from the face by the pot and encoder nuts. The main board sits on three 15 mm standoffs, joined to the control board by a 2×4 header. These are KiCad 10.0.8 results under the project rules. The control board has four filled ground pours. The main board still needs routing around the synthesizer and verification of the In1 ground plane. See hardware/sdr-receiver/pedal/README.md.</aside>
 </section>
