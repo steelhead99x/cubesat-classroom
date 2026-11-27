@@ -47,6 +47,7 @@ default-run = "cubesat-classroom"
 anyhow = "1"
 axum = "0.8"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
+jiff = "1"
 clap = { version = "4", features = ["derive", "env"] }
 hang = "=0.21.24"
 moq-tokio = { version = "=0.19.37", default-features = false, features = ["noq", "ring"] }
