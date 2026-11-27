@@ -24,6 +24,9 @@ BOARDS = {
         design='design_r1p_ctl', placer='gen_pcb_r1p_ctl.py', kicad='../pedal/kicad', fab='../pedal/fab/controls',
         edge_ref=None, edge_max=0,
         render=(0, 0, 54, 72), router_passes=6,
+        # Routed by hand with Freerouting; build.sh would replace that copper with the maze
+        # router's, so it refuses unless CSC_REBUILD_ROUTED=1.
+        hand_routed=True,
     ),
 }
 
@@ -51,4 +54,4 @@ if __name__ == '__main__':
     import sys
     key = sys.argv[1]
     print({'design': CFG['design'], 'proj': PROJ, 'kicad': KICAD, 'fab': FAB, 'placer': CFG['placer'], 'pcb': PCB, 'sch': SCH, 'net': NET,
-           'passes': CFG['router_passes'], 'render': ' '.join(map(str, CFG['render']))}[key])
+           'passes': CFG['router_passes'], 'hand_routed': int(CFG.get('hand_routed', False)), 'render': ' '.join(map(str, CFG['render']))}[key])

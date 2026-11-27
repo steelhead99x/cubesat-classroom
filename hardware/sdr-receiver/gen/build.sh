@@ -4,6 +4,12 @@
 set -euo pipefail                       # any failed check stops the build before export
 cd "$(dirname "$0")"
 proj=$(python3 boardcfg.py proj); kicad=$(python3 boardcfg.py kicad); net=$(python3 boardcfg.py net)
+if [ "$(python3 boardcfg.py hand_routed)" = 1 ] && [ "${CSC_REBUILD_ROUTED:-0}" != 1 ]; then
+  echo "$proj is routed by hand; rebuilding replaces that copper with the maze router's." >&2
+  echo "To check the board in Git, run: CSC_BOARD=$proj python3 drc.py gate" >&2
+  echo "To rebuild anyway (in a separate checkout), set CSC_REBUILD_ROUTED=1." >&2
+  exit 1
+fi
 python3 "$(python3 boardcfg.py design).py"   # netlist sanity (no single-pin nets)
 python3 footprints.py                   # project footprints (LTC UF24)
 python3 gen_sch.py                      # schematic + project symbol library

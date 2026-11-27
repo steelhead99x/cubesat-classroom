@@ -137,4 +137,4 @@ python3 check_shared.py             # pedal RF blocks against Rev A
 python3 face_template.py            # drilling template
 ```
 
-These commands rebuild PCB files from placement and run the maze router. Run the control-board rebuild in a separate checkout to preserve the routed copper in Git. To verify the checked-in boards, run `CSC_BOARD=csc-r1p-ctl python3 drc.py gate` and `CSC_BOARD=csc-r1p python3 drc.py gate` from the generator directory. The main board currently fails the connectivity gate.
+These commands rebuild PCB files from placement and run the maze router. The control board is routed by hand, so `build.sh` refuses to rebuild it unless you set `CSC_REBUILD_ROUTED=1`; do that only in a separate checkout, to keep the routed copper in Git. To verify the checked-in boards, run `CSC_BOARD=csc-r1p-ctl python3 drc.py gate` and `CSC_BOARD=csc-r1p python3 drc.py gate` from the generator directory. The main board currently fails the connectivity gate.

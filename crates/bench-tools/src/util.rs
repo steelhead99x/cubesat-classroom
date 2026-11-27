@@ -151,52 +151,6 @@ pub fn field<'a>(
     meta.get(key).and_then(|v| v.as_str()).unwrap_or(default)
 }
 
-/// A local date and time on this computer as Unix seconds, using its time zone (as `rtl_power`
-/// writes its rows). `None` for an impossible date or time, and on systems without `mktime`.
-#[must_use]
-pub fn local_to_unix_s(
-    year: i32,
-    month: i32,
-    day: i32,
-    hour: i32,
-    minute: i32,
-    second: i32,
-) -> Option<u64> {
-    if !(1970..=9999).contains(&year)
-        || !(1..=12).contains(&month)
-        || !(1..=31).contains(&day)
-        || !(0..=23).contains(&hour)
-        || !(0..=59).contains(&minute)
-        || !(0..=60).contains(&second)
-    {
-        return None;
-    }
-    #[cfg(unix)]
-    #[allow(unsafe_code)]
-    {
-        // SAFETY: `tm` is a plain C struct, zeroed then filled in; mktime only reads it and
-        // writes back normalised fields.
-        let mut tm: libc::tm = unsafe { std::mem::zeroed() };
-        tm.tm_year = year - 1900;
-        tm.tm_mon = month - 1;
-        tm.tm_mday = day;
-        tm.tm_hour = hour;
-        tm.tm_min = minute;
-        tm.tm_sec = second;
-        tm.tm_isdst = -1; // let the system decide whether daylight saving applies
-        let t = unsafe { libc::mktime(&raw mut tm) };
-        // mktime normalises out-of-range days (31 February): refuse those instead.
-        if t < 0 || tm.tm_mday != day || tm.tm_mon != month - 1 {
-            return None;
-        }
-        u64::try_from(t).ok()
-    }
-    #[cfg(not(unix))]
-    {
-        None
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

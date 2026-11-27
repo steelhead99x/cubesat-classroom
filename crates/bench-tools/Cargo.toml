@@ -17,7 +17,7 @@ libc = "0.2"
 
 [lints.rust]
 missing_docs = "warn"
-# libc: termios for the serial port in power.rs, and mktime (util.rs) for rtl_power's local times.
+# Only the serial-port setup in power.rs calls into libc (termios).
 unsafe_code = "deny"
 
 [lints.clippy]
