@@ -1043,6 +1043,22 @@ mod tests {
     }
 
     #[test]
+    fn off_tune_the_carrier_is_not_heard() {
+        // Just after rise the Doppler shift is about +3.4 kHz, outside the pedal's 1.5 kHz passband.
+        let fixed = scenario().snapshot(&publisher(), 61, 0);
+        assert!(fixed.offset_hz.unwrap().abs() > 1500.0);
+        assert_eq!(fixed.contact, Contact::Lost);
+        assert!(fixed.sensors.is_none());
+        assert!(fixed.snr_db.is_none());
+        let tracked = Scenario {
+            track_doppler: true,
+            ..scenario()
+        }
+        .snapshot(&publisher(), 61, 0);
+        assert_eq!(tracked.contact, Contact::Acquired);
+    }
+
+    #[test]
     fn too_much_gain_clips() {
         let s = Scenario {
             gain_db: 40.0,
