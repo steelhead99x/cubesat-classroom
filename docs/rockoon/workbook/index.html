@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ground-flight workbook · CubeSat Classroom Rockoon</title>
+<style>
+  :root { --ink:#0F1B2D; --paper:#F5F3EE; --card:#FBFAF6; --rule:#D9D4C8; --soft:#46536A; --accent:#E07A2E; --ok:#1F6B45; --warn:#8A5A00; --fail:#A12C2C; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 Inter, system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
+  header { background: var(--ink); color: var(--paper); padding: 28px 32px 24px; }
+  header h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.5px; }
+  header p { margin: 0; color: #C5D0E0; max-width: 900px; }
+  .label { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #F0A35E; }
+  main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: 24px; padding: 24px 32px 48px; max-width: 1500px; }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; padding: 16px; } }
+  section { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; }
+  h2 { font-size: 18px; margin: 0 0 4px; }
+  h3 { font-size: 15px; margin: 16px 0 6px; }
+  .hint { color: var(--soft); font-size: 14px; margin: 0 0 12px; }
+  label.field { display: grid; grid-template-columns: 1fr 110px; align-items: center; gap: 8px; margin: 8px 0; font-size: 15px; }
+  label.field span { display: block; }
+  label.field small { display: block; color: var(--soft); font-size: 12.5px; }
+  input[type=number], textarea, select { font: inherit; padding: 6px 8px; border: 1px solid #B9B2A3; border-radius: 6px; background: #fff; width: 100%; }
+  textarea { min-height: 110px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
+  .motors label { display: flex; gap: 8px; align-items: baseline; margin: 6px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th { text-align: left; font-weight: 600; color: var(--soft); border-bottom: 2px solid var(--ink); padding: 6px 8px; }
+  td { border-bottom: 1px solid var(--rule); padding: 6px 8px; vertical-align: middle; }
+  td input { max-width: 110px; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .mcard { text-align: left; border: 2px solid var(--rule); border-radius: 10px; padding: 12px 14px; background: #fff; cursor: pointer; font: inherit; color: inherit; }
+  .mcard[aria-pressed=true] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink) inset; }
+  .mcard .name { font-weight: 700; font-size: 18px; }
+  .mcard dl { display: grid; grid-template-columns: auto auto; gap: 2px 10px; margin: 8px 0 0; font-size: 14px; }
+  .mcard dt { color: var(--soft); }
+  .mcard dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 99px; margin-left: 6px; vertical-align: 2px; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .fail { color: var(--fail); }
+  .badge.ok { background: #DDEFE4; } .badge.warn { background: #F6E7C8; } .badge.fail { background: #F5D6D6; }
+  ul.checks { list-style: none; padding: 0; margin: 8px 0 0; }
+  ul.checks li { padding: 6px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 64px 1fr; gap: 8px; }
+  ul.checks b { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .error { background: #F5D6D6; color: var(--fail); padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button.plain { font: inherit; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer; }
+  button.plain.secondary { background: transparent; color: var(--ink); }
+  .diagram { width: 100%; height: auto; margin-top: 8px; }
+  footer { padding: 0 32px 40px; color: var(--soft); font-size: 14px; max-width: 1100px; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: #EFEBE2; padding: 1px 4px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <p><a href="../../quests/#play-and-learn" style="color: #a4c9ff">← CubeSat Classroom · Play &amp; learn</a></p>
+  <p class="label">Hands-on activity for older learners, with an adult. Model rockets fly only at a club launch, under its safety officer.</p>
+  <h1>Ground-flight workbook</h1>
+  <p>Enter what your class measured on the bench, pick a certified motor, and get the prediction to beat at the club launch: stability, thrust-to-weight, rail exit speed, apogee, the ejection delay to buy, and whether the rocket stays a Class 1 model rocket. Then record each flight next to the prediction.</p>
+  <span class="label">Desk simulation · the rockoon kit’s own Rust simulator, running in this page</span>
+</header>
+<main>
+<div>
+  <section>
+    <h2>1. Motor</h2>
+    <p class="hint">Certified 24 mm motors whose thrust curves come with the kit (NAR certification data, via ThrustCurve.org). Check the type and availability with your club or dealer.</p>
+    <div class="motors" id="motors"></div>
+    <details>
+      <summary>Paste another motor’s .eng file</summary>
+      <p class="hint">Download a RASP (.eng) file for any certified motor from thrustcurve.org and paste it here.</p>
+      <textarea id="custom_eng" aria-label="RASP .eng thrust curve"></textarea>
+    </details>
+  </section>
+  <section>
+    <h2>2. Bench-test results</h2>
+    <p class="hint">Leave the defaults until your crew has measured its own.</p>
+    <label class="field"><span>Shear-clip break force (N)<small>Shear-clip pull test quest</small></span><input type="number" id="hold_force_n" step="0.1" min="0" max="100" value="8"></label>
+    <label class="field"><span>Rail friction, static<small>Rail friction quest: tan of the slip angle</small></span><input type="number" id="mu_static" step="0.01" min="0" max="1.5" value="0.18"></label>
+    <label class="field"><span>Rail friction, sliding<small>Rail friction quest</small></span><input type="number" id="mu_kinetic" step="0.01" min="0" max="1.5" value="0.12"></label>
+    <label class="field"><span>Guided rail travel (m)<small>How far the rear guide shoe moves before it leaves the 0.92 m rail: about 0.78 m. Measure yours.</small></span><input type="number" id="rail_travel_m" step="0.01" min="0.1" max="5" value="0.78"></label>
+    <label class="field"><span>Rail angle from vertical (°)<small>Set by the range safety officer</small></span><input type="number" id="rail_tilt_deg" step="1" min="0" max="30" value="5"></label>
+  </section>
+  <section>
+    <h2>3. Weighed masses</h2>
+    <p class="hint">Weigh each printed part on a 1 g scale. Blank uses the CAD estimate.</p>
+    <label class="field"><span>Printed in</span><select id="material"><option>ASA</option><option>PETG</option><option>PLA</option></select></label>
+    <table><thead><tr><th>Part</th><th class="num">CAD (g)</th><th class="num">Weighed (g, each)</th></tr></thead><tbody id="parts"></tbody></table>
+    <label class="field"><span>Parachute, cord, wadding, altimeter, glue (g)<small>Weigh them together</small></span><input type="number" id="extra_rocket_g" step="1" min="0" max="1000" value="60"></label>
+    <label class="field"><span>Inert payload in the nose (g)<small>0 for none; an inert nano FlatSat is about 85 g</small></span><input type="number" id="payload_g" step="1" min="0" max="1000" value="0"></label>
+  </section>
+  <section>
+    <h2>4. Recovery and weather</h2>
+    <label class="field"><span>Parachute diameter (m)</span><input type="number" id="parachute_d_m" step="0.05" min="0.1" max="3" value="0.5"></label>
+    <label class="field"><span>Mean wind on launch day (m/s)</span><input type="number" id="wind_m_s" step="0.5" min="0" max="30" value="5"></label>
+  </section>
+</div>
+<div>
+  <div id="error" class="error" hidden></div>
+  <section>
+    <h2>Prediction by motor</h2>
+    <p class="hint">Choose a motor card to see its checks and where its centre of gravity and centre of pressure fall.</p>
+    <div class="cards" id="cards"></div>
+  </section>
+  <section id="detail"></section>
+  <section>
+    <h2>Flights: prediction against measurement</h2>
+    <p class="hint">After each flight, enter the altimeter’s apogee and times. Entries stay in this browser only, so copy the CSV into your crew log.</p>
+    <div class="row" style="margin-bottom:8px"><label for="flight_motor">Motor flown</label> <select id="flight_motor" style="width:auto"></select></div>
+    <table>
+      <thead><tr><th>Measure</th><th class="num">Predicted</th><th class="num">Flight 1</th><th class="num">Flight 2</th><th class="num">Flight 3</th></tr></thead>
+      <tbody id="flights"></tbody>
+    </table>
+    <div class="row" style="margin-top:12px"><button class="plain" id="csv">Copy CSV</button><button class="plain secondary" id="clear">Clear this configuration</button><button class="plain secondary" id="legacy" hidden>Show earlier notes</button><span id="copied" class="hint" style="margin:0" aria-live="polite"></span></div>
+    <textarea id="legacytext" readonly aria-label="Earlier notes with unverified configuration" hidden></textarea>
+    <textarea id="csvtext" readonly aria-label="Flights as CSV" hidden style="margin-top:10px"></textarea>
+  </section>
+</div>
+</main>
+<footer>
+  <p><b>What this is.</b> A desk simulation: a point-mass flight with a simple drag model, rail friction and the shear clip, and stability by the Barrowman equations (nose and fins). Check the stability in OpenRocket too; a mentor will ask. Every number is a prediction to compare with your flights, not a measurement.</p>
+  <p><b>Rules of thumb used:</b> stability at least 1 calibre (body diameter) and not over about 3; liftoff thrust-to-weight at least 5:1; rail exit at least 15 m/s. They are guidance, not regulations: your club’s range safety officer has the final word.</p>
+  <p><b>Safety.</b> Certified commercial motors only, installed by a certified adult, flown at a club launch under the NAR Model Rocket Safety Code. Students never handle live motors or igniters.</p>
+</footer>
+<script src="./workbook.js"></script>
+</body>
+</html>

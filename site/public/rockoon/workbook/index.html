@@ -53,7 +53,7 @@
 </head>
 <body>
 <header>
-  <p><a href="/quests/#play-and-learn" style="color: #a4c9ff">← CubeSat Classroom · Play &amp; learn</a></p>
+  <p><a href="../../quests/#play-and-learn" style="color: #a4c9ff">← CubeSat Classroom · Play &amp; learn</a></p>
   <p class="label">Hands-on activity for older learners, with an adult. Model rockets fly only at a club launch, under its safety officer.</p>
   <h1>Ground-flight workbook</h1>
   <p>Enter what your class measured on the bench, pick a certified motor, and get the prediction to beat at the club launch: stability, thrust-to-weight, rail exit speed, apogee, the ejection delay to buy, and whether the rocket stays a Class 1 model rocket. Then record each flight next to the prediction.</p>
@@ -110,7 +110,8 @@
       <thead><tr><th>Measure</th><th class="num">Predicted</th><th class="num">Flight 1</th><th class="num">Flight 2</th><th class="num">Flight 3</th></tr></thead>
       <tbody id="flights"></tbody>
     </table>
-    <div class="row" style="margin-top:12px"><button class="plain" id="csv">Copy CSV</button><button class="plain secondary" id="clear">Clear flights</button><span id="copied" class="hint" style="margin:0" aria-live="polite"></span></div>
+    <div class="row" style="margin-top:12px"><button class="plain" id="csv">Copy CSV</button><button class="plain secondary" id="clear">Clear this configuration</button><button class="plain secondary" id="legacy" hidden>Show earlier notes</button><span id="copied" class="hint" style="margin:0" aria-live="polite"></span></div>
+    <textarea id="legacytext" readonly aria-label="Earlier notes with unverified configuration" hidden></textarea>
     <textarea id="csvtext" readonly aria-label="Flights as CSV" hidden style="margin-top:10px"></textarea>
   </section>
 </div>
@@ -120,6 +121,6 @@
   <p><b>Rules of thumb used:</b> stability at least 1 calibre (body diameter) and not over about 3; liftoff thrust-to-weight at least 5:1; rail exit at least 15 m/s. They are guidance, not regulations: your club’s range safety officer has the final word.</p>
   <p><b>Safety.</b> Certified commercial motors only, installed by a certified adult, flown at a club launch under the NAR Model Rocket Safety Code. Students never handle live motors or igniters.</p>
 </footer>
-<script src="/rockoon/workbook/workbook.js"></script>
+<script src="./workbook.js"></script>
 </body>
 </html>
