@@ -33,3 +33,21 @@ The demo uses TLS-protected connections to the relay and authorization per role.
 ## Other MoQ providers
 
 Pull requests for private, authenticated relay demos on other MoQ providers are welcome as future work. Include the CLI and protocol versions, exact test steps, and evidence of successful playback and denied unauthorized access. Start with the [contribution guide](../CONTRIBUTING.md).
+
+## Live sky for the games
+
+The Catch the Pass game (`/games/catch-the-pass/`) has a shared live sky over MoQ. Each player publishes one broadcast named by an anonymous player id, with a `station` track (antenna, SF, signal and score, about five times a second) and a `packets` track (one frame per decoded packet). Players subscribe to everyone else in the room. Without a relay the game plays alone, and the live sky shows demo stations.
+
+The site's Worker signs a token for each player (`POST /api/games/moq-token`, `site/src/games-token.mjs`). A token lasts 10 minutes, may publish only under that player's id and may subscribe only inside the game room. The endpoint answers only same-site requests and is rate limited per network address. The signing key stays in the Worker.
+
+To turn it on (an adult with the MoQ.pro account):
+
+1. Use a private MoQ.pro project with anonymous publishing, anonymous subscribing and public discovery disabled.
+2. Get a signing key the project's relay trusts, scoped as narrowly as MoQ.pro allows (ideally to the games path only). The Worker accepts a private JWK for ES256, EdDSA or HS256, as JSON or as the base64url text `moq auth generate` writes.
+3. Store it as a Worker secret from a file, then delete the file:
+   ```sh
+   cd site && npx wrangler secret put MOQ_GAMES_SIGNING_KEY < games.jwk && shred -u games.jwk
+   ```
+4. Set `MOQ_GAMES_ROOT` in `site/wrangler.jsonc` `vars` to the relay path the key signs under (for MoQ.pro, the project path followed by `/games`), then deploy. `MOQ_GAMES_RELAY` is already `https://cdn.moq.pro`. If the relay host changes, update `connect-src` in `site/src/worker.mjs` and `site/src/layouts/Base.astro`.
+
+The token travels in the relay URL (`?jwt=`), which the relay operator may log. It is short-lived, scoped to one room and carries no personal details: call signs are random and there is no chat.

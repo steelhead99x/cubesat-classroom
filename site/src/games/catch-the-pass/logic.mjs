@@ -138,7 +138,11 @@ export function createGame(level, seed = 1) {
     bursts: burstsFor(level, seed),
     packet: { elapsed: 0, sum: 0, n: 0, min: Infinity },
     seq: 0, rx: 0, lost: 0, streak: 0, bestStreak: 0, score: 0,
-    snr: -99, locked: false, events: [], log: [],
+    snr: -99, locked: false,
+    /** @type {{ type: string, seq?: number, points?: number, sf?: number, stars?: number, score?: number, reading?: ReturnType<typeof telemetry> }[]} */
+    events: [],
+    /** @type {ReturnType<typeof telemetry>[]} */
+    log: [],
   };
 }
 

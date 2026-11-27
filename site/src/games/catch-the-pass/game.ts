@@ -310,7 +310,7 @@ function init(root: HTMLElement) {
         beep(1250, 70, 'square', 0.03);
         const sat = G.satPosition(game.level, game.t / game.level.duration);
         if (!reduced.matches) pops.push({ x: toX(sat.az), y: toY(sat.el) - 18, text: `+${e.points}`, age: 0 });
-        if (mode === 'live') sky?.sendPacket({ ...e.reading, slot: liveSlot });
+        if (mode === 'live' && e.reading) sky?.sendPacket({ ...e.reading, slot: liveSlot } as PacketNote);
       } else if (e.type === 'lost') {
         beep(180, 120, 'sawtooth', 0.03);
         announce(`Packet ${e.seq} lost. Signal too weak for SF${game.sf}.`, false);
