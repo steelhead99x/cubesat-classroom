@@ -6,6 +6,10 @@ Rev B of the [CSC-R1 receiver](README.md) goes in a guitar-pedal enclosure, foll
 
 Date: 25 November 2026.
 
+## At-home lesson
+
+Students can [practice the pedal controls in a browser](https://cubesatclass.org/#pedal-lab). In the U.S., they can listen to a public FM broadcast on a receive-only USB SDR without an amateur radio license. The physical Rev B remains a prototype plan. A future receive-only lesson mode would need to keep Wi-Fi and HaLow disabled and verify that they stay off during startup and use.
+
 ## How it sends its stream
 
 The receiver itself never fans out to many viewers. It sends **one copy** of its stream, and a MoQ relay does the fan-out, as in the [classroom receiver design](../../docs/classroom-receiver.md).

@@ -410,6 +410,13 @@ pub fn isogrid_pockets(d: &Design, outline: &CrossSection, keep: &CrossSection) 
 pub const FIT_LADDER: [(f64, usize); 3] = [(0.1, 1), (0.2, 2), (0.3, 3)];
 pub const COUPON_PIN_AT: f64 = 5.4;
 
+/// Where a ladder tab's teeth sit: they move out with the tab's fit, from `d.tooth_r` at the
+/// 1-dot tab. Fixed by the ladder, not by `d.pin_fit`, so choosing a different kit fit never
+/// changes the coupons (or the strain in their fingers): a coupon print stays comparable.
+pub fn ladder_tooth_r(d: &Design, fit: f64) -> f64 {
+    d.tooth_r + fit - FIT_LADDER[0].0
+}
+
 /// A column stub with a snap pin, on a small base.
 pub fn coupon_pin_base(d: &Design) -> Manifold {
     union_all(&[
@@ -425,7 +432,7 @@ pub fn coupon_pin_base(d: &Design) -> Manifold {
 pub const TAB_GRIP: f64 = 11.0;
 
 pub fn coupon_pin_tab(d: &Design, fit: f64, dots: usize, tooth_r: Option<f64>) -> Manifold {
-    let tooth_r = tooth_r.unwrap_or(d.tooth_r + fit - d.pin_fit);
+    let tooth_r = tooth_r.unwrap_or_else(|| ladder_tooth_r(d, fit));
     let [lo, hi] = {
         let b = finger_outline(d, 0.0, 0.0, 0.0, fit).bounds();
         [b.min(), b.max()]

@@ -57,7 +57,7 @@ Every CubeSat Classroom part shares one look, borrowed from modern launch vehicl
 - **Design load: 20 g quasi-static**, the same as the Rev C frame (classroom rockets reach about 10 g).
 - **Stresses:** a factor of safety of 2. PLA's strength across layers is assumed to be 15 MPa (the Rev C value) until we measure it.
 - **Snap retention: hand calculations, at least 1.5 times the launch load, confirmed by a pull test.** A plate on three snap pins must hold 1.5 × its launch load, about 24 N for the payload plate, so **one pin coupon should take at least 8 N to pull off.** Check that with a luggage scale and record it.
-- **Batteries are held at both ends and both sides**, with the largest cell the listing allows, and foam tape takes up a smaller cell. A battery is never clamped tight: pouch cells swell.
+- **Batteries are held at both ends and both sides, for every cell size the listing allows.** Check the smallest and the largest: a holder sized only for the largest cell lets a smaller one lift out. Sprung hooks or end stops can take up the length range. A battery is never clamped tight: pouch cells swell, so any push on it stays light (a few newtons) and comes from something that gives.
 - **Materials:** PLA indoors. ASA or PETG outdoors, because PLA softens in summer sun. A fit tuned in one material is rechecked in another: print the fit ladder again.
 
 ## Easy for kids

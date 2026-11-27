@@ -16,7 +16,12 @@ python3 lab.py compare run-5/ground.csv run-5/node-*.csv
 python3 lab.py compare run-5/ground-recovered.csv run-5/node-*.csv
 ```
 
-Each run also writes `ground-recovered.csv`, the complete ground feed. In the five-node run, `ground.csv` deliberately misses two of node 3's readings; compare both files for the discrepancy report.
+Each run also writes `ground-recovered.csv`, the complete ground feed. In the five-node run, `ground.csv` deliberately misses two of node 3's readings; compare both files for the discrepancy report. The last line of each comparison counts the discrepancies. Add `--strict` to make the command fail (exit status 1) when there are any, for example in a script that checks a run:
+
+```sh
+python3 lab.py compare --strict run-5/ground.csv run-5/node-*.csv            # fails: 2 missing
+python3 lab.py compare --strict run-5/ground-recovered.csv run-5/node-*.csv  # passes
+```
 
 | Nodes | Crew activity | Deliverable for the integration review |
 |---|---|---|
@@ -58,7 +63,7 @@ Use a fresh copy of this table per configuration. Fill in revision, evidence fil
 
 | Guide reference | Classroom evidence to collect | Input or review still required for flight | Evidence / disposition |
 |---|---|---|---|
-| §2, Appendix C — mechanical interfaces | Dimensioned assembly drawing with axes, connectors and protrusions | Selected dispenser drawing, tolerances and integrator fit disposition | Open |
+| §2, Appendix A — interface dimensions; Appendix C — CAD deliverables | Dimensioned assembly drawing with axes, connectors and protrusions | Selected dispenser drawing, tolerances and integrator fit disposition | Open |
 | §3.1 — mass properties | Weighed as-built configuration, scale resolution and reference axes | Accepted mass properties including center of gravity and inertia as applicable | Open |
 | §§4, 5.2–5.3 — environment and construction | Parts list, materials, fasteners and configuration photos | Provider environmental envelope, materials review and retention evidence | Open |
 | §§6.1–6.7 — verification | Test procedure, configuration revision, raw files, discrepancies and retest record | Integrator-approved verification plan and applicable test levels for the integrated or containerized unit | Open |

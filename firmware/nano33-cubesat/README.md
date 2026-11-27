@@ -1,6 +1,6 @@
 # Nano 33 BLE Sense CubeSat firmware, in Rust
 
-The Rust version of [`../arduino-cubesat`](../arduino-cubesat/arduino-cubesat.ino) for an **Arduino Nano 33 BLE Sense Rev2**. It flies the same bench mission with the same commands, and sends the same `CSC1` lines, so the station's `sensor-bridge` and the [bench CubeSat guide](../../docs/bench-cubesats.md) work unchanged.
+The Rust version of [`../arduino-cubesat`](../arduino-cubesat/arduino-cubesat.ino) for an **Arduino Nano 33 BLE Sense Rev2**. It flies the same bench mission with the same commands, and sends the same `CSC1` lines, so the station's `sensor-bridge` and the [bench CubeSat guide](../../docs/bench-cubesats.md) work unchanged. It adds one command, `RECACK`: see [Stored readings](#stored-readings).
 
 - The mission logic (modes, commands, store and forward, telemetry) is the [`cubesat-mission`](../../crates/cubesat-mission/src/lib.rs) crate, tested on a computer with `cargo test -p cubesat-mission`.
 - This folder connects it to the board: USB serial is the ground link, the RGB LED is the status light, a jumper from **D2** to **GND** is the remove-before-flight pin, and the built-in sensors are the payload.
@@ -17,6 +17,12 @@ The Rust version of [`../arduino-cubesat`](../arduino-cubesat/arduino-cubesat.in
 | APDS9960 | `light_clear`, `light_r/g/b`; `light_lux` after `CAL` | Counts until calibrated |
 | Processor ADC | `volt_mv` | The regulated 3.3 V rail, not a battery |
 | BMI270, BMM150 | not read yet | Needs the BMI270's 8 KB configuration upload; use the Arduino sketch for motion |
+
+## Stored readings
+
+Readings taken out of contact are stored (the newest 64) and sent as `REC` lines once a pass starts, up to 16 at a time. A stored reading is deleted only when the receiver says it kept it: send `RECACK <seq>` with the `seq` from the `REC` line, oldest first. Bytes that leave the board over USB can still be lost (the cable pulled, the terminal closed, the last packet held by the computer), so "sent" never counts as "received". Any reading not acknowledged within 10 seconds, or at the next pass, is sent again, so the receiver may see a `REC` line twice: keep one copy and acknowledge both.
+
+By hand, type `RECACK` for each `REC` line in turn. The station does it for you: `cubesat-classroom sensor-bridge --input /dev/ttyACM0 --rec-log run/stored.csv` saves each `REC` line to the file first, then acknowledges it.
 
 ## Timing
 

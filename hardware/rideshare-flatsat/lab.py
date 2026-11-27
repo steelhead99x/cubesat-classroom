@@ -43,6 +43,7 @@ def simulate(nodes, directory):
 
 
 def compare(local, ground):
+    """Print the comparison; return the number of discrepancies found."""
     def load(paths):
         result = {}
         duplicates = 0
@@ -62,6 +63,7 @@ def compare(local, ground):
     if not saved:
         raise ValueError("no valid onboard records")
     print(f"onboard={len(saved)} ground={len(received)} duplicate_ground={duplicates}")
+    problems = 0
     for key in sorted(saved.keys() | received.keys()):
         if key not in received:
             print("missing at ground", *key)
@@ -69,6 +71,11 @@ def compare(local, ground):
             print("ground only", *key)
         elif received[key] != saved[key]:
             print("payload mismatch", *key)
+        else:
+            continue
+        problems += 1
+    print(f"discrepancies={problems}")
+    return problems
 
 
 def main():
@@ -80,6 +87,8 @@ def main():
     audit = commands.add_parser("compare")
     audit.add_argument("ground", type=Path)
     audit.add_argument("onboard", type=Path, nargs="+")
+    audit.add_argument("--strict", action="store_true",
+                       help="exit 1 if any reading is missing, extra or different")
     for name in ("forward", "receive"):
         cmd = commands.add_parser(name)
         cmd.add_argument("address", help="destination for forward, local interface for receive")
@@ -91,7 +100,12 @@ def main():
         except FileExistsError:
             parser.error(f"{args.directory} already exists; choose a new directory to keep earlier evidence")
     elif args.cmd == "compare":
-        compare(args.onboard, args.ground)
+        try:
+            problems = compare(args.onboard, args.ground)
+        except ValueError as err:
+            sys.exit(f"compare: {err}")
+        if args.strict and problems:
+            sys.exit(1)
     else:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             if args.cmd == "forward":

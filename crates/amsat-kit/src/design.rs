@@ -114,7 +114,8 @@ pub struct Design {
     pub snap_columns: Vec<(usize, f64)>,
 
     // Battery: a MakerFocus flat 3.7 V 3000 mAh LiPo (JST PH 2.0), listed at 67 x 36 x 12 mm,
-    // +-2 mm. Every case holds the largest cell that listing allows.
+    // +-2 mm. Every case fits the largest cell that listing allows, and the kit's battery plate
+    // holds every size in the range (see battery.rs).
     pub cell: [f64; 3],
     pub cell_tol: f64,
     /// A heavy 3000 mAh pouch cell, for the load checks.
