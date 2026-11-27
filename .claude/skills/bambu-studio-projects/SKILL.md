@@ -16,6 +16,7 @@ Ship print files that open in Bambu Studio (File → Open Project) with every pa
   - Plates are laid out the way Bambu Studio computes them: plate stride 256 × 1.2 mm; columns = round(√count), plus 1 if √count is above that.
 - **`Metadata/model_settings.config`:**
   - per object: name and extruder, plus per-object settings such as `sparse_infill_density` at 100% for flexing coupons;
+  - **two colours:** a part with an inlaid logo is one object with two `<part>` entries (body and logo), each its own mesh in the object's file and its own component in the main model, each with `<metadata key="extruder">`. Body and logo together must be exactly the part (check their volumes add up), and the read-back checks that a logo never uses its body's filament;
   - per plate: id, name, `thumbnail_file`, and its model instances (`identify_id`).
 - **Previews:** `Metadata/plate_N.png` (512 px) and `plate_N_small.png` (128 px), rendered from the meshes (an isometric z-buffer is enough).
 - **No printer, process or filament profile.** Bambu Studio keeps whatever the user has selected. Say in the README which process and material to pick.
@@ -33,6 +34,6 @@ Describe each kit as data: parts (name, mesh source, flip, solid infill, preview
 
 ## Plates people can print
 
-- **Group by material:** for example ASA box; ASA lid and plate; TPU gasket. Say the material in each plate's name.
+- **Group by material:** for example ASA box; ASA lid and plate; PLA coupons. Say the material in each plate's name.
 - **Coupons first:** a separate project of test coupons, printed before the real parts.
 - **Keep plates small** enough that a failed print wastes little plastic.

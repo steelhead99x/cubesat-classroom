@@ -8,12 +8,12 @@
 //! pushes them apart and is held between them, with each hook's catch over its end. A thinner
 //! cell can lift until it meets the catches (up to 4 mm), but can't come out.
 
-use manifold_csg::{CrossSection, Manifold};
+use manifold_csg::Manifold;
 
 use crate::design::{Design, Edge, Rect, Side};
 use crate::geom::{EPS, FACETS, bx, offset, rect, union_all};
 use crate::joints::{hook_cut, hook_post, hook_zone};
-use crate::parts::{cable_notch, column_cuts, plate_outline};
+use crate::parts::{cable_notch, column_cuts, isogrid_pockets, plate_outline};
 
 /// One hook over each end of the cell. The wire leaves the top end beside its hook.
 pub const CELL_HOOKS: [Edge; 2] = [
@@ -173,21 +173,24 @@ pub fn battery_plate(d: &Design, tooth_r: Option<f64>, deflect: f64) -> Result<M
         .union(&rect(x0 + 2.0, y0, x0 + 8.0, y0 + h))
         .union(&rect(x0 + w - 8.0, y0, x0 + w - 2.0, y0 + h))
         .union(&rect(x0, y0 + h / 2.0 - 3.0, x0 + w, y0 + h / 2.0 + 3.0));
-    let windows = offset(&offset(&outline.difference(&keep), -1.0, 16), 1.0, 16);
-    let big: Vec<Vec<[f64; 2]>> = windows
-        .to_polygons()
-        .into_iter()
-        .filter(|p| {
-            CrossSection::from_polygons(std::slice::from_ref(p))
-                .area()
-                .abs()
-                > 12.0
-        })
-        .collect();
-    let slab = outline.extrude(d.plate_t).difference(&cuts).difference(
-        &CrossSection::from_polygons(&big)
-            .extrude(d.plate_t + 2.0)
-            .translate(0.0, 0.0, -1.0),
-    );
+    // Room for the logo with the words, where the top face is open.
+    let free = outline
+        .offset(-3.0, manifold_csg::JoinType::Miter, 2.0, 0)
+        .difference(&offset(
+            &cuts.slice_to_cross_section(d.plate_t / 2.0),
+            2.5,
+            FACETS,
+        ))
+        .difference(&offset(
+            &feats.slice_to_cross_section(d.plate_t + 0.1),
+            2.5,
+            FACETS,
+        ));
+    let keep = keep.union(&crate::brand::pad(d, &free)?);
+    let windows = isogrid_pockets(d, &outline, &keep);
+    let slab = outline
+        .extrude(d.plate_t)
+        .difference(&cuts)
+        .difference(&windows);
     Ok(slab.union(&features(d, deflect)))
 }

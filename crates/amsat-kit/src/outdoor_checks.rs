@@ -1,4 +1,4 @@
-//! Checks for the outdoor cases. They build the parts and fail if the seal, the screws, the
+//! Checks for the outdoor cases. They build the parts and fail if the seal, the latches, the
 //! tripod thread, the ports, the battery or the boards don't fit. Design checks only: no case
 //! has been printed, and nothing here is a water test.
 
@@ -9,9 +9,7 @@ use crate::checks::{Board, Check, board_held, plate_on_columns, require};
 use crate::design::Design;
 use crate::geom::{EPS, bounds, bx, overlap, union_all};
 use crate::joints::{contact_r, finger_zone, hook_zone};
-use crate::outdoor::{
-    self, Outdoor, battery_pocket, cell, columns, gasket_squeeze, port_inside, port_outside,
-};
+use crate::outdoor::{self, Outdoor, battery_pocket, cell, columns, port_inside, port_outside};
 use crate::parts::{payload_plate, plate_outline};
 use crate::xiao;
 
@@ -47,37 +45,46 @@ pub fn rules(o: &Outdoor) -> Check {
         o.wall >= 2.4 && o.floor >= 2.4,
         "outdoor walls and back must be at least 2.4 mm",
     )?;
-    let squeeze = gasket_squeeze(o);
+    let squeeze = o.oring_squeeze();
     require(
-        (0.2..=0.3).contains(&squeeze),
+        (0.18..=0.3).contains(&squeeze),
         format!(
-            "the gasket is squeezed {:.0}%: 20 to 30% seals without crushing it",
+            "the O-ring is squeezed {:.0}%: 18 to 30% seals without crushing it",
             squeeze * 100.0
         ),
     )?;
-    let (g0, g1) = (
-        o.groove_at - o.groove_w / 2.0,
-        o.groove_at + o.groove_w / 2.0,
-    );
     require(
-        g0 >= 1.5,
-        "the gasket groove is too close to the inside edge",
-    )?;
-    require(o.gasket < o.groove_w, "the gasket doesn't fit its groove")?;
-    let (s0, s1) = (o.screw_at - o.insert_d / 2.0, o.screw_at + o.insert_d / 2.0);
-    require(
-        s0 >= g1 + 1.5,
-        "the screws are too close to the gasket: they must sit outside the seal with plastic between",
+        o.groove_fill() <= 0.85,
+        format!(
+            "the O-ring fills {:.0}% of its groove: over 85% and it has nowhere to go when squeezed",
+            o.groove_fill() * 100.0
+        ),
     )?;
     require(
-        s1 <= o.wall + o.flange - 1.5,
-        "the screw inserts break out of the rim",
+        o.skirt_wall >= 2.0 && o.groove_depth() > 0.5,
+        "the lid's skirt is too thin behind its O-ring groove",
     )?;
-    let slope_z = o.top - o.flange_h - (s1 - o.wall);
     require(
-        o.top - o.insert_depth >= slope_z + 1.5,
-        "the screw inserts break through the slope under the rim",
+        o.latch_strain() <= 0.012,
+        format!(
+            "a lid latch would bend {:.2}% (limit 1.2%)",
+            o.latch_strain() * 100.0
+        ),
     )?;
+    require(
+        o.latch_w >= 2.0 && o.lug_t >= 2.0,
+        "the lid latches and lugs must be at least 2 mm",
+    )?;
+    let e = o.lid_over;
+    require(
+        e - o.latch_w - o.latch_slit >= o.skirt_clear + 0.5,
+        "the lid's latch slits run into its skirt",
+    )?;
+    require(
+        e + o.lug_gap + o.lug_t <= o.wall + o.flange - 1.0,
+        "the lugs run off the rim",
+    )?;
+    require(o.lug_reach >= 0.6, "the lugs barely reach over the lid")?;
     let cap = o.deck_z - o.deck_t - (o.thread_len - 0.5);
     require(
         cap >= 1.5,
@@ -137,7 +144,26 @@ pub fn verify(d: &Design, o: &Outdoor, payload: &Payload) -> Check {
         bounds(&inside).1[2] <= o.top - 1.0,
         format!("the {name} boards stand too tall for the lid"),
     )?;
-    let lid = outdoor::lid_in_place(d, o)?;
+    let lid = outdoor::lid_in_place(d, o, 0.0)?;
+    // The lid: sits on the rim and over the lugs' catches, can't lift off, and goes on with its
+    // latches pushed in.
+    require(
+        overlap(&lid.translate(0.0, 0.0, 0.3), &body) > 1e-3,
+        "nothing holds the lid down: the lugs don't catch it",
+    )?;
+    // A finger can only go in as far as the slit behind it allows.
+    let push = (o.lug_reach + 0.15).min(o.latch_slit - 0.2);
+    let pushed = outdoor::lid_in_place(d, o, push)?;
+    for dz in [0.5, 1.0, 2.0, 3.0] {
+        require(
+            overlap(&pushed.translate(0.0, 0.0, dz), &body) < 1e-3,
+            "the lid can't be pressed on past its lugs",
+        )?;
+    }
+    require(
+        overlap(&lid, &inside) < 1e-3,
+        format!("the lid's skirt hits the {name} boards or plate"),
+    )?;
     require(overlap(&lid, &body) < 1e-3, "the lid collides with the box")?;
     // Ports: each on a flat part of its wall below the rim's slope, with room for its nut.
     let flat = o.cavity / 2.0 - o.cavity_chamfer;
@@ -315,21 +341,46 @@ pub fn broken_designs() -> Vec<(&'static str, Design, Outdoor, bool)> {
             false,
         ),
         (
-            "gasket barely squeezed: it would leak",
+            "O-ring barely squeezed: it would leak",
             d.clone(),
-            with(&|o| o.gasket = 2.2),
+            with(&|o| o.gland = 2.2),
+            false,
+        ),
+        ("O-ring crushed", d.clone(), with(&|o| o.gland = 1.5), false),
+        (
+            "O-ring groove too narrow",
+            d.clone(),
+            with(&|o| o.groove_w = 3.4),
             false,
         ),
         (
-            "gasket crushed",
+            "lid latch too short: it would crack",
             d.clone(),
-            with(&|o| o.gasket = 3.0),
+            with(&|o| o.latch_to_lug = 15.0),
             false,
         ),
         (
-            "lid screws inside the seal",
+            "lid latch slits into the skirt",
             d.clone(),
-            with(&|o| o.screw_at = 7.0),
+            with(&|o| o.lid_over = 3.5),
+            false,
+        ),
+        (
+            "lugs barely reaching over the lid",
+            d.clone(),
+            with(&|o| o.lug_reach = 0.3),
+            false,
+        ),
+        (
+            "lugs' catch 0.6 mm above the lid: it would rattle",
+            d.clone(),
+            with(&|o| o.lug_clear = 0.6),
+            false,
+        ),
+        (
+            "latch slit too narrow for the finger to clear its lug",
+            d.clone(),
+            with(&|o| o.latch_slit = 0.9),
             false,
         ),
         (

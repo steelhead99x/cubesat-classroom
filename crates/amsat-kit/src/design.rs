@@ -189,7 +189,7 @@ pub struct Design {
     pub plug: [f64; 3],
     pub min_plug_room: f64,
 
-    // Branding: the CubeSat Classroom mark and lettering, raised for a second colour.
+    // Branding: the CubeSat Classroom mark and lettering, inlaid this deep in a second colour.
     pub letter_h: f64,
     pub mark_size: f64,
     pub mark_at: [f64; 2],

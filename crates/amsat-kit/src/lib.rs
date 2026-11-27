@@ -19,6 +19,8 @@
 pub mod bambu;
 pub mod battery;
 pub mod boards;
+pub mod brand;
+pub mod camera;
 pub mod checks;
 pub mod design;
 pub mod drawing;

@@ -7,6 +7,10 @@
 //! 3D/Objects/, plates and object settings in Metadata/model_settings.config. It carries no
 //! printer or filament profile, so Bambu Studio keeps the ones you have selected. The output is
 //! the same byte for byte on every run.
+//!
+//! Two filaments: white in AMS slot 1 and black in slot 2. White parts (frame, sides, cases,
+//! coupons) carry a black CubeSat Classroom logo; black plates carry a white one. The logo is a
+//! second part (volume) of the same object, inlaid flush, so the object's shape doesn't change.
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
@@ -48,10 +52,13 @@ const fn p(name: &'static str, source: &'static str, solid_infill: bool, colour:
     }
 }
 
-const GREY: [f64; 3] = [0.62, 0.65, 0.70];
-const DARK: [f64; 3] = [0.22, 0.24, 0.27];
-const BLUE: [f64; 3] = [0.55, 0.60, 0.68];
-const TPU: [f64; 3] = [0.15, 0.15, 0.16];
+// Monochrome, like a launch vehicle: white structure and coupons, black decks inside, each
+// with the logo in the other colour. White is held a little under full so its lit faces still
+// show against the white background.
+const WHITE: [f64; 3] = [0.88, 0.88, 0.87];
+const BLACK: [f64; 3] = [0.16, 0.16, 0.17];
+// The bed in the previews, a warm textured-PEI tone so black and white parts both stand out.
+const PEI: [f64; 3] = [0.55, 0.50, 0.40];
 
 /// File, title, and plates: each plate a name and rows of parts, top to bottom.
 pub type Plates = &'static [(&'static str, &'static [&'static [&'static str]])];
@@ -71,46 +78,42 @@ const PIN_COUPONS: [&str; 4] = [
     "Pin tab 3 dots (loosest)",
 ];
 const PIN_PARTS: [Part; 4] = [
-    p("Pin coupon base", "coupon-pin-base", true, BLUE),
-    p("Pin tab 1 dot (kit fit)", "coupon-pin-tab", true, GREY),
+    p("Pin coupon base", "coupon-pin-base", true, WHITE),
+    p("Pin tab 1 dot (kit fit)", "coupon-pin-tab", true, WHITE),
     p(
         "Pin tab 2 dots (looser)",
         "coupon-pin-tab-2-dots",
         true,
-        GREY,
+        WHITE,
     ),
     p(
         "Pin tab 3 dots (loosest)",
         "coupon-pin-tab-3-dots",
         true,
-        GREY,
+        WHITE,
     ),
 ];
 
 pub const CLASSROOM: Kit = Kit {
     parts: &[
-        p("Payload plate", "payload-plate", false, GREY),
-        p("Fit plate", "fit-plate", false, DARK),
-        p("Battery plate", "battery-plate", false, GREY),
+        p("Payload plate", "payload-plate", false, BLACK),
+        p("Fit plate", "fit-plate", false, BLACK),
+        p("Battery plate", "battery-plate", false, BLACK),
         PIN_PARTS[0],
         PIN_PARTS[1],
         PIN_PARTS[2],
         PIN_PARTS[3],
-        p("Nano coupon", "coupon-nano-base", true, BLUE),
+        p("Nano coupon", "coupon-nano-base", true, WHITE),
         p(
             "Side",
             "upstream/cubesatsim_frame_side.v2.0.stl",
             false,
-            GREY,
+            WHITE,
         ),
-        p(
-            "Side with camera hole",
-            "upstream/cubesatsim_frame_side_camera.v2.0.stl",
-            false,
-            GREY,
-        ),
-        p("Bottom with columns", "bottom-with-columns", false, GREY),
-        p("Top with columns", "bottom-with-columns", false, GREY),
+        p("Side with camera", "side-with-camera", false, WHITE),
+        p("Camera coupon", "coupon-camera", true, WHITE),
+        p("Bottom with columns", "bottom-with-columns", false, WHITE),
+        p("Top with columns", "bottom-with-columns", false, WHITE),
     ],
     projects: &[
         (
@@ -121,7 +124,7 @@ pub const CLASSROOM: Kit = Kit {
                     "Payload plate and bottom",
                     &[&["Payload plate", "Bottom with columns"]],
                 ),
-                ("Sides", &[&["Side", "Side with camera hole"]]),
+                ("Sides", &[&["Side", "Side with camera"]]),
                 (
                     "Top and battery plate",
                     &[&["Top with columns", "Battery plate"]],
@@ -136,15 +139,20 @@ pub const CLASSROOM: Kit = Kit {
         (
             "cubesat-test-coupons.3mf",
             "CubeSat Classroom test coupons",
-            &[("Test coupons", &[&PIN_COUPONS, &["Nano coupon"]])],
+            &[(
+                "Test coupons",
+                &[&PIN_COUPONS, &["Nano coupon", "Camera coupon"]],
+            )],
         ),
     ],
     description: "AMSAT CubeSatSim v2.0 frame with an Arduino Uno R3 and Nano 33 BLE Sense payload and a 3000 mAh \
                   battery. Frame by Alan Johnston, KU2Y (AMSAT). GPL-3.0.",
 };
 
-const OUTDOOR_COUPON_PARTS: [Part; 5] = [
-    p("Tripod thread coupon", "coupon-tripod-thread", true, BLUE),
+const OUTDOOR_COUPON_PARTS: [Part; 7] = [
+    p("Tripod thread coupon", "coupon-tripod-thread", true, WHITE),
+    p("Latch coupon rim", "coupon-latch-rim", true, WHITE),
+    p("Latch coupon lid", "coupon-latch-lid", true, WHITE),
     PIN_PARTS[0],
     PIN_PARTS[1],
     PIN_PARTS[2],
@@ -153,15 +161,16 @@ const OUTDOOR_COUPON_PARTS: [Part; 5] = [
 
 pub const OUTDOOR: Kit = Kit {
     parts: &[
-        p("Box", "outdoor-box", false, GREY),
-        p("Lid", "outdoor-lid", false, GREY),
-        p("Gasket (TPU)", "outdoor-gasket", false, TPU),
-        p("Payload plate", "payload-plate", false, GREY),
+        p("Box", "outdoor-box", false, WHITE),
+        p("Lid", "outdoor-lid", false, WHITE),
+        p("Payload plate", "payload-plate", false, BLACK),
         OUTDOOR_COUPON_PARTS[0],
         OUTDOOR_COUPON_PARTS[1],
         OUTDOOR_COUPON_PARTS[2],
         OUTDOOR_COUPON_PARTS[3],
         OUTDOOR_COUPON_PARTS[4],
+        OUTDOOR_COUPON_PARTS[5],
+        OUTDOOR_COUPON_PARTS[6],
     ],
     projects: &[
         (
@@ -173,7 +182,6 @@ pub const OUTDOOR: Kit = Kit {
                     "Lid and payload plate (ASA or PETG)",
                     &[&["Lid", "Payload plate"]],
                 ),
-                ("Gasket (TPU 95A)", &[&["Gasket (TPU)"]]),
             ],
         ),
         (
@@ -181,7 +189,14 @@ pub const OUTDOOR: Kit = Kit {
             "CubeSat Classroom outdoor test coupons",
             &[(
                 "Test coupons (ASA or PETG)",
-                &[&["Tripod thread coupon"], &PIN_COUPONS],
+                &[
+                    &[
+                        "Tripod thread coupon",
+                        "Latch coupon rim",
+                        "Latch coupon lid",
+                    ],
+                    &PIN_COUPONS,
+                ],
             )],
         ),
     ],
@@ -191,16 +206,17 @@ pub const OUTDOOR: Kit = Kit {
 
 pub const OUTDOOR_XIAO: Kit = Kit {
     parts: &[
-        p("Box", "outdoor-box", false, GREY),
-        p("Lid", "outdoor-lid", false, GREY),
-        p("Gasket (TPU)", "outdoor-gasket", false, TPU),
-        p("XIAO plate", "xiao-plate", false, GREY),
-        p("XIAO coupon", "coupon-xiao", true, BLUE),
+        p("Box", "outdoor-box", false, WHITE),
+        p("Lid", "outdoor-lid", false, WHITE),
+        p("XIAO plate", "xiao-plate", false, BLACK),
+        p("XIAO coupon", "coupon-xiao", true, WHITE),
         OUTDOOR_COUPON_PARTS[0],
         OUTDOOR_COUPON_PARTS[1],
         OUTDOOR_COUPON_PARTS[2],
         OUTDOOR_COUPON_PARTS[3],
         OUTDOOR_COUPON_PARTS[4],
+        OUTDOOR_COUPON_PARTS[5],
+        OUTDOOR_COUPON_PARTS[6],
     ],
     projects: &[
         (
@@ -212,7 +228,6 @@ pub const OUTDOOR_XIAO: Kit = Kit {
                     "Lid and XIAO plate (ASA or PETG)",
                     &[&["Lid", "XIAO plate"]],
                 ),
-                ("Gasket (TPU 95A)", &[&["Gasket (TPU)"]]),
             ],
         ),
         (
@@ -220,13 +235,52 @@ pub const OUTDOOR_XIAO: Kit = Kit {
             "CubeSat Classroom outdoor XIAO test coupons",
             &[(
                 "Test coupons (ASA or PETG)",
-                &[&["XIAO coupon"], &["Tripod thread coupon"], &PIN_COUPONS],
+                &[
+                    &["XIAO coupon"],
+                    &[
+                        "Tripod thread coupon",
+                        "Latch coupon rim",
+                        "Latch coupon lid",
+                    ],
+                    &PIN_COUPONS,
+                ],
             )],
         ),
     ],
     description: "Outdoor, sealed CubeSat Classroom station for a XIAO ESP32-S3 on the Wi-Fi HaLow board, a XIAO \
                   MG24 Sense and a 3000 mAh battery, with a 1/4-20 tripod thread. GPL-3.0.",
 };
+
+impl Part {
+    /// The AMS slot the part's body prints from: 1 is white, 2 is black.
+    fn filament(&self) -> u8 {
+        if self.colour == BLACK { 2 } else { 1 }
+    }
+}
+
+/// The logo's colour on a part: the other filament.
+fn accent_colour(body: [f64; 3]) -> [f64; 3] {
+    if body == BLACK { WHITE } else { BLACK }
+}
+
+/// A part's body and, if it has one, its two-colour logo, in the same coordinates.
+#[derive(Clone)]
+pub struct Volumes {
+    pub body: Mesh,
+    pub accent: Option<Mesh>,
+}
+
+impl Volumes {
+    fn all(&self) -> Mesh {
+        let mut m = self.body.clone();
+        if let Some(a) = &self.accent {
+            let n = m.verts.len() as u32;
+            m.verts.extend(&a.verts);
+            m.tris.extend(a.tris.iter().map(|t| t.map(|i| i + n)));
+        }
+        m
+    }
+}
 
 fn part(kit: &Kit, name: &str) -> &'static Part {
     kit.parts
@@ -235,14 +289,16 @@ fn part(kit: &Kit, name: &str) -> &'static Part {
         .expect("every placed part is listed in the kit")
 }
 
-/// Each part's mesh, centred on the bed and standing on it.
+/// Each part's volumes, centred on the bed and standing on it. `brands` holds the body and logo
+/// of every source that has a logo.
 fn load_meshes(
     kit: &Kit,
     generated: &[(&str, Mesh)],
-) -> Result<BTreeMap<&'static str, Mesh>, String> {
+    brands: &[(&str, Mesh, Mesh)],
+) -> Result<BTreeMap<&'static str, Volumes>, String> {
     let mut out = BTreeMap::new();
     for p in kit.parts {
-        let mut mesh = match p.source.strip_prefix("upstream/") {
+        let whole = match p.source.strip_prefix("upstream/") {
             Some(file) => upstream(file)?,
             None => generated
                 .iter()
@@ -250,20 +306,46 @@ fn load_meshes(
                 .map(|(_, m)| m.clone())
                 .ok_or_else(|| format!("{} wasn't built", p.source))?,
         };
-        if !mesh.is_closed() {
+        if !whole.is_closed() {
             return Err(format!("{}: not a closed solid", p.source));
         }
-        if p.flip {
-            // Half a turn about x.
-            mesh.verts
-                .iter_mut()
-                .for_each(|v| *v = [v[0], -v[1], -v[2]]);
+        let mut v = match brands.iter().find(|(n, ..)| *n == p.source) {
+            Some((_, body, accent)) => {
+                if !body.is_closed() || !accent.is_closed() {
+                    return Err(format!("{}: its logo or body isn't closed", p.source));
+                }
+                let parts = body.volume() + accent.volume();
+                if (parts - whole.volume()).abs() > 1e-3 * whole.volume() {
+                    return Err(format!(
+                        "{}: body and logo don't add up to the part",
+                        p.source
+                    ));
+                }
+                Volumes {
+                    body: body.clone(),
+                    accent: Some(accent.clone()),
+                }
+            }
+            None => Volumes {
+                body: whole,
+                accent: None,
+            },
+        };
+        let turn = |m: &mut Mesh| {
+            if p.flip {
+                // Half a turn about x.
+                m.verts.iter_mut().for_each(|v| *v = [v[0], -v[1], -v[2]]);
+            }
+        };
+        turn(&mut v.body);
+        if let Some(a) = v.accent.as_mut() {
+            turn(a);
         }
-        let (lo, hi) = mesh.bounds();
-        out.insert(
-            p.name,
-            mesh.translated([-(lo[0] + hi[0]) / 2.0, -(lo[1] + hi[1]) / 2.0, -lo[2]]),
-        );
+        let (lo, hi) = v.all().bounds();
+        let shift = [-(lo[0] + hi[0]) / 2.0, -(lo[1] + hi[1]) / 2.0, -lo[2]];
+        v.body = v.body.translated(shift);
+        v.accent = v.accent.map(|a| a.translated(shift));
+        out.insert(p.name, v);
     }
     Ok(out)
 }
@@ -271,9 +353,9 @@ fn load_meshes(
 /// Centre each row on the bed and stack the rows top to bottom. Returns (name, x, y).
 fn layout(
     rows: &[&[&'static str]],
-    meshes: &BTreeMap<&str, Mesh>,
+    meshes: &BTreeMap<&str, Volumes>,
 ) -> Result<Vec<(&'static str, f64, f64)>, String> {
-    let size = |n: &str| meshes[n].extents();
+    let size = |n: &str| meshes[n].all().extents();
     let heights: Vec<f64> = rows
         .iter()
         .map(|r| r.iter().map(|n| size(n)[1]).fold(0.0, f64::max))
@@ -391,7 +473,7 @@ pub fn render(items: &[(Mesh, [f64; 3])], size: usize) -> Image {
     let light = [l[0] / ln, l[1] / ln, l[2] / ln];
 
     let bed = bed_mesh();
-    let mut scene: Vec<(&Mesh, [f64; 3])> = vec![(&bed, [0.17, 0.18, 0.20])];
+    let mut scene: Vec<(&Mesh, [f64; 3])> = vec![(&bed, PEI)];
     scene.extend(items.iter().map(|(m, c)| (m, *c)));
     let centred = |v: &[f64; 3]| apply([v[0] - BED / 2.0, v[1] - BED / 2.0, v[2]]);
     let (mut lo, mut hi) = ([f64::INFINITY; 2], [f64::NEG_INFINITY; 2]);
@@ -574,6 +656,14 @@ fn zip(files: &[(String, Vec<u8>)]) -> Vec<u8> {
 
 // ---------- projects ----------
 
+/// Ids of an object's body mesh, logo mesh and object, and its object file number.
+struct Ids {
+    body: usize,
+    accent: Option<usize>,
+    obj: usize,
+    num: usize,
+}
+
 struct Placed {
     label: String,
     part: &'static str,
@@ -583,7 +673,7 @@ struct Placed {
 }
 
 /// One object per placed part; repeated parts get numbered names.
-fn place_objects(meshes: &BTreeMap<&str, Mesh>, plates: Plates) -> Result<Vec<Placed>, String> {
+fn place_objects(meshes: &BTreeMap<&str, Volumes>, plates: Plates) -> Result<Vec<Placed>, String> {
     let mut placed = Vec::new();
     for (p, (_, rows)) in plates.iter().enumerate() {
         for (n, x, y) in layout(rows, meshes)? {
@@ -617,22 +707,46 @@ fn project(
     kit: &Kit,
     title: &str,
     plates: Plates,
-    meshes: &BTreeMap<&str, Mesh>,
+    meshes: &BTreeMap<&str, Volumes>,
 ) -> Result<(Vec<u8>, Vec<Placed>), String> {
     let objects = place_objects(meshes, plates)?;
-    // Bambu numbering: each object's mesh (its one part) takes an id, the object the next one.
-    let ids: Vec<(usize, usize, usize)> = (0..objects.len())
-        .map(|i| (2 * i + 1, 2 * i + 2, i + 1))
+    // Bambu numbering: each object's meshes (its body, then its logo) take ids, then the object.
+    let mut next = 0;
+    let ids: Vec<Ids> = objects
+        .iter()
+        .enumerate()
+        .map(|(i, o)| {
+            let body = next + 1;
+            let accent = meshes[o.part].accent.as_ref().map(|_| body + 1);
+            let obj = accent.unwrap_or(body) + 1;
+            next = obj;
+            Ids {
+                body,
+                accent,
+                obj,
+                num: i + 1,
+            }
+        })
         .collect();
     let mut files: BTreeMap<String, Vec<u8>> = BTreeMap::new();
     let mut rels = Vec::new();
-    for (o, &(part_id, _, num)) in objects.iter().zip(&ids) {
+    for (o, id) in objects.iter().zip(&ids) {
+        let num = id.num;
         let path = format!("3D/Objects/object_{num}.model");
-        let uuid = format!("{:08x}-81cb-4c03-9d28-80fed5dfa1dc", num << 16);
-        let body = format!(
-            "{MODEL_HEAD} <resources>\n{} </resources>\n <build/>\n</model>\n",
-            mesh_xml(&meshes[o.part], part_id, &uuid)
+        let v = &meshes[o.part];
+        let mut res = mesh_xml(
+            &v.body,
+            id.body,
+            &format!("{:08x}-81cb-4c03-9d28-80fed5dfa1dc", num << 16),
         );
+        if let (Some(a), Some(aid)) = (&v.accent, id.accent) {
+            res.push_str(&mesh_xml(
+                a,
+                aid,
+                &format!("{:08x}-81cb-4c03-9d28-80fed5dfa1dc", (num << 16) + 1),
+            ));
+        }
+        let body = format!("{MODEL_HEAD} <resources>\n{res} </resources>\n <build/>\n</model>\n");
         files.insert(path.clone(), body.into_bytes());
         rels.push(path);
     }
@@ -652,18 +766,26 @@ fn project(
         let _ = writeln!(model, " <metadata name=\"{k}\">{}</metadata>", escape(v));
     }
     model.push_str(" <resources>\n");
-    for &(part_id, obj_id, num) in &ids {
+    for id in &ids {
+        let num = id.num;
         let _ = write!(
             model,
-            "  <object id=\"{obj_id}\" p:UUID=\"{num:08x}-61cb-4c03-9d28-80fed5dfa1dc\" type=\"model\">\n   \
-             <components>\n    <component p:path=\"/3D/Objects/object_{num}.model\" objectid=\"{part_id}\" \
-             p:UUID=\"{:08x}-b206-40ff-9872-83e8017abed1\" transform=\"1 0 0 0 1 0 0 0 1 0 0 0\"/>\n   \
-             </components>\n  </object>\n",
-            num << 16
+            "  <object id=\"{}\" p:UUID=\"{num:08x}-61cb-4c03-9d28-80fed5dfa1dc\" type=\"model\">\n   <components>\n",
+            id.obj
         );
+        for (k, mesh_id) in std::iter::once(id.body).chain(id.accent).enumerate() {
+            let _ = writeln!(
+                model,
+                "    <component p:path=\"/3D/Objects/object_{num}.model\" objectid=\"{mesh_id}\" \
+                 p:UUID=\"{:08x}-b206-40ff-9872-83e8017abed1\" transform=\"1 0 0 0 1 0 0 0 1 0 0 0\"/>",
+                (num << 16) + k
+            );
+        }
+        model.push_str("   </components>\n  </object>\n");
     }
     model.push_str(" </resources>\n <build p:UUID=\"2c7c17d8-22b5-4d84-8835-1976022ea369\">\n");
-    for (o, &(_, obj_id, _)) in objects.iter().zip(&ids) {
+    for (o, id) in objects.iter().zip(&ids) {
+        let obj_id = id.obj;
         let (ox, oy) = plate_origin(o.plate, plates.len());
         let _ = writeln!(
             model,
@@ -677,26 +799,46 @@ fn project(
     files.insert("3D/3dmodel.model".into(), model.into_bytes());
 
     let mut cfg = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n");
-    for (o, &(part_id, obj_id, _)) in objects.iter().zip(&ids) {
-        let faces = meshes[o.part].tris.len();
+    for (o, id) in objects.iter().zip(&ids) {
+        let v = &meshes[o.part];
+        let pt = part(kit, o.part);
+        let faces = v.body.tris.len() + v.accent.as_ref().map_or(0, |a| a.tris.len());
         let label = escape(&o.label);
-        let _ = writeln!(cfg, "  <object id=\"{obj_id}\">");
+        let _ = writeln!(cfg, "  <object id=\"{}\">", id.obj);
         let _ = writeln!(cfg, "    <metadata key=\"name\" value=\"{label}\"/>");
-        let _ = writeln!(cfg, "    <metadata key=\"extruder\" value=\"1\"/>");
-        if part(kit, o.part).solid_infill {
+        let _ = writeln!(
+            cfg,
+            "    <metadata key=\"extruder\" value=\"{}\"/>",
+            pt.filament()
+        );
+        if pt.solid_infill {
             let _ = writeln!(
                 cfg,
                 "    <metadata key=\"sparse_infill_density\" value=\"100%\"/>"
             );
         }
-        let _ = write!(
-            cfg,
-            "    <metadata face_count=\"{faces}\"/>\n    <part id=\"{part_id}\" subtype=\"normal_part\">\n      \
-             <metadata key=\"name\" value=\"{label}\"/>\n      \
-             <metadata key=\"matrix\" value=\"1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\"/>\n      \
-             <mesh_stat face_count=\"{faces}\" edges_fixed=\"0\" degenerate_facets=\"0\" facets_removed=\"0\" \
-             facets_reversed=\"0\" backwards_edges=\"0\"/>\n    </part>\n  </object>\n"
-        );
+        let _ = writeln!(cfg, "    <metadata face_count=\"{faces}\"/>");
+        let mut volumes = vec![(id.body, label.clone(), pt.filament(), v.body.tris.len())];
+        if let (Some(a), Some(aid)) = (&v.accent, id.accent) {
+            volumes.push((
+                aid,
+                format!("{label} logo"),
+                3 - pt.filament(),
+                a.tris.len(),
+            ));
+        }
+        for (pid, name, filament, f) in volumes {
+            let _ = write!(
+                cfg,
+                "    <part id=\"{pid}\" subtype=\"normal_part\">\n      \
+                 <metadata key=\"name\" value=\"{name}\"/>\n      \
+                 <metadata key=\"matrix\" value=\"1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\"/>\n      \
+                 <metadata key=\"extruder\" value=\"{filament}\"/>\n      \
+                 <mesh_stat face_count=\"{f}\" edges_fixed=\"0\" degenerate_facets=\"0\" facets_removed=\"0\" \
+                 facets_reversed=\"0\" backwards_edges=\"0\"/>\n    </part>\n"
+            );
+        }
+        cfg.push_str("  </object>\n");
     }
     for (p, (plate_name, _)) in plates.iter().enumerate() {
         let _ = write!(
@@ -708,14 +850,15 @@ fn project(
             escape(plate_name),
             p + 1
         );
-        for (o, &(_, obj_id, num)) in objects.iter().zip(&ids) {
+        for (o, id) in objects.iter().zip(&ids) {
             if o.plate == p {
                 let _ = write!(
                     cfg,
-                    "    <model_instance>\n      <metadata key=\"object_id\" value=\"{obj_id}\"/>\n      \
+                    "    <model_instance>\n      <metadata key=\"object_id\" value=\"{}\"/>\n      \
                      <metadata key=\"instance_id\" value=\"0\"/>\n      \
                      <metadata key=\"identify_id\" value=\"{}\"/>\n    </model_instance>\n",
-                    1000 + num
+                    id.obj,
+                    1000 + id.num
                 );
             }
         }
@@ -725,16 +868,15 @@ fn project(
     files.insert("Metadata/model_settings.config".into(), cfg.into_bytes());
 
     for p in 0..plates.len() {
-        let scene: Vec<(Mesh, [f64; 3])> = objects
-            .iter()
-            .filter(|o| o.plate == p)
-            .map(|o| {
-                (
-                    meshes[o.part].translated([o.x, o.y, 0.0]),
-                    part(kit, o.part).colour,
-                )
-            })
-            .collect();
+        let mut scene: Vec<(Mesh, [f64; 3])> = Vec::new();
+        for o in objects.iter().filter(|o| o.plate == p) {
+            let v = &meshes[o.part];
+            let colour = part(kit, o.part).colour;
+            scene.push((v.body.translated([o.x, o.y, 0.0]), colour));
+            if let Some(a) = &v.accent {
+                scene.push((a.translated([o.x, o.y, 0.0]), accent_colour(colour)));
+            }
+        }
         files.insert(
             format!("Metadata/plate_{}.png", p + 1),
             png(&render(&scene, 512)),
@@ -802,13 +944,14 @@ fn check(
     cfg: &str,
     plates: usize,
     objects: &[Placed],
-    meshes: &BTreeMap<&str, Mesh>,
+    meshes: &BTreeMap<&str, Volumes>,
 ) -> Result<(), String> {
     let attr = |line: &str, key: &str| -> Option<String> {
         let at = line.find(&format!("{key}=\""))? + key.len() + 2;
         Some(line[at..].split('"').next()?.to_string())
     };
     let mut position = BTreeMap::new();
+    let mut order = Vec::new();
     for line in model
         .lines()
         .filter(|l| l.trim_start().starts_with("<item "))
@@ -819,6 +962,7 @@ fn check(
             .split(' ')
             .filter_map(|v| v.parse().ok())
             .collect();
+        order.push(obj.clone());
         if t.len() != 12 || position.insert(obj.clone(), (t[9], t[10])).is_some() {
             return Err(format!("object {obj} must have exactly one instance"));
         }
@@ -834,9 +978,12 @@ fn check(
             if !seen.insert(obj.clone()) {
                 return Err(format!("object {obj} is on more than one plate"));
             }
-            let index: usize = obj.parse::<usize>().map_err(|e| e.to_string())? / 2 - 1;
+            let index = order
+                .iter()
+                .position(|o| *o == obj)
+                .ok_or("plate entry for an unknown object")?;
             let o = &objects[index];
-            let [w, dpt, _] = meshes[o.part].extents();
+            let [w, dpt, _] = meshes[o.part].all().extents();
             let (x, y) = position[&obj];
             if !(ox + w / 2.0 <= x
                 && x <= ox + BED - w / 2.0
@@ -854,12 +1001,33 @@ fn check(
     if seen.len() != position.len() {
         return Err("some objects are on no plate".into());
     }
+    // Every object with a logo prints it in the other filament.
+    for obj in cfg.split("<object id=").skip(1) {
+        let obj = obj.split("</object>").next().unwrap_or_default();
+        let filaments: Vec<String> = obj
+            .split("<part ")
+            .skip(1)
+            .filter_map(|part| {
+                part.lines()
+                    .find(|l| l.contains("key=\"extruder\""))
+                    .and_then(|l| attr(l, "value"))
+            })
+            .collect();
+        if filaments.len() == 2 && filaments[0] == filaments[1] {
+            return Err("a logo prints in the same filament as its part".into());
+        }
+    }
     Ok(())
 }
 
 /// Write every Bambu Studio project into `dir/p1s/`.
-pub fn write_projects(dir: &Path, kit: &Kit, generated: &[(&str, Mesh)]) -> Result<(), String> {
-    let meshes = load_meshes(kit, generated)?;
+pub fn write_projects(
+    dir: &Path,
+    kit: &Kit,
+    generated: &[(&str, Mesh)],
+    brands: &[(&str, Mesh, Mesh)],
+) -> Result<(), String> {
+    let meshes = load_meshes(kit, generated, brands)?;
     let out = dir.join("p1s");
     std::fs::create_dir_all(&out).map_err(|e| e.to_string())?;
     for &(file, title, plates) in kit.projects {
