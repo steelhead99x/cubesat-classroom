@@ -50,3 +50,7 @@ This is ground testing of one node's power. Flight acceptance for a rideshare st
 - Pick and check a solar charger board, and add it here with its input range.
 - Run test 2 and record the first hardware bench numbers.
 - The nano FlatSat has a matching fork in the rockoon repository (the 1U bench FlatSat), with the same solar figures in Rust.
+
+## Thermal FlatSat
+
+Continue with the [thermal bench fork](../thermal-flatsat/README.md) to compare cold-pack hold times and model the energy budget for a cryogenic stage.
