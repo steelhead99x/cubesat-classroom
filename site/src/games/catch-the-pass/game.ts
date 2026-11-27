@@ -22,7 +22,8 @@ function init(root: HTMLElement) {
   let levelIndex = 0;
   let game: Game | null = null;
   let running = false, paused = false, countdown = 0;
-  let slow = false;
+  let slow = true; // Easy mode is on until the player turns it off.
+  const howtoKey = 'catch-the-pass:how-to-seen';
   let liveSlot = -1;
   let last = performance.now();
   const keys = new Set<string>();
@@ -48,7 +49,7 @@ function init(root: HTMLElement) {
     soundOn = !soundOn;
     if (soundOn && !audio) audio = new AudioContext();
     (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(soundOn));
-    (e.currentTarget as HTMLElement).textContent = soundOn ? 'Sound on' : 'Sound off';
+    (e.currentTarget as HTMLElement).textContent = soundOn ? '🔊 Sound on' : '🔇 Sound off';
     beep(660, 80);
   });
 
@@ -107,7 +108,7 @@ function init(root: HTMLElement) {
 
   function currentLevel(): Level {
     const level = mode === 'live' ? G.LIVE : G.LEVELS[levelIndex];
-    return slow && mode === 'missions' ? { ...level, duration: level.duration * 1.5, slew: level.slew * 1.2 } : level;
+    return slow && mode === 'missions' ? G.easyLevel(level) : level;
   }
 
   function ready() {
@@ -117,9 +118,33 @@ function init(root: HTMLElement) {
     show(`<h3>${mode === 'live' ? 'Live sky' : `Level ${levelIndex + 1}: ${G.LEVELS[levelIndex].name}`}</h3>
       <p>${currentLevel().tip}</p>
       <p class="goal">Goal: ${currentLevel().goal.map((g, i) => `${'★'.repeat(i + 1)} ${g} packets`).join(' · ')}</p>
-      <button type="button" class="go" data-go>Start the pass</button>`);
+      <button type="button" class="go" data-go>▶ Start</button>`);
     hud(); draw();
+    if (!seenHowto()) showHowto();
   }
+
+  // ---- The first-visit "How to play" card ----
+  function seenHowto() { try { return localStorage.getItem(howtoKey) === '1'; } catch { return false; } }
+  function showHowto() {
+    if (running && mode === 'missions' && !paused) setPaused(true);
+    const stage = canvas.parentElement!;
+    stage.dataset.panel = 'howto';
+    show(`<h3>How to play</h3>
+      <ol class="steps">
+        <li><span class="pic" aria-hidden="true">🛰️</span><b>1. Find the satellite</b><span>It rises on the left and crosses the sky.</span></li>
+        <li><span class="pic" aria-hidden="true">📡</span><b>2. Keep the circle on it</b><span>Use the ▲ ◀ ▶ ▼ buttons, drag on the sky, or press the arrow keys.</span></li>
+        <li><span class="pic" aria-hidden="true">📦</span><b>3. Catch packets</b><span>A green signal bar means you are catching packets and earning credits. Lost it? Try 🐢 Far.</span></li>
+      </ol>
+      <button type="button" class="go" data-howto>Got it!</button>`);
+    const got = overlay.querySelector<HTMLButtonElement>('[data-howto]')!;
+    got.addEventListener('click', () => {
+      try { localStorage.setItem(howtoKey, '1'); } catch { /* private mode */ }
+      stage.dataset.panel = '';
+      if (mode === 'missions' && !running) ready(); else if (paused) setPaused(false); else overlay.hidden = true;
+    });
+    got.focus({ preventScroll: true });
+  }
+  $('[data-help]').addEventListener('click', showHowto);
 
   function show(html: string) {
     overlay.innerHTML = html;
@@ -173,6 +198,24 @@ function init(root: HTMLElement) {
   });
   root.addEventListener('keyup', e => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
   canvas.addEventListener('blur', () => keys.clear());
+
+  // ---- The big arrow buttons: hold one to keep turning (they work like the arrow keys). ----
+  for (const b of root.querySelectorAll<HTMLButtonElement>('[data-aim]')) {
+    const key = b.dataset.aim!;
+    const down = (e: PointerEvent) => {
+      e.preventDefault();
+      if (!running && mode === 'missions' && overlay.hidden) start();
+      keys.add(key); pointer = null; b.dataset.held = 'true';
+      b.setPointerCapture(e.pointerId);
+    };
+    const up = () => { keys.delete(key); b.dataset.held = 'false'; };
+    b.addEventListener('pointerdown', down);
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, up);
+    // Keyboard users: Enter or Space on a focused arrow button nudges the antenna.
+    b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); keys.add(key); } });
+    b.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') up(); });
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  }
 
   // ---- Pointer: drag on touch; on desktop the antenna follows the mouse over the sky. ----
   const at = (e: PointerEvent) => { const r = canvas.getBoundingClientRect(); return fromXY(e.clientX - r.left, e.clientY - r.top); };
@@ -347,7 +390,7 @@ function init(root: HTMLElement) {
     ];
     show(`<h3>${s ? 'Pass complete!' : 'Loss of signal'}</h3>
       <p class="stars" aria-label="${s} of 3 stars">${'★'.repeat(s)}${'☆'.repeat(3 - s)}</p>
-      <p><strong>${game.rx}</strong> packets · <strong>${game.lost}</strong> lost · best streak <strong>${game.bestStreak}</strong> · score <strong>${game.score}</strong>${game.battery >= 20 ? ' (includes +200 for a healthy battery)' : ''}</p>
+      <p><strong>${game.rx}</strong> packets · <strong>${game.lost}</strong> lost · best streak <strong>${game.bestStreak}</strong> · <strong>${game.score}</strong> credits${game.battery >= 20 ? ' (with +200 credits for a healthy battery)' : ''}</p>
       <p>${lessons[levelIndex]}</p>
       <div class="row">${s && more ? '<button type="button" class="go" data-next>Next level</button>' : ''}<button type="button" class="${s && more ? '' : 'go'}" data-again>Try again</button></div>`);
     overlay.querySelector<HTMLButtonElement>('button')?.focus();
@@ -379,7 +422,7 @@ function init(root: HTMLElement) {
     hudEl.time.textContent = left.toFixed(0) + ' s';
     hudEl.light.textContent = G.inEclipse(game.level, game.t / game.level.duration) ? 'In Earth\u2019s shadow' : 'Sunlit';
     hudEl.tx.setAttribute('aria-pressed', String(game.transmit));
-    hudEl.tx.textContent = game.transmit ? 'Transmitter on' : 'Transmitter held';
+    hudEl.tx.textContent = game.transmit ? '📡 Sending: on' : '📡 Sending: resting';
     sfButtons.forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.sf) === game!.sf)));
     if (game.log[0] && hudEl.log.dataset.seq !== String(game.log[0].seq)) {
       hudEl.log.dataset.seq = String(game.log[0].seq);
@@ -395,7 +438,7 @@ function init(root: HTMLElement) {
       rows.sort((a, b) => b.score - a.score);
       const total = rows.reduce((n, r) => n + r.rx, 0);
       $('[data-total]').textContent = `${rows.length} station${rows.length === 1 ? '' : 's'} · ${total} packets caught together this pass`;
-      hudEl.board.replaceChildren(...rows.slice(0, 8).map(r => Object.assign(document.createElement('li'), { textContent: `${r.cs}: ${r.rx} packets, ${r.score} points` })));
+      hudEl.board.replaceChildren(...rows.slice(0, 8).map(r => Object.assign(document.createElement('li'), { textContent: `${r.cs}: ${r.rx} packets, ${r.score} credits` })));
     }
   }
 

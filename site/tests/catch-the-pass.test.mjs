@@ -114,3 +114,12 @@ test('every level is winnable by careful tracking with a sensible SF', () => {
     assert.ok(game.rx >= level.goal[0], `${level.name}: ${game.rx} packets`);
   }
 });
+
+test('easy mode gives longer passes, a faster antenna and a wider beam, with the same goals', () => {
+  for (const level of G.LEVELS) {
+    const easy = G.easyLevel(level);
+    assert.ok(easy.duration > level.duration && easy.slew > level.slew && easy.beam > level.beam);
+    assert.deepEqual(easy.goal, level.goal);
+    assert.equal(level.beam, G.LEVELS.find(l => l.id === level.id).beam, 'the level itself is unchanged');
+  }
+});

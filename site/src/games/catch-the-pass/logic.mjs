@@ -130,6 +130,11 @@ export function inEclipse(level, p) {
   return !!level.eclipse && p >= level.eclipse[0] && p < level.eclipse[1];
 }
 
+/** Easy mode (the default): slower passes, a faster antenna and a wider beam. Goals stay the same. */
+export function easyLevel(level) {
+  return { ...level, duration: level.duration * 1.5, slew: level.slew * 1.2, beam: level.beam * 1.3 };
+}
+
 export function createGame(level, seed = 1) {
   return {
     level, seed, random: rng(seed), t: 0, done: false,

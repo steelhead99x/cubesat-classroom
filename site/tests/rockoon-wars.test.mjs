@@ -79,11 +79,11 @@ test('a direct hit damages, a kill pays, and the last one standing wins the roun
   const shooter = m.turn, target = 1 - shooter;
   m.field.units[target].x = m.field.units[shooter].x; m.field.units[target].y = m.field.units[shooter].y;
   m.field.units[target].hp = 10;
-  const before = m.players[shooter].money;
+  const before = m.players[shooter].credits;
   const { events } = R.fire(m, { angle: 90, power: 30, weapon: 'baby' });
   assert.ok(events.some(e => e.type === 'kill' && e.who === target));
   assert.ok(events.some(e => e.type === 'round' && e.winner === shooter) || !m.field.units[shooter].alive);
-  assert.ok(m.players[shooter].money > before || !m.field.units[shooter].alive);
+  assert.ok(m.players[shooter].credits > before || !m.field.units[shooter].alive);
   assert.equal(m.phase, 'shop');
   void a; void b;
 });
@@ -103,8 +103,8 @@ test('ammo is spent, and an empty weapon fires a Baby Rocket', () => {
   const m = R.createMatch({ seed: 4, players: players(2) });
   assert.ok(R.buy(m, 0, 'rocket'));
   assert.equal(m.players[0].ammo.rocket, 5);
-  assert.equal(m.players[0].money, R.START_MONEY - 150);
-  assert.equal(R.buy(m, 1, 'mega'), false, 'not enough money');
+  assert.equal(m.players[0].credits, R.START_CREDITS - 150);
+  assert.equal(R.buy(m, 1, 'mega'), false, 'not enough credits');
   R.startRound(m);
   m.turn = 0;
   assert.equal(R.fire(m, { angle: 45, power: 50, weapon: 'rocket' }).weapon, 'rocket');
@@ -204,4 +204,22 @@ test('only the host can skip a player who left', () => {
   ({ match } = Room.replay(host, s));
   assert.equal(match.log.length, k + 1);
   assert.equal(match.log[k].skip, true);
+});
+
+test('everyone starts with credits for a couple of better rockets', () => {
+  const m = R.createMatch({ seed: 2, players: players(4) });
+  for (const p of m.players) assert.equal(p.credits, R.START_CREDITS);
+  assert.ok(R.START_CREDITS >= R.WEAPON.rocket.price + R.WEAPON.big.price);
+  assert.ok(R.buy(m, 0, 'rocket') && R.buy(m, 0, 'big'));
+  assert.equal(m.players[0].credits, R.START_CREDITS - 550);
+  assert.equal(Object.hasOwn(m.players[0], 'money'), false);
+});
+
+test('the aim line is the start of the real shot', () => {
+  const m = begin(2, 21);
+  const u = m.field.units[m.turn];
+  u.angle = 70; u.power = 60;
+  const preview = R.aimPreview(m, 25);
+  assert.equal(preview.length, 25);
+  assert.deepEqual(preview, R.trajectory(m, u, 70, 60).path.slice(0, 25));
 });
