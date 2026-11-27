@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as R from '../src/games/rockoon-wars/logic.mjs';
 
+const under = (terrain, x) => Math.max(...Array.from({ length: 13 }, (_, i) => terrain[Math.max(0, Math.min(R.W - 1, x + i - 6))]));
 const players = n => Array.from({ length: n }, (_, i) => ({ id: 'p' + i, name: 'P' + (i + 1) }));
 const begin = (n = 2, seed = 42, rounds = 3) => R.startRound(R.createMatch({ seed, players: players(n), rounds }));
 
@@ -79,7 +80,7 @@ test('rocket releases above its pad and scores against the ring only', () => {
     const centre = Math.floor(result.blast.x);
     assert.ok(m.field.terrain[centre] < ground[centre]);
     assert.notEqual(pad.x, centre, 'the nearby pad slides away from the impact');
-    assert.equal(pad.y, m.field.terrain[pad.x]);
+    assert.equal(pad.y, under(m.field.terrain, pad.x), 'the pad sits on the highest ground under it');
     assert.deepEqual(other, otherPad, 'the distant pad stays put');
   }
 });
@@ -429,4 +430,27 @@ test('the controls show the Scout once the picked rocket has run out', () => {
   assert.equal(R.readyWeapon(m, 0), 'baby', 'but the Scout is what will launch');
   m.field.units[1].weapon = 'nonsense';
   assert.equal(R.readyWeapon(m, 1), 'baby');
+});
+
+test('bigger rockets carve bigger craters', () => {
+  const sizes = R.WEAPONS.map(w => R.craterRadius(w.id));
+  for (let i = 1; i < sizes.length; i++) assert.ok(sizes[i] > sizes[i - 1], `${R.WEAPONS[i].name}: ${sizes}`);
+});
+
+test('a pad moved by a crater never hangs over the edge', () => {
+  for (let seed = 1; seed <= 30; seed++) {
+    const m = R.createMatch({ seed, players: players(2) });
+    R.startRound(m);
+    m.field.wind = 0;
+    for (let k = 0; k < 4 && m.phase === 'play'; k++) {
+      R.fire(m, { angle: 60 + 20 * k, power: 18 + 5 * k, weapon: 'baby' });
+      for (const pad of m.field.units) assert.equal(pad.y, under(m.field.terrain, pad.x), `seed ${seed}`);
+    }
+  }
+});
+
+test('the rising flag is display only and checked like everything else', () => {
+  const base = { cs: 'GS-AA1', joined: 1, turns: {}, shops: {} };
+  assert.equal(Room.cleanSnapshot({ ...base, rising: 4 }).rising, 4);
+  for (const bad of [-1, 1e6, 'x', 2.5, null]) assert.equal(Room.cleanSnapshot({ ...base, rising: bad }).rising, undefined, String(bad));
 });

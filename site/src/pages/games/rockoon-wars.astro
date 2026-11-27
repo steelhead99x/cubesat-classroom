@@ -194,6 +194,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   .fire { min-height: 52px; border-radius: .8rem; border: 0; background: linear-gradient(#ff8a7a, #e8463c); box-shadow: 0 4px 0 #9b2a22; font-size: 1.35rem !important; font-weight: 900 !important; letter-spacing: .04em; }
   .fire:active:not([aria-disabled="true"]):not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #9b2a22; }
   .controls button:disabled, .fire[aria-disabled="true"] { opacity: .45; }
+  /* After a while at the release point the button pulses (a steady ring with reduced motion). */
+  .fire[data-nudge] { outline: 3px solid var(--gold); outline-offset: 2px; animation: nudge 1s ease-in-out infinite; }
+  @keyframes nudge { 50% { transform: scale(1.04); } }
+  @media (prefers-reduced-motion: reduce) { .fire[data-nudge] { animation: none; } }
   @media (max-width: 720px) {
     .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grp { grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; }

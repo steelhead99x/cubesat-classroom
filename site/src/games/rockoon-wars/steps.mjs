@@ -8,7 +8,7 @@ export const STEPS = [
   { id: 'wind', pic: 'wind', title: 'Check the wind', text: 'The arrow at the top shows the wind. It carries your balloon sideways as it climbs, then bends your rocket the same way.', keys: ['Wind →'] },
   { id: 'aim', pic: 'aim', title: 'Aim', text: 'Drag from your balloon toward the gold ring, or press ◀ and ▶. The yellow dots show how your rocket will start.', keys: ['◀', '▶'] },
   { id: 'power', pic: 'power', title: 'Set the power', text: 'Drag farther for more power, or press − and +. More power flies higher and farther.', keys: ['−', '+'] },
-  { id: 'launch', pic: 'rocket', title: 'Lift off, then release', text: 'Press Launch balloon. Wait for it to reach the release point. Adjust your aim if needed, then press Release rocket. Ground impacts carve craters and shift nearby launch pads.', keys: ['Launch balloon', 'Release rocket'] },
+  { id: 'launch', pic: 'rocket', title: 'Lift off, then release', text: 'Press Launch balloon. Wait for it to reach the release point. Adjust your aim if needed, then press Release rocket. If you wait too long, it releases by itself. Ground impacts carve craters (bigger rockets, bigger craters) and shift nearby launch pads.', keys: ['Launch balloon', 'Release rocket'] },
   { id: 'score', pic: 'ring', title: 'Score', text: 'Through the ring scores 3 points. Close to its edge scores 1. Each crew gets three launches a round, and the most points after the last round wins.', keys: [] },
 ];
 

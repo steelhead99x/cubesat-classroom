@@ -10,7 +10,7 @@ import * as Room from './room.mjs';
 import { Renderer, rocketSvg, type Scene } from './render';
 import type { RoomLink, LinkStatus, Snapshot } from './net';
 
-type Snap = { cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]> };
+type Snap = { cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; rising?: number; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]> };
 type Host = { seed: number; rounds: number; order: string[]; names: Record<string, string> };
 type Match = ReturnType<typeof G.createMatch>;
 type Field = NonNullable<Match['field']>;
@@ -60,7 +60,12 @@ function start(root: HTMLElement) {
   let me = '';
   let paused = false;
   let howto = !seenHowto();
-  let ascent: { turn: number; elapsed: number } | null = null;
+  /** This screen's balloon on the way up, then waiting at the release point (`held` seconds). */
+  let ascent: { turn: number; elapsed: number; held: number; nudged: boolean } | null = null;
+  /** Another crew's balloon seen rising (from their `rising` flag): which turn, and since when. */
+  let remoteRise: { key: string; since: number } | null = null;
+  const NUDGE_AFTER = 8; // seconds at the release point before the button pulses
+  const AUTO_RELEASE_AFTER = 15; // and before the rocket goes by itself
   let anim: null | { phase: 'lift' | 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; after: Field; blast: { x: number; y: number; r: number; dirt: boolean } | null; events: Events; shooter: number } = null;
   /** Each player's last shot this round, drawn faintly so they can correct for the wind. */
   let ghosts: { round: number; paths: Record<number, number[][]> } = { round: -1, paths: {} };
@@ -195,8 +200,13 @@ function start(root: HTMLElement) {
         const before = structuredClone(match.field!) as Field;
         before.units[match.turn].angle = action.shot.angle;
         const shooterIndex = match.turn;
-        const staged = ascent?.turn === match.log.length && ascent.elapsed >= LIFT_TIME;
-        ascent = null;
+        // Skip the climb animation when this screen has already shown the balloon at the top:
+        // its own ascent, or another crew's balloon seen rising for the whole climb.
+        const turnKey = `${match.round}:${match.log.length}`;
+        const remoteTop = remoteRise?.key === turnKey && performance.now() - remoteRise.since >= LIFT_TIME * 1000;
+        const staged = (ascent?.turn === match.log.length && ascent.elapsed >= LIFT_TIME) || remoteTop;
+        clearAscent();
+        remoteRise = null;
         const result = Room.apply(match, action) as ReturnType<typeof G.fire>;
         if (ghosts.round !== match.round) ghosts = { round: match.round, paths: {} };
         ghosts.paths[shooterIndex] = result.path;
@@ -207,7 +217,8 @@ function start(root: HTMLElement) {
         return render();
       }
       if (action.kind === 'shop' || action.kind === 'skip') {
-        ascent = null;
+        clearAscent();
+        remoteRise = null;
         Room.apply(match, action); shopPick = {};
         if (action.kind === 'skip' && match.phase !== 'play') { shotNote = 'Turn skipped.'; showRoundResult(); break; }
         continue;
@@ -231,18 +242,30 @@ function start(root: HTMLElement) {
 
   const canAct = () => myTurn() && !anim && !paused && !banner && !howto;
 
+  /** Ends this screen's balloon climb, and takes its "rising" flag back down. */
+  function clearAscent() {
+    if (!ascent) return;
+    ascent = null;
+    for (const id of mine) if (snapOf(id).rising !== undefined) { delete snapOf(id).rising; publish(); }
+  }
+
   function fireNow() {
     if (!match || !canAct()) return;
+    const id = host!.order[match.turn];
     if (!ascent) {
-      ascent = { turn: match.log.length, elapsed: 0 };
+      ascent = { turn: match.log.length, elapsed: 0, held: 0, nudged: false };
+      // Let the other screens show this balloon rising too (display only).
+      snapOf(id).rising = match.log.length;
+      publish();
       say('Balloon rising.', true);
       renderHud();
       return;
     }
     if (ascent.elapsed < LIFT_TIME) return;
-    const u = shooter(), id = host!.order[match.turn];
+    const u = shooter();
     u.weapon = G.readyWeapon(match, match.turn);
     snapOf(id).turns[match.log.length] = { angle: u.angle, power: u.power, weapon: u.weapon };
+    delete snapOf(id).rising;
     publish();
     step();
   }
@@ -259,6 +282,17 @@ function start(root: HTMLElement) {
       if (ascent.elapsed === LIFT_TIME) {
         say('Balloon ready. Release rocket.', true);
         renderHud();
+      }
+    } else if (ascent && canAct()) {
+      // Waiting at the release point: nudge, then release, so one crew cannot stall the match.
+      ascent.held += dt;
+      if (!ascent.nudged && ascent.held >= NUDGE_AFTER) {
+        ascent.nudged = true;
+        say(`Press Release rocket. It goes by itself in ${AUTO_RELEASE_AFTER - NUDGE_AFTER} seconds.`, true);
+        renderHud();
+      } else if (ascent.held >= AUTO_RELEASE_AFTER) {
+        say('Rocket released automatically.', true);
+        fireNow();
       }
     }
     view.draw(scene(), paused ? 0 : dt, sceneSeed());
@@ -305,22 +339,34 @@ function start(root: HTMLElement) {
         : phase === 'settle' ? 1 - back * back * (3 - 2 * back)
         : phase === 'rest' ? 0 : 1;
       const landed = phase === 'settle' || phase === 'rest';
-      const pads = landed ? after.units : before.units;
+      // The crater (and any pads it moved) appears the moment the rocket hits, not after the blast.
+      const reshaped = landed || phase === 'boom';
+      const pads = reshaped ? after.units : before.units;
       const units = pads.map((pad, i) => {
         if (i !== shooter) return pad;
         const start = G.balloonPosition(before.units[i], before.wind, 1);
         return landed
           ? { ...pad, x: pad.x + (start.x - pad.x) * lift, y: pad.y + (start.y - pad.y) * lift }
-          : { ...pad, ...G.balloonPosition(pad, before.wind, lift) };
+          : { ...pad, ...G.balloonPosition(before.units[i], before.wind, lift) };
       });
       const away = phase === 'flight' || phase === 'boom' || phase === 'settle';
-      return { ...before, terrain: landed ? after.terrain : before.terrain, pads, units, colors, names, released: away ? shooter : undefined, active: -1, preview: null, drag: null,
+      return { ...before, terrain: reshaped ? after.terrain : before.terrain, pads, units, colors, names, released: away ? shooter : undefined, active: -1, preview: null, drag: null,
         shot: phase === 'flight' ? { path: anim.path, pos: anim.pos } : null };
     }
     const act = canAct() && match.phase === 'play';
     const pads = match.field.units;
-    const units = ascent ? pads.map((u, i) => i === match!.turn
-      ? { ...u, ...G.balloonPosition(u, match!.field!.wind, ascent!.elapsed / LIFT_TIME) } : u) : pads;
+    // This screen's balloon climbing, or another crew's balloon they have told us is rising.
+    let progress = ascent ? ascent.elapsed / LIFT_TIME : 0;
+    if (!ascent && match.phase === 'play' && host) {
+      const owner = host.order[match.turn];
+      const key = `${match.round}:${match.log.length}`;
+      if (!mine.includes(owner) && snaps.get(owner)?.rising === match.log.length) {
+        if (remoteRise?.key !== key) remoteRise = { key, since: performance.now() };
+        progress = Math.min(1, (performance.now() - remoteRise.since) / (LIFT_TIME * 1000));
+      } else if (remoteRise?.key === key) remoteRise = null;
+    }
+    const units = progress > 0 ? pads.map((u, i) => i === match!.turn
+      ? { ...u, ...G.balloonPosition(u, match!.field!.wind, progress) } : u) : pads;
     return {
       target: match.field.target, terrain: match.field.terrain, pads, units, wind: match.field.wind, colors, names,
       active: match.phase === 'play' ? match.turn : -1,
@@ -395,6 +441,7 @@ function start(root: HTMLElement) {
     const label = rising ? 'Balloon rising…' : ascent ? 'Release rocket' : 'Launch balloon';
     if (hud.launch.textContent !== label) hud.launch.textContent = label;
     hud.launch.setAttribute('aria-disabled', String(!act || rising));
+    if (ascent?.nudged) hud.launch.dataset.nudge = 'true'; else delete hud.launch.dataset.nudge;
     // When it is not this screen's turn, the controls make way for a short note.
     let wait = '';
     if (anim || (playing && !act)) {
@@ -402,7 +449,7 @@ function start(root: HTMLElement) {
       if (anim) wait = anim.phase === 'lift' ? 'Balloon rising…' : 'Rocket released';
       else if (paused) wait = 'Paused';
       else if (a?.kind === 'wait' && a.sent) wait = 'Sending the shot…';
-      else if (a?.kind === 'wait' && !mine.includes(a.ids[0])) wait = `Waiting for ${p!.name}…`;
+      else if (a?.kind === 'wait' && !mine.includes(a.ids[0])) wait = snaps.get(a.ids[0])?.rising === match!.log.length ? `${p!.name}'s balloon is up…` : `Waiting for ${p!.name}…`;
     }
     hud.controls.dataset.wait = wait ? 'true' : 'false';
     hud.wait.textContent = wait;
@@ -683,7 +730,7 @@ function start(root: HTMLElement) {
 
   function quit() {
     link?.stop(); link = null;
-    mode = 'menu'; menuStep = 'home'; host = null; match = null; anim = null; ascent = null; banner = null; paused = false; drag = null;
+    mode = 'menu'; menuStep = 'home'; host = null; match = null; anim = null; ascent = null; remoteRise = null; banner = null; paused = false; drag = null;
     snaps.clear(); seen.clear(); mine = []; me = ''; lastTurnKey = '';
     pauseBtn.setAttribute('aria-pressed', 'false');
     net.textContent = '';
