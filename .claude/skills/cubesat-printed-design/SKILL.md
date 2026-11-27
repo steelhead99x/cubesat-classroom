@@ -30,7 +30,7 @@ Every CubeSat Classroom 3D design follows these rules, in every repository and f
 - **Locating pins:** at least half tight, two of them on opposite corners. The rest are 0.15 mm looser. Never make every pin tight.
 - **Snap teeth:** preload ≥ 0.2 mm on a 45° face, so print error can't leave a joint loose.
 - **Launch:** FS 2 on stresses, with PLA across layers assumed to be 15 MPa. Snap retention ≥ 1.5 × the launch load, confirmed by a pull test (a luggage scale on a coupon).
-- **Batteries:** hold the largest cell the listing allows, never clamp a pouch cell, and use foam tape to take up a smaller cell. The default cell is the MakerFocus 3.7 V 3000 mAh flat LiPo, 67 × 36 × 12 mm ±2, JST PH 2.0.
+- **Batteries:** hold every cell size the listing allows, and check the smallest as well as the largest (a holder sized for the largest lets a smaller cell lift out). Never clamp a pouch cell: any push on it stays light and comes from something that gives, such as a sprung hook. The default cell is the MakerFocus 3.7 V 3000 mAh flat LiPo, 67 × 36 × 12 mm ±2, JST PH 2.0.
 - **Outdoor:**
   - **Seal:** gasket squeezed 20–30%, with every screw outside it.
   - **Ports:** glands face down, antennas point up, and a breathable vent stops condensation.

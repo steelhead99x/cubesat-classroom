@@ -120,14 +120,24 @@ pub fn finger_length(d: &Design) -> f64 {
 /// How far each finger bends to let the head pass: the tooth's face, shaped to the head at rest
 /// plus preload, has to clear the head (plus 0.1 mm) all along its length.
 pub fn finger_pass(d: &Design) -> f64 {
+    finger_pass_at(d, d.tooth_r)
+}
+
+/// `finger_pass` for teeth whose faces cross the lobe axis at `tooth_r`.
+pub fn finger_pass_at(d: &Design, tooth_r: f64) -> f64 {
     let y = d.tooth_half;
-    let preload = contact_r(d) - d.tooth_r;
+    let preload = contact_r(d) - tooth_r;
     let head = d.pin_head_r + 0.1;
     (head * head - y * y).sqrt() - (contact_r(d).powi(2) - y * y).sqrt() + preload
 }
 
 pub fn finger_strain(d: &Design) -> f64 {
-    1.5 * d.finger_w * finger_pass(d) / finger_length(d).powi(2)
+    finger_strain_at(d, d.tooth_r)
+}
+
+/// `finger_strain` for teeth whose faces cross the lobe axis at `tooth_r`.
+pub fn finger_strain_at(d: &Design, tooth_r: f64) -> f64 {
+    1.5 * d.finger_w * finger_pass_at(d, tooth_r) / finger_length(d).powi(2)
 }
 
 /// Pull to lift a part off one snap pin, N: both teeth pushed out to the head's full radius

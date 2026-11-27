@@ -10,6 +10,10 @@ Every build that checks a pull request also compiles the firmware, so a firmware
 
 The Rust firmware is its own Cargo project (`exclude` in the root `Cargo.toml`), so the workspace checks never compile it. GitHub CI has a `firmware-rust` job and an Arduino `firmware` matrix in `.github/workflows/ci.yml`, but GitHub Actions hasn't run since 22 November (the billing problem). PrairieDog only runs the host workspace. The Rev C review fixes in `66a94df` (the I2C RAM buffer, the HS3003 maths, the USB zero-length packet) went into PR #37 without anyone compiling them for the board.
 
+### Progress
+
+Steps 1 and 3 are done: `scripts/firmware.sh` exists, and PrairieDog runs it from `scripts/ci.sh` (the list lives there; `.prairiedog.toml` points at it). The script doesn't add the Rust target itself; it stops and prints the `rustup target add` command, so the "target removed" check below still holds. Steps 2 and 4 to 6 are still open.
+
 ### Steps
 
 1. Add `scripts/firmware.sh`. It runs the same commands as the `firmware-rust` job: `rustup target add thumbv7em-none-eabihf`, then `cargo fmt --check`, `cargo clippy --locked --release -- -D warnings` and `cargo build --locked --release` in `firmware/nano33-cubesat`. It then compiles each Arduino sketch with `arduino-cli compile`, using the boards, cores and libraries from the CI `firmware` matrix. If a toolchain is missing it stops with an error. It never skips a board quietly.

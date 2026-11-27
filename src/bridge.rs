@@ -13,6 +13,13 @@
 //! ```text
 //! CSC1 temp_mc=21500 volt_mv=3912 light_lux=460 pressure_pa=101325
 //! ```
+//!
+//! With `--rec-log FILE`, the bridge is also the receiver for stored readings from the Rust
+//! Nano firmware: it appends each new `REC` line to the file, flushes it to disk, and only
+//! then writes `RECACK <seq>` back to the serial device, so the CubeSat deletes a reading
+//! only once the station has kept it. A `REC` line seen before (the same text: a reading sent
+//! again) is acknowledged again but not saved twice. Whole lines are compared, not `seq`
+//! alone, because `seq` starts again from zero when the CubeSat restarts.
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -238,6 +245,10 @@ pub(crate) struct BridgeArgs {
     /// Remove a value if no new reading arrives within this many seconds.
     #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u64).range(1..=3600))]
     pub stale_secs: u64,
+    /// Save stored readings (`REC` lines) to this file and acknowledge each one to the
+    /// CubeSat once saved. Needs --input to be the serial device.
+    #[arg(long)]
+    pub rec_log: Option<PathBuf>,
     /// How often to read mapped files, in milliseconds.
     #[arg(long, default_value_t = 1000, value_parser = clap::value_parser!(u64).range(100..=60_000))]
     pub poll_ms: u64,
@@ -260,6 +271,14 @@ pub(crate) fn run(args: BridgeArgs, stop: &AtomicBool) -> Result<()> {
         args.out.display()
     );
 
+    let mut receiver = match (&args.rec_log, &args.input) {
+        (None, _) => None,
+        (Some(_), None) => bail!("--rec-log needs --input, the CubeSat's serial device"),
+        (Some(_), Some(p)) if p == Path::new("-") => {
+            bail!("--rec-log needs --input to be the serial device, not standard input")
+        }
+        (Some(log), Some(dev)) => Some(RecLog::open(log, dev)?),
+    };
     let lines = args.input.map(spawn_reader).transpose()?;
     let poll = Duration::from_millis(args.poll_ms.max(100));
     let mut next_poll = Instant::now();
@@ -286,6 +305,11 @@ pub(crate) fn run(args: BridgeArgs, stop: &AtomicBool) -> Result<()> {
         if let Some(rx) = &lines {
             match rx.recv_timeout(Duration::from_millis(200)) {
                 Ok(Ok(line)) => {
+                    if let Some(r) = receiver.as_mut()
+                        && let Err(e) = r.handle(&line)
+                    {
+                        eprintln!("Stored reading not acknowledged: {e:#}");
+                    }
                     let (values, problems) = parse_line(&line);
                     for p in problems {
                         eprintln!("Skipped: {p}");
@@ -307,6 +331,70 @@ pub(crate) fn run(args: BridgeArgs, stop: &AtomicBool) -> Result<()> {
     }
     eprintln!("Stopped. Sensor files removed.");
     Ok(())
+}
+
+/// The `seq` of a whole `REC seq=N ...` line, if it is one.
+pub(crate) fn rec_seq(line: &str) -> Option<u32> {
+    let rest = line.strip_prefix("REC seq=")?;
+    let (seq, _) = rest.split_once(' ')?;
+    if !rest.contains(" volt_mv=") {
+        return None; // cut off: every stored reading carries the rail voltage
+    }
+    seq.parse().ok()
+}
+
+/// Saves stored readings and acknowledges them to the CubeSat (see the module docs).
+pub(crate) struct RecLog<L: Write, A: Write> {
+    log: L,
+    ack: A,
+    saved: HashSet<String>,
+    sync: fn(&mut L) -> io::Result<()>,
+}
+
+impl RecLog<fs::File, fs::File> {
+    fn open(log: &Path, device: &Path) -> Result<Self> {
+        let mut saved = HashSet::new();
+        if let Ok(text) = fs::read_to_string(log) {
+            saved.extend(
+                text.lines()
+                    .filter(|l| rec_seq(l).is_some())
+                    .map(str::to_string),
+            );
+        }
+        let file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log)
+            .with_context(|| format!("open {}", log.display()))?;
+        let ack = fs::OpenOptions::new()
+            .write(true)
+            .open(device)
+            .with_context(|| format!("open {} for writing acknowledgments", device.display()))?;
+        Ok(Self {
+            log: file,
+            ack,
+            saved,
+            sync: |f| f.sync_data(),
+        })
+    }
+}
+
+impl<L: Write, A: Write> RecLog<L, A> {
+    /// Save a new `REC` line, then acknowledge it. Other lines are ignored.
+    pub(crate) fn handle(&mut self, line: &str) -> Result<()> {
+        let Some(seq) = rec_seq(line) else {
+            return Ok(());
+        };
+        if !self.saved.contains(line) {
+            writeln!(self.log, "{line}").context("save the stored reading")?;
+            self.log.flush().context("save the stored reading")?;
+            (self.sync)(&mut self.log).context("save the stored reading")?;
+            self.saved.insert(line.to_string());
+        }
+        write!(self.ack, "RECACK {seq}\r\n").context("send RECACK")?;
+        self.ack.flush().context("send RECACK")?;
+        Ok(())
+    }
 }
 
 fn write_or_warn(outbox: &mut Outbox, field: Field, value: i64, now: Instant) {
@@ -385,6 +473,54 @@ fn skip_line(reader: &mut impl BufRead) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn saves_each_stored_reading_before_acknowledging_it() {
+        let mut r = RecLog {
+            log: Vec::new(),
+            ack: Vec::new(),
+            saved: HashSet::new(),
+            sync: |_| Ok(()),
+        };
+        r.handle("CSC1 temp_mc=21500").unwrap();
+        r.handle("REC seq=7 t_ms=700 temp_mc=21000 volt_mv=3300")
+            .unwrap();
+        r.handle("REC seq=8 t_ms=800 temp_mc=2").unwrap(); // cut off: not kept, not acked
+        r.handle("REC seq=7 t_ms=700 temp_mc=21000 volt_mv=3300")
+            .unwrap(); // sent again
+        r.handle("REC seq=7 t_ms=650 temp_mc=19000 volt_mv=3310")
+            .unwrap(); // a new reading after a restart
+        assert_eq!(
+            String::from_utf8(r.log).unwrap(),
+            "REC seq=7 t_ms=700 temp_mc=21000 volt_mv=3300\n\
+             REC seq=7 t_ms=650 temp_mc=19000 volt_mv=3310\n"
+        );
+        assert_eq!(
+            String::from_utf8(r.ack).unwrap(),
+            "RECACK 7\r\nRECACK 7\r\nRECACK 7\r\n"
+        );
+    }
+
+    #[test]
+    fn no_acknowledgment_when_saving_fails() {
+        struct Full;
+        impl Write for Full {
+            fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+                Err(io::Error::other("disk full"))
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut r = RecLog {
+            log: Full,
+            ack: Vec::new(),
+            saved: HashSet::new(),
+            sync: |_| Ok(()),
+        };
+        assert!(r.handle("REC seq=7 t_ms=700 volt_mv=3300").is_err());
+        assert!(r.ack.is_empty());
+    }
 
     #[test]
     fn parses_valid_lines_and_skips_noise() {

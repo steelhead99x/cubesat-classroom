@@ -241,7 +241,8 @@ async fn main(spawner: Spawner) {
         // talking to an empty sky; stored readings in it stay stored for the next pass.
         // If only part goes out (a timeout or a USB error), keep the rest: the next send
         // resumes from that exact byte on the same connection, so a line is never cut and
-        // started again. Stored readings are retired only once everything has gone out.
+        // started again. Sending never retires a stored reading: only the receiver's
+        // `RECACK <seq>` does, because bytes copied to USB may still never reach anyone.
         if !serial.dtr() {
             out.clear();
             mission.undelivered();
@@ -269,9 +270,6 @@ async fn main(spawner: Spawner) {
                 let _ = with_timeout(Duration::from_millis(50), serial.write_packet(&[])).await;
             }
             out.sent(sent);
-            if out.is_empty() {
-                mission.delivered();
-            }
         }
     }
 }

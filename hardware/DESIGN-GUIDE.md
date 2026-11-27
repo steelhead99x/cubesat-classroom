@@ -42,7 +42,7 @@ Use these joints, in this order of preference. Each is in [joints.rs](../crates/
 - **Design load: 20 g quasi-static**, the same as the Rev C frame (classroom rockets reach about 10 g).
 - **Stresses:** a factor of safety of 2. PLA's strength across layers is assumed to be 15 MPa (the Rev C value) until we measure it.
 - **Snap retention: hand calculations, at least 1.5 times the launch load, confirmed by a pull test.** A plate on three snap pins must hold 1.5 × its launch load, about 24 N for the payload plate, so **one pin coupon should take at least 8 N to pull off.** Check that with a luggage scale and record it.
-- **Batteries are held at both ends and both sides**, with the largest cell the listing allows, and foam tape takes up a smaller cell. A battery is never clamped tight: pouch cells swell.
+- **Batteries are held at both ends and both sides, for every cell size the listing allows.** Check the smallest and the largest: a holder sized only for the largest cell lets a smaller one lift out. Sprung hooks or end stops can take up the length range. A battery is never clamped tight: pouch cells swell, so any push on it stays light (a few newtons) and comes from something that gives.
 - **Materials:** PLA indoors. ASA or PETG outdoors, because PLA softens in summer sun. TPU 95A for gaskets. A fit tuned in one material is rechecked in another: print the fit ladder again.
 
 ## Easy for kids
@@ -101,7 +101,7 @@ Before a new or changed part is printed beyond a coupon:
 | [Outdoor ground station](outdoor-station/README.md) and [outdoor XIAO station](outdoor-xiao/README.md) | Yes. The lid's captive screws and inserts are the one justified exception: a seal needs clamping force. |
 | Rev C frame (`crates/cubesat-cad`, PR #37) | Not yet: its board mounts are the rejected quarter-turn studs, lock keys and clamp. Port the keyed snap pin, lips and hooks, and battery hooks. |
 | [Rev A bench box](p1s/README.md) | No: M3 screws. Kept as a historical test box. Replace before it goes to classes. |
-| [Rev B rail-fit set](README.md#rev-b-rail-fit-set) | No: needs supports, and has no board mounts. Rework before it goes to classes. |
+| [Rev B rail-fit set](ARCHIVE.md#rev-b-rail-fit-set) | No: needs supports, and has no board mounts. Rework before it goes to classes. |
 | [CSC-R1 receiver](sdr-receiver/README.md) | Its enclosure is a bought die-cast box. Any printed bracket, knob or faceplate follows the guide. |
 | [Teachers in Space frame](tis/README.md) | Not ours, so it's linked, not changed. Mounts we print for it follow the guide. |
 | Designs in other CubeSat Classroom repositories (balloon gondolas, rocket pods, solar faces) | Apply the guide the next time each is changed. |

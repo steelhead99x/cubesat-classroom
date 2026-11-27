@@ -260,6 +260,13 @@ def test_power_megabytes_per_file():
             for line in out.splitlines() if " | " in line and not line.startswith("file")}
     assert rows[files[0]] == "3000" and rows[files[1]] == "1000", rows  # 30 J/10 MB, 60 J/60 MB
     assert refuses(power_log.main, ["summary", *files, "--delivered", "other.csv=5"])
+    # Review finding: a negative or nonfinite volume gave a negative or meaningless mJ/MB.
+    for bad in ("-1", "nan", "inf", "-inf"):
+        assert refuses(power_log.main, ["summary", files[0], "--delivered", f"{files[0]}={bad}"]), bad
+    # Zero is a run that delivered nothing: allowed, with no per-MB figure.
+    out = run(power_log.main, ["summary", files[0], "--delivered", f"{files[0]}=0"])
+    row = [line for line in out.splitlines() if line.startswith(files[0])][0]
+    assert row.split(" | ")[-1].strip() == "-", row
 
 
 if __name__ == "__main__":

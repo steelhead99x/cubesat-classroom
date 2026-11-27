@@ -39,6 +39,34 @@ struct Bench {
     jumper: bool,
     rail: i32,
     out: String,
+    /// How much of `out` the receiver has read and acknowledged.
+    read: usize,
+    /// The receiver acknowledges every REC line it reads, like the station's `--rec-log`.
+    acks: bool,
+}
+
+/// The `seq` of each REC line in `text`.
+fn rec_seqs(text: &str) -> Vec<u32> {
+    text.lines()
+        .filter(|l| l.starts_with("REC "))
+        .map(|l| {
+            l["REC seq=".len()..]
+                .split(' ')
+                .next()
+                .unwrap()
+                .parse()
+                .unwrap()
+        })
+        .collect()
+}
+
+/// The receiver's side: acknowledge each REC line, in order.
+fn acknowledge(m: &mut Mission, now: u32, seqs: &[u32], reply: &mut impl Write) {
+    for seq in seqs {
+        for b in format!("RECACK {seq}\n").bytes() {
+            m.receive(b, now, &mut || reading(3300), &mut || 3300, reply);
+        }
+    }
 }
 
 impl Bench {
@@ -55,6 +83,8 @@ impl Bench {
             jumper,
             rail: 3300,
             out,
+            read: 0,
+            acks: true,
         }
     }
 
@@ -65,8 +95,19 @@ impl Bench {
             self.now += 10;
             self.m
                 .poll(self.now, self.jumper, &mut || reading(rail), &mut self.out);
-            self.m.delivered(); // a terminal is open and takes everything
+            self.receiver_reads();
         }
+    }
+
+    /// A terminal is open and takes everything; the receiver acknowledges new REC lines.
+    fn receiver_reads(&mut self) {
+        let seqs = rec_seqs(&self.out[self.read..]);
+        if self.acks {
+            let mut reply = String::new();
+            acknowledge(&mut self.m, self.now, &seqs, &mut reply);
+            self.out.push_str(&reply);
+        }
+        self.read = self.out.len();
     }
 
     fn send(&mut self, line: &str) -> String {
@@ -81,11 +122,12 @@ impl Bench {
                 &mut self.out,
             );
         }
-        self.m.delivered();
+        self.receiver_reads();
         self.out[start..].to_string()
     }
 
     fn take_output(&mut self) -> String {
+        self.read = 0;
         std::mem::take(&mut self.out)
     }
 
@@ -229,10 +271,12 @@ impl Write for Link {
 }
 
 impl Link {
-    /// The firmware sends the buffer in full and tells the mission so.
-    fn flush(&mut self, m: &mut Mission) {
-        self.sent.push_str(&std::mem::take(&mut self.tick));
-        m.delivered();
+    /// The firmware sends the buffer in full; the receiver acknowledges the REC lines in it.
+    fn flush(&mut self, m: &mut Mission, now: u32) {
+        let text = std::mem::take(&mut self.tick);
+        let mut reply = String::new();
+        acknowledge(m, now, &rec_seqs(&text), &mut reply);
+        self.sent.push_str(&text);
     }
 }
 
@@ -255,11 +299,11 @@ fn a_full_store_drains_through_a_small_buffer_without_losing_a_reading() {
     for byte in b"AOS\n" {
         b.m.receive(*byte, b.now, &mut || reading(rail), &mut || rail, &mut link);
     }
-    link.flush(&mut b.m);
+    link.flush(&mut b.m, b.now);
     for _ in 0..40 {
         b.now += 10;
         b.m.poll(b.now, b.jumper, &mut || reading(rail), &mut link);
-        link.flush(&mut b.m);
+        link.flush(&mut b.m, b.now);
     }
     assert!(
         link.sent.contains("EVT AOS stored=64 dropped=6"),
@@ -309,8 +353,8 @@ fn a_reading_is_retired_only_when_its_whole_line_was_taken() {
         sent: String::new(),
     };
     for _ in 0..100 {
-        b.m.send_stored(&mut link);
-        link.flush(&mut b.m);
+        b.m.send_stored(b.now, &mut link);
+        link.flush(&mut b.m, b.now);
     }
     let recs = link.sent.lines().filter(|l| l.starts_with("REC ")).count();
     assert_eq!(recs, stored);
@@ -363,6 +407,7 @@ fn a_slow_link_resumes_mid_line_and_never_doubles_a_record() {
     let rail = b.rail;
     let mut out: SerialOut<4096> = SerialOut::new();
     let mut host = Vec::new();
+    let mut acked = 0;
     for byte in b"AOS\n" {
         b.m.receive(*byte, b.now, &mut || reading(rail), &mut || rail, &mut out);
     }
@@ -371,9 +416,11 @@ fn a_slow_link_resumes_mid_line_and_never_doubles_a_record() {
         let n = out.pending().len().min(100);
         host.extend_from_slice(&out.pending()[..n]);
         out.sent(n);
-        if out.is_empty() {
-            b.m.delivered();
-        }
+        // The receiver acknowledges each REC line once it has all of it.
+        let whole = host.iter().rposition(|&c| c == b'\n').map_or(0, |i| i + 1);
+        let fresh = rec_seqs(core::str::from_utf8(&host[acked..whole]).unwrap());
+        acked = whole;
+        acknowledge(&mut b.m, b.now, &fresh, &mut out);
         b.now += 10;
         b.m.poll(b.now, b.jumper, &mut || reading(rail), &mut out);
     }
@@ -397,6 +444,106 @@ fn a_slow_link_resumes_mid_line_and_never_doubles_a_record() {
     assert_eq!(seqs.len(), 64, "{seqs:?}");
     assert!(seqs.windows(2).all(|w| w[1] == w[0] + 1), "{seqs:?}");
     assert_eq!(b.m.stored(), 0);
+}
+
+#[test]
+fn stored_readings_stay_until_the_receiver_acknowledges_them() {
+    // Review finding: the firmware retired stored readings once their text was copied to
+    // USB, so a link that dropped the last packet lost them. Only RECACK retires one now.
+    let mut b = Bench::new(Timing::Bench, false);
+    b.deploy();
+    b.acks = false;
+    b.send("LOS");
+    b.run(3_050);
+    assert_eq!(b.m.stored(), 3);
+    let pass = b.send("AOS");
+    let seqs = rec_seqs(&pass);
+    assert_eq!(seqs.len(), 3);
+    assert_eq!(b.m.stored(), 3, "sent is not received");
+    b.take_output();
+    b.run(9_000);
+    assert!(rec_seqs(&b.out).is_empty(), "waits for the acknowledgments");
+    b.run(1_100);
+    assert_eq!(rec_seqs(&b.out), seqs, "sent again once the wait is over");
+    // Out of order, or a record that isn't next, retires nothing.
+    assert!(
+        b.send(&format!("RECACK {}", seqs[1]))
+            .contains("expected seq=")
+    );
+    assert!(b.send("RECACK x").starts_with("NAK - RECACK"));
+    assert_eq!(b.m.stored(), 3);
+    assert!(b.send(&format!("RECACK {}", seqs[0])).contains("stored=2"));
+    assert!(
+        b.send(&format!("RECACK {}", seqs[0])).contains("stored=2"),
+        "a repeated acknowledgment changes nothing"
+    );
+    b.send(&format!("RECACK {}", seqs[1]));
+    b.send(&format!("RECACK {}", seqs[2]));
+    assert_eq!(b.m.stored(), 0);
+}
+
+/// Store readings, start a pass, and send its output over 64-byte USB packets. `pad` bytes
+/// of earlier output come first, to choose how the last packet falls. The link drops before
+/// the receiver gets the last packet; the terminal reopens, and the receiver acknowledges
+/// what it reads. Returns the readings stored before the drop, at the drop, and every REC
+/// seq the receiver kept.
+fn drop_the_last_packet(pad: impl Fn(usize) -> usize) -> (usize, usize, Vec<u32>, bool) {
+    let mut b = Bench::new(Timing::Bench, false);
+    b.deploy();
+    b.send("LOS");
+    b.run(5_050);
+    let before = b.m.stored();
+    let rail = b.rail;
+    let mut pass = String::new();
+    for byte in b"AOS\n" {
+        b.m.receive(*byte, b.now, &mut || reading(rail), &mut || rail, &mut pass);
+    }
+    let mut out: SerialOut<4096> = SerialOut::new();
+    let n = pad(pass.len());
+    out.write_str(&format!("#{}\r\n", "-".repeat(n - 3)))
+        .unwrap();
+    out.write_str(&pass).unwrap();
+    let total = out.pending().len();
+    let last = if total.is_multiple_of(64) {
+        64
+    } else {
+        total % 64
+    };
+    // Every packet but the last reaches the receiver. A full last packet is held by the
+    // computer until the empty packet that ends the transfer, which never comes.
+    let host = out.pending()[..total - last].to_vec();
+    let mut kept = rec_seqs(core::str::from_utf8(&host).unwrap());
+    // Only REC lines it has in full count; the cut-off one is ignored.
+    if host.last() != Some(&b'\n') {
+        kept.pop();
+    }
+    // The terminal closes: the firmware drops the output and says so.
+    out.clear();
+    b.m.undelivered();
+    let at_drop = b.m.stored();
+    // It reopens. Whatever arrives now, the receiver keeps and acknowledges each REC line.
+    b.take_output();
+    b.run(200);
+    kept.extend(rec_seqs(&b.out));
+    kept.sort_unstable();
+    kept.dedup();
+    (before, at_drop, kept, total.is_multiple_of(64))
+}
+
+#[test]
+fn a_link_that_drops_during_a_short_final_packet_loses_nothing() {
+    let (before, at_drop, kept, full) = drop_the_last_packet(|len| 64 - len % 64 + 64 + 20);
+    assert!(!full, "the last packet is short");
+    assert_eq!(at_drop, before, "nothing retired by the drop");
+    assert_eq!(kept.len(), before, "every stored reading arrives: {kept:?}");
+}
+
+#[test]
+fn a_link_that_drops_during_a_full_final_packet_loses_nothing() {
+    let (before, at_drop, kept, full) = drop_the_last_packet(|len| 64 - len % 64 + 64);
+    assert!(full, "the last packet is a full 64 bytes");
+    assert_eq!(at_drop, before, "nothing retired by the drop");
+    assert_eq!(kept.len(), before, "every stored reading arrives: {kept:?}");
 }
 
 #[test]

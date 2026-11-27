@@ -10,12 +10,13 @@ use crate::boards::{
 use crate::design::{Design, Edge, Rect, Side};
 use crate::geom::{bounds, bx, cyl, overlap, rotate_about};
 use crate::joints::{
-    contact_r, finger_outline, finger_pass, finger_strain, finger_zone, hook_post, hook_strain,
-    hook_zone, lip, pin_retention, pin_top,
+    contact_r, finger_outline, finger_pass, finger_strain, finger_strain_at, finger_zone,
+    hook_post, hook_strain, hook_zone, lip, pin_retention, pin_top,
 };
 use crate::parts::{
     COUPON_PIN_AT, FIT_LADDER, board_features, bottom_with_columns, branding, coupon_nano_base,
-    coupon_pin_base, coupon_pin_tab, payload_plate, plate_outline, to_frame, to_plate,
+    coupon_pin_base, coupon_pin_tab, ladder_tooth_r, payload_plate, plate_outline, to_frame,
+    to_plate,
 };
 
 /// mm of floating-point noise to ignore; far below print resolution.
@@ -34,10 +35,17 @@ fn at_least(value: f64, minimum: f64) -> bool {
 
 /// Snap-fit design rules and hand calculations, before any geometry.
 pub fn rules(d: &Design) -> Check {
-    for (label, strain) in [
-        ("snap pin fingers", finger_strain(d)),
-        ("board hook fingers", hook_strain(d)),
-    ] {
+    let mut strains = vec![
+        ("snap pin fingers".to_string(), finger_strain(d)),
+        ("board hook fingers".to_string(), hook_strain(d)),
+    ];
+    for (fit, _) in FIT_LADDER {
+        strains.push((
+            format!("{fit} mm coupon tab's fingers"),
+            finger_strain_at(d, ladder_tooth_r(d, fit)),
+        ));
+    }
+    for (label, strain) in strains {
         require(
             at_least(d.strain_limit, strain),
             format!(
@@ -279,35 +287,61 @@ fn battery_held(d: &Design, columns: &Manifold) -> Check {
         overlap(&cell, columns) < 1e-3,
         "the battery hits a column or a pin head",
     )?;
-    let seated = battery::features(d, j.hook_preload + 0.01);
-    require(
-        overlap(&seated, &cell) < 1e-3,
-        "the battery collides with its guides or hooks",
-    )?;
-    let lifted = cell.translate(0.0, 0.0, 0.3);
-    for e in &battery::CELL_HOOKS {
-        require(
-            overlap(
-                &lifted,
-                &hook_post(&j, d.cell_rect(), e, battery::cell_top(d), 0.0),
-            ) > 1e-3,
-            "a snap hook doesn't reach over the battery",
-        )?;
+    // Every cell the listing allows: shortest and longest, thinnest and thickest, narrowest and
+    // widest, against either guide.
+    let (short, long) = battery::cell_lengths(d);
+    let t = d.cell_tol;
+    let (thin, thick) = (d.cell[2] - t, d.cell[2] + t);
+    let (narrow, wide) = (d.cell[1] - t, d.cell[1] + t);
+    let rest = battery::features(d, 0.0);
+    for len in [short, long] {
+        let seated = battery::features(d, battery::seated_deflect(d, len) + 0.01);
+        for th in [thin, thick] {
+            for (w, dx) in [(wide, 0.0), (narrow, 0.0), (narrow, wide - narrow)] {
+                let c = battery::cell_sized(d, len, w, th, dx);
+                let size = format!("{len} x {w} x {th} mm cell");
+                require(
+                    overlap(&seated, &c) < 1e-3,
+                    format!("the {size} collides with its guides or hooks"),
+                )?;
+                require(
+                    overlap(&rest, &c) > 1e-3,
+                    format!("the {size} sits loose: the hooks don't press on its ends"),
+                )?;
+                let lifted = c.translate(0.0, 0.0, thick - th + 0.3);
+                for e in &battery::CELL_HOOKS {
+                    let one = hook_post(
+                        &j,
+                        battery::hook_rect(d),
+                        e,
+                        battery::cell_top(d),
+                        battery::seated_deflect(d, len) + 0.01,
+                    );
+                    require(
+                        overlap(&lifted, &one) > 1e-3,
+                        format!("a snap hook doesn't reach over the {size}: it could lift out"),
+                    )?;
+                }
+            }
+        }
     }
-    for dy in [battery::GUIDE_GAP + 0.6, -battery::GUIDE_GAP - 0.6] {
-        require(
-            overlap(&seated, &cell.translate(0.0, dy, 0.0)) > 1e-3,
-            "the battery can slide along: the hooks don't stop its ends",
-        )?;
-    }
+    let seated = battery::features(d, battery::seated_deflect(d, long) + 0.01);
     for dx in [battery::GUIDE_GAP + 0.1, -battery::GUIDE_GAP - 0.1] {
         require(
             overlap(&seated, &cell.translate(dx, 0.0, 0.0)) > 1e-3,
             "the battery can slide sideways: the guides don't hold it",
         )?;
     }
-    // Going in: pressed straight down, it spreads both hooks with its ends.
-    let spread = battery::features(d, j.hook_reach + 0.05);
+    require(
+        battery::hook_strain(d) <= d.strain_limit + 1e-9,
+        format!(
+            "the battery hook fingers bend {:.2}% as the longest cell goes in, over {:.1}%",
+            battery::hook_strain(d) * 100.0,
+            d.strain_limit * 100.0
+        ),
+    )?;
+    // Going in: pressed straight down, the longest, thickest cell spreads both hooks.
+    let spread = battery::features(d, battery::seated_deflect(d, long) + j.hook_reach + 0.05);
     for dz in [0.5, 2.0, 4.0, 8.0] {
         require(
             overlap(&spread, &cell.translate(0.0, 0.0, dz)) < 1e-3,
@@ -603,6 +637,10 @@ pub fn broken_designs() -> Vec<(&'static str, Design)> {
         (
             "snap pin teeth wider than the head's round sides",
             with(&|d| d.tooth_half = 2.3),
+        ),
+        (
+            "a cell size range wider than the battery hooks can take",
+            with(&|d| d.cell_tol = 3.0),
         ),
         (
             "no clearance on the flats: the plate would bind",
