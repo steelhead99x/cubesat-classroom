@@ -231,6 +231,16 @@ export function trajectory(match, from, angle, power) {
   return { path, end: null };
 }
 
+/**
+ * The rocket a player will actually launch: the one they picked, or the free Scout once that
+ * one has run out (fire() makes the same switch). The screen shows this, so nobody launches
+ * a Scout while the controls still name an empty Observatory.
+ */
+export function readyWeapon(match, playerIndex) {
+  const unit = match.field?.units[playerIndex], ammo = match.players[playerIndex]?.ammo;
+  return unit && ammo && WEAPON[unit.weapon] && ammo[unit.weapon] > 0 ? unit.weapon : 'baby';
+}
+
 export function fire(match, shot) {
   if (match.phase !== 'play') throw new Error('not in play');
   const shooter = match.turn, me = match.players[shooter], unit = match.field.units[shooter];

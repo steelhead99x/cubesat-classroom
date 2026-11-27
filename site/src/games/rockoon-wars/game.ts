@@ -229,6 +229,7 @@ function start(root: HTMLElement) {
   function fireNow() {
     if (!match || !canAct()) return;
     const u = shooter(), id = host!.order[match.turn];
+    u.weapon = G.readyWeapon(match, match.turn);
     snapOf(id).turns[match.log.length] = { angle: u.angle, power: u.power, weapon: u.weapon };
     publish();
     step();
@@ -344,6 +345,8 @@ function start(root: HTMLElement) {
     hud.angle.textContent = u ? `${u.angle}°` : '—';
     hud.power.textContent = u ? String(u.power) : '—';
     if (u && p) {
+      // An empty rocket can't launch: show (and send) the free Scout instead.
+      u.weapon = G.readyWeapon(match!, turn);
       const n = p.ammo[u.weapon as keyof typeof p.ammo];
       hud.rocket.textContent = `${G.WEAPON[u.weapon].name}${n === Infinity ? '' : ` ×${n}`}`;
       if (hud.rocketIcon.dataset.w !== u.weapon) { hud.rocketIcon.innerHTML = rocketSvg(u.weapon, 30); hud.rocketIcon.dataset.w = u.weapon; }
