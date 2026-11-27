@@ -19,13 +19,16 @@ BOARDS = {
         design='design_r1p', placer='gen_pcb_r1p.py', kicad='../pedal/kicad', fab='../pedal/fab/main',
         edge_ref=None, edge_max=0,
         render=(0, 0, 54, 104), router_passes=12,
+        # The RF traces and In1 ground plane are hand-routed, and the rest of the copper is
+        # being finished by hand (#102); build.sh refuses unless CSC_REBUILD_ROUTED=1.
+        hand_routed=True,
     ),
     'csc-r1p-ctl': dict(
         design='design_r1p_ctl', placer='gen_pcb_r1p_ctl.py', kicad='../pedal/kicad', fab='../pedal/fab/controls',
         edge_ref=None, edge_max=0,
         render=(0, 0, 54, 72), router_passes=6,
-        # Routed by hand with Freerouting; build.sh would replace that copper with the maze
-        # router's, so it refuses unless CSC_REBUILD_ROUTED=1.
+        # Routed with Freerouting; build.sh would replace that copper with the maze router's,
+        # so it refuses unless CSC_REBUILD_ROUTED=1.
         hand_routed=True,
     ),
 }
