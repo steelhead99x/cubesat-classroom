@@ -31,6 +31,7 @@ export class RoomLink {
   #endpoint: string;
   #stop = false;
   #connection?: Moq.Connection.Established;
+  #closed = false;
   #origin?: Moq.Origin.Producer;
   #track?: Moq.Track.Producer;
   #peers = new Map<string, () => void>();
@@ -117,6 +118,8 @@ export class RoomLink {
       url: new URL(token.url), publish: origin.consume(), consume: origin, signal: AbortSignal.timeout(6_000),
     });
     this.#connection = connection;
+    this.#closed = false;
+    void connection.closed.then(() => { this.#closed = true; }, () => { this.#closed = true; });
     const broadcast = origin.createBroadcast(Moq.Path.from(token.player));
     this.#track = broadcast.createTrack('state', { priority: 1 });
     broadcast.announce();
@@ -181,7 +184,8 @@ export class RoomLink {
     for (const [id, close] of this.#peers) { close(); this.#events.leave(id); }
     this.#peers.clear();
     try { this.#track?.close(); } catch { /* already closed */ }
-    try { this.#connection?.close(); } catch { /* already closed */ }
+    // Closing a session the relay already closed makes the library log an error, so skip it.
+    if (!this.#closed) try { this.#connection?.close(); } catch { /* already closed */ }
     try { this.#origin?.close(); } catch { /* already closed */ }
     this.#track = undefined;
     this.#connection = undefined;
