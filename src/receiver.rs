@@ -735,6 +735,10 @@ fn sweep_unix_ms(row: &str) -> Option<u64> {
 }
 
 pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
+    ensure!(
+        cfg!(unix),
+        "receiver-bridge needs Unix local-time conversion for rtl_power rows"
+    );
     let tuned_hz = args.frequency_hz.unwrap_or(args.band.default_hz());
     let (low, high) = args.band.range_hz();
     ensure!(
