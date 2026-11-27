@@ -15,7 +15,8 @@
 // fetches are refused, and the GAME_TOKEN_LIMIT rate limiter caps requests per network address.
 
 export const TOKEN_TTL = 600;
-// Catch the Pass has one shared sky. Rockoon Wars has rooms, joined by a five-letter code.
+// Catch the Pass has one shared sky. Rockoon Battle has rooms, joined by a five-letter code;
+// 'rockoon-wars' is its old name, still accepted for pages cached from before the rename.
 const GAMES = { 'catch-the-pass': { rooms: false }, 'rockoon-wars': { rooms: true }, 'rockoon-battle': { rooms: true } };
 const ROOM = 'live';
 const ROOM_CODE = /^[A-HJ-NP-Z2-9]{5}$/;

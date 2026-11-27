@@ -1,4 +1,11 @@
-// Rockoon Battle uses game pixels and seeded rounds so every room can replay a launch.
+// Rockoon Battle: the rules, with no DOM. Each crew's balloon lifts its rocket off a hillside
+// pad, drifts with the wind, and releases the rocket to fly through a shared sky ring.
+//
+// Everything here is deterministic, so every online player can simulate each launch from the
+// same seed and the same inputs and get exactly the same result. Only + - * / and
+// Math.floor/round/abs/min/max are used in the simulation (no ** or Math.pow either): Math.sin,
+// Math.sqrt and friends may differ in the last bit between browsers, so sine comes from a fixed
+// polynomial below. pressureHpa is display only and never feeds back into a launch.
 export const W = 640;
 export const H = 400;
 export const GRAVITY = 150; // px/s^2
@@ -20,7 +27,12 @@ export function balloonPosition(pad, wind, progress) {
   return { x: pad.x + wind * 1.5 * progress, y: pad.y + LIFT * progress };
 }
 
+/** Where a crew's balloon releases its rocket this round (the launch tube's base). */
+export const releasePoint = (pad, wind) => balloonPosition(pad, wind, 1);
+
 export const TARGET_RADIUS = 16;
+/** The ring keeps this far from every crew's release point whenever the field has room. */
+export const RING_CLEARANCE = 80;
 export const LAUNCHES = 3;
 export const MAX_PLAYERS = 4;
 // Everyone starts with enough credits for a couple of better rockets (a Rocket pack and a Surveyor).
@@ -125,13 +137,33 @@ export function startRound(match) {
     for (let dx = -8; dx <= 8; dx++) if (x + dx >= 0 && x + dx < W) terrain[x + dx] = y;
     units[pi] = { x, y, angle: x < W / 2 ? 60 : 120, power: 55, weapon: 'baby' };
   });
-  const target = { x: Math.round(W * (0.4 + r() * 0.2)), y: Math.max(...terrain) + LIFT + 36 };
-  match.field = { terrain, units, target, launches: 0, wind: Math.round((r() - 0.5) * 20) };
+  const wind = Math.round((r() - 0.5) * 20);
+  match.field = { terrain, units, target: placeRing(terrain, units, wind, r), launches: 0, wind };
   match.phase = 'play';
   match.turn = (match.round - 1) % n;
   return match;
 }
 
+/**
+ * The sky ring, shared by every crew: above the hills, and at least RING_CLEARANCE from every
+ * crew's release point (so nobody scores with a gentle launch straight up), in the middle half
+ * of the field when there is room there. If no spot is that clear, the one farthest from every
+ * release point. Squared distances only (see the note at the top).
+ */
+function placeRing(terrain, units, wind, r) {
+  const releases = units.map(u => { const p = releasePoint(u, wind); return { x: p.x, y: p.y + PIVOT_Y }; });
+  let top = 0;
+  for (const p of releases) top = Math.max(top, p.y);
+  const y = Math.min(H - TARGET_RADIUS - 4, Math.max(Math.max(...terrain) + LIFT + 36, top + 40));
+  const room = x => Math.min(...releases.map(p => (x - p.x) * (x - p.x) + (y - p.y) * (y - p.y)));
+  const spots = [];
+  for (let x = 40; x <= W - 40; x++) spots.push(x);
+  const far = RING_CLEARANCE * RING_CLEARANCE;
+  const middle = spots.filter(x => x >= W / 4 && x <= W * 3 / 4 && room(x) >= far);
+  const clear = middle.length ? middle : spots.filter(x => room(x) >= far);
+  const x = clear.length ? clear[Math.floor(r() * clear.length)] : spots.reduce((a, b) => (room(b) > room(a) ? b : a));
+  return { x, y };
+}
 
 /** Where shots leave the launcher from (the pivot of the launch tube). */
 export const PIVOT_Y = 22;
@@ -139,11 +171,13 @@ export const PIVOT_Y = 22;
 export const DRAG_FULL = 160;
 
 /**
- * Drag-to-aim: the angle and power for pointing from a rockoon's launcher at a world point.
- * This is input only (it may use Math.atan2); the shot itself uses the whole-number result.
+ * Drag-to-aim: the angle and power for pointing from where the balloon releases the rocket
+ * (the pad carried up and across by `wind`) at a world point. This is input only (it may use
+ * Math.atan2); the shot itself uses the whole-number result.
  */
-export function aimFromPoint(unit, x, y) {
-  const dx = x - unit.x, dy = y - (unit.y + PIVOT_Y);
+export function aimFromPoint(unit, x, y, wind = 0) {
+  const from = releasePoint(unit, wind);
+  const dx = x - from.x, dy = y - (from.y + PIVOT_Y);
   let angle = Math.round(Math.atan2(dy, dx) * 180 / Math.PI);
   if (angle < 0) angle = dx >= 0 ? 0 : 180;
   const power = Math.round(Math.min(100, Math.max(0, Math.hypot(dx, dy) / DRAG_FULL * 100)));
@@ -161,7 +195,7 @@ export function trajectory(match, from, angle, power) {
   const { terrain, wind } = match.field;
   const a = Math.max(0, Math.min(180, Math.round(angle)));
   const v = Math.max(0, Math.min(100, Math.round(power))) * SPEED;
-  const release = balloonPosition(from, wind, 1);
+  const release = releasePoint(from, wind);
   let x = release.x + cosDeg(a) * 14, y = release.y + PIVOT_Y + sinDeg(a) * 14;
   let vx = cosDeg(a) * v, vy = sinDeg(a) * v;
   const path = [[x, y]];
@@ -192,10 +226,11 @@ export function fire(match, shot) {
   const target = match.field.target;
   let closest = Infinity;
   for (const [x, y] of path) {
-    const distance = (x - target.x) ** 2 + (y - target.y) ** 2;
-    closest = Math.min(closest, distance);
+    const dx = x - target.x, dy = y - target.y;
+    closest = Math.min(closest, dx * dx + dy * dy);
   }
-  const points = closest <= TARGET_RADIUS ** 2 ? 3 : closest <= (TARGET_RADIUS + w.radius) ** 2 ? 1 : 0;
+  const outer = TARGET_RADIUS + w.radius;
+  const points = closest <= TARGET_RADIUS * TARGET_RADIUS ? 3 : closest <= outer * outer ? 1 : 0;
   me.score += points;
   me.credits += points * 50;
   const events = [{ type: 'scan', points }];
@@ -239,7 +274,7 @@ export function fingerprint(match) {
   for (const p of match.players) { add(p.credits); add(p.score); }
   if (match.field) {
     add(match.field.launches); add(match.field.target.x); add(match.field.target.y);
-    for (const u of match.field.units) { add(u.x); add(u.y);  }
+    for (const u of match.field.units) { add(u.x); add(u.y); }
     for (let x = 0; x < W; x += 4) add(match.field.terrain[x]);
   }
   return (h >>> 0).toString(16);

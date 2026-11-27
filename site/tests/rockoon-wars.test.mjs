@@ -269,7 +269,7 @@ test('the aim line is the start of the real shot', () => {
 
 test('drag to aim: point at where you want to shoot, farther means more power', () => {
   const u = { x: 100, y: 50 };
-  const py = 50 + R.PIVOT_Y;
+  const py = 50 + R.LIFT + R.PIVOT_Y; // the rocket leaves from the release point, no wind here
   assert.deepEqual(R.aimFromPoint(u, 100 + R.DRAG_FULL, py), { angle: 0, power: 100 });
   assert.deepEqual(R.aimFromPoint(u, 100, py + 80), { angle: 90, power: 50 });
   assert.deepEqual(R.aimFromPoint(u, 100 - 400, py), { angle: 180, power: 100 }, 'power is capped');
@@ -311,4 +311,48 @@ test('a windy ascent drifts from the pad to the shared preview and flight origin
     pad.angle = 90;
     assert.ok(Math.abs(R.aimPreview(m)[0][0] - release.x) < 1e-8);
   }
+});
+
+test('the ring is never next to a release point, and every crew can reach it', () => {
+  // Review finding: in 3- and 4-player rounds the ring could sit over a crew's release point,
+  // so a straight-up launch at power 0 scored 3 points.
+  for (const n of [2, 3, 4]) {
+    for (let seed = 1; seed <= 60; seed++) {
+      const m = R.createMatch({ seed, players: players(n) });
+      R.startRound(m);
+      const { target, wind, units } = m.field;
+      assert.ok(target.y + R.TARGET_RADIUS <= R.H, `seed ${seed}: ring off the top`);
+      for (const u of units) {
+        const release = R.releasePoint(u, wind);
+        const dx = target.x - release.x, dy = target.y - (release.y + R.PIVOT_Y);
+        assert.ok(dx * dx + dy * dy >= 32 * 32, `n=${n} seed ${seed}: ring next to a release`);
+        let reach = false;
+        for (let a = 0; a <= 180 && !reach; a += 2) {
+          for (let p = 0; p <= 100 && !reach; p += 2) {
+            const { path } = R.trajectory(m, u, a, p);
+            const hit = path.some(([x, y]) => (x - target.x) * (x - target.x) + (y - target.y) * (y - target.y) <= R.TARGET_RADIUS * R.TARGET_RADIUS);
+            if (hit && p <= 10) assert.fail(`n=${n} seed ${seed}: scores 3 at power ${p}`);
+            reach ||= hit;
+          }
+        }
+        assert.ok(reach, `n=${n} seed ${seed}: a crew can't reach the ring`);
+      }
+    }
+  }
+});
+
+test('drag to aim points from the release point, where the dots start', () => {
+  const u = { x: 100, y: 50 };
+  for (const wind of [-10, 0, 10]) {
+    const r = R.releasePoint(u, wind);
+    assert.deepEqual(R.aimFromPoint(u, r.x, r.y + R.PIVOT_Y + 80, wind), { angle: 90, power: 50 });
+    assert.deepEqual(R.aimFromPoint(u, r.x + R.DRAG_FULL, r.y + R.PIVOT_Y, wind), { angle: 0, power: 100 });
+  }
+});
+
+test('the rules use no ** or Math.pow, which browsers may round differently', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const src = await readFile(new URL('../src/games/rockoon-wars/logic.mjs', import.meta.url), 'utf8');
+  const rules = src.replace(/export function pressureHpa[\s\S]*?\n}\n/, '');
+  assert.ok(!/\*\*|Math\.pow/.test(rules.replace(/\/\*\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')));
 });

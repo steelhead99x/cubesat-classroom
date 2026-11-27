@@ -173,7 +173,13 @@ function start(root: HTMLElement) {
 
   /** Runs every action that is ready. Shots animate one at a time. */
   function step() {
-    if (!match || !host || anim || paused || banner) return render();
+    if (!match || !host || anim || paused) return render();
+    // A round's result stays up until it's dismissed, but the host keeps recording turns for
+    // everyone else while it's showing.
+    if (banner) {
+      if (amHost() && Room.commit(match, host, snaps, goneIds())) publish();
+      return render();
+    }
     for (let guard = 0; guard < 50; guard++) {
       // The host records each turn once; everyone, the host included, then plays that record.
       if (amHost() && Room.commit(match, host, snaps, goneIds())) publish();
@@ -645,7 +651,7 @@ function start(root: HTMLElement) {
   const aimAt = (e: PointerEvent) => {
     const w = view.toWorld(e.clientX, e.clientY);
     const u = shooter();
-    const { angle, power } = G.aimFromPoint(u, w.x, w.y);
+    const { angle, power } = G.aimFromPoint(u, w.x, w.y, match!.field!.wind);
     u.angle = angle; u.power = power;
     drag = { x: w.x, y: w.y };
     renderHud();
@@ -699,10 +705,19 @@ function start(root: HTMLElement) {
     if (kind) adjust(kind, d);
   });
 
-  // Keys pressed inside the game, and also those with nothing focused: Safari and Firefox on
-  // macOS do not focus a button when it is clicked, so after a tap on ◀ ▶ focus is on the page.
+  // Keys pressed inside the game, and also those pressed elsewhere on the page while a match
+  // is on screen: Safari and Firefox on macOS do not focus a button when it is clicked, and a
+  // first visit has focus on the page, not the canvas. Keys meant for a link, button or field
+  // outside the game are left alone, and so is Space when the game is scrolled out of view.
   root.addEventListener('keydown', onKey);
-  document.addEventListener('keydown', e => { if (e.target === document.body && mode !== 'menu') onKey(e); });
+  const onScreen = () => { const r = root.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; };
+  document.addEventListener('keydown', e => {
+    const t = e.target as HTMLElement | null;
+    if (mode === 'menu' || !match || (t && root.contains(t))) return;
+    if (t && t !== document.body && t.closest('a, button, input, select, textarea, summary, [contenteditable], [tabindex], [role="button"]')) return;
+    if (!onScreen()) return;
+    onKey(e);
+  });
   function onKey(e: KeyboardEvent) {
     const t = e.target as HTMLElement;
     if (t.closest('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -717,7 +732,8 @@ function start(root: HTMLElement) {
       case 'q': case 'Q': adjust('weapon', -1); break;
       case 'e': case 'E': adjust('weapon', 1); break;
       case ' ': case 'Enter':
-        if (t !== canvas || e.repeat) { handled = false; break; }
+        // A focused button or link gets its own Space and Enter; anywhere else launches.
+        if (e.repeat || t.closest('button, a, summary, [role="button"]')) { handled = false; break; }
         fireNow(); break;
       case 'p': case 'P': case 'Escape': if (e.repeat || document.fullscreenElement && e.key === 'Escape') { handled = false; break; } togglePause(); break;
       case 'm': case 'M': if (!e.repeat) toggleSound(); break;

@@ -131,9 +131,12 @@ export class Renderer {
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(scene.target.x, scene.target.y, 2, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
     if (scene.ghost) this.#drawGhost(scene.ghost);
-    if (scene.preview) this.#drawPreview(scene.preview);
+    if (scene.preview) {
+      if (scene.active >= 0) this.#drawAscent(scene.units[scene.active], scene.wind, scene.colors[scene.active]);
+      this.#drawPreview(scene.preview);
+    }
     scene.units.forEach((u, i) => { this.#drawRockoon(u, scene.colors[i], i === scene.active, i !== scene.released); });
-    if (scene.drag && scene.active >= 0) this.#drawDrag(scene.units[scene.active], scene.drag, scene.colors[scene.active]);
+    if (scene.drag && scene.active >= 0) this.#drawDrag(G.releasePoint(scene.units[scene.active], scene.wind), scene.drag, scene.colors[scene.active]);
     if (scene.shot) this.#drawShot(scene.shot);
     this.#drawBooms();
     this.#drawParticles();
@@ -335,7 +338,19 @@ export class Renderer {
     });
   }
 
-  #drawDrag(u: Unit, p: { x: number; y: number }, color: string) {
+  /** The climb the balloon will make before it lets go: pad to release point, dashed. */
+  #drawAscent(u: Unit, wind: number, color: string) {
+    const { ctx } = this, r = G.releasePoint(u, wind);
+    ctx.save();
+    ctx.setLineDash([2, 4]); ctx.strokeStyle = tint(color, 0.5); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(u.x, u.y + G.PIVOT_Y); ctx.lineTo(r.x, r.y + G.PIVOT_Y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(r.x, r.y + G.PIVOT_Y, 3, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  /** The drag line, from where the balloon will release the rocket (`u`) to the pointer. */
+  #drawDrag(u: { x: number; y: number }, p: { x: number; y: number }, color: string) {
     const { ctx } = this;
     ctx.setLineDash([4, 4]); ctx.strokeStyle = tint(color, 0.4); ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(u.x, u.y + G.PIVOT_Y); ctx.lineTo(p.x, p.y); ctx.stroke();
