@@ -49,6 +49,7 @@ Open the Serial Monitor at **115200 baud** with the line ending set to **Newline
 | `CAL 250` | Arduino only: the light meter beside the sensor reads 250 lux, so scale the counts to match |
 | `TIME 2026-11-25T14:30:00` | XIAO only: set the real-time clock |
 | `PHOTO`, `DOWNLINK` | XIAO ESP32-S3 Sense only: take a 320 × 240 photo, then send it as hex |
+| `RECACK 42` | Rust Nano firmware only: you kept the stored reading `REC seq=42`, so it can be deleted. Until then it is sent again every 10 seconds ([details](../firmware/nano33-cubesat/README.md#stored-readings)) |
 | `HELP` | List the commands |
 
 **Numbered commands.** Put a number first, such as `7 PING`, and the reply carries it: `ACK 7 PING`. Send `7 PING` again and the CubeSat answers `NAK 7 PING duplicate`. It remembers the last eight numbers. Real command links number their commands so that a repeated or replayed command is not carried out twice.
