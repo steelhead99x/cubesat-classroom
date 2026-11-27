@@ -151,6 +151,7 @@ function init(root: HTMLElement) {
     // Choosing a level or Easy while Help is open closes Help, so Start always works.
     if (helpOpen) setHelp(false);
     afterHelp = null;
+    renderLevels();
     game = G.createGame(currentLevel(), (Math.random() * 2 ** 31) | 0);
     running = false; paused = false; countdown = 0;
     clearAim();
@@ -217,7 +218,7 @@ function init(root: HTMLElement) {
     overlay.hidden = false;
     canvas.inert = true;
     overlay.querySelector<HTMLButtonElement>('[data-go]')?.addEventListener('click', start);
-    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { levelIndex++; savePrefs(); renderLevels(); ready(); start(); });
+    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { levelIndex++; savePrefs(); ready(); start(); });
     overlay.querySelector<HTMLButtonElement>('[data-again]')?.addEventListener('click', () => { ready(); start(); });
   }
 

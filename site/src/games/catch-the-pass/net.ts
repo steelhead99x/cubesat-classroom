@@ -93,6 +93,7 @@ export class LiveSky {
       try {
         const expiresIn = token.expires * 1000 - Date.now();
         await this.#session(token, Math.max(30_000, expiresIn - 30_000), live);
+        if (!live()) return;
         this.#retry = 0;
       } catch (error) {
         if (!live()) return;
@@ -108,10 +109,13 @@ export class LiveSky {
 
   /** Starts a new attempt and cancels any older one, including its token request. */
   #begin() {
+    const generation = ++this.#gen;
     this.#abort?.abort();
+    this.#cleanup();
     this.#abort = new AbortController();
+    this.#retry = 0;
     this.#stop = false;
-    return ++this.#gen;
+    return generation;
   }
 
   stop() {
@@ -168,15 +172,25 @@ export class LiveSky {
     broadcast.announce();
     this.#set('live');
     void this.#discover(origin, token.player);
-    const timer = new Promise<'renew'>(r => setTimeout(() => r('renew'), lifetimeMs));
-    const result = await Promise.race([connection.closed, timer]);
-    this.#cleanup();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const renewal = new Promise<'renew'>(resolve => {
+      timeout = setTimeout(() => resolve('renew'), lifetimeMs);
+    });
+    let result;
+    try {
+      result = await Promise.race([connection.closed, renewal]);
+    } finally {
+      clearTimeout(timeout);
+      // A stop or a newer start may have installed a different connection while we waited.
+      if (this.#connection === connection) this.#cleanup();
+    }
     if (result !== 'renew' && result) throw result;
   }
 
   async #discover(origin: Moq.Origin.Producer, self: string) {
     const announced = origin.announced();
     for await (const update of announced) {
+      if (this.#origin !== origin) return;
       const id = Moq.Path.parts(update.prefix)[0] ?? '';
       if (!/^[0-9a-f]{12}$/.test(id) || id === self) continue;
       if (update.kind === 'retracted') {
@@ -202,7 +216,7 @@ export class LiveSky {
       void (async () => {
         for (;;) {
           const msg = await station.readJson().catch(() => undefined);
-          if (msg === undefined) break;
+          if (msg === undefined || this.#origin !== origin || !subs.includes(station)) break;
           const clean = cleanStation(msg);
           if (clean) this.#events.station(id, clean);
         }
@@ -210,7 +224,7 @@ export class LiveSky {
       void (async () => {
         for (;;) {
           const msg = await packets.readJson().catch(() => undefined);
-          if (msg === undefined) break;
+          if (msg === undefined || this.#origin !== origin || !subs.includes(packets)) break;
           const clean = cleanPacket(msg);
           if (clean) this.#events.packet(id, clean);
         }

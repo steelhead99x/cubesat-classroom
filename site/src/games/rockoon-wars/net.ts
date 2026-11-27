@@ -59,6 +59,7 @@ export class RoomLink {
 
   /** Resolves true once connected (the player id and call sign are then known), false if not. */
   start(): Promise<boolean> {
+    this.#ready?.(false);
     const ready = new Promise<boolean>(r => { this.#ready = r; });
     void this.#run();
     return ready;
@@ -81,6 +82,7 @@ export class RoomLink {
       try {
         const expiresIn = token.expires * 1000 - Date.now();
         await this.#session(token, Math.max(30_000, expiresIn - 30_000), live);
+        if (!live()) return;
         this.#retry = 0;
       } catch {
         if (!live()) return;
@@ -95,10 +97,13 @@ export class RoomLink {
 
   /** Starts a new attempt and cancels any older one, including its token request. */
   #begin() {
+    const generation = ++this.#gen;
     this.#abort?.abort();
+    this.#cleanup();
     this.#abort = new AbortController();
+    this.#retry = 0;
     this.#stop = false;
-    return ++this.#gen;
+    return generation;
   }
 
   stop() {
@@ -143,7 +148,10 @@ export class RoomLink {
     this.#origin = origin;
     this.#connection = connection;
     this.#closed = false;
-    void connection.closed.then(() => { this.#closed = true; }, () => { this.#closed = true; });
+    const markClosed = () => {
+      if (this.#connection === connection) this.#closed = true;
+    };
+    void connection.closed.then(markClosed, markClosed);
     const broadcast = origin.createBroadcast(Moq.Path.from(token.player));
     this.#track = broadcast.createTrack('state', { priority: 1 });
     broadcast.announce();
@@ -151,14 +159,24 @@ export class RoomLink {
     this.#write();
     this.#beat = setInterval(() => this.#write(), HEARTBEAT_MS);
     void this.#discover(origin, token.player);
-    const timer = new Promise<'renew'>(r => setTimeout(() => r('renew'), lifetimeMs));
-    const result = await Promise.race([connection.closed, timer]);
-    this.#cleanup();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const renewal = new Promise<'renew'>(resolve => {
+      timeout = setTimeout(() => resolve('renew'), lifetimeMs);
+    });
+    let result;
+    try {
+      result = await Promise.race([connection.closed, renewal]);
+    } finally {
+      clearTimeout(timeout);
+      // A stop or a newer start may have installed a different connection while we waited.
+      if (this.#connection === connection) this.#cleanup();
+    }
     if (result !== 'renew' && result) throw result;
   }
 
   async #discover(origin: Moq.Origin.Producer, self: string) {
     for await (const update of origin.announced()) {
+      if (this.#origin !== origin) return;
       const id = Moq.Path.parts(update.prefix)[0] ?? '';
       if (!/^[0-9a-f]{12}$/.test(id) || id === self) continue;
       if (update.kind === 'retracted') {
@@ -182,7 +200,7 @@ export class RoomLink {
       void (async () => {
         for (;;) {
           const msg = await state.readJson().catch(() => undefined);
-          if (msg === undefined) break;
+          if (msg === undefined || this.#origin !== origin || !subs.includes(state)) break;
           const clean = cleanSnapshot(msg);
           if (clean) try { this.#events.peer(id, clean as Snapshot); } catch (error) { console.warn('room peer handler failed', error); }
         }

@@ -382,23 +382,39 @@ pub(crate) struct RecLog<L: Write, A: Write> {
     ack: A,
     saved: HashSet<String>,
     sync: fn(&mut L) -> io::Result<()>,
+    append_failed: bool,
 }
 
 impl RecLog<fs::File, fs::File> {
     fn open(log: &Path, device: &Path) -> Result<Self> {
-        let mut saved = HashSet::new();
-        if let Ok(text) = fs::read_to_string(log) {
-            saved.extend(
-                text.lines()
-                    .filter(|l| rec_seq(l).is_some())
-                    .map(str::to_string),
-            );
-        }
-        let file = fs::OpenOptions::new()
+        let mut file = fs::OpenOptions::new()
             .create(true)
+            .read(true)
             .append(true)
             .open(log)
             .with_context(|| format!("open {}", log.display()))?;
+        let mut contents = Vec::new();
+        file.read_to_end(&mut contents)
+            .with_context(|| format!("read {}", log.display()))?;
+        let end = contents
+            .iter()
+            .rposition(|&byte| byte == b'\n')
+            .map_or(0, |i| i + 1);
+        if end < contents.len() {
+            // The last write did not finish. Keep complete lines and let the board retry.
+            file.set_len(end as u64).with_context(|| {
+                format!("remove the incomplete final line in {}", log.display())
+            })?;
+        }
+        file.sync_data()
+            .with_context(|| format!("sync {}", log.display()))?;
+        let saved = contents[..end]
+            .split(|&byte| byte == b'\n')
+            .filter_map(|line| std::str::from_utf8(line).ok())
+            .map(|line| line.trim_end_matches('\r'))
+            .filter(|line| rec_seq(line).is_some())
+            .map(str::to_string)
+            .collect();
         let ack = fs::OpenOptions::new()
             .write(true)
             .open(device)
@@ -408,6 +424,7 @@ impl RecLog<fs::File, fs::File> {
             ack,
             saved,
             sync: |f| f.sync_data(),
+            append_failed: false,
         })
     }
 }
@@ -419,9 +436,16 @@ impl<L: Write, A: Write> RecLog<L, A> {
             return Ok(());
         };
         if !self.saved.contains(line) {
+            ensure!(
+                !self.append_failed,
+                "restart the bridge before saving more stored readings"
+            );
+            // A failure can leave a partial line. Do not append to it until reopening the log.
+            self.append_failed = true;
             writeln!(self.log, "{line}").context("save the stored reading")?;
             self.log.flush().context("save the stored reading")?;
             (self.sync)(&mut self.log).context("save the stored reading")?;
+            self.append_failed = false;
             self.saved.insert(line.to_string());
         }
         write!(self.ack, "RECACK {seq}\r\n").context("send RECACK")?;
@@ -520,6 +544,7 @@ mod tests {
             ack: Vec::new(),
             saved: HashSet::new(),
             sync: |_| Ok(()),
+            append_failed: false,
         };
         r.handle("CSC1 temp_mc=21500").unwrap();
         r.handle("REC seq=7 t_ms=700 temp_mc=21000 volt_mv=3300")
@@ -592,6 +617,32 @@ mod tests {
     }
 
     #[test]
+    fn stored_log_recovers_from_an_unfinished_record() {
+        let dir = std::env::temp_dir().join(format!("bridge-rec-recovery-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let log = dir.join("records.log");
+        let ack = dir.join("ack");
+        let saved = "REC seq=7 t_ms=700 volt_mv=3300";
+        let retry = "REC seq=8 t_ms=800 volt_mv=3290";
+        // The torn line looks valid on its own. Only the missing newline exposes it.
+        fs::write(&log, format!("{saved}\nREC seq=8 t_ms=800 volt_mv=32")).unwrap();
+        fs::write(&ack, "").unwrap();
+
+        let mut receiver = RecLog::open(&log, &ack).unwrap();
+        receiver.handle(saved).unwrap();
+        receiver.handle(retry).unwrap();
+        assert_eq!(
+            fs::read_to_string(&log).unwrap(),
+            format!("{saved}\n{retry}\n")
+        );
+        assert_eq!(
+            fs::read_to_string(&ack).unwrap(),
+            "RECACK 7\r\nRECACK 8\r\n"
+        );
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
     fn no_acknowledgment_when_saving_fails() {
         struct Full;
         impl Write for Full {
@@ -607,8 +658,11 @@ mod tests {
             ack: Vec::new(),
             saved: HashSet::new(),
             sync: |_| Ok(()),
+            append_failed: false,
         };
         assert!(r.handle("REC seq=7 t_ms=700 volt_mv=3300").is_err());
+        let error = r.handle("REC seq=8 t_ms=800 volt_mv=3300").unwrap_err();
+        assert!(error.to_string().contains("restart the bridge"));
         assert!(r.ack.is_empty());
     }
 
