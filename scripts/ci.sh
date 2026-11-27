@@ -58,6 +58,29 @@ command -v shellcheck >/dev/null 2>&1 || { echo "error: shellcheck is required" 
 shellcheck docs/start.sh scripts/*.sh
 python3 -m py_compile scripts/*.py tools/*.py hardware/*.py hardware/p1s/*.py
 python3 tools/test_serial_image.py
+(cd hardware/sdr-receiver/bench && python3 test_bench.py)
+(cd hardware/solar-face/gen && python3 test_drc.py)
+
+echo "=== Firmware builds ==="
+bash scripts/firmware.sh
+
+echo "=== Committed CAD and print files are up to date ==="
+python3 -m venv /tmp/cubesat-cad-venv
+/tmp/cubesat-cad-venv/bin/pip install --quiet -r hardware/requirements.txt
+/tmp/cubesat-cad-venv/bin/python hardware/generate.py
+/tmp/cubesat-cad-venv/bin/python hardware/p1s/prepare.py
+/tmp/cubesat-cad-venv/bin/python hardware/drawing.py
+cargo run --locked --release -p amsat-kit -- self-test
+cargo run --locked --release -p amsat-kit
+cargo clippy --locked --release -p cubesat-cad --all-targets -- -D warnings
+cargo test --locked --release -p cubesat-cad
+cargo run --locked --release -p cubesat-cad -- build hardware/rev-c
+hardware_status="$(git status --porcelain -- hardware)"
+if [ -n "$hardware_status" ]; then
+  printf '%s\n' "$hardware_status"
+  echo "Regenerate the hardware files (see hardware/README.md) and commit them." >&2
+  exit 1
+fi
 
 echo "=== Site and Worker ==="
 if ! pick_node24; then
