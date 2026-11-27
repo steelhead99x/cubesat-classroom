@@ -63,7 +63,7 @@ test('more power goes farther', () => {
 });
 
 test('rocket releases above its pad and scores against the ring only', () => {
-  for (const [offset, points] of [[0, 3], [20, 1], [50, 0]]) {
+  for (const [offset, points] of [[0, 10], [6, 6], [11, 4], [20, 2], [27, 1], [50, 0]]) {
     const m = begin();
     m.field.wind = 0;
     const [pad, other] = m.field.units;
@@ -74,6 +74,8 @@ test('rocket releases above its pad and scores against the ring only', () => {
     const result = R.fire(m, { angle: 90, power: 50, weapon: 'baby' });
     assert.ok(Math.abs(result.path[0][1] - release) < 1e-8);
     assert.equal(m.players[0].score, points);
+    assert.equal(m.players[0].bullseyes, points === 10 ? 1 : 0);
+    assert.equal(result.hit.bullseye, points === 10);
     assert.equal(m.players[0].credits, R.START_CREDITS + 50 * points);
     assert.equal(m.players[1].score, 0);
     assert.ok(result.blast, 'a landing makes a crater');
@@ -83,6 +85,27 @@ test('rocket releases above its pad and scores against the ring only', () => {
     assert.equal(pad.y, under(m.field.terrain, pad.x), 'the pad sits on the highest ground under it');
     assert.deepEqual(other, otherPad, 'the distant pad stays put');
   }
+});
+
+test('target drift follows the same flight clock used for scoring and advances between shots', () => {
+  const m = begin();
+  m.field.wind = 7;
+  const field = structuredClone(m.field);
+  const positions = Array.from({ length: 5 }, (_, i) => R.targetPosition(field, i));
+  assert.notDeepEqual(positions[0], positions[1]);
+  assert.ok(positions.every(({ x, y }) => x > R.TARGET_RADIUS && x < R.W - R.TARGET_RADIUS && y < R.H - R.TARGET_RADIUS));
+  const path = Array.from({ length: 61 }, (_, i) => {
+    const target = R.targetPosition(field, i / R.FLIGHT_SAMPLES_PER_SECOND);
+    return [target.x + 10 * (i - 40.5), target.y];
+  });
+  const hit = R.targetHit(field, path, 0);
+  assert.equal(hit.at, 40.5);
+  assert.equal(hit.bullseye, true, 'detects a bullseye between samples');
+  const shot = { angle: 90, power: 25, weapon: 'baby' };
+  const next = structuredClone(m);
+  assert.deepEqual(R.fire(next, shot), R.fire(m, shot));
+  assert.equal(R.fingerprint(next), R.fingerprint(m));
+  assert.notDeepEqual(R.targetPosition(m.field), positions[0], 'the next shot starts from the target’s new position');
 });
 
 test('a rocket that leaves the field does not change terrain or pad positions', () => {
@@ -147,7 +170,15 @@ import * as Room from '../src/games/rockoon-wars/room.mjs';
 
 const ids = ['aaaaaaaaaaaa', 'bbbbbbbbbbbb', 'cccccccccccc'];
 const host = { seed: 1234, rounds: 2, order: ids.slice(0, 2), names: { [ids[0]]: 'GS-AA1', [ids[1]]: 'GS-BB2' } };
-const snap = (cs, extra = {}) => ({ cs, joined: 1, turns: {}, shops: {}, ...extra });
+const snap = (cs, extra = {}) => ({ p: Room.ROOM_PROTOCOL, cs, joined: 1, turns: {}, shops: {}, ...extra });
+
+test('snapshots from another room protocol are ignored', () => {
+  assert.equal(Room.ROOM_NAMESPACE, `rockoon-battle-v${Room.ROOM_PROTOCOL}`);
+  const ok = { cs: 'GS-AA1', joined: 5 };
+  assert.equal(Room.cleanSnapshot(ok), null, 'an older client sends no protocol number');
+  assert.equal(Room.cleanSnapshot({ ...ok, p: Room.ROOM_PROTOCOL - 1 }), null);
+  assert.equal(Room.cleanSnapshot({ ...ok, p: Room.ROOM_PROTOCOL }).p, Room.ROOM_PROTOCOL);
+});
 
 test('room codes are five unambiguous characters', () => {
   for (let i = 0; i < 50; i++) assert.match(Room.newRoomCode(), Room.ROOM_CODE);
@@ -156,11 +187,11 @@ test('room codes are five unambiguous characters', () => {
 
 test('snapshots from the relay are checked and trimmed', () => {
   assert.equal(Room.cleanSnapshot({ cs: 'Kyle', joined: 1 }), null);
-  const s = Room.cleanSnapshot({ cs: 'GS-AA1', joined: 5, turns: { 0: { angle: 45, power: 50, weapon: 'rocket' }, 1: { angle: 400, power: 50, weapon: 'rocket' }, 2: { angle: 1, power: 1, weapon: 'laser' } }, shops: { 1: ['rocket', 'nope'] }, chat: 'hi' });
+  const s = Room.cleanSnapshot({ p: Room.ROOM_PROTOCOL, cs: 'GS-AA1', joined: 5, turns: { 0: { angle: 45, power: 50, weapon: 'rocket' }, 1: { angle: 400, power: 50, weapon: 'rocket' }, 2: { angle: 1, power: 1, weapon: 'laser' } }, shops: { 1: ['rocket', 'nope'] }, chat: 'hi' });
   assert.deepEqual(s.turns, { 0: { angle: 45, power: 50, weapon: 'rocket' } });
   assert.deepEqual(s.shops, { 1: ['rocket'] });
   assert.equal(s.chat, undefined);
-  const h = Room.cleanSnapshot({ cs: 'GS-AA1', joined: 5, host: { seed: 1, rounds: 3, order: [ids[0], ids[0]], names: {} } });
+  const h = Room.cleanSnapshot({ p: Room.ROOM_PROTOCOL, cs: 'GS-AA1', joined: 5, host: { seed: 1, rounds: 3, order: [ids[0], ids[0]], names: {} } });
   assert.equal(h.host, undefined, 'a host with duplicate players is ignored');
 });
 
@@ -433,7 +464,7 @@ test('the ring is never next to a release point, and every crew can reach it', (
           for (let p = 0; p <= 100 && !reach; p += 2) {
             const { path } = R.trajectory(m, u, a, p);
             const hit = path.some(([x, y]) => (x - target.x) * (x - target.x) + (y - target.y) * (y - target.y) <= R.TARGET_RADIUS * R.TARGET_RADIUS);
-            if (hit && p <= 10) assert.fail(`n=${n} seed ${seed}: scores 3 at power ${p}`);
+            if (hit && p <= 10) assert.fail(`n=${n} seed ${seed}: hits the ring at power ${p}`);
             reach ||= hit;
           }
         }
@@ -569,7 +600,7 @@ test('a pad moved by a crater never hangs over the edge', () => {
 });
 
 test('the rising flag is display only and checked like everything else', () => {
-  const base = { cs: 'GS-AA1', joined: 1, turns: {}, shops: {} };
+  const base = { p: Room.ROOM_PROTOCOL, cs: 'GS-AA1', joined: 1, turns: {}, shops: {} };
   assert.equal(Room.cleanSnapshot({ ...base, rising: 4 }).rising, 4);
   for (const bad of [-1, 1e6, 'x', 2.5, null]) assert.equal(Room.cleanSnapshot({ ...base, rising: bad }).rising, undefined, String(bad));
 });

@@ -1,7 +1,7 @@
 // Rockoon Wars online: how a room's published snapshots become one shared match.
 //
 // Every player publishes one snapshot over MoQ and keeps republishing it:
-//   { cs, joined, creator, host?, turns: { [turnNumber]: { angle, power, weapon } },
+//   { p, cs, joined, creator, host?, turns: { [turnNumber]: { angle, power, weapon } },
 //     shops: { [round]: [weaponId, ...] }, log?: {...}, shopLog?: {...} }
 // The room creator adds `host` when the match starts: the seed, the player order and the rounds.
 //
@@ -18,6 +18,14 @@
 // disagree, the one earlier in the order wins; a screen that already played the other replays
 // from the start (diverged).
 import { WEAPON, createMatch, buy, startRound, fire, skip } from './logic.mjs';
+
+/**
+ * The room protocol. It names the relay namespace (rockoon-battle-v<N>) and every snapshot
+ * carries it as `p`. A snapshot from another version is ignored, so a client that follows only
+ * the creator (v3 and older) and one that hands the room on (v4) never share a match.
+ */
+export const ROOM_PROTOCOL = 4;
+export const ROOM_NAMESPACE = `rockoon-battle-v${ROOM_PROTOCOL}`;
 
 const ID = /^[0-9a-f]{12}$/;
 const CS = /^GS-[A-Z]{2}\d$/;
@@ -39,10 +47,11 @@ const cleanList = list => list.filter(w => typeof w === 'string' && WEAPON[w]).s
 /** Checks a snapshot from the relay. Anything malformed is dropped or trimmed. */
 export function cleanSnapshot(raw) {
   if (!raw || typeof raw !== 'object') return null;
+  if (raw.p !== ROOM_PROTOCOL) return null;
   if (typeof raw.cs !== 'string' || !CS.test(raw.cs)) return null;
   const joined = int(raw.joined, 0, 1e14);
   if (joined === null) return null;
-  const out = { cs: raw.cs, joined, creator: raw.creator === true, turns: {}, shops: {} };
+  const out = { p: ROOM_PROTOCOL, cs: raw.cs, joined, creator: raw.creator === true, turns: {}, shops: {} };
   if (raw.turns && typeof raw.turns === 'object') {
     for (const [k, t] of Object.entries(raw.turns).slice(0, 2000)) {
       const n = int(Number(k), 0, 9999);
