@@ -166,6 +166,29 @@ test('gain restores weak signals up to the point of overload; audio level is ind
   assert.ok(clipped.peak > 1 && clipped.snr < nominal.snr);
 });
 
+test('the receiver loses lock when the satellite stops transmitting', () => {
+  // Review finding: holding the transmitter (or safe mode) left the old lock and signal showing.
+  const game = G.createGame(G.LEVELS[0]);
+  game.t = game.level.duration / 2;
+  game.ant = G.satPosition(game.level, 0.5);
+  G.step(game, { target: game.ant }, 1 / 60);
+  assert.equal(game.locked, true, 'locked while it transmits');
+  G.setTransmit(game, false);
+  assert.equal(game.locked, false, 'shutting off updates lock before another frame');
+  G.step(game, { target: game.ant }, 1 / 60);
+  assert.equal(game.locked, false);
+  assert.equal(G.readReceiver(game).snr, -99);
+  assert.equal(G.readReceiver(game).status, 'No signal');
+  G.setTransmit(game, true);
+  game.battery = 0;
+  G.step(game, { target: game.ant }, 1 / 60);
+  assert.equal(game.safe, true);
+  assert.equal(game.locked, false, 'lock drops on the frame that enters safe mode');
+  game.battery = 100;
+  G.step(game, { target: game.ant }, 1 / 60);
+  assert.equal(game.locked, true, 'lock comes back with the transmitter');
+});
+
 test('returning to a live pass skips unattended time without awarding packets', () => {
   const game = G.createGame(G.LIVE, 5);
   G.step(game, {}, 0.1);
