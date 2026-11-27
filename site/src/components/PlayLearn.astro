@@ -1,0 +1,58 @@
+---
+// "Play & learn": things to try right now, in the browser. To add an activity, add an entry
+// to `items` (who it's for goes in `who`).
+interface Props { headingLevel?: 'h2' | 'h3' }
+const { headingLevel = 'h2' } = Astro.props;
+const Heading = headingLevel;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const items = [
+  {
+    tag: 'Play',
+    name: 'Fly a practice CubeSat',
+    text: 'Watch a pretend satellite pass overhead, read its sensors, then lose it over the horizon.',
+    who: 'Everyone · no sign-up',
+    href: 'https://cubesat.app/learn/',
+    action: 'Start flying',
+  },
+  {
+    tag: 'Spot it',
+    name: 'When does the space station fly over?',
+    text: 'Type your town’s rough location and get the next times the ISS crosses your sky.',
+    who: 'Everyone · go outside and look',
+    href: 'https://cubesat.app/learn/passes',
+    action: 'Find the next pass',
+  },
+  {
+    tag: 'Learn',
+    name: 'Seven radio lessons',
+    text: 'Who shares the airwaves, how to hear real satellites and astronauts, and how to get your own licence.',
+    who: 'Beginner, intermediate or pro',
+    href: 'https://cubesat.app/learn/lessons',
+    action: 'Open the lessons',
+  },
+  {
+    tag: 'Hands-on',
+    name: 'Rocket flight workbook',
+    text: 'Enter what you measured, pick a model rocket motor, and predict how high it goes before the club launch.',
+    who: 'Older learners, with an adult',
+    href: base + '/rockoon/workbook/',
+    action: 'Open the workbook',
+  },
+];
+---
+<section id="play-and-learn" class="play-learn scroll-mt-6" aria-labelledby="play-learn-title">
+  <Heading id="play-learn-title">Play &amp; learn</Heading>
+  <p class="mt-2 max-w-2xl text-muted">Try these right now in your browser. No account, nothing to install.</p>
+  <ul class="mt-5 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
+    {items.map(item => (
+      <li class="flex flex-col gap-2 border border-line bg-paper p-5 border-t-4 border-t-orbit">
+        <span class="t-label text-orbit">{item.tag}</span>
+        <h3 class="text-lg">{item.name}</h3>
+        <p class="text-muted">{item.text}</p>
+        <p class="t-src mt-auto">{item.who}</p>
+        <a class="font-bold text-accent underline underline-offset-4" href={item.href}>{item.action} <span aria-hidden="true">→</span></a>
+      </li>
+    ))}
+  </ul>
+</section>
