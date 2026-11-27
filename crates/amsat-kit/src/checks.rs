@@ -10,12 +10,13 @@ use crate::boards::{
 use crate::design::{Design, Edge, Rect, Side};
 use crate::geom::{bounds, bx, cyl, overlap, rotate_about};
 use crate::joints::{
-    contact_r, finger_outline, finger_pass, finger_strain, finger_zone, hook_post, hook_strain,
-    hook_zone, lip, pin_retention, pin_top,
+    contact_r, finger_outline, finger_pass, finger_strain, finger_strain_at, finger_zone,
+    hook_post, hook_strain, hook_zone, lip, pin_retention, pin_top,
 };
 use crate::parts::{
     COUPON_PIN_AT, FIT_LADDER, board_features, bottom_with_columns, branding, coupon_nano_base,
-    coupon_pin_base, coupon_pin_tab, payload_plate, plate_outline, to_frame, to_plate,
+    coupon_pin_base, coupon_pin_tab, ladder_tooth_r, payload_plate, plate_outline, to_frame,
+    to_plate,
 };
 
 /// mm of floating-point noise to ignore; far below print resolution.
@@ -34,10 +35,17 @@ fn at_least(value: f64, minimum: f64) -> bool {
 
 /// Snap-fit design rules and hand calculations, before any geometry.
 pub fn rules(d: &Design) -> Check {
-    for (label, strain) in [
-        ("snap pin fingers", finger_strain(d)),
-        ("board hook fingers", hook_strain(d)),
-    ] {
+    let mut strains = vec![
+        ("snap pin fingers".to_string(), finger_strain(d)),
+        ("board hook fingers".to_string(), hook_strain(d)),
+    ];
+    for (fit, _) in FIT_LADDER {
+        strains.push((
+            format!("{fit} mm coupon tab's fingers"),
+            finger_strain_at(d, ladder_tooth_r(d, fit)),
+        ));
+    }
+    for (label, strain) in strains {
         require(
             at_least(d.strain_limit, strain),
             format!(

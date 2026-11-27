@@ -101,7 +101,7 @@ Before a new or changed part is printed beyond a coupon:
 | [Outdoor ground station](outdoor-station/README.md) and [outdoor XIAO station](outdoor-xiao/README.md) | Yes. The lid's captive screws and inserts are the one justified exception: a seal needs clamping force. |
 | Rev C frame (`crates/cubesat-cad`, PR #37) | Not yet: its board mounts are the rejected quarter-turn studs, lock keys and clamp. Port the keyed snap pin, lips and hooks, and battery hooks. |
 | [Rev A bench box](p1s/README.md) | No: M3 screws. Kept as a historical test box. Replace before it goes to classes. |
-| [Rev B rail-fit set](README.md#rev-b-rail-fit-set) | No: needs supports, and has no board mounts. Rework before it goes to classes. |
+| [Rev B rail-fit set](ARCHIVE.md#rev-b-rail-fit-set) | No: needs supports, and has no board mounts. Rework before it goes to classes. |
 | [CSC-R1 receiver](sdr-receiver/README.md) | Its enclosure is a bought die-cast box. Any printed bracket, knob or faceplate follows the guide. |
 | [Teachers in Space frame](tis/README.md) | Not ours, so it's linked, not changed. Mounts we print for it follow the guide. |
 | Designs in other CubeSat Classroom repositories (balloon gondolas, rocket pods, solar faces) | Apply the guide the next time each is changed. |
