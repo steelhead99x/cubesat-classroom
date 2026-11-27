@@ -8,6 +8,7 @@ export type Scene = {
   terrain: number[]; units: Unit[]; wind: number; colors: string[]; names: string[];
   active: number; // whose turn it is (-1 for none)
   preview: number[][] | null; // aim dots
+  ghost?: number[][] | null; // this player's last shot, faint, to correct from
   drag: { x: number; y: number } | null; // drag-to-aim point, world coordinates
   shot: { path: number[][]; pos: number } | null;
   settling?: boolean; // terrain is moving this frame: paint it directly instead of re-caching
@@ -123,6 +124,7 @@ export class Renderer {
     else ctx.drawImage(this.#groundFor(terrain), shx, shy, this.cw, this.ch);
     if (!scene) return;
     this.#world(shx, shy);
+    if (scene.ghost) this.#drawGhost(scene.ghost);
     if (scene.preview) this.#drawPreview(scene.preview);
     scene.units.forEach((u, i) => { if (u.alive) this.#drawRockoon(u, scene.colors[i], i === scene.active); });
     if (scene.drag && scene.active >= 0) this.#drawDrag(scene.units[scene.active], scene.drag, scene.colors[scene.active]);
@@ -300,6 +302,21 @@ export class Renderer {
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,12,36,.85)'; ctx.strokeText(name, x, y - 6);
     ctx.fillStyle = active ? '#ffe27a' : tint(color, 0.35); ctx.fillText(name, x, y - 6);
     ctx.textBaseline = 'alphabetic';
+  }
+
+  /** The player's previous shot as a faint dashed line, so they can see how far the wind took it. */
+  #drawGhost(points: number[][]) {
+    if (points.length < 2) return;
+    const { ctx } = this;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,.28)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+    ctx.stroke();
+    ctx.restore();
   }
 
   #drawPreview(points: number[][]) {

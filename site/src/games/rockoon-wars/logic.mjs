@@ -86,7 +86,7 @@ export function createMatch({ seed, players, rounds = 3 }) {
       id: p.id, name: p.name, color: COLORS[i], credits: START_CREDITS, score: 0,
       ammo: { baby: Infinity, rocket: 0, big: 0, mega: 0, dirt: 0 },
     })),
-    field: null, winner: null, log: [],
+    field: null, winner: null, winners: /** @type {number[]} */ ([]), log: [],
   };
 }
 
@@ -221,18 +221,7 @@ export function fire(match, shot) {
       });
     }
   }
-  // Rockoons drop onto whatever ground is left under them.
-  match.field.units.forEach((u, i) => {
-    if (!u.alive) return;
-    let ground = 0;
-    for (let dx = -6; dx <= 6; dx++) ground = Math.max(ground, match.field.terrain[Math.max(0, Math.min(W - 1, u.x + dx))]);
-    if (ground < u.y) {
-      const drop = u.y - ground;
-      u.y = ground;
-      if (drop > 12) hurt(match, i, Math.floor(drop / 4), shooter, events);
-    }
-    if (u.alive && u.y <= 2) hurt(match, i, u.hp, shooter, events);
-  });
+  settle(match, shooter, events);
   match.log.push({ round: match.round, player: shooter, angle: unit.angle, power: unit.power, weapon });
   endTurn(match, events);
   return { path, blast, events, weapon };
@@ -252,6 +241,25 @@ function hurt(match, i, dmg, by, events) {
   }
 }
 
+/** Rockoons drop onto whatever ground is left under them, or float up out of dirt. */
+export function settle(match, shooter, events = []) {
+  match.field.units.forEach((u, i) => {
+    if (!u.alive) return;
+    let ground = 0;
+    for (let dx = -6; dx <= 6; dx++) ground = Math.max(ground, match.field.terrain[Math.max(0, Math.min(W - 1, u.x + dx))]);
+    if (ground < u.y) {
+      const drop = u.y - ground;
+      u.y = ground;
+      if (drop > 12) hurt(match, i, Math.floor(drop / 4), shooter, events);
+    } else if (ground > u.y) {
+      // Dirt piled on a rockoon: its balloon lifts it back on top, so it is never buried
+      // (a buried launcher would blow up its own shots).
+      u.y = ground;
+    }
+    if (u.alive && u.y <= 2) hurt(match, i, u.hp, shooter, events);
+  });
+}
+
 function endTurn(match, events) {
   const n = match.players.length;
   if (alive(match) <= 1) {
@@ -262,8 +270,10 @@ function endTurn(match, events) {
     if (match.round >= match.rounds) {
       match.phase = 'over';
       const top = Math.max(...match.players.map(p => p.score));
-      match.winner = match.players.findIndex(p => p.score === top);
-      events.push({ type: 'over', winner: match.winner });
+      // Everyone on the top score shares the win; `winner` is the first of them.
+      match.winners = match.players.flatMap((p, i) => (p.score === top ? [i] : []));
+      match.winner = match.winners[0];
+      events.push({ type: 'over', winner: match.winner, winners: match.winners });
     } else match.phase = 'shop';
     return;
   }

@@ -23,8 +23,13 @@ Give the class four jobs: payload lead, station operator, data recorder and revi
 mkdir -p run/balloon-fixture
 printf '101325\n' > run/balloon-fixture/pressure_pa
 printf '21500\n' > run/balloon-fixture/temperature_mc
+# A real adapter rewrites its files every second. Touch the fixture files the same way.
+while sleep 1; do touch run/balloon-fixture/*; done & FIXTURE=$!
 cargo run --locked -- balloon-log --sensor-dir run/balloon-fixture --output run/fixture.csv --samples 10
+kill $FIXTURE
 ```
+
+The logger uses the station's freshness check. A file that has not been rewritten for more than 5 seconds is old data, so its cell stays empty and the status names it, for example `pressure_stale`. A file that cannot be read gives `pressure_error`, and both unreadable gives `both_error`. To rehearse a stalled adapter, stop the touch loop partway through and watch the status change.
 
 A passing ground rehearsal returns the planned sample count, explicit gaps for the deliberately disconnected input, and a new valid reading after it returns. The reviewed worksheet should include hardware or fixture provenance, units, run date, a chart, and one limitation. The current station reads temperature, voltage and light on command. The balloon logger records pressure and temperature independently of that link.
 

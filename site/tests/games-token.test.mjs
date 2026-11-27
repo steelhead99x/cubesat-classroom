@@ -129,3 +129,26 @@ test('Catch the Pass stays on its one shared sky', async () => {
   assert.equal(new URL(body.url).pathname, '/proj/games/catch-the-pass/live');
   assert.equal(body.ticket, undefined);
 });
+
+test('an oversized request is refused before its JSON is parsed', async () => {
+  const big = { game: 'catch-the-pass', pad: 'x'.repeat(5000) };
+  const res = await ask(configured, { body: big });
+  assert.equal(res.status, 413);
+  // A streamed body with no length header is cut off at the limit too.
+  const stream = new ReadableStream({
+    start(c) { for (let i = 0; i < 64; i++) c.enqueue(new TextEncoder().encode('x'.repeat(1024))); c.close(); },
+  });
+  const res2 = await worker.fetch(new Request('https://cubesatclass.org/api/games/moq-token', {
+    method: 'POST', duplex: 'half', body: stream,
+    headers: { origin: 'https://cubesatclass.org', 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
+  }), { ASSETS, ...configured });
+  assert.equal(res2.status, 413);
+  // A normal request still works.
+  assert.equal((await ask(configured)).status, 200);
+});
+
+test('the token reply carries the server time for the shared clock', async () => {
+  const before = Date.now();
+  const body = await (await ask(configured)).json();
+  assert.ok(body.now >= before && body.now <= Date.now());
+});

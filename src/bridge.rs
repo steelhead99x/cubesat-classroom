@@ -333,14 +333,47 @@ pub(crate) fn run(args: BridgeArgs, stop: &AtomicBool) -> Result<()> {
     Ok(())
 }
 
-/// The `seq` of a whole `REC seq=N ...` line, if it is one.
+/// The `seq` of a whole, well-formed `REC` line, if it is one.
+///
+/// The line must match what the firmware's `rec_line` writes, field for field and in order:
+/// `seq` and `t_ms`, an optional `temp_mc`, the required `volt_mv`, then optional
+/// `pressure_pa` and `light_clear`, each with a complete integer in range. Anything else (an
+/// empty or cut-off value, a missing `volt_mv`, an unknown or repeated field, trailing text) is
+/// not acknowledged, so the CubeSat keeps the reading and sends it again.
 pub(crate) fn rec_seq(line: &str) -> Option<u32> {
-    let rest = line.strip_prefix("REC seq=")?;
-    let (seq, _) = rest.split_once(' ')?;
-    if !rest.contains(" volt_mv=") {
-        return None; // cut off: every stored reading carries the rail voltage
+    fn int<T: std::str::FromStr>(v: &str) -> Option<T> {
+        let digits = v.strip_prefix('-').unwrap_or(v);
+        if digits.is_empty() || !digits.bytes().all(|b| b.is_ascii_digit()) {
+            return None;
+        }
+        v.parse().ok()
     }
-    seq.parse().ok()
+    /// The next field's value if it is `key`, leaving the field in place otherwise.
+    fn take<'a>(
+        fields: &mut std::iter::Peekable<std::str::Split<'a, char>>,
+        key: &str,
+    ) -> Option<&'a str> {
+        let (k, v) = fields.peek()?.split_once('=')?;
+        if k != key {
+            return None;
+        }
+        fields.next();
+        Some(v)
+    }
+    let mut fields = line.strip_prefix("REC ")?.split(' ').peekable();
+    let seq: u32 = int(take(&mut fields, "seq")?)?;
+    int::<u32>(take(&mut fields, "t_ms")?)?;
+    if let Some(v) = take(&mut fields, "temp_mc") {
+        int::<i32>(v)?;
+    }
+    int::<i32>(take(&mut fields, "volt_mv")?)?;
+    if let Some(v) = take(&mut fields, "pressure_pa") {
+        int::<i32>(v)?;
+    }
+    if let Some(v) = take(&mut fields, "light_clear") {
+        int::<u16>(v)?;
+    }
+    fields.next().is_none().then_some(seq)
 }
 
 /// Saves stored readings and acknowledges them to the CubeSat (see the module docs).
@@ -439,6 +472,12 @@ fn spawn_reader(path: PathBuf) -> Result<mpsc::Receiver<io::Result<String>>> {
                         Err(e) => Err(e),
                     }
                 }
+                Ok(_) if buf.last() != Some(&b'\n') => {
+                    // The input ended partway through a line. Its last value may be cut
+                    // short, so it is not passed on: a stored reading in it is sent again.
+                    eprintln!("Skipped: an unfinished last line");
+                    Err(io::Error::new(io::ErrorKind::UnexpectedEof, "end of input"))
+                }
                 Ok(_) => Ok(String::from_utf8_lossy(&buf)
                     .trim_end_matches(['\r', '\n'])
                     .to_string()),
@@ -486,6 +525,8 @@ mod tests {
         r.handle("REC seq=7 t_ms=700 temp_mc=21000 volt_mv=3300")
             .unwrap();
         r.handle("REC seq=8 t_ms=800 temp_mc=2").unwrap(); // cut off: not kept, not acked
+        r.handle("REC seq=9 t_ms=900 temp_mc=21000 volt_mv=")
+            .unwrap(); // empty value
         r.handle("REC seq=7 t_ms=700 temp_mc=21000 volt_mv=3300")
             .unwrap(); // sent again
         r.handle("REC seq=7 t_ms=650 temp_mc=19000 volt_mv=3310")
@@ -499,6 +540,55 @@ mod tests {
             String::from_utf8(r.ack).unwrap(),
             "RECACK 7\r\nRECACK 7\r\nRECACK 7\r\n"
         );
+    }
+
+    #[test]
+    fn only_complete_stored_readings_are_acknowledged() {
+        for good in [
+            "REC seq=7 t_ms=700 volt_mv=3300",
+            "REC seq=7 t_ms=700 temp_mc=-1500 volt_mv=3300 pressure_pa=101325 light_clear=65535",
+            "REC seq=4294967295 t_ms=0 volt_mv=0 light_clear=0",
+        ] {
+            assert!(rec_seq(good).is_some(), "{good}");
+        }
+        for bad in [
+            "REC seq=7 t_ms=700 volt_mv=",
+            "REC seq=7 t_ms=700 temp_mc= volt_mv=3300",
+            "REC seq=7 t_ms=700 temp_mc=21000",
+            "REC seq= t_ms=700 volt_mv=3300",
+            "REC seq=7 volt_mv=3300",
+            "REC seq=7 t_ms=700 volt_mv=33-0",
+            "REC seq=7 t_ms=700 volt_mv=3300 pressure_pa=",
+            "REC seq=7 t_ms=700 volt_mv=3300 light_clear=70000",
+            "REC seq=7 t_ms=700 volt_mv=3300 volt_mv=3300",
+            "REC seq=7 t_ms=700 volt_mv=3300 extra=1",
+            "REC seq=7 t_ms=700 volt_mv=3300 ",
+            "REC seq=7 t_ms=700 pressure_pa=1 volt_mv=3300",
+            "REC seq=-7 t_ms=700 volt_mv=3300",
+            "REC seq=+7 t_ms=700 volt_mv=3300",
+        ] {
+            assert_eq!(rec_seq(bad), None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn a_truncated_last_line_is_not_passed_on() {
+        let dir = std::env::temp_dir().join(format!("bridge-trunc-{}", std::process::id()));
+        fs::write(
+            &dir,
+            "REC seq=1 t_ms=100 volt_mv=3300\r\nREC seq=2 t_ms=200 volt_mv=33",
+        )
+        .unwrap();
+        let rx = spawn_reader(dir.clone()).unwrap();
+        assert_eq!(
+            rx.recv().unwrap().unwrap(),
+            "REC seq=1 t_ms=100 volt_mv=3300"
+        );
+        assert!(
+            rx.recv().unwrap().is_err(),
+            "the cut-off line ends the input instead"
+        );
+        fs::remove_file(dir).unwrap();
     }
 
     #[test]

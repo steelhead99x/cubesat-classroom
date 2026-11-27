@@ -142,3 +142,32 @@ test('returning to a live pass skips unattended time without awarding packets', 
   assert.equal(game.done, true);
   assert.equal(game.seq, 0);
 });
+
+test('joining a live pass after it ended earns no completion bonus', () => {
+  const game = G.createGame(G.LIVE, 9);
+  assert.equal(G.syncLiveTime(game, G.LIVE_SLOT_SECONDS), true);
+  G.step(game, {}, 0);
+  assert.equal(game.done, true);
+  assert.equal(game.score, 0);
+  // A station that flew the pass still gets it.
+  const flown = G.createGame(G.LIVE, 9);
+  while (!flown.done) G.step(flown, {}, 0.05);
+  assert.ok(flown.seq > 0);
+  if (flown.battery >= 20) assert.ok(flown.score >= 200);
+});
+
+test('live seeds use every bit and the fade does not depend on frame rate', () => {
+  const lows = new Set();
+  for (let i = 0; i < 64; i++) lows.add(G.liveSlot(1_800_000_000_000 + i * G.LIVE_SLOT_SECONDS * 1000).seed & 15);
+  assert.ok(lows.size > 1, 'the low bits of the seed vary');
+  const fadeAt = dt => {
+    const g = G.createGame(G.LEVELS[0], 3);
+    let worst = 0;
+    for (let t = 0; t < 20; t += dt) { G.step(g, {}, dt); worst = Math.max(worst, Math.abs(g.fade)); }
+    return worst;
+  };
+  // Both stay inside the clamp and move by a similar amount at 30 and 120 fps.
+  const slow = fadeAt(1 / 30), fast = fadeAt(1 / 120);
+  assert.ok(slow <= 1.5 && fast <= 1.5);
+  assert.ok(Math.abs(slow - fast) < 1.2);
+});

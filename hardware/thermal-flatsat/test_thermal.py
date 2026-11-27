@@ -7,9 +7,14 @@ from thermal import bench, model
 class ThermalTest(unittest.TestCase):
     def test_bench_interpolates_and_handles_an_unreached_limit(self):
         fixture = Path(__file__).with_name("example.csv")
-        self.assertEqual(bench(fixture, 10), (1200, 4, 21, 700))
+        # The example's samples are 300 s apart: report the interval, not a precise time.
+        self.assertEqual(bench(fixture, 10), (1200, 4, 21, (600, 900, None)))
+        # Interpolate only when the bracketing samples are close enough.
+        self.assertEqual(bench(fixture, 10, max_gap_s=300), (1200, 4, 21, (600, 900, 700)))
         self.assertIsNone(bench(fixture, 20)[-1])
-        self.assertEqual(bench(fixture, 4)[-1], 0)
+        self.assertEqual(bench(fixture, 4)[-1], (0, 0, 0))
+        with self.assertRaises(ValueError):
+            bench(fixture, 10, max_gap_s=float("nan"))
 
     def test_model_separates_thermal_and_electrical_power(self):
         hours, leak, cooler, margin = model(0.05, 0.10, 24, 0.50, 0.60, 0.20, 0.05)

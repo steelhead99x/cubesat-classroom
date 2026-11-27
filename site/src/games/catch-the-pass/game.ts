@@ -16,14 +16,32 @@ function init(root: HTMLElement) {
   const overlay = $('[data-overlay]');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const bestKey = 'catch-the-pass:best';
-  const best: Record<string, number> = (() => { try { return JSON.parse(localStorage.getItem(bestKey) ?? '{}'); } catch { return {}; } })();
+  // Stored stars are checked, so an edited or damaged value cannot stop the game from starting.
+  const best: Record<string, number> = (() => {
+    const out: Record<string, number> = {};
+    try {
+      const raw: unknown = JSON.parse(localStorage.getItem(bestKey) ?? '{}');
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        for (const l of G.LEVELS) {
+          const v = (raw as Record<string, unknown>)[l.id];
+          if (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 3) out[l.id] = v as number;
+        }
+      }
+    } catch { /* private mode or bad JSON */ }
+    return out;
+  })();
+  const prefsKey = 'catch-the-pass:prefs';
+  const prefs = (() => { try { const p = JSON.parse(localStorage.getItem(prefsKey) ?? '{}'); return p && typeof p === 'object' ? p : {}; } catch { return {}; } })();
+  const savePrefs = () => { try { localStorage.setItem(prefsKey, JSON.stringify({ easy: slow, level: levelIndex })); } catch { /* private mode */ } };
 
   let mode: 'missions' | 'live' = 'missions';
   let levelIndex = 0;
   let game: Game | null = null;
   let running = false, paused = false, countdown = 0;
   let helpOpen = false;
-  let slow = true; // Easy mode is on until the player turns it off.
+  let afterHelp: string | null = null; // the results card to show again when Help closes
+  let unlockedFor = 0; // seconds without a lock, for the beginner coach
+  let slow = prefs.easy !== false; // Easy mode is on until the player turns it off.
   const howtoKey = 'catch-the-pass:how-to-seen';
   let liveSlot = -1;
   let last = performance.now();
@@ -78,6 +96,7 @@ function init(root: HTMLElement) {
   // ---- Levels and modes ----
   const levelButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-level]')];
   function unlocked(i: number) { return i === 0 || (best[G.LEVELS[i - 1].id] ?? 0) > 0; }
+  if (Number.isInteger(prefs.level) && prefs.level > 0 && prefs.level < G.LEVELS.length && unlocked(prefs.level)) levelIndex = prefs.level;
   function renderLevels() {
     levelButtons.forEach((b, i) => {
       const s = best[G.LEVELS[i].id] ?? 0;
@@ -89,7 +108,10 @@ function init(root: HTMLElement) {
   }
   levelButtons.forEach((b, i) => b.addEventListener('click', () => {
     if (i === levelIndex) return;
+    // A pass in flight is not thrown away by a stray tap: pause it first to switch levels.
+    if (running && !paused && game && !game.done) { announce('Pause the pass first to pick another level.'); return; }
     levelIndex = i;
+    savePrefs();
     ready();
   }));
 
@@ -117,7 +139,8 @@ function init(root: HTMLElement) {
     setTab();
     if (mode === 'missions') { sky?.stop(); stations.clear(); ready(); } else void joinLive();
   }));
-  easyInput.addEventListener('change', e => { slow = (e.target as HTMLInputElement).checked; if (mode === 'missions') ready(); });
+  easyInput.checked = slow;
+  easyInput.addEventListener('change', e => { slow = (e.target as HTMLInputElement).checked; savePrefs(); if (mode === 'missions') ready(); });
 
   function currentLevel(): Level {
     const level = mode === 'live' ? G.LIVE : G.LEVELS[levelIndex];
@@ -125,6 +148,9 @@ function init(root: HTMLElement) {
   }
 
   function ready() {
+    // Choosing a level or Easy while Help is open closes Help, so Start always works.
+    if (helpOpen) setHelp(false);
+    afterHelp = null;
     game = G.createGame(currentLevel(), (Math.random() * 2 ** 31) | 0);
     running = false; paused = false; countdown = 0;
     clearAim();
@@ -149,6 +175,8 @@ function init(root: HTMLElement) {
     if (helpOpen) return;
     if (running && mode === 'missions' && !paused) setPaused(true, false);
     clearAim();
+    // Opened from a results card: bring that card (and its Next level button) back afterwards.
+    afterHelp = mode === 'missions' && !running && game?.done && !overlay.hidden ? overlay.innerHTML : null;
     setHelp(true);
     show(`<h3>How to play</h3>
       <ol class="steps">
@@ -164,7 +192,11 @@ function init(root: HTMLElement) {
   function closeHowto() {
     try { localStorage.setItem(howtoKey, '1'); } catch { /* private mode */ }
     setHelp(false);
-    if (mode === 'missions' && !running) {
+    if (afterHelp) {
+      show(afterHelp);
+      afterHelp = null;
+      overlay.querySelector<HTMLButtonElement>('.go')?.focus({ preventScroll: true });
+    } else if (mode === 'missions' && !running) {
       ready();
       overlay.querySelector<HTMLButtonElement>('[data-go]')?.focus({ preventScroll: true });
     } else if (paused) setPaused(true);
@@ -185,7 +217,7 @@ function init(root: HTMLElement) {
     overlay.hidden = false;
     canvas.inert = true;
     overlay.querySelector<HTMLButtonElement>('[data-go]')?.addEventListener('click', start);
-    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { levelIndex++; renderLevels(); ready(); start(); });
+    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { levelIndex++; savePrefs(); renderLevels(); ready(); start(); });
     overlay.querySelector<HTMLButtonElement>('[data-again]')?.addEventListener('click', () => { ready(); start(); });
   }
 
@@ -238,14 +270,19 @@ function init(root: HTMLElement) {
   // ---- Keyboard: arrows or WASD aim, 1/2/3 SF, Space transmitter, P pause, Enter start. ----
   const aimKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'];
   root.addEventListener('keydown', e => {
-    if (e.altKey || e.ctrlKey || e.metaKey || (e.target as HTMLElement).matches('input, select, textarea')) return;
+    const target = e.target as HTMLElement;
+    if (e.altKey || e.ctrlKey || e.metaKey || target.matches('select, textarea, input:not([type=checkbox])')) return;
+    // The Easy checkbox keeps Space for itself but still lets P and Esc pause.
+    if (target.matches('input') && e.key !== 'p' && e.key !== 'P' && e.key !== 'Escape') return;
     if (helpOpen) {
       if (e.key === 'Escape') { e.preventDefault(); closeHowto(); }
       return;
     }
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const inCanvas = e.target === canvas;
-    if (aimKeys.includes(k) && inCanvas) { keys.add(k); pointer = null; e.preventDefault(); }
+    // Arrows also steer from the game's buttons (after a tap on the pad, say), not only the sky.
+    const aimFrom = inCanvas || (target.matches('button') && !target.matches('[data-level], [data-mode]'));
+    if (aimKeys.includes(k) && aimFrom) { keys.add(k); pointer = null; e.preventDefault(); }
     else if (k === '1' || k === '2' || k === '3') { if (game) G.setSf(game, G.SF_ORDER[Number(k) - 1]); hud(); }
     else if (k === ' ' && inCanvas) { if (game) G.setTransmit(game, !game.transmit); hud(); e.preventDefault(); }
     else if (!e.repeat && (k === 'p' || k === 'Escape') && running && mode === 'missions') { e.preventDefault(); setPaused(!paused); }
@@ -335,6 +372,7 @@ function init(root: HTMLElement) {
     if (!LiveSky) { skyStatus.textContent = 'The live sky could not load. Flying with demo stations instead.'; root.dataset.sky = 'offline'; addDemoStations(); return; }
     sky ??= new LiveSky({
       status: (s: SkyStatus, detail?: string) => {
+        if (mode !== 'live' && s !== 'off') return; // a late answer after leaving the live sky
         const text: Record<SkyStatus, string> = {
           off: 'Not connected.',
           connecting: 'Connecting to the MoQ relay…',
@@ -343,7 +381,7 @@ function init(root: HTMLElement) {
         };
         skyStatus.textContent = text[s];
         root.dataset.sky = s;
-        if (s === 'offline') addDemoStations();
+        if (s === 'offline' && mode === 'live') addDemoStations();
         if (s === 'live') for (const [id, v] of stations) if (v.demo) stations.delete(id);
       },
       station: (id, state) => stations.set(id, { state, seen: performance.now() }),
@@ -389,8 +427,11 @@ function init(root: HTMLElement) {
     }
   }
 
+  /** The shared clock: this computer's time, corrected by the server's when online. */
+  const sharedNow = () => Date.now() + (sky?.clockOffset ?? 0);
+
   function liveTick() {
-    const { slot, elapsed, seed } = G.liveSlot(Date.now());
+    const { slot, elapsed, seed } = G.liveSlot(sharedNow());
     if (slot !== liveSlot) {
       liveSlot = slot;
       game = G.createGame(G.LIVE, seed);
@@ -405,9 +446,17 @@ function init(root: HTMLElement) {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (mode === 'live' && running) {
-      const pending = liveTick();
-      if (game && !game.done && (pending > 0 || game.t >= G.LIVE.duration)) update(Math.min(pending, dt));
-      else if (game) game.events.length = 0;
+      // Follow the shared clock: small lags (a slow frame) are caught up in short steps, so
+      // they never build up into a skip that would throw away the packet on air.
+      let pending = liveTick();
+      if (game && !game.done && (pending > 0 || game.t >= G.LIVE.duration)) {
+        for (let n = 0; n < 12 && !game.done && (pending > 0.001 || game.t >= G.LIVE.duration); n++) {
+          const stepDt = Math.min(pending, 0.05);
+          update(stepDt);
+          pending -= stepDt;
+          if (stepDt === 0) break;
+        }
+      } else if (game) game.events.length = 0;
       moveDemoStations(dt);
       sky?.sendStation({ az: round(game!.ant.az), el: round(game!.ant.el), sf: game!.sf, snr: round(game!.snr), locked: game!.locked, rx: game!.rx, score: game!.score, slot: liveSlot });
     } else if (running && !paused && game) {
@@ -443,6 +492,7 @@ function init(root: HTMLElement) {
       }
     }
     game.events.length = 0;
+    unlockedFor = game.locked ? 0 : unlockedFor + dt;
     if (game.locked !== lastLock) { lastLock = game.locked; announce(game.locked ? `Locked on, SF${game.sf}.` : 'Signal lost. Re-aim the antenna or try a higher SF.', false); }
     hud();
   }
@@ -484,23 +534,26 @@ function init(root: HTMLElement) {
   };
   const pct = (snr: number) => Math.max(0, Math.min(100, (snr + 30) / 40 * 100));
   let lastBoard = 0;
+  /** Writes to the page only when a value changed: the HUD updates every frame. */
+  function put(el: HTMLElement, text: string) { if (el.textContent !== text) el.textContent = text; }
+  function css(el: HTMLElement, prop: 'width' | 'left', value: string) { if (el.style[prop] !== value) el.style[prop] = value; }
   function hud() {
     if (!game) return;
     const left = Math.max(0, game.level.duration - game.t);
-    hudEl.snr.textContent = (game.snr < -60 ? '—' : game.snr.toFixed(1) + ' dB') + (game.locked ? ' · locked' : '');
-    hudEl.bar.style.width = pct(game.snr) + '%';
+    put(hudEl.snr, (game.snr < -60 ? '—' : game.snr.toFixed(1) + ' dB') + (game.locked ? ' · locked' : ''));
+    css(hudEl.bar, 'width', pct(game.snr) + '%');
     hudEl.bar.dataset.ok = String(game.locked);
-    hudEl.floor.style.left = pct(G.SF[game.sf as 7 | 9 | 12].minSnr) + '%';
-    hudEl.battery.textContent = Math.round(game.battery) + '%' + (game.safe ? ' · SAFE MODE' : '');
-    hudEl.batteryBar.style.width = game.battery + '%';
+    css(hudEl.floor, 'left', pct(G.SF[game.sf as 7 | 9 | 12].minSnr) + '%');
+    put(hudEl.battery, Math.round(game.battery) + '%' + (game.safe ? ' · SAFE MODE' : ''));
+    css(hudEl.batteryBar, 'width', game.battery + '%');
     hudEl.batteryBar.dataset.low = String(game.battery < 25);
-    hudEl.rx.textContent = String(game.rx);
-    hudEl.score.textContent = String(game.score);
-    hudEl.streak.textContent = String(game.streak);
-    hudEl.time.textContent = left.toFixed(0) + ' s';
-    hudEl.light.textContent = G.inEclipse(game.level, game.t / game.level.duration) ? 'In Earth\u2019s shadow' : 'Sunlit';
+    put(hudEl.rx, String(game.rx));
+    put(hudEl.score, String(game.score));
+    put(hudEl.streak, String(game.streak));
+    put(hudEl.time, left.toFixed(0) + ' s');
+    put(hudEl.light, G.inEclipse(game.level, game.t / game.level.duration) ? 'In Earth\u2019s shadow' : 'Sunlit');
     hudEl.tx.setAttribute('aria-pressed', String(game.transmit));
-    hudEl.tx.textContent = game.transmit ? '📡 Sending: on' : '📡 Sending: resting';
+    put(hudEl.tx, game.transmit ? '📡 Sending: on' : '📡 Sending: resting');
     sfButtons.forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.sf) === game!.sf)));
     if (game.log[0] && hudEl.log.dataset.seq !== String(game.log[0].seq)) {
       hudEl.log.dataset.seq = String(game.log[0].seq);
@@ -521,6 +574,18 @@ function init(root: HTMLElement) {
   }
 
   // ---- Drawing ----
+  let skyLabel = '';
+  let lastHint = 0;
+  /** The coach's hint goes to the status line now and then, not every frame. */
+  function coachHint(text: string) {
+    const now = performance.now();
+    if (now - lastHint < 4000) return;
+    lastHint = now;
+    announce(text, false);
+  }
+  /** The canvas label changes only when what it says changes, not every frame. */
+  function setLabel(text: string) { if (text !== skyLabel) { skyLabel = text; canvas.setAttribute('aria-label', text); } }
+
   function draw() {
     const w = W(), h = H();
     if (!w || !h) return;
@@ -642,6 +707,27 @@ function init(root: HTMLElement) {
     if (game.locked && !reduced.matches) { ctx.shadowColor = `rgb(${col})`; ctx.shadowBlur = 12; }
     ctx.beginPath(); ctx.arc(ax, ay, br, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0;
     ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ax - 7, ay); ctx.lineTo(ax + 7, ay); ctx.moveTo(ax, ay - 7); ctx.lineTo(ax, ay + 7); ctx.stroke();
+    // Beginner coach: on the first two levels, after a few seconds without a lock, point from the
+    // antenna circle toward the satellite and say which way to turn.
+    const coach = mode === 'missions' && levelIndex <= 1 && running && !paused && countdown <= 0
+      && unlockedFor > 2.5 && sat.el > 2 && !game.safe;
+    if (coach) {
+      const sx = toX(sat.az), sy = toY(sat.el);
+      const dx = sx - ax, dy = sy - ay, dist = Math.hypot(dx, dy);
+      if (dist > br + 24) {
+        const ux = dx / dist, uy = dy / dist;
+        const pulse = reduced.matches ? 0 : Math.sin(t * 6) * 4;
+        const x0 = ax + ux * (br + 6), y0 = ay + uy * (br + 6);
+        const x1 = ax + ux * Math.min(dist - 18, br + 46 + pulse), y1 = ay + uy * Math.min(dist - 18, br + 46 + pulse);
+        ctx.strokeStyle = '#ffd23f'; ctx.fillStyle = '#ffd23f'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x1 + ux * 10, y1 + uy * 10);
+        ctx.lineTo(x1 - uy * 8, y1 + ux * 8); ctx.lineTo(x1 + uy * 8, y1 - ux * 8); ctx.closePath(); ctx.fill();
+        ctx.lineCap = 'butt';
+      }
+      const way = [sat.el > game.ant.el + 3 ? 'up' : sat.el < game.ant.el - 3 ? 'down' : '', sat.az > game.ant.az + 3 ? 'right' : sat.az < game.ant.az - 3 ? 'left' : ''].filter(Boolean).join(' and ');
+      if (way) coachHint(`Move the circle ${way} to find the satellite.`);
+    }
     // Floating points
     ctx.font = '800 16px Inter, sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(6,10,32,.85)'; ctx.lineJoin = 'round';
     for (const pop of pops) { ctx.globalAlpha = Math.max(0, 1 - pop.age / 1.2); ctx.fillStyle = '#7ff0a8'; const py = pop.y - pop.age * 28; ctx.strokeText(pop.text, pop.x - 14, py); ctx.fillText(pop.text, pop.x - 14, py); }
@@ -651,13 +737,13 @@ function init(root: HTMLElement) {
     if (countdown > 0 && running) { const n = Math.ceil(countdown), f = countdown % 1; ctx.globalAlpha = 0.4 + 0.6 * f; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(6,10,32,.7)'; ctx.strokeText(String(n), w / 2, h / 2); ctx.fillText(String(n), w / 2, h / 2); ctx.globalAlpha = 1; }
     ctx.textAlign = 'left';
     if (mode === 'live') {
-      const { elapsed } = G.liveSlot(Date.now());
+      const { elapsed } = G.liveSlot(sharedNow());
       if (elapsed > G.LIVE.duration) {
         ctx.font = 'bold 22px Inter, sans-serif';
         ctx.fillText(`Next live pass in ${Math.ceil(G.LIVE_SLOT_SECONDS - elapsed)} s`, w / 2 - 120, h / 2);
       }
     }
-    canvas.setAttribute('aria-label', `Sky view. Satellite at elevation ${Math.round(sat.el)} degrees. Your antenna at elevation ${Math.round(game.ant.el)}. Signal ${game.locked ? 'locked' : 'not locked'}.`);
+    setLabel(`Sky view. Satellite at elevation ${Math.round(sat.el)} degrees. Your antenna at elevation ${Math.round(game.ant.el)}. Signal ${game.locked ? 'locked' : 'not locked'}.`);
   }
 
   setTab();

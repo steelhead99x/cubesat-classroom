@@ -166,14 +166,27 @@ test('snapshots from the relay are checked and trimmed', () => {
   assert.equal(h.host, undefined, 'a host with duplicate players is ignored');
 });
 
+// The host's side of a room: commit whatever is ready, then replay the committed history.
+function settle(s, gone = []) {
+  for (let guard = 0; guard < 5000; guard++) {
+    const { match } = Room.replay(host, s);
+    if (!Room.commit(match, host, s, gone)) return Room.replay(host, s);
+  }
+  throw new Error('did not settle');
+}
+
 test('the match waits for every shop, then for the player whose turn it is', () => {
   const s = { [ids[0]]: snap('GS-AA1'), [ids[1]]: snap('GS-BB2') };
-  let { match, action } = Room.replay(host, s);
+  let { match, action } = settle(s);
   assert.deepEqual(action, { kind: 'wait', ids: ids.slice(0, 2) });
   void match;
   s[ids[0]].shops[1] = ['rocket'];
   s[ids[1]].shops[1] = [];
+  // Every shop is in, but nothing happens until the host closes the shop.
   ({ match, action } = Room.replay(host, s));
+  assert.equal(match.phase, 'shop');
+  assert.deepEqual(action, { kind: 'wait', ids: [], sent: true });
+  ({ match, action } = settle(s));
   assert.equal(match.phase, 'play');
   assert.equal(match.players[0].ammo.rocket, 5);
   assert.deepEqual(action, { kind: 'wait', ids: [ids[match.turn]] });
@@ -183,7 +196,7 @@ test('two clients replaying the same snapshots agree shot for shot', () => {
   const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [], 2: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [], 2: [] } }) };
   const r = R.rng(3);
   for (let k = 0; k < 400; k++) {
-    const { match, action } = Room.replay(host, s);
+    const { match, action } = settle(s);
     if (action.kind !== 'wait') break;
     const owner = host.order[match.turn];
     s[owner].turns[match.log.length] = { angle: Math.floor(r() * 181), power: 30 + Math.floor(r() * 60), weapon: 'baby' };
@@ -193,17 +206,71 @@ test('two clients replaying the same snapshots agree shot for shot', () => {
   assert.ok(a.match.log.length > 5);
 });
 
-test('only the host can skip a player who left', () => {
+test('only the host decides a turn, and a player\'s shot waits for it', () => {
   const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [] } }) };
-  let { match } = Room.replay(host, s);
+  let { match } = settle(s);
   const k = match.log.length;
-  // A non-host "skip" is not part of its snapshot after cleaning, and does nothing.
-  s[ids[1]].skips = [k];
+  // A non-host log entry is dropped when the snapshot is cleaned, and does nothing.
+  const fake = Room.cleanSnapshot({ ...s[ids[1]], log: { [k]: 'skip' } });
+  assert.equal(fake.log, undefined);
+  s[ids[1]].log = { [k]: 'skip' };
   assert.equal(Room.replay(host, s).match.log.length, k);
-  s[ids[0]].skips = [k];
-  ({ match } = Room.replay(host, s));
+  // A shot from the current player is only a request until the host commits it.
+  const owner = host.order[match.turn];
+  s[owner].turns[k] = { angle: 60, power: 50, weapon: 'baby' };
+  assert.deepEqual(Room.replay(host, s).action, { kind: 'wait', ids: [owner], sent: true });
+  ({ match } = settle(s));
   assert.equal(match.log.length, k + 1);
-  assert.equal(match.log[k].skip, true);
+});
+
+test('a skip and a late shot give every screen the same match, in either order', () => {
+  const base = () => ({ [ids[0]]: snap('GS-AA1', { shops: { 1: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [] } }) });
+  // Find a turn that belongs to the non-host player.
+  const s0 = base();
+  let { match } = settle(s0);
+  for (let i = 0; host.order[match.turn] !== ids[1] && i < 4; i++) {
+    s0[host.order[match.turn]].turns[match.log.length] = { angle: 90, power: 10, weapon: 'baby' };
+    ({ match } = settle(s0));
+  }
+  assert.equal(host.order[match.turn], ids[1]);
+  const k = match.log.length;
+  const late = { angle: 40, power: 80, weapon: 'baby' };
+
+  // Order 1: the host gives up on the player first, then the shot arrives.
+  const a = JSON.parse(JSON.stringify(s0));
+  settle(a, [ids[1]]);
+  a[ids[1]].turns[k] = late;
+  const hostView = settle(a).match;
+
+  // Order 2: a viewer receives the late shot before the host's skip, then the host's snapshot.
+  const viewer = JSON.parse(JSON.stringify(s0));
+  viewer[ids[1]].turns[k] = late;
+  const early = Room.replay(host, viewer).match;
+  assert.equal(early.log.length, k, 'the viewer does not apply a shot the host has not committed');
+  viewer[ids[0]] = JSON.parse(JSON.stringify(a[ids[0]]));
+  const viewerView = Room.replay(host, viewer).match;
+
+  assert.equal(hostView.log[k].skip, true);
+  assert.equal(R.fingerprint(viewerView), R.fingerprint(hostView));
+  // A reconnecting client rebuilds the same match from the host's history alone, after the
+  // snapshots pass through the same cleaning as anything from the relay.
+  a[ids[0]].host = host;
+  a[ids[0]].creator = true;
+  const rejoin = Room.replay(host, Object.fromEntries(Object.entries(a).map(([id, v]) => [id, Room.cleanSnapshot(JSON.parse(JSON.stringify(v)))])));
+  assert.equal(R.fingerprint(rejoin.match), R.fingerprint(hostView));
+});
+
+test('committed history never changes once written', () => {
+  const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [] } }) };
+  const { match } = settle(s);
+  const k = match.log.length, owner = host.order[match.turn];
+  s[owner].turns[k] = { angle: 30, power: 40, weapon: 'baby' };
+  settle(s);
+  const first = JSON.stringify(s[ids[0]].log[k]);
+  s[owner].turns[k] = { angle: 170, power: 99, weapon: 'baby' };
+  const again = Room.replay(host, s).match;
+  assert.equal(Room.commit(again, host, s), false);
+  assert.equal(JSON.stringify(s[ids[0]].log[k]), first);
 });
 
 test('everyone starts with credits for a couple of better rockets', () => {
@@ -234,4 +301,33 @@ test('drag to aim: point at where you want to shoot, farther means more power', 
   assert.equal(R.aimFromPoint(u, 60, py - 30).angle, 180);
   const a = R.aimFromPoint(u, 160, py + 60);
   assert.ok(Number.isInteger(a.angle) && Number.isInteger(a.power) && a.angle === 45);
+});
+
+test('a Dirt Ball never buries a rockoon', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const m = R.createMatch({ seed, players: players(2) });
+    m.players[m.turn].ammo.dirt = 1;
+    R.startRound(m);
+    const shooter = m.turn, target = 1 - shooter;
+    const t = m.field.units[target];
+    // Pile dirt straight onto the target, as an aimed shot would.
+    R.carve(m.field.terrain, t.x, t.y + 8, R.WEAPON.dirt.radius, true);
+    R.settle(m, shooter);
+    const u = m.field.units[target];
+    let ground = 0;
+    for (let dx = -6; dx <= 6; dx++) ground = Math.max(ground, m.field.terrain[Math.max(0, Math.min(R.W - 1, u.x + dx))]);
+    assert.ok(u.y >= ground || !u.alive, `seed ${seed}: rockoon at ${u.y} under ground ${ground}`);
+  }
+});
+
+test('a tied top score is a shared win', () => {
+  const m = R.createMatch({ seed: 4, players: players(3), rounds: 1 });
+  R.startRound(m);
+  // Player 2 will win the round (+2 points) and tie player 1.
+  m.players[0].score = 4; m.players[1].score = 2; m.players[2].score = 0;
+  m.field.units.forEach((u, i) => { if (i !== 1) u.alive = false; });
+  R.skip(m);
+  assert.equal(m.phase, 'over');
+  assert.deepEqual(m.winners, [0, 1]);
+  assert.equal(m.winner, 0);
 });

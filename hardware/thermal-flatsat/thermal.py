@@ -8,10 +8,21 @@ from pathlib import Path
 NITROGEN_J_PER_LITER = 160_600
 
 
-def bench(path, limit_c):
-    """Read one run. Return its duration, starting temperatures and first crossing."""
+# Interpolate a crossing only between samples at most this far apart. Across a longer gap the
+# temperature could have taken any path, so the report gives the interval instead.
+MAX_INTERPOLATION_GAP_S = 120.0
+
+
+def bench(path, limit_c, max_gap_s=MAX_INTERPOLATION_GAP_S):
+    """Read one run. Return its duration, starting temperatures and first crossing.
+
+    The crossing is None if the limit was never reached, otherwise (earliest, latest, estimate)
+    in seconds from the start: the two samples around it, and a linear estimate only when they
+    are at most max_gap_s apart (estimate is None across a longer gap)."""
     if not math.isfinite(limit_c):
         raise ValueError("temperature limit must be finite")
+    if not math.isfinite(max_gap_s) or max_gap_s < 0:
+        raise ValueError("maximum interpolation gap must be a nonnegative number of seconds")
     with path.open(newline="") as stream:
         reader = csv.DictReader(stream)
         columns = {"elapsed_s", "cold_c", "ambient_c"}
@@ -28,11 +39,14 @@ def bench(path, limit_c):
     if len(samples) < 2:
         raise ValueError("at least two samples are needed")
     start, cold, ambient = samples[0]
-    crossed = 0.0 if cold >= limit_c else None
+    crossed = (0.0, 0.0, 0.0) if cold >= limit_c else None
     if crossed is None:
         for (t0, c0, _), (t1, c1, _) in zip(samples, samples[1:]):
             if c0 < limit_c <= c1:
-                crossed = t0 - start + (t1 - t0) * (limit_c - c0) / (c1 - c0)
+                estimate = None
+                if t1 - t0 <= max_gap_s:
+                    estimate = t0 - start + (t1 - t0) * (limit_c - c0) / (c1 - c0)
+                crossed = (t0 - start, t1 - start, estimate)
                 break
     return samples[-1][0] - start, cold, ambient, crossed
 
@@ -56,6 +70,8 @@ def main():
     report = commands.add_parser("bench", help="summarize a cold-pack CSV")
     report.add_argument("csv", type=Path)
     report.add_argument("--limit-c", type=float, default=10.0)
+    report.add_argument("--max-gap-s", type=float, default=MAX_INTERPOLATION_GAP_S,
+                        help="interpolate a crossing only between samples at most this many seconds apart")
     estimate = commands.add_parser("model", help="compare ideal heat and electrical budgets")
     estimate.add_argument("--liters", type=float, required=True)
     estimate.add_argument("--heat-w", type=float, required=True, help="assumed heat leak into the cold stage")
@@ -67,12 +83,19 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == "bench":
-            duration, cold, ambient, crossed = bench(args.csv, args.limit_c)
+            duration, cold, ambient, crossed = bench(args.csv, args.limit_c, args.max_gap_s)
             print(f"Recorded {duration / 60:.2f} min. Started at {cold:.2f} °C cold, {ambient:.2f} °C ambient.")
             if crossed is None:
                 print(f"Stayed below {args.limit_c:g} °C through the last sample.")
+            elif crossed[2] is None:
+                print(f"Reached {args.limit_c:g} °C between {crossed[0] / 60:.2f} and {crossed[1] / 60:.2f} min. "
+                      f"The samples are {crossed[1] - crossed[0]:g} s apart, too far apart to estimate a time "
+                      f"(limit {args.max_gap_s:g} s).")
+            elif crossed[0] == crossed[1]:
+                print(f"Already at or above {args.limit_c:g} °C at {crossed[2] / 60:.2f} min.")
             else:
-                print(f"Reached {args.limit_c:g} °C at {crossed / 60:.2f} min (linear interpolation).")
+                print(f"Reached {args.limit_c:g} °C at about {crossed[2] / 60:.2f} min, between samples at "
+                      f"{crossed[0] / 60:.2f} and {crossed[1] / 60:.2f} min (linear interpolation).")
         else:
             hold, leak, power, margin = model(args.liters, args.heat_w, args.target_hours,
                                              args.solar_w, args.light_fraction, args.load_w, args.cop)

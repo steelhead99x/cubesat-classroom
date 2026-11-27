@@ -206,7 +206,9 @@ export function step(game, input = {}, dt = 1 / 60) {
   game.ant.el = clamp(game.ant.el + dEl, 0, 90);
 
   // Slow fading of about +-1 dB, as the satellite tumbles.
-  game.fade = clamp(game.fade * 0.97 + (game.random() - 0.5) * 0.35, -1.5, 1.5);
+  // Scaled by dt so the fade behaves the same at any frame rate.
+  const frames = dt * 60;
+  game.fade = clamp(game.fade * 0.97 ** frames + (game.random() - 0.5) * 0.35 * Math.sqrt(frames), -1.5, 1.5);
   game.snr = snrAt(game, game.ant.az, game.ant.el);
   const sf = SF[game.sf];
   game.locked = game.snr >= sf.minSnr;
@@ -242,7 +244,9 @@ export function step(game, input = {}, dt = 1 / 60) {
 
   if (p >= 1) {
     game.done = true;
-    if (game.battery >= 20) game.score += 200;
+    // The healthy-battery bonus is for flying the pass: a station that sent nothing (for
+    // example, one that joined a live pass after it ended) earns nothing for it.
+    if (game.battery >= 20 && game.seq > 0) game.score += 200;
     game.events.push({ type: 'done', stars: stars(game), score: game.score });
   }
   return game;
@@ -269,5 +273,6 @@ export function stars(game) {
 export function liveSlot(nowMs) {
   const s = nowMs / 1000;
   const slot = Math.floor(s / LIVE_SLOT_SECONDS);
-  return { slot, elapsed: s - slot * LIVE_SLOT_SECONDS, seed: (slot * 2654435761) >>> 0 };
+  // Math.imul keeps the hash in 32-bit integers; a plain product passes 2^53 and loses bits.
+  return { slot, elapsed: s - slot * LIVE_SLOT_SECONDS, seed: Math.imul(slot, 2654435761) >>> 0 };
 }

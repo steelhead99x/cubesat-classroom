@@ -23,7 +23,7 @@ export interface SkyEvents {
   leave(id: string): void;
 }
 
-interface Token { url: string; player: string; callsign: string; expires: number }
+interface Token { url: string; player: string; callsign: string; expires: number; now?: number }
 
 /** Accepts only well-formed station updates from the relay; anything else is dropped. */
 export function cleanStation(raw: unknown): StationState | null {
@@ -49,6 +49,8 @@ export class LiveSky {
   status: SkyStatus = 'off';
   callsign = '';
   player = '';
+  /** Server clock minus this computer's clock, in ms, so every station flies the same pass. */
+  clockOffset = 0;
   #events: SkyEvents;
   #endpoint: string;
   #stop = false;
@@ -59,6 +61,9 @@ export class LiveSky {
   #peers = new Map<string, () => void>();
   #lastSent = 0;
   #retry = 0;
+  /** Each start() is one attempt; stop() or a newer start() makes older attempts give up. */
+  #gen = 0;
+  #abort?: AbortController;
 
   constructor(events: SkyEvents, endpoint = '/api/games/moq-token') {
     this.#events = events;
@@ -71,25 +76,28 @@ export class LiveSky {
   }
 
   async start() {
-    this.#stop = false;
-    while (!this.#stop) {
+    const gen = this.#begin();
+    const live = () => !this.#stop && gen === this.#gen;
+    while (live()) {
       this.#set('connecting');
       let token: Token;
       try {
         token = await this.#token();
       } catch (error) {
+        if (!live()) return; // cancelled while asking for a token
         // Not set up, rate limited or offline: play alone and do not keep asking.
         this.#set('offline', (error as Error).message);
         return;
       }
+      if (!live()) return;
       try {
         const expiresIn = token.expires * 1000 - Date.now();
-        await this.#session(token, Math.max(30_000, expiresIn - 30_000));
+        await this.#session(token, Math.max(30_000, expiresIn - 30_000), live);
         this.#retry = 0;
       } catch (error) {
+        if (!live()) return;
         this.#retry++;
         this.#cleanup();
-        if (this.#stop) return;
         if (this.#retry > 2) { this.#set('offline', 'The relay could not be reached.'); return; }
         this.#set('connecting', 'Reconnecting…');
         await new Promise(r => setTimeout(r, 1000 * this.#retry));
@@ -98,36 +106,61 @@ export class LiveSky {
     }
   }
 
+  /** Starts a new attempt and cancels any older one, including its token request. */
+  #begin() {
+    this.#abort?.abort();
+    this.#abort = new AbortController();
+    this.#stop = false;
+    return ++this.#gen;
+  }
+
   stop() {
     this.#stop = true;
+    this.#gen++;
+    this.#abort?.abort();
     this.#cleanup();
     this.#set('off');
   }
 
   async #token(): Promise<Token> {
+    const sent = Date.now();
     const res = await fetch(this.#endpoint, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ game: 'catch-the-pass' }),
       credentials: 'same-origin',
       cache: 'no-store',
+      signal: this.#abort?.signal,
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok || typeof body.url !== 'string') throw new Error(body.error ?? 'The live sky is not available.');
     const url = new URL(body.url);
     if (url.protocol !== 'https:') throw new Error('The relay must use https.');
+    // A classroom computer's clock can be minutes off. Take the server's time at the middle
+    // of the request (ignoring anything absurd).
+    const back = Date.now();
+    if (Number.isFinite(body.now) && back - sent < 10_000) {
+      const offset = body.now - (sent + back) / 2;
+      if (Math.abs(offset) < 86_400_000) this.clockOffset = Math.round(offset);
+    }
     return body as Token;
   }
 
   /** One relay session, until it closes or the token is about to expire. */
-  async #session(token: Token, lifetimeMs: number) {
+  async #session(token: Token, lifetimeMs: number, live: () => boolean) {
     this.player = token.player;
     this.callsign = token.callsign;
     const origin = new Moq.Origin.Producer();
-    this.#origin = origin;
     const connection = await Moq.Connection.connect({
       url: new URL(token.url), publish: origin.consume(), consume: origin, signal: AbortSignal.timeout(6_000),
-    });
+    }).catch(error => { try { origin.close(); } catch { /* already closed */ } throw error; });
+    if (!live()) {
+      // The player left (or started again) while this connection was opening: drop it.
+      try { connection.close(); } catch { /* already closed */ }
+      try { origin.close(); } catch { /* already closed */ }
+      return;
+    }
+    this.#origin = origin;
     this.#connection = connection;
     const broadcast = origin.createBroadcast(Moq.Path.from(token.player));
     this.#station = broadcast.createTrack('station', { priority: 1 });

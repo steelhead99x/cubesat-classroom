@@ -567,7 +567,10 @@ fn is_live_pseudo_file(path: &std::path::Path) -> bool {
 /// Read an integer sensor file and return it with its capture time: the file's last-modified
 /// time in Unix milliseconds. Fails when the file is older than the station's freshness limit,
 /// or dated further in the future than the allowed clock skew.
-fn read_fresh_integer<T: std::str::FromStr>(path: &std::path::Path, now: u64) -> Result<(T, u64)>
+pub(crate) fn read_fresh_integer<T: std::str::FromStr>(
+    path: &std::path::Path,
+    now: u64,
+) -> Result<(T, u64)>
 where
     T::Err: std::error::Error + Send + Sync + 'static,
 {
