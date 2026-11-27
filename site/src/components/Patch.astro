@@ -11,10 +11,11 @@ interface Props {
   name: string;   // full quest title, used for the accessible label
   label: string;
   size?: number;
+  show?: boolean;  // always in colour (the patches page), not tied to this browser's progress
 }
 
 type Shape = { layer: 'white' | 'tone'; kind: 'fill' | 'stroke'; d: string; width?: number; gap?: number };
-const { id, name, label, size = 120 } = Astro.props;
+const { id, name, label, size = 120, show = false } = Astro.props;
 const spec = (art.patches as Record<string, { tone: string; shapes: Shape[] }>)[id];
 const tone = spec?.tone ?? '#a4c9ff';
 const [dx, dy] = art.frame.art_shift;
@@ -23,8 +24,8 @@ const outline = (shapes.labels as Record<string, { label: string; d: string }>)[
 const useOutline = outline?.label === label;
 const f = shapes.frame;
 ---
-<svg class="patch" data-patch={id} data-name={name} style={`--tone:${tone}`} viewBox="0 0 100 100" width={size} height={size} role="img">
-  <title>{name}: not earned yet</title>
+<svg class="patch" data-patch={show ? undefined : id} data-earned={show ? '' : undefined} data-name={name} style={`--tone:${tone}`} viewBox="0 0 100 100" width={size} height={size} role="img">
+  <title>{show ? `${name} mission patch` : `${name}: not earned yet`}</title>
   <path class="p-body" d={f.body} />
   <path class="p-white" d={f.key} fill-rule="evenodd" />
   <path class="p-tone" d={f.band} fill-rule="evenodd" />
