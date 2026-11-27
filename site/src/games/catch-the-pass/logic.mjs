@@ -139,8 +139,26 @@ function linkAt(game, az, el, t, choice) {
   }
   if (game.bursts.some(b => t >= b.start && t < b.end)) noiseDb = Math.max(noiseDb, 0) + 10;
   const noise = noiseDb > -30 ? 10 * Math.log10(1 + 10 ** (noiseDb / 10)) : 0;
-  const carrier = level.link + gain - pointingLossDb(off, beam) - rangeLossDb(sat.el) + game.fade;
-  return { carrier, noise };
+  const pointing = pointingLossDb(off, beam);
+  const carrier = level.link + gain - pointing - rangeLossDb(sat.el) + game.fade;
+  return { carrier, noise, pointing };
+}
+
+/** Why packets were lost, for the debrief after a pass. */
+export const LOSS_CAUSES = ['pointing', 'weak', 'noise', 'receiver'];
+const freshPacket = () => ({ elapsed: 0, sum: 0, n: 0, min: Infinity, pointing: 0, noise: 0, receiver: 0 });
+
+/**
+ * The main reason a packet failed, from what happened while it was on air: the receiver set
+ * wrong, the antenna pointed away, noise, or (none of those) a signal too weak for this SF.
+ */
+export function lossCause(pk) {
+  const n = pk.n || 1;
+  if (pk.receiver / n > 0.5) return 'receiver';
+  if (pk.pointing / n > 3) return 'pointing';
+  // The noise term is about 3 dB with nothing nearby, so look for clearly more than that.
+  if (pk.noise / n > 4.5) return 'noise';
+  return 'weak';
 }
 
 /** Signal-to-noise ratio at the antenna, before the receiver pedal. */
@@ -181,7 +199,14 @@ export function createGame(level, seed = 1, antenna = level.antenna, receiver = 
     ant: { az: -60, el: 20 }, sf: 9, transmit: true,
     battery: level.battery, safe: false, fade: 0,
     bursts: burstsFor(level, seed),
-    packet: { elapsed: 0, sum: 0, n: 0, min: Infinity },
+    packet: freshPacket(),
+    /** For the debrief: lost packets by cause, seconds resting or in safe mode, and a trace. */
+    causes: { pointing: 0, weak: 0, noise: 0, receiver: 0 },
+    restS: 0, safeS: 0,
+    /** @type {{ t: number, snr: number, floor: number, el: number, on: boolean }[]} every half second */
+    trace: [],
+    /** @type {{ t: number, ok: boolean, cause?: string }[]} */
+    packets: [],
     seq: 0, rx: 0, lost: 0, streak: 0, bestStreak: 0, score: 0,
     snr: -99, locked: false,
     /** @type {{ type: string, seq?: number, points?: number, sf?: number, stars?: number, score?: number, reading?: ReturnType<typeof telemetry> }[]} */
@@ -196,7 +221,7 @@ export function syncLiveTime(game, elapsed) {
   const target = Math.min(elapsed, game.level.duration);
   if (game.done || target <= game.t || (target - game.t < 0.75 && target < game.level.duration)) return false;
   game.t = target;
-  game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity };
+  game.packet = freshPacket();
   game.streak = 0;
   game.locked = false;
   return true;
@@ -206,7 +231,7 @@ export function syncLiveTime(game, elapsed) {
 export function setSf(game, sf) {
   if (!SF[sf] || sf === game.sf) return;
   game.sf = sf;
-  game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity };
+  game.packet = freshPacket();
   game.events.push({ type: 'sf', sf });
 }
 
@@ -216,7 +241,7 @@ export function setTransmit(game, on) {
   game.transmit = !!on;
   game.snr = readReceiver(game).snr;
   game.locked = game.snr >= SF[game.sf].minSnr;
-  game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity };
+  game.packet = freshPacket();
   game.events.push({ type: on ? 'tx-on' : 'tx-off' });
 }
 
@@ -253,16 +278,27 @@ export function step(game, input = {}, dt = 1 / 60) {
   game.fade = clamp(game.fade * 0.97 ** frames + (game.random() - 0.5) * 0.35 * Math.sqrt(frames), -1.5, 1.5);
   // Power: solar panels charge in sunlight. Transmitting costs energy whether or not anyone hears it.
   if (!inEclipse(level, p)) game.battery = Math.min(100, game.battery + level.charge * dt);
-  if (!game.safe && game.battery < SAFE_AT) { game.safe = true; game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity }; game.events.push({ type: 'safe' }); }
+  if (!game.safe && game.battery < SAFE_AT) { game.safe = true; game.packet = freshPacket(); game.events.push({ type: 'safe' }); }
   if (game.safe && game.battery >= RESUME_AT) { game.safe = false; game.events.push({ type: 'resume' }); }
 
-  game.snr = readReceiver(game).snr;
+  const rx = readReceiver(game);
+  game.snr = rx.snr;
   const sf = SF[game.sf];
   game.locked = game.snr >= sf.minSnr;
+  if (game.safe) game.safeS += dt;
+  else if (!game.transmit) game.restS += dt;
+  // A point every half second for the debrief chart (at most about 140 for the longest pass).
+  if (game.t >= game.trace.length * 0.5) {
+    game.trace.push({ t: game.t, snr: Math.max(-40, game.snr), floor: sf.minSnr, el: satPosition(level, p).el, on: game.transmit && !game.safe });
+  }
 
   if (!game.safe && game.transmit) {
     const pk = game.packet;
     pk.elapsed += dt; pk.sum += game.snr * dt; pk.n += dt; pk.min = Math.min(pk.min, game.snr);
+    const link = linkAt(game, game.ant.az, game.ant.el, game.t, game.antenna);
+    pk.pointing += link.pointing * dt;
+    pk.noise += link.noise * dt;
+    if (rx.status !== 'Ready') pk.receiver += dt;
     game.battery = Math.max(0, game.battery - level.drain * dt);
     if (pk.elapsed >= sf.airtime) {
       game.seq++;
@@ -276,11 +312,15 @@ export function step(game, input = {}, dt = 1 / 60) {
         game.log.unshift(reading);
         if (game.log.length > 8) game.log.length = 8;
         game.events.push({ type: 'rx', seq: game.seq, points, reading });
+        if (game.packets.length < 200) game.packets.push({ t: game.t, ok: true });
       } else {
         game.lost++; game.streak = 0;
-        game.events.push({ type: 'lost', seq: game.seq });
+        const cause = lossCause(pk);
+        game.causes[cause]++;
+        game.events.push({ type: 'lost', seq: game.seq, cause });
+        if (game.packets.length < 200) game.packets.push({ t: game.t, ok: false, cause });
       }
-      game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity };
+      game.packet = freshPacket();
     }
   }
 
@@ -317,4 +357,30 @@ export function liveSlot(nowMs) {
   const slot = Math.floor(s / LIVE_SLOT_SECONDS);
   // Math.imul keeps the hash in 32-bit integers; a plain product passes 2^53 and loses bits.
   return { slot, elapsed: s - slot * LIVE_SLOT_SECONDS, seed: Math.imul(slot, 2654435761) >>> 0 };
+}
+
+/**
+ * What to try next time, from how the pass went: the biggest reason packets were lost, or
+ * time the satellite could not send. Returns { cause, text }, or null after a clean pass.
+ */
+export function debrief(game) {
+  const sfName = { 7: 'Fast', 9: 'Middle', 12: 'Far' }[game.sf];
+  const top = LOSS_CAUSES.map(c => [c, game.causes[c]]).sort((a, b) => b[1] - a[1])[0];
+  const plural = n => (n === 1 ? '1 packet was' : `${n} packets were`);
+  if (game.safeS >= 3 && (!top || game.safeS * 0.7 > top[1])) {
+    return { cause: 'battery', text: `The battery ran flat, so the satellite sent nothing for ${Math.round(game.safeS)} s. In Earth\u2019s shadow, rest it (Sending: resting) when you cannot hear it, and use faster settings.` };
+  }
+  if (!top || top[1] === 0) {
+    return game.restS >= 5
+      ? { cause: 'rest', text: `The satellite rested for ${Math.round(game.restS)} s. Resting saves battery, but it sends nothing while it rests.` }
+      : null;
+  }
+  const [cause, n] = top;
+  const text = {
+    pointing: `${plural(n)} lost while the antenna pointed away. Keep the circle on the satellite, and move ahead of it when it is high and fast.`,
+    weak: `${plural(n)} too weak to decode at ${sfName} even with the antenna on target. When the satellite is low and far away, switch to Far (SF12).`,
+    noise: `${plural(n)} drowned out by noise. Keep the antenna away from the busy device on the right horizon, and expect short noise bursts.`,
+    receiver: `${plural(n)} lost at the receiver. Keep the pedal engaged, tuned to 915.000 MHz, and the gain out of the red.`,
+  }[cause];
+  return { cause, text };
 }
