@@ -8,10 +8,12 @@
 // Every player subscribes to the other stations in the room, so all classrooms share one sky.
 // Without a token (offline, not configured, relay unreachable) the game keeps working alone.
 import * as Moq from '@moq/net';
+import { ANTENNAS } from './logic.mjs';
 
 export interface StationState {
   cs: string; az: number; el: number; sf: number; snr: number; locked: boolean;
   rx: number; score: number; slot: number;
+  antenna?: keyof typeof ANTENNAS;
 }
 export interface PacketNote { seq: number; sf: number; snr: number; tempC: number; light: number; battery: number; slot: number }
 export type SkyStatus = 'off' | 'connecting' | 'live' | 'offline';
@@ -34,7 +36,9 @@ export function cleanStation(raw: unknown): StationState | null {
   const az = num(r.az, -90, 90), el = num(r.el, 0, 90), sf = num(r.sf, 7, 12), snr = num(r.snr, -99, 40);
   const rx = num(r.rx, 0, 1e4), score = num(r.score, 0, 1e7), slot = num(r.slot, 0, 1e12);
   if (!cs || az === null || el === null || sf === null || snr === null || rx === null || score === null || slot === null) return null;
-  return { cs, az, el, sf, snr, locked: r.locked === true, rx, score, slot };
+  const antenna = typeof r.antenna === 'string' && Object.hasOwn(ANTENNAS, r.antenna)
+    ? r.antenna as keyof typeof ANTENNAS : undefined;
+  return { cs, az, el, sf, snr, locked: r.locked === true, rx, score, slot, antenna };
 }
 
 export function cleanPacket(raw: unknown): PacketNote | null {

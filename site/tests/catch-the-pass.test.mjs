@@ -41,12 +41,12 @@ test('tracking the satellite downloads packets; pointing at the ground does not'
   assert.equal(G.stars(bad), 0);
 });
 
-test('the rotator slews no faster than the level allows', () => {
+test('the rotator slews no faster than the selected antenna allows', () => {
   const game = G.createGame(G.LEVELS[4], 1);
   const before = { ...game.ant };
   G.step(game, { target: { az: 90, el: 90 } }, 0.1);
   const moved = Math.hypot(game.ant.az - before.az, game.ant.el - before.el);
-  assert.ok(moved <= G.LEVELS[4].slew * 0.1 + 1e-9);
+  assert.ok(moved <= G.ANTENNAS.yagi.slew * 0.1 + 1e-9);
 });
 
 test('a packet is lost when the signal drops below the SF floor, and the streak resets', () => {
@@ -118,10 +118,52 @@ test('every level is winnable by careful tracking with a sensible SF', () => {
 test('easy mode gives longer passes, a faster antenna and a wider beam, with the same goals', () => {
   for (const level of G.LEVELS) {
     const easy = G.easyLevel(level);
-    assert.ok(easy.duration > level.duration && easy.slew > level.slew && easy.beam > level.beam);
+    assert.ok(easy.duration > level.duration);
+    for (const choice of Object.keys(G.ANTENNAS)) {
+      const normal = G.antennaFor(level, choice);
+      const assisted = G.antennaFor(easy, choice);
+      assert.ok(assisted.slew > normal.slew && assisted.beam > normal.beam);
+    }
     assert.deepEqual(easy.goal, level.goal);
-    assert.equal(level.beam, G.LEVELS.find(l => l.id === level.id).beam, 'the level itself is unchanged');
   }
+});
+
+test('the Yagi beats a crossed dipole on axis but loses more signal when misaimed', () => {
+  const game = G.createGame(G.LEVELS[0]);
+  const time = game.level.duration / 2;
+  const sat = G.satPosition(game.level, 0.5);
+  const snr = (offset, antenna) => G.snrAt(game, sat.az, sat.el - offset, time, antenna);
+  assert.ok(snr(0, 'yagi') > snr(0, 'patch'));
+  assert.ok(snr(0, 'patch') > snr(0, 'crossed'));
+  assert.ok(snr(30, 'crossed') > snr(30, 'yagi'));
+});
+
+test('the receiver needs engagement and correct tuning to receive packets', () => {
+  assert.equal(G.receiverFrequency(1), 915.005);
+  for (const settings of [{ engaged: false }, { offset: 1 }]) {
+    const game = G.createGame(G.LEVELS[0], 7, 'patch', { ...G.DEFAULT_RECEIVER, ...settings });
+    run(game, 14, track);
+    assert.equal(game.rx, 0);
+    assert.ok(game.lost > 0);
+    Object.assign(game.receiver, G.DEFAULT_RECEIVER);
+    run(game, 15, track);
+    assert.ok(game.rx > 0);
+  }
+});
+
+test('gain restores weak signals up to the point of overload; audio level is independent', () => {
+  const game = G.createGame(G.LEVELS[0]);
+  game.t = game.level.duration / 2;
+  game.ant = G.satPosition(game.level, 0.5);
+  const nominal = G.readReceiver(game);
+  game.receiver.level = 0;
+  assert.deepEqual(G.readReceiver(game), nominal);
+  game.receiver.gainDb = 0;
+  assert.ok(G.readReceiver(game).snr < nominal.snr);
+  game.receiver.gainDb = 42;
+  const clipped = G.readReceiver(game);
+  assert.equal(clipped.status, 'Clipping');
+  assert.ok(clipped.peak > 1 && clipped.snr < nominal.snr);
 });
 
 test('returning to a live pass skips unattended time without awarding packets', () => {

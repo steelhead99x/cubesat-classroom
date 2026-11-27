@@ -2,7 +2,8 @@
 import Base from '../../layouts/Base.astro';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
-import { LEVELS } from '../../games/catch-the-pass/logic.mjs';
+import { ANTENNAS, DEFAULT_RECEIVER, LEVELS, receiverFrequency } from '../../games/catch-the-pass/logic.mjs';
+import { GAIN_MAX_DB } from '../../lib/pedal.mjs';
 import { siteOrigin } from '../../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -40,6 +41,16 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
       <div data-live class="live-note" hidden>
         <p data-sky-status aria-live="polite">Not connected.</p>
         <p class="small">Everyone in the live sky tracks the same satellite at the same time. A new pass starts every minute. Stations are anonymous call signs. There are no names and no chat.</p>
+      </div>
+
+      <div class="antenna-row">
+        <label for="ctp-antenna">Antenna</label>
+        <select id="ctp-antenna" data-antenna aria-describedby="ctp-antenna-note">
+          <option value="">Recommended for this pass</option>
+          {Object.entries(ANTENNAS).map(([id, antenna]) => <option value={id}>{antenna.name}</option>)}
+        </select>
+        <span id="ctp-antenna-note" data-antenna-note>Patch · Medium beam · balanced gain</span>
+        <a href="#ctp-receiver">Receiver pedal ↓</a>
       </div>
 
       <div class="dash">
@@ -82,6 +93,30 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
         </div>
       </div>
 
+      <section class="receiver" id="ctp-receiver" aria-labelledby="ctp-receiver-title">
+        <div class="receiver-face">
+          <h3 id="ctp-receiver-title">Receiver pedal</h3>
+          <div class="receiver-screen">
+            <span>Input <span data-rx-input>0%</span></span>
+            <span data-rx-state>Ready</span>
+            <div class="bar" aria-hidden="true"><i data-rx-meter></i></div>
+          </div>
+          <button type="button" data-rx-engage aria-pressed="true">Engaged</button>
+        </div>
+        <div class="receiver-controls">
+          <label>Tune <output data-rx-tune-label>{receiverFrequency(0).toFixed(3)} MHz</output>
+            <input type="range" data-rx-tune min="-4" max="4" step="1" value={DEFAULT_RECEIVER.offset} />
+          </label>
+          <label>Gain <output data-rx-gain-label>{DEFAULT_RECEIVER.gainDb} dB</output>
+            <input type="range" data-rx-gain min="0" max={GAIN_MAX_DB} step="1" value={DEFAULT_RECEIVER.gainDb} />
+          </label>
+          <label>Audio level <output data-rx-level-label>{DEFAULT_RECEIVER.level}%</output>
+            <input type="range" data-rx-level min="0" max="100" step="1" value={DEFAULT_RECEIVER.level} />
+          </label>
+          <p class="small">Tune to 915 MHz and lower the gain if the input clips. Audio level only changes the sound. <a href={base + '/#pedal-lab'}>Try the CSC-R1 pedal trainer</a></p>
+        </div>
+      </section>
+
       <div class="panels">
         <div>
           <h3 class="t-label">Downlinked packets</h3>
@@ -103,6 +138,7 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
         <ul id="ctp-keys" class="mt-3 list-disc space-y-1.5 pl-5">
           <li><strong>Move the antenna:</strong> tap or hold the ▲ ◀ ▶ ▼ buttons, drag on the sky with a finger, move the mouse over the sky, or use the arrow keys or W A S D.</li>
           <li><strong>Catch packets:</strong> keep the circle on the satellite. When the signal bar turns green, you are catching packets and earning credits.</li>
+          <li><strong>Set up your receiver:</strong> choose a wide beam for easier aiming or a narrow beam for more gain. Keep the pedal engaged and tuned to 915 MHz.</li>
           <li><strong>Radio setting:</strong> 🐇 Fast catches packets quickly when the satellite is close. 🐢 Far works when it is low and far away. Keys 1, 2 and 3 work too.</li>
           <li><strong>Sending:</strong> press Space or the 📡 button to let the satellite rest and save its battery.</li>
           <li><strong>Pause:</strong> P or Esc. <strong>Start:</strong> Enter. Sound starts off. Easy mode (on at first) makes passes slower and the antenna’s circle bigger.</li>
@@ -115,7 +151,7 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
           <p set:html={`A ${wiki('ground-station', 'ground station')} must point its antenna at a ${wiki('cubesat', 'CubeSat')} in ${wiki('leo', 'low Earth orbit')} for the few minutes it is overhead. Low in the sky the satellite is up to five times farther away, so its ${wiki('downlink', 'downlink')} is weaker.`} />
           <p set:html={`Many CubeSats send ${wiki('telemetry', 'telemetry')} with ${wiki('lora', 'LoRa')} radios at ${wiki('915-mhz', '915 MHz')}. Each spreading factor really does decode at a different ${wiki('rssi-snr', 'signal-to-noise ratio')}: SF7 needs about −7.5 dB and SF12 works down to −20 dB, but each SF12 packet takes about 30 times longer to send. The ${wiki('ism-band', 'ISM band')} is shared with other devices, which is the noise you have to avoid.`} />
           <p set:html={`The live sky sends each station's antenna and packets over ${wiki('moq', 'Media over QUIC (MoQ)')}, the same relay technology the classroom plans to use to share real satellite passes between schools.`} />
-          <p class="small">Simplified for play: passes are sped up about 15 times, SF9 and SF12 packets are shortened, and the sky view flattens the dome into a rectangle.</p>
+          <p class="small">The game adapts the CSC-R1 pedal controls for a simulated 915 MHz LoRa receiver. The physical CSC-R1 receiver is designed for 2 m and 70 cm. Passes and packet airtimes are shortened for play.</p>
         </div>
       </section>
     </div>
@@ -148,6 +184,26 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
   .levels .n { font-family: var(--font-mono); opacity: .8; }
   .stars-mini { font-size: .78rem; letter-spacing: .05em; opacity: .9; }
   .live-note { margin-top: .55rem; }
+  .antenna-row { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .65rem; margin-top: .55rem; padding: .3rem .55rem; font-size: .85rem; }
+  .antenna-row label { font-weight: 750; }
+  .antenna-row select { min-height: 44px; max-width: 100%; padding: .4rem .6rem; border: 1px solid var(--line); border-radius: .55rem; color: #fff; background: var(--panel); color-scheme: dark; }
+  .antenna-row span { color: #bfc9ec; }
+  .antenna-row a { margin-inline-start: auto; }
+  .antenna-row a, .receiver a { color: inherit; text-decoration: underline; text-underline-offset: .18em; }
+  .receiver { margin-top: .55rem; padding: .7rem; display: grid; grid-template-columns: minmax(12rem, 1fr) 2fr; gap: .65rem 1rem; background: #122923; border: 1px solid #467865; border-radius: .7rem; }
+  .receiver-face, .receiver-controls { display: grid; gap: .5rem; align-items: center; }
+  .receiver h3 { margin: 0; color: #e2ffeb; font-size: 1rem; }
+  .receiver-screen { display: grid; grid-template-columns: 1fr auto; gap: .3rem; padding: .5rem; color: #a3f7bd; background: #061a14; border-radius: .4rem; font: .83rem var(--font-mono); }
+  .receiver-screen .bar { grid-column: 1 / -1; background: #183a31; height: .42rem; }
+  .receiver-screen [data-rx-meter] { background: #76e7a2; }
+  .receiver-screen [data-rx-meter][data-clip="true"] { background: #ff7979; }
+  .receiver-face button { justify-self: start; }
+  .receiver-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem .85rem; }
+  .receiver-controls label { display: grid; gap: .15rem; font-size: .82rem; font-weight: 700; }
+  .receiver-controls output { font-family: var(--font-mono); color: #a3f7bd; }
+  .receiver-controls input { width: 100%; min-height: 2rem; accent-color: #a3f7bd; }
+  .receiver-controls p { grid-column: 1 / -1; margin: 0; }
+  @media (max-width: 610px) { .receiver { grid-template-columns: minmax(0, 1fr); } }
   /* HUD strip above the sky */
   .dash { display: grid; grid-template-columns: auto 1fr 1fr; gap: .4rem 1rem; align-items: center; margin-top: .55rem; padding: .45rem .7rem; border-radius: .7rem; background: rgb(8 12 36 / .9); border: 1px solid var(--line); }
   .numbers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .35rem .75rem; font-family: var(--font-mono); margin: 0; }
