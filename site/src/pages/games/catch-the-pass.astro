@@ -143,7 +143,7 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
         <h2 id="real-title">What is real here</h2>
         <div class="real mt-3 space-y-3">
           <p set:html={`A ${wiki('ground-station', 'ground station')} must point its antenna at a ${wiki('cubesat', 'CubeSat')} in ${wiki('leo', 'low Earth orbit')} for the few minutes it is overhead. Low in the sky the satellite is up to five times farther away, so its ${wiki('downlink', 'downlink')} is weaker.`} />
-          <p set:html={`Many CubeSats send ${wiki('telemetry', 'telemetry')} with ${wiki('lora', 'LoRa')} radios at ${wiki('915-mhz', '915 MHz')}. Each spreading factor really does decode at a different ${wiki('rssi-snr', 'signal-to-noise ratio')}: SF7 needs about −7.5 dB and SF12 works down to −20 dB, but each SF12 packet takes about 30 times longer to send. The ${wiki('ism-band', 'ISM band')} is shared with other devices, which is the noise you have to avoid.`} />
+          <p set:html={`Many CubeSats send ${wiki('telemetry', 'telemetry')} with ${wiki('lora', 'LoRa')} radios at ${wiki('915-mhz', '915 MHz')}. Each spreading factor really does decode at a different ${wiki('rssi-snr', 'signal-to-noise ratio')}: SF7 needs about −7.5 dB and SF12 works down to −20 dB, and each SF12 symbol lasts 32 times as long at the same bandwidth. Packet airtime also depends on the payload and format. The ${wiki('ism-band', 'ISM band')} is shared with other devices, which is the noise you have to avoid.`} />
           <p set:html={`The live sky sends each station's antenna and packets over ${wiki('moq', 'Media over QUIC (MoQ)')}, the same relay technology the classroom plans to use to share real satellite passes between schools.`} />
           <p class="small">The game adapts the CSC-R1 pedal controls for a simulated 915 MHz LoRa receiver. The physical CSC-R1 receiver is designed for 2 m and 70 cm. Passes and packet airtimes are shortened for play.</p>
         </div>
@@ -159,7 +159,7 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
           })}
           <li><a href="#mode=live">Live sky</a> <code>#mode=live</code></li>
         </ul>
-        <p class="small mt-3">Each step under How to play also has its own link, such as <a href="#step-radio"><code>#step-radio</code></a>.</p>
+        <p class="mt-3 text-sm text-muted">Each step under How to play has its own link, such as <a class="font-semibold text-accent underline underline-offset-4" href="#step-radio"><code>#step-radio</code></a>.</p>
       </section>
     </div>
   </div>
