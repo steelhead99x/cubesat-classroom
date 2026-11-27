@@ -54,14 +54,14 @@ The first block of fields is the contract the cubesat.app phone app reads (`Stat
 | `provenance` | `desk-simulation`, `hardware-bench` or `received-rf`. Show it beside every value. The simulator always writes `desk-simulation`. |
 | `utc` | Capture time, RFC 3339. From `rtl_power`, the time the sweep was taken (its row's local time, converted to UTC), not when the bridge read it. |
 | `contact` | `acquired` (carrier heard), `lost` (satellite up, carrier not heard) or `idle` |
-| `frequency_hz`, `level_dbfs` | Where the receiver is tuned, and the total level |
+| `frequency_hz`, `level_dbfs`, `level_db_rel` | Tuned frequency. Simulated total level in dBFS or relative FFT peak in dB. |
 | `elevation_deg` | Satellite elevation. Absent from a real receiver without a pass prediction. |
 | `sensors` | Decoded beacon values as `{"temperature": {"value": 18.0, "unit": "°C"}}`, absent when the signal is too weak or clipped |
 | `receiver`, `band`, `nominal_hz` | `pedal` (CSC-R1P) or `rtl-sdr-v4`; `2m` or `70cm`; the published downlink frequency |
-| `gain_db`, `noise_dbfs`, `snr_db`, `clipping` | Gain setting, noise floor, signal-to-noise ratio (`null` with no signal) and whether the input is near full scale. `clipping` is absent from `rtl_power` readings: its averaged FFT bins cannot show ADC clipping. |
+| `gain_db`, `noise_dbfs`, `noise_db_rel`, `snr_db`, `clipping` | Gain setting, noise floor, signal-to-noise ratio (`null` with no signal) and whether the input is near full scale. `clipping` is absent from `rtl_power` readings: its averaged FFT bins cannot show ADC clipping. |
 | `doppler_hz`, `offset_hz`, `range_km`, `pass_s` | Doppler shift, received carrier minus tuned frequency, slant range, and seconds since rise (negative before it). Absent from a real receiver without a pass prediction. |
 
-The simulated levels are planning numbers, not measurements. The simulator hears and decodes a carrier only within `--passband-hz` (1500 Hz by default, as the website's pass game) of where it is tuned, so a receiver left on the published frequency loses the beacon when the Doppler shift is large; `--track-doppler` keeps it. From `rtl_power`, `level_dbfs` is the strongest bin near the frequency and `noise_dbfs` the median of the other bins. Both are relative dB from the dongle's FFT, not calibrated and not full scale (a strong bin can read above 0), so compare readings only from the same dongle and gain.
+The simulated levels are planning numbers, not measurements. The simulator hears and decodes a carrier only within `--passband-hz` (1500 Hz by default, as the website's pass game) of where it is tuned, so a receiver left on the published frequency loses the beacon when the Doppler shift is large; `--track-doppler` keeps it. For `rtl_power`, `level_db_rel` is the strongest in-band FFT bin. `noise_db_rel` is the median of the out-of-band bins. These relative levels can exceed 0 dB. Compare sweeps made with the same receiver and gain. With no out-of-band bins, the bridge leaves the noise floor and SNR unknown. Run the Unix bridge in the recorder’s time zone. Rows with invalid capture times are skipped.
 
 Publish a fresh stats snapshot about once a second. The app should show its age and mark the feed stale when updates stop. Start with a subscribe-only app. When adding student interaction, use a separate request track for a predefined action such as asking for the latest sensor snapshot. Validate and rate-limit the requests at the station. Keep radio tuning and any transmitter controls out of that path.
 

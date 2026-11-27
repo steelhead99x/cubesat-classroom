@@ -42,7 +42,7 @@ rtl_power -f 145.79M:145.81M:500 -g 30 -i 1 - \
       --station home --relay moqt://... --fingerprint ...
 ```
 
-The bridge takes the strongest bin within 3 kHz of the frequency as the signal and the median of the other bins as the noise floor. Pass the same gain to both commands so the snapshot records it. The levels are relative dB from the dongle, not calibrated power. With the antenna disconnected and a 50 Ω load on the socket, add `--label hardware-bench`.
+The bridge takes the strongest bin within 3 kHz of the frequency as the signal and the median of the other bins as the noise floor. Pass the same gain to both commands so the snapshot records it. The bridge reports relative FFT levels in dB. The CSV does not measure ADC clipping. Rows carry the sweep’s local capture time converted to UTC, so run the bridge in the same time zone as the recorder. With the antenna disconnected and a 50 Ω load on the socket, add `--label hardware-bench`.
 
 A pass from the ISS shifts by about ±3.4 kHz on 2 m and ±10 kHz on 70 cm. To follow a real satellite, predict its passes first with `cargo run --locked --bin cubesat-classroom -- passes` (see [ground station level 2](ground-station.md#level-2-predict-a-pass)) and widen `-f` or `--passband-hz` to cover the shift. The bridge leaves the sky fields (`elevation_deg`, `doppler_hz` and the rest) empty, because it does not know where the satellite is.
 
@@ -57,13 +57,13 @@ Start indoors near a window or in the attic with the 2 m dipole from the [classr
 
 ## 4. Share the feed
 
-The snapshots follow the layout the cubesat.app phone app reads, on its `live` broadcast, and its parser accepts them as they are. Phones on the home network can use the local relay. To reach a classroom elsewhere, publish to a hosted private MoQ relay instead of opening ports on the home router. The station only connects outward. Follow the hosting rules in the [classroom receiver guide](classroom-receiver.md#2-connect-the-mobile-app-over-moq): short-lived credentials scoped to this station, publisher secrets kept on the station, and a test that a subscriber can't publish.
+The snapshots follow the layout the cubesat.app phone app reads, on its `live` broadcast, and its parser accepts them as they are. The loopback relay in step 1 serves tools on the station computer. For phones or a remote classroom, publish to an authenticated relay that the viewer can reach. The station only connects outward. Follow the hosting rules in the [classroom receiver guide](classroom-receiver.md#2-connect-the-mobile-app-over-moq): short-lived credentials scoped to this station, publisher secrets kept on the station, and a test that a subscriber can't publish.
 
 The `stats` snapshot carries no location, name or call sign, and should stay that way. Don't add the station's address or coordinates to the broadcast name or the snapshot. Run the pass predictor locally; the coordinates it uses stay on the station computer.
 
 ## 5. Swap in the pedal
 
-The [CSC-R1P pedal](../hardware/sdr-receiver/pedal/README.md) is designed but not built. When it is, it publishes the same snapshot with `"source": "pedal"`, so the app needs no changes. Until then, `receiver-sim --source pedal` stands in for it. Compare the pedal against the V4 on the same antenna with the [Rev A vs V4 quest](../quest/m1/receiver-rev-a-vs-v4.md).
+The [CSC-R1P pedal](../hardware/sdr-receiver/pedal/README.md) is designed but not built. When it is, it publishes the same snapshot with `"receiver": "pedal"`, so the app needs no changes. Until then, `receiver-sim --source pedal` stands in for it. Compare the pedal against the V4 on the same antenna with the [Rev A vs V4 quest](../quest/m1/receiver-rev-a-vs-v4.md).
 
 ## 6. Add the prototype CubeSat
 

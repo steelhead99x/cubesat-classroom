@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makePass, score, PASSBAND_HZ } from '../src/lib/pass.mjs';
 
-// Reference values printed by `cargo run --bin cubesat-classroom -- receiver-sim --start-s N --seconds 1`
+// Reference values printed by `cargo run --bin cubesat-classroom -- receiver-sim --track-doppler --start-s N --seconds 1`
 // (pass_s = N - 60). If the Rust model changes, regenerate these and keep both in step.
 const RUST = [
   { passS: 0, elevationDeg: 0.0, rangeKm: 2351.2, dopplerHz: 3442.6, snrDb: 8.6 },
@@ -16,8 +16,7 @@ const RUST = [
 test('matches the station simulator in src/receiver.rs', () => {
   const pass = makePass();
   for (const want of RUST) {
-    // The Rust simulator does not track Doppler by default, so tune to the received carrier
-    // here to get the full signal, as its snr_db assumes.
+    // These reference SNRs are for a receiver tuned to the moving carrier.
     const got = pass.at(want.passS, { tunedHz: pass.nominalHz + pass.dopplerHz(want.passS - pass.duration / 2) });
     assert.ok(Math.abs(got.elevationDeg - want.elevationDeg) < 0.06, `${want.passS}: ${got.elevationDeg}`);
     assert.ok(Math.abs(got.rangeKm - want.rangeKm) < 0.06, `${want.passS}: ${got.rangeKm}`);
@@ -50,6 +49,10 @@ test('too much gain clips and stops the decode', () => {
   assert.ok(s.clipping);
   assert.ok(s.dbfs <= 0);
   assert.equal(s.decoded, false);
+  const offTune = pass.at(pass.duration / 2, { gainDb: 42, tunedHz: pass.nominalHz + 5000 });
+  assert.equal(offTune.heard, false);
+  assert.equal(offTune.clipping, true, 'the ADC sees the carrier before the passband');
+  assert.ok(Math.abs(offTune.dbfs - offTune.noiseDbfs) < 1e-9);
 });
 
 test('score counts only seconds in view', () => {

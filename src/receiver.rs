@@ -155,7 +155,7 @@ pub(crate) struct Reading {
 /// One `stats` snapshot, version 1.
 ///
 /// The fields up to `sensors` are the cubesat.app contract (its `StationSnapshot`); the
-/// app drops the receiver fields after them, and the station and website use them.
+/// receiver details are optional extensions to that contract.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub(crate) struct Stats {
     pub v: u32,
@@ -170,7 +170,11 @@ pub(crate) struct Stats {
     pub contact: Contact,
     /// Where the receiver is tuned.
     pub frequency_hz: u64,
-    pub level_dbfs: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub level_dbfs: Option<f64>,
+    /// Uncalibrated FFT power reported by rtl_power.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub level_db_rel: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub elevation_deg: Option<f64>,
     /// Decoded beacon values, present only when the signal is strong enough.
@@ -182,7 +186,10 @@ pub(crate) struct Stats {
     /// The published downlink frequency.
     pub nominal_hz: u64,
     pub gain_db: f64,
-    pub noise_dbfs: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub noise_dbfs: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub noise_db_rel: Option<f64>,
     /// `None` with no signal.
     pub snr_db: Option<f64>,
     /// Whether the receiver's input is near full scale. Only a source that sees the ADC samples
@@ -372,14 +379,16 @@ impl Scenario {
             utc: utc_string(captured_unix_ms),
             contact,
             frequency_hz: tuned_hz,
-            level_dbfs: round1(dbfs),
+            level_dbfs: Some(round1(dbfs)),
+            level_db_rel: None,
             elevation_deg: Some(round1(geo.elevation_deg)),
             sensors,
             receiver: self.source,
             band: self.band,
             nominal_hz: self.nominal_hz,
             gain_db: round1(self.gain_db),
-            noise_dbfs: round1(noise_dbfs),
+            noise_dbfs: Some(round1(noise_dbfs)),
+            noise_db_rel: None,
             snr_db: snr_db.is_finite().then(|| round1(snr_db)),
             clipping: Some(clipping),
             doppler_hz: Some(round1(doppler_hz)),
@@ -662,27 +671,19 @@ pub(crate) fn from_rtl_power(
     args: &BridgeArgs,
     publisher: &Publisher,
     sequence: u64,
-    captured_unix_ms: u64,
 ) -> Option<Stats> {
+    let captured_unix_ms = sweep_unix_ms(row)?;
     let tuned_hz = args.frequency_hz.unwrap_or(args.band.default_hz());
     let (bins, _) = bench_tools::sweep::parse(row);
     let near = |f: f64| (f - tuned_hz as f64).abs() <= args.passband_hz;
     let signal: Vec<f64> = bins.iter().filter(|b| near(b.0)).map(|b| b.1).collect();
     let rest: Vec<f64> = bins.iter().filter(|b| !near(b.0)).map(|b| b.1).collect();
-    if signal.is_empty() {
-        return None;
-    }
     let peak = signal.iter().copied().fold(f64::NEG_INFINITY, f64::max);
     if !peak.is_finite() {
         return None;
     }
-    // With no bins outside the passband, the quietest bin inside it stands in for the floor.
-    let noise = if rest.is_empty() {
-        signal.iter().copied().fold(f64::INFINITY, f64::min)
-    } else {
-        bench_tools::util::median(&rest)
-    };
-    let snr_db = peak - noise;
+    let noise = (!rest.is_empty()).then(|| bench_tools::util::median(&rest));
+    let snr_db = noise.map(|floor| peak - floor);
     Some(Stats {
         v: STATS_VERSION,
         seq: sequence,
@@ -690,10 +691,8 @@ pub(crate) fn from_rtl_power(
         station: publisher.station.clone(),
         source: args.satellite.clone(),
         provenance: args.label.provenance(),
-        // When the sweep was taken, from the row itself; the time it reached the bridge only
-        // if the row's time cannot be read.
-        utc: utc_string(sweep_unix_ms(row).unwrap_or(captured_unix_ms)),
-        contact: if snr_db >= HEARD_SNR_DB {
+        utc: utc_string(captured_unix_ms),
+        contact: if snr_db.is_some_and(|snr| snr >= HEARD_SNR_DB) {
             Contact::Acquired
         } else {
             Contact::Idle
@@ -701,15 +700,17 @@ pub(crate) fn from_rtl_power(
         frequency_hz: tuned_hz,
         // Relative dB from rtl_power's FFT, which can be above 0; it is not full scale, so it
         // is not capped there and says nothing about clipping.
-        level_dbfs: round1(peak),
+        level_dbfs: None,
+        level_db_rel: Some(round1(peak)),
         elevation_deg: None,
         sensors: None,
         receiver: args.source,
         band: args.band,
         nominal_hz: tuned_hz,
         gain_db: round1(args.gain_db),
-        noise_dbfs: round1(noise),
-        snr_db: Some(round1(snr_db)),
+        noise_dbfs: None,
+        noise_db_rel: noise.map(round1),
+        snr_db: snr_db.map(round1),
         clipping: None,
         doppler_hz: None,
         offset_hz: None,
@@ -741,7 +742,14 @@ pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
         "{tuned_hz} Hz is outside the {:?} band ({low}–{high} Hz)",
         args.band
     );
-    ensure!(args.passband_hz > 0.0, "--passband-hz must be above 0");
+    ensure!(
+        args.passband_hz.is_finite() && args.passband_hz > 0.0,
+        "--passband-hz must be finite and above 0"
+    );
+    ensure!(
+        (0.0..=args.source.max_gain_db()).contains(&args.gain_db),
+        "--gain-db is outside this receiver’s gain range"
+    );
     ensure!(
         !args.satellite.is_empty() && args.satellite.chars().count() <= 80,
         "--satellite must be 1–80 characters"
@@ -761,7 +769,7 @@ pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
     let mut sequence = 0;
     let Some(relay) = args.relay.clone() else {
         while let Some(line) = rx.recv().await {
-            if let Some(stats) = from_rtl_power(&line, &args, &publisher, sequence, unix_ms()?) {
+            if let Some(stats) = from_rtl_power(&line, &args, &publisher, sequence) {
                 println!("{}", serde_json::to_string(&stats)?);
                 sequence += 1;
             }
@@ -790,7 +798,7 @@ pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
         tokio::select! {
             line = rx.recv() => {
                 let Some(line) = line else { bail!("rtl_power input ended") };
-                let Some(stats) = from_rtl_power(&line, &args, &publisher, sequence, unix_ms()?) else { continue };
+                let Some(stats) = from_rtl_power(&line, &args, &publisher, sequence) else { continue };
                 sequence += 1;
                 let mut group = track.append_group()?;
                 group.write_frame(Timestamp::now(), serde_json::to_vec(&stats)?)?;
@@ -844,10 +852,15 @@ pub(crate) fn describe(s: &Stats) -> String {
         }
         _ => "no pass prediction".to_string(),
     };
+    let level = s
+        .level_db_rel
+        .map(|value| format!("{value:.1} dB relative"))
+        .or_else(|| s.level_dbfs.map(|value| format!("{value:.1} dBFS")))
+        .unwrap_or_else(|| "level unavailable".into());
     let signal = match (s.contact, s.snr_db) {
-        (Contact::Acquired, Some(snr)) => format!("{:.1} dBFS, SNR {snr:.1} dB", s.level_dbfs),
-        (Contact::Lost, _) => format!("carrier not heard, {:.1} dBFS", s.level_dbfs),
-        _ => format!("{:.1} dBFS noise", s.level_dbfs),
+        (Contact::Acquired, Some(snr)) => format!("{level}, SNR {snr:.1} dB"),
+        (Contact::Lost, _) => format!("carrier not heard, {level}"),
+        _ => level,
     };
     let mut line = format!(
         "[{}] {} {} on {}, {} tuned {:.4} MHz, gain {:.0} dB: {sky}; {signal}",
@@ -1026,7 +1039,7 @@ mod tests {
         };
         let st = s.snapshot(&publisher(), top(&s), 0);
         assert_eq!(st.clipping, Some(true));
-        assert!(st.level_dbfs <= 0.0);
+        assert!(st.level_dbfs.is_some_and(|level| level <= 0.0));
         assert!(st.sensors.is_none(), "a clipped signal does not decode");
     }
 
@@ -1081,12 +1094,12 @@ mod tests {
         let args = bridge_args(&[]);
         // 145.790–145.810 MHz in 2.5 kHz bins: noise near -40 dB with a carrier at 145.800.
         let row = "2026-11-27, 18:30:05, 145790000, 145810000, 2500.00, 1000, -40.1, -39.8, -40.3, -40.0, -22.5, -39.9, -40.2, -40.4";
-        let st = from_rtl_power(row, &args, &publisher(), 7, 0).expect("a snapshot");
+        let st = from_rtl_power(row, &args, &publisher(), 7).expect("a snapshot");
         assert_eq!(st.provenance, Provenance::ReceivedRf);
         assert_eq!(st.receiver, Source::RtlSdrV4);
         assert_eq!(st.contact, Contact::Acquired);
         assert_eq!(st.frequency_hz, 145_800_000);
-        assert_eq!(st.level_dbfs, -22.5);
+        assert_eq!(st.level_db_rel, Some(-22.5));
         let snr = st.snr_db.unwrap();
         assert!((snr - 17.6).abs() < 0.3, "{snr}");
         assert!(st.elevation_deg.is_none() && st.doppler_hz.is_none());
@@ -1096,12 +1109,12 @@ mod tests {
     #[test]
     fn bridge_skips_comments_and_rows_away_from_the_frequency() {
         let args = bridge_args(&["--label", "hardware-bench"]);
-        assert!(from_rtl_power("# a comment", &args, &publisher(), 0, 0).is_none());
+        assert!(from_rtl_power("# a comment", &args, &publisher(), 0).is_none());
         let far = "2026-11-27, 18:30:05, 146000000, 146010000, 2500.00, 1000, -40, -40, -40, -40";
-        assert!(from_rtl_power(far, &args, &publisher(), 0, 0).is_none());
+        assert!(from_rtl_power(far, &args, &publisher(), 0).is_none());
         let near = "2026-11-27, 18:30:05, 145799000, 145801000, 1000.00, 1000, -30, -31";
         assert_eq!(
-            from_rtl_power(near, &args, &publisher(), 0, 0)
+            from_rtl_power(near, &args, &publisher(), 0)
                 .unwrap()
                 .provenance,
             Provenance::HardwareBench
@@ -1144,8 +1157,13 @@ mod tests {
         let args = bridge_args(&[]);
         // rtl_power bins are averaged FFT power and can be above 0 dB without clipping.
         let row = "2026-11-27, 18:30:05, 145799000, 145801000, 1000.00, 1000, -20.0, 4.5";
-        let st = from_rtl_power(row, &args, &publisher(), 0, 0).unwrap();
-        assert_eq!(st.level_dbfs, 4.5, "not capped at 0");
+        let st = from_rtl_power(row, &args, &publisher(), 0).unwrap();
+        assert_eq!(st.level_db_rel, Some(4.5), "relative levels may exceed 0");
+        assert!(st.level_dbfs.is_none() && st.noise_dbfs.is_none());
+        assert!(
+            st.snr_db.is_none(),
+            "no out-of-band bins to estimate the floor"
+        );
         assert_eq!(st.clipping, None);
         let json = serde_json::to_value(&st).unwrap();
         assert!(
@@ -1159,19 +1177,11 @@ mod tests {
     fn bridge_keeps_the_sweep_time() {
         let args = bridge_args(&[]);
         let row = "2026-11-27, 18:30:05, 145799000, 145801000, 1000.00, 1000, -40, -20";
-        let late = 1_900_000_000_000; // the row reached the bridge much later
-        let st = from_rtl_power(row, &args, &publisher(), 0, late).unwrap();
+        let st = from_rtl_power(row, &args, &publisher(), 0).unwrap();
         let sweep = bench_tools::util::local_to_unix_s(2026, 11, 27, 18, 30, 5).unwrap() * 1000;
         assert_eq!(st.utc, utc_string(sweep));
-        assert_ne!(st.utc, utc_string(late));
-        // A row whose time cannot be read falls back to when it arrived.
         let odd = "2026-02-31, 18:30:05, 145799000, 145801000, 1000.00, 1000, -40, -20";
-        assert_eq!(
-            from_rtl_power(odd, &args, &publisher(), 0, late)
-                .unwrap()
-                .utc,
-            utc_string(late)
-        );
+        assert!(from_rtl_power(odd, &args, &publisher(), 0).is_none());
     }
 
     #[test]
