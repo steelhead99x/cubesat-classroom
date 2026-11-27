@@ -3,6 +3,7 @@ import { Image } from 'astro:assets';
 import panelMark from '../assets/classroom-mark-reversed.svg?url';
 import board from '../../../hardware/sdr-receiver/kicad/csc-r1-top.png';
 import { repo } from '../hubs.mjs';
+import { EXPERIMENTS } from '../lib/pedal.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const wiki = (slug: string) => `${base}/wiki/${slug}/`;
@@ -112,14 +113,45 @@ const parts = [
           <svg viewBox="0 0 400 80" preserveAspectRatio="none" role="img" aria-label="Simulated receiver waveform"><path d="M0 40H400 M100 0V80 M200 0V80 M300 0V80" stroke="#264239" fill="none" vector-effect="non-scaling-stroke"/><polyline data-wave points="0,40 400,40" fill="none" stroke="#8dffb6" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
           <output data-display aria-live="off">145.795 MHz · muted</output>
         </div>
+        <div class="spectrum">
+          <svg viewBox="0 0 400 64" preserveAspectRatio="none" role="img" aria-labelledby="spec-label">
+            <title id="spec-label">Spectrum around the tuning: the shaded window is what the receiver hears, the spike is the satellite's carrier.</title>
+            <rect data-pb x="185" y="0" width="30" height="52" fill="#1d4a33"/>
+            <line x1="200" x2="200" y1="0" y2="52" stroke="#8dffb6" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"/>
+            <polyline data-spec-noise points="0,48 400,48" fill="none" stroke="#3f6f56" vector-effect="non-scaling-stroke"/>
+            <line data-spec-carrier x1="-10" x2="-10" y1="48" y2="10" stroke="#ffd36b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+          </svg>
+          <div class="spec-axis"><span>−20 kHz</span><span>tuned here</span><span>+20 kHz</span></div>
+          <p data-spec-note class="spec-note">The carrier is 5 kHz above your tuning, outside the window.</p>
+        </div>
         <div class="controls">
           <label>BAND<select data-band><option value="2">2 m</option><option value="70">70 cm</option></select></label>
           <fieldset><legend>TUNE</legend><div><button data-down aria-label="Tune down">−</button> <button data-up aria-label="Tune up">+</button></div></fieldset>
-          <label>GAIN <output data-gain-label>0 dB</output><input data-gain type="range" min="0" max="42" step="1" value="0" /></label>
+          <label>GAIN <output data-gain-label>0 dB (×1)</output><input data-gain type="range" min="0" max="42" step="1" value="0" /></label>
           <label>LEVEL <output data-level-label>25%</output><input data-volume type="range" min="0" max="100" value="25" /></label>
         </div>
         <div class="actions"><button data-engage aria-pressed="false">ENGAGE</button><button data-check>Check setting</button><button data-reset>Restart</button></div>
         <p data-feedback role="status"></p>
+        <div class="chain" role="group" aria-label="Signal chain, antenna to output. Tap a stage to see what it is doing.">
+          <ol data-chain></ol>
+          <p data-chain-why class="chain-why" aria-live="polite">Tap a stage to see what it does. A red stage is where the signal is stopped.</p>
+        </div>
+        <div class="experiments" id="pedal-experiments" data-experiments>
+          <h3>Predict, then test</h3>
+          <p class="note">Pick what you think will happen, then try it on the pedal. The trainer notices when you do it. <span data-exp-count>0 of {EXPERIMENTS.length} done.</span></p>
+          <ol>
+            {EXPERIMENTS.map((e, i) => (
+              <li class="exp" data-exp={e.id}>
+                <p class="q"><strong>{i + 1}.</strong> {e.question}</p>
+                <fieldset><legend class="sr-only">Your prediction</legend>
+                  {e.choices.map((c, n) => <label class="choice"><input type="radio" name={`exp-${e.id}`} value={n} /> {c}</label>)}
+                </fieldset>
+                <p class="task" data-exp-task hidden><strong>Now try it:</strong> {e.task}</p>
+                <p class="result" data-exp-result role="status"></p>
+              </li>
+            ))}
+          </ol>
+        </div>
         <div class="pass" data-pass-panel>
           <h3>Pass mode: follow the Doppler shift</h3>
           <p class="note">A satellite rises, passes 45° up and sets in about 10 minutes, shown 20 times faster. Its 145.800 MHz signal arrives about 3.4 kHz high as it comes toward you and 3.4 kHz low as it leaves. Keep it within 1.5 kHz to hear it. The same model runs in the station’s <a href={stationSim}>receiver simulator</a>.</p>
@@ -127,6 +159,14 @@ const parts = [
           <svg class="sky" viewBox="0 0 400 60" preserveAspectRatio="none" role="img" aria-label="Elevation of the simulated satellite over the pass"><path data-sky-path d="M0 60" fill="none" stroke="#3f6f56" vector-effect="non-scaling-stroke"/><circle data-sky-sat cx="-10" cy="60" r="4" fill="#ffd36b"/></svg>
           <output data-pass-readout aria-live="off">Press Start a pass.</output>
           <p data-pass-result role="status"></p>
+          <figure class="pass-chart" data-pass-chart hidden>
+            <svg viewBox="0 0 400 120" preserveAspectRatio="none" role="img" aria-labelledby="pass-chart-label">
+              <title id="pass-chart-label">After the pass: the satellite's Doppler shift against your tuning. The shaded band is what you could hear.</title>
+              <g data-pass-chart-body></g>
+            </svg>
+            <figcaption><span class="k dop"></span>satellite (Doppler) <span class="k you"></span>your tuning ±1.5 kHz <span class="k miss"></span>not heard · desk simulation</figcaption>
+          </figure>
+          <p data-pass-tip class="pass-tip"></p>
         </div>
       </div>
     </div>
@@ -220,10 +260,54 @@ const parts = [
   .parts li { display:flex; gap:.75rem; align-items:flex-start; scroll-margin-top:5rem; border-radius:.4rem; padding:.25rem; }
   .parts li:target { outline:2px solid currentColor; }
   .num { flex:none; width:1.6rem; height:1.6rem; border-radius:999px; background:#081410; color:#fff; font:700 .8rem/1.6rem var(--font-mono); text-align:center; }
+  /* Spectrum: what the tuner hears (shaded) and where the carrier is (gold) */
+  .spectrum { margin-top:.6rem; border:1px solid #264239; border-radius:.25rem; padding:.4rem .5rem .5rem; }
+  .spectrum svg { display:block; width:100%; height:4rem; }
+  .spec-axis { display:flex; justify-content:space-between; font-size:.68rem; color:#7fae90; }
+  .spec-note { margin-top:.25rem; font-size:.8rem; color:#dcffe6; font-family:var(--font-sans, inherit); }
+  /* Signal chain: one button per stage, coloured by what it is doing */
+  .chain { margin-top:.75rem; }
+  .chain :global(ol) { display:grid; grid-template-columns:repeat(auto-fit, minmax(6.4rem, 1fr)); gap:.35rem; list-style:none; padding:0; margin:0; }
+  .chain :global(button) { border:1px solid #638b70; color:#dcffe6; background:#152c20; border-radius:.25rem; cursor:pointer; width:100%; min-height:4.2rem; display:grid; align-content:start; gap:.15rem; padding:.4rem .45rem; text-align:left; font-size:.72rem; line-height:1.25; }
+  .chain :global(.nm) { font-weight:700; color:#fff; }
+  .chain :global(.nw) { color:#9fcbb0; font-family:var(--font-sans, inherit); }
+  .chain :global(.dot) { width:.55rem; height:.55rem; border-radius:50%; background:#3d5a49; }
+  .chain :global([data-status="ok"] .dot) { background:#8dffb6; }
+  .chain :global([data-status="warn"] .dot) { background:#ffd36b; }
+  .chain :global([data-status="stop"]) { border-color:#ef6b6c; }
+  .chain :global([data-status="stop"] .dot) { background:#ef6b6c; }
+  .chain :global([data-status="idle"]) { opacity:.75; }
+  .chain :global(.first-stop) { box-shadow:0 0 0 2px #ef6b6c55; }
+  .chain :global(button[aria-pressed=true]) { background:#21402f; color:#dcffe6; outline:2px solid #bdf5ce; }
+  .chain-why { margin-top:.45rem; min-height:2.6em; font-size:.82rem; color:#fff; font-family:var(--font-sans, inherit); }
+  @media (prefers-reduced-motion: no-preference) { .chain :global(.first-stop .dot) { animation:blink 1.2s ease-in-out infinite; } }
+  @keyframes blink { 50% { opacity:.35; } }
+  /* Predict, then test */
+  .experiments { margin-top:1.25rem; border-top:1px solid #37674a; padding-top:1rem; }
+  .experiments h3 { color:white; font-size:1rem; }
+  .experiments .note { margin:.5rem 0; font-size:.8rem; color:#9fcbb0; font-family:var(--font-sans, inherit); }
+  .experiments ol { display:grid; gap:.6rem; list-style:none; padding:0; }
+  .exp { border:1px solid #264239; border-radius:.3rem; padding:.6rem .7rem; font-family:var(--font-sans, inherit); font-size:.85rem; }
+  .exp[data-done] { border-color:#8dffb6; }
+  .exp .q { color:#fff; }
+  .exp fieldset { display:flex; flex-wrap:wrap; gap:.35rem .9rem; margin-top:.35rem; border:0; padding:0; }
+  .exp .choice { display:inline-flex; align-items:center; gap:.35rem; min-height:44px; cursor:pointer; }
+  .exp .choice input { min-height:auto; }
+  .exp .task { margin-top:.3rem; color:#ffd36b; }
+  .exp .result:not(:empty) { margin-top:.3rem; color:#dcffe6; }
+  /* After a pass */
+  .pass-chart { margin:.75rem 0 0; }
+  .pass-chart svg { display:block; width:100%; height:8rem; border:1px solid #264239; border-radius:.25rem; }
+  .pass-chart figcaption { margin-top:.25rem; font-size:.7rem; color:#9fcbb0; }
+  .pass-chart .k { display:inline-block; width:.8rem; height:.25rem; margin:0 .25rem 0 .5rem; vertical-align:middle; }
+  .pass-chart .k.dop { background:#ffd36b; }
+  .pass-chart .k.you { background:#1d5a3a; border-top:2px solid #8dffb6; height:.45rem; }
+  .pass-chart .k.miss { background:#ef6b6c; height:.35rem; }
+  .pass-tip:not(:empty) { margin-top:.5rem; color:#fff; font-family:var(--font-sans, inherit); font-size:.85rem; }
 </style>
 <script>
-  import { TASKS, check as checkStep, clampOffset, frequencyMHz, inputPercent, knobAngle, signal as computeSignal, tuneAngle, GAIN_MAX_DB, TUNE_DEGREES_PER_STEP as TUNE_DEGREES } from '../lib/pedal.mjs';
-  import { makePass, score, STEPS_HZ } from '../lib/pass.mjs';
+  import { TASKS, check as checkStep, clampOffset, frequencyMHz, inputPercent, knobAngle, signal as computeSignal, tuneAngle, GAIN_MAX_DB, TUNE_DEGREES_PER_STEP as TUNE_DEGREES, chain, carrierOffsetKhz, EXPERIMENTS, judge, gainTimes } from '../lib/pedal.mjs';
+  import { makePass, score, passDebrief, STEPS_HZ, PASSBAND_HZ } from '../lib/pass.mjs';
 
   const panel = document.querySelector<HTMLElement>('#pedal-lab')!;
   const get = <T extends Element>(name: string) => panel.querySelector<T>(name)!;
@@ -235,7 +319,7 @@ const parts = [
   const pass = makePass();
   const SPEED = 20, FRAME_MS = 100;
   let passS: number | null = null, passOffsetHz = 0, stepIndex = 0, passTimer = 0, lastLogged = -1;
-  let passLog: { inView: boolean; heard: boolean; decoded: boolean }[] = [];
+  let passLog: { passS: number; inView: boolean; heard: boolean; decoded: boolean; dopplerHz: number; tunedOffsetHz: number }[] = [];
   const passState = () => passS === null ? null : pass.at(passS, { gainDb: Number(gain.value), tunedHz: band.value === '2' ? pass.nominalHz + passOffsetHz : 0 });
   // Keep the input waveform stable while learners compare settings.
   const noise = Array.from({ length: 201 }, () => Math.random() * 2 - 1);
@@ -270,7 +354,7 @@ const parts = [
       ({ tuned, samples, peak } = signal());
       if (stage === 2 && engaged && tuned && peak > 1) sawClip = true;
       frequency = frequencyMHz(band.value, offset);
-      get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · input ' + inputPercent(peak) + '% · ' +
+      get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · input ' + (peak > 1 ? 'over 100' : inputPercent(peak)) + '% · ' +
         (peak > 1 ? 'CLIPPING' : 'within range') + (engaged ? ' · output on' : ' · muted');
     }
     get('[data-wave]').setAttribute('points', samples.map((raw, i) => {
@@ -279,13 +363,138 @@ const parts = [
       return (2 * i) + ',' + (40 - (engaged ? sample * Number(volume.value) / 100 * 37 : 0));
     }).join(' '));
     get('[data-engage]').setAttribute('aria-pressed', String(engaged));
-    get('[data-gain-label]').textContent = gain.value + ' dB';
+    get('[data-gain-label]').textContent = `${gain.value} dB (×${gainTimes(Number(gain.value))})`;
+    // Where the carrier is relative to the tuning, in kHz (null: the band filter blocks it).
+    const offsetKhz = state
+      ? (band.value === '2' && state.inView ? state.offsetHz / 1000 : null)
+      : carrierOffsetKhz(band.value, offset);
+    renderSpectrum(offsetKhz, peak, state ? state.heard : tuned);
+    renderChain(chain({ band: band.value, offsetKhz, peak, gainDb: Number(gain.value), level: Number(volume.value), engaged, passbandKhz: PASSBAND_HZ / 1000 }));
+    if (!state) watchExperiments({ band: band.value, offset, gainDb: Number(gain.value), level: Number(volume.value), engaged, peak, tuned });
     get('[data-level-label]').textContent = volume.value + '%';
     const task = get('#pedal-task');
     const want = passS === null ? TASKS[stage] : 'Pass · Keep the carrier within 1.5 kHz as the Doppler shift changes. Tap TUNE for 1 kHz steps.';
     if (task.textContent !== want) task.textContent = want;
     renderPedal(tuned, peak, frequency, state?.clipping ?? peak > 1);
     if (state) renderPass(state);
+  }
+
+  // ---- Spectrum: ±20 kHz around the tuning, the passband window and the carrier ----
+  const specNoise = Array.from({ length: 81 }, () => Math.random());
+  function renderSpectrum(offsetKhz: number | null, peak: number, heard: boolean) {
+    const x = (k: number) => 200 + k * 10; // 10 px per kHz, ±20 kHz across 400
+    const pb = get('[data-pb]');
+    pb.setAttribute('x', String(x(-PASSBAND_HZ / 1000)));
+    pb.setAttribute('width', String((2 * PASSBAND_HZ / 1000) * 10));
+    pb.setAttribute('fill', heard ? '#1d5a3a' : '#1d4a33');
+    const floor = 50 - Math.min(12, Number(gain.value) / 4);
+    get('[data-spec-noise]').setAttribute('points', specNoise.map((n, i) => `${i * 5},${(floor - n * 4).toFixed(1)}`).join(' '));
+    const c = get('[data-spec-carrier]');
+    const note = get('[data-spec-note]');
+    if (offsetKhz === null || Math.abs(offsetKhz) > 20) {
+      c.setAttribute('x1', '-10'); c.setAttribute('x2', '-10');
+      note.textContent = offsetKhz === null
+        ? (band.value === '70' ? 'No carrier: the 70 cm band filter blocks the 145.800 MHz satellite.' : 'No carrier: the satellite is below the horizon.')
+        : `The carrier is ${Math.round(Math.abs(offsetKhz))} kHz ${offsetKhz > 0 ? 'above' : 'below'} your tuning, off this view.`;
+      return;
+    }
+    const top = Math.max(4, floor - 8 - Math.min(1.4, peak) * 26);
+    c.setAttribute('x1', String(x(offsetKhz))); c.setAttribute('x2', String(x(offsetKhz)));
+    c.setAttribute('y1', String(floor)); c.setAttribute('y2', top.toFixed(1));
+    const k = Math.abs(offsetKhz) < 10 ? Math.abs(offsetKhz).toFixed(1).replace(/\.0$/, '') : Math.round(Math.abs(offsetKhz));
+    note.textContent = heard
+      ? (Math.abs(offsetKhz) < 0.05 ? 'The carrier is right on your tuning, inside the window: you hear it.' : `The carrier is ${k} kHz ${offsetKhz > 0 ? 'above' : 'below'} your tuning, inside the window: you hear it.`)
+      : `The carrier is ${k} kHz ${offsetKhz > 0 ? 'above' : 'below'} your tuning, outside the window. Turn TUNE ${offsetKhz > 0 ? 'up' : 'down'}.`;
+  }
+
+  // ---- Signal chain: each stage's live state; tap one to read why ----
+  let chainPick = '';
+  function renderChain(blocks: ReturnType<typeof chain>) {
+    const list = get('[data-chain]');
+    if (!list.children.length) {
+      list.innerHTML = blocks.map(b => `<li><button type="button" data-stage="${b.id}"><span class="dot" aria-hidden="true"></span><span class="nm"></span><span class="nw"></span></button></li>`).join('');
+      for (const btn of list.querySelectorAll<HTMLButtonElement>('[data-stage]')) {
+        btn.addEventListener('click', () => { chainPick = chainPick === btn.dataset.stage ? '' : btn.dataset.stage!; render(); });
+      }
+    }
+    const firstStop = blocks.find(b => b.status === 'stop');
+    blocks.forEach((b, i) => {
+      const btn = list.children[i].querySelector<HTMLButtonElement>('button')!;
+      btn.dataset.status = b.status;
+      btn.querySelector('.nm')!.textContent = b.name;
+      btn.querySelector('.nw')!.textContent = b.now;
+      btn.setAttribute('aria-pressed', String(chainPick === b.id));
+      btn.setAttribute('aria-label', `${b.name}: ${b.now}${b.status === 'stop' ? '. The signal is stopped here.' : ''}`);
+      btn.classList.toggle('first-stop', b === firstStop);
+    });
+    const pick = blocks.find(b => b.id === chainPick);
+    const why = get('[data-chain-why]');
+    const text = pick ? `${pick.name}: ${pick.why}` : firstStop ? `Stopped at ${firstStop.name}: ${firstStop.why}` : 'The signal gets all the way through. Tap a stage to see what it does.';
+    if (why.textContent !== text) why.textContent = text;
+  }
+
+  // ---- Predict, then test ----
+  type Reading = { band: string; offset: number; gainDb: number; level: number; engaged: boolean; peak: number; tuned: boolean };
+  const expState = new Map<string, { choice: number; anchor: Reading | null; done: boolean }>();
+  let lastReading: Reading | null = null;
+  function watchExperiments(now: Reading) {
+    const changed = !lastReading || JSON.stringify(lastReading) !== JSON.stringify(now);
+    if (!changed) return;
+    for (const e of EXPERIMENTS) {
+      const st = expState.get(e.id);
+      if (!st || st.done) continue;
+      const anchor = st.anchor ?? lastReading ?? now;
+      if (anchor !== now && e.done(anchor, now)) {
+        st.done = true;
+        const card = get(`[data-exp="${e.id}"]`);
+        card.dataset.done = 'true';
+        card.querySelector('[data-exp-result]')!.textContent = '✓ ' + judge(e, st.choice).text;
+        card.querySelector<HTMLElement>('[data-exp-task]')!.hidden = true;
+        const n = [...expState.values()].filter(s => s.done).length;
+        get('[data-exp-count]').textContent = `${n} of ${EXPERIMENTS.length} done.`;
+        continue;
+      }
+      st.anchor = e.keep && st.anchor && e.keep(st.anchor, now) ? st.anchor : now;
+    }
+    lastReading = now;
+  }
+  for (const e of EXPERIMENTS) {
+    const card = get(`[data-exp="${e.id}"]`);
+    card.addEventListener('change', ev => {
+      const input = ev.target as HTMLInputElement;
+      if (input.type !== 'radio') return;
+      const prev = expState.get(e.id);
+      if (prev?.done) return;
+      expState.set(e.id, { choice: Number(input.value), anchor: null, done: false });
+      card.querySelector<HTMLElement>('[data-exp-task]')!.hidden = false;
+      card.querySelector('[data-exp-result]')!.textContent = 'Prediction saved. Now try it on the pedal.';
+    });
+  }
+
+  // ---- After a pass: the Doppler shift against the learner's tuning ----
+  function drawPassChart() {
+    const seen = passLog.filter(s => s.inView);
+    if (!seen.length) return;
+    const W = 400, H = 120, top = 8, bottom = 112, range = 5000; // ±5 kHz
+    const x = (s: number) => ((s - seen[0].passS) / Math.max(1, seen[seen.length - 1].passS - seen[0].passS)) * W;
+    const y = (hz: number) => top + ((range - Math.max(-range, Math.min(range, hz))) / (2 * range)) * (bottom - top);
+    const parts: string[] = [];
+    parts.push(`<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#264239" />`);
+    // Your tuning with its passband, where you were on 2 m.
+    let band = '', line = '';
+    for (const s of seen) {
+      if (!Number.isFinite(s.tunedOffsetHz)) continue;
+      band += `<rect x="${x(s.passS).toFixed(1)}" y="${y(s.tunedOffsetHz + PASSBAND_HZ).toFixed(1)}" width="${(W / seen.length + 0.6).toFixed(1)}" height="${(y(s.tunedOffsetHz - PASSBAND_HZ) - y(s.tunedOffsetHz + PASSBAND_HZ)).toFixed(1)}" fill="#1d5a3a" />`;
+      line += `${line ? 'L' : 'M'}${x(s.passS).toFixed(1)} ${y(s.tunedOffsetHz).toFixed(1)}`;
+    }
+    parts.push(band, `<path d="${line}" fill="none" stroke="#8dffb6" stroke-width="1.5" vector-effect="non-scaling-stroke" />`);
+    parts.push(`<path d="${seen.map((s, i) => `${i ? 'L' : 'M'}${x(s.passS).toFixed(1)} ${y(s.dopplerHz).toFixed(1)}`).join('')}" fill="none" stroke="#ffd36b" stroke-width="2" vector-effect="non-scaling-stroke" />`);
+    for (const s of seen) if (!s.heard) parts.push(`<rect x="${x(s.passS).toFixed(1)}" y="${bottom + 2}" width="${(W / seen.length).toFixed(1)}" height="5" fill="#ef6b6c" />`);
+    parts.push(`<text x="4" y="${y(range) + 9}" fill="#9fcbb0" font-size="8">+5 kHz</text><text x="4" y="${y(-range) - 2}" fill="#9fcbb0" font-size="8">−5 kHz</text>`);
+    get('[data-pass-chart-body]').innerHTML = parts.join('');
+    get<HTMLElement>('[data-pass-chart]').hidden = false;
+    const tip = passDebrief(passLog);
+    get('[data-pass-tip]').textContent = tip ? 'Next time: ' + tip.text : '';
   }
 
   function renderPass(state: ReturnType<typeof pass.at>) {
@@ -319,6 +528,7 @@ const parts = [
     if (finished) {
       const { heard, decoded } = score(passLog);
       get('[data-pass-result]').textContent = `Pass complete (desk simulation): you heard the carrier for ${heard}% of the pass and decoded the beacon for ${decoded}%. On paper, write down when you had to retune and why.`;
+      drawPassChart();
     }
     passS = null;
     render();
@@ -333,6 +543,8 @@ const parts = [
     lastLogged = -1;
     passS = -10;
     get('[data-pass-result]').textContent = '';
+    get<HTMLElement>('[data-pass-chart]').hidden = true;
+    get('[data-pass-tip]').textContent = '';
     get('[data-pass-start]').textContent = 'Stop';
     drawSky();
     passTimer = window.setInterval(() => {
@@ -340,7 +552,7 @@ const parts = [
       const whole = Math.floor(passS!);
       if (whole > lastLogged && whole >= 0) {
         const st = passState()!;
-        passLog.push({ inView: st.inView, heard: st.heard && engaged, decoded: st.decoded && engaged });
+        passLog.push({ passS: whole, inView: st.inView, heard: st.heard && engaged, decoded: st.decoded && engaged, dopplerHz: st.dopplerHz, tunedOffsetHz: band.value === '2' ? passOffsetHz : NaN });
         lastLogged = whole;
       }
       if (passS! > pass.duration + 5) return stopPass(true);

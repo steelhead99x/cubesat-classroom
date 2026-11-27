@@ -103,3 +103,26 @@ export function score(log) {
     decoded: Math.round((100 * seen.filter((s) => s.decoded).length) / seen.length),
   };
 }
+
+/**
+ * After a pass: where the learner fell behind the Doppler shift. `log` has one entry per
+ * simulated second with { passS, inView, dopplerHz, tunedOffsetHz, heard }.
+ * Returns the part of the pass with the most missed seconds and a sentence about it, or null.
+ */
+export function passDebrief(log) {
+  const seen = log.filter(s => s.inView);
+  if (!seen.length) return null;
+  const missed = seen.filter(s => !s.heard);
+  if (!missed.length) return { part: null, text: 'You kept the carrier in the passband for the whole pass. Notice where you had to retune most often: near the top of the pass, where the Doppler shift changes fastest.' };
+  const start = seen[0].passS, len = seen[seen.length - 1].passS - start || 1;
+  const parts = ['rising', 'overhead', 'setting'];
+  const counts = [0, 0, 0];
+  for (const s of missed) counts[Math.min(2, Math.floor((3 * (s.passS - start)) / len))]++;
+  const part = parts[counts.indexOf(Math.max(...counts))];
+  const text = {
+    rising: 'You missed most while the satellite was rising. It arrives about 3.4 kHz high, so start the pass tuned above 145.800 MHz instead of on it.',
+    overhead: 'You missed most while the satellite was overhead. That is where the Doppler shift swings fastest, from high to low in about two minutes, so retune in small steps, often.',
+    setting: 'You missed most while the satellite was setting. It ends about 3.4 kHz low, so keep turning TUNE down as it leaves.',
+  }[part];
+  return { part, text, missedS: missed.length };
+}

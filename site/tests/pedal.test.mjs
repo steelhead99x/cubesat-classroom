@@ -51,3 +51,52 @@ test('the three steps pass in order with the right hints', () => {
   assert.equal(check({ ...tuned, stage: 3, sawClip: true, peak: 0.8 }).stage, 3);
   assert.equal(TASKS.length, 4);
 });
+
+import { chain, carrierOffsetKhz, EXPERIMENTS, gainTimes, judge } from '../src/lib/pedal.mjs';
+import { passDebrief } from '../src/lib/pass.mjs';
+
+const reading = (o = {}) => {
+  const r = { band: '2', offset: 0, gainDb: 20, level: 30, engaged: true, ...o };
+  const s = signal(noise, { band: r.band, offset: r.offset, gainDb: r.gainDb });
+  return { ...r, peak: s.peak, tuned: s.tuned };
+};
+const blocks = r => Object.fromEntries(chain({ ...r, offsetKhz: carrierOffsetKhz(r.band, r.offset) }).map(b => [b.id, b]));
+
+test('the signal chain shows where the signal is stopped', () => {
+  const ok = blocks(reading({ gainDb: 16 }));
+  assert.equal(ok.filter.status, 'ok');
+  assert.equal(ok.mixer.status, 'ok');
+  assert.equal(ok.out.now, 'clean beacon');
+  assert.equal(blocks(reading({ band: '70' })).filter.status, 'stop');
+  const off = blocks(reading({ offset: 1 }));
+  assert.equal(off.mixer.status, 'stop');
+  assert.match(off.mixer.why, /down/, 'carrier below the tuning: turn TUNE down');
+  assert.equal(blocks(reading({ gainDb: 42 })).adc.status, 'stop');
+  assert.equal(blocks(reading({ engaged: false })).out.now, 'muted');
+  assert.equal(carrierOffsetKhz('2', -1), 5);
+  assert.equal(gainTimes(20), 10);
+  assert.equal(gainTimes(6), 2);
+});
+
+test('each experiment is recognised when it is carried out, and only then', () => {
+  const ex = Object.fromEntries(EXPERIMENTS.map(e => [e.id, e]));
+  assert.ok(ex['six-db'].done(reading({ gainDb: 10 }), reading({ gainDb: 16 })));
+  assert.ok(!ex['six-db'].done(reading({ gainDb: 10 }), reading({ gainDb: 12 })));
+  assert.ok(ex['level-clip'].done(reading({ gainDb: 42, level: 60 }), reading({ gainDb: 42, level: 30 })));
+  assert.ok(!ex['level-clip'].done(reading({ gainDb: 10, level: 60 }), reading({ gainDb: 10, level: 30 })));
+  assert.ok(ex.band.done(reading(), reading({ band: '70' })));
+  assert.ok(!ex.band.done(reading({ offset: 2 }), reading({ band: '70', offset: 2 })));
+  assert.ok(ex['off-tune'].done(reading(), reading({ offset: 1 })));
+  assert.ok(!ex['off-tune'].done(reading({ offset: 1 }), reading({ offset: 2 })));
+  for (const e of EXPERIMENTS) {
+    assert.equal(judge(e, e.answer).right, true);
+    assert.equal(judge(e, (e.answer + 1) % e.choices.length).right, false);
+  }
+});
+
+test('the pass debrief names where the learner fell behind', () => {
+  const log = Array.from({ length: 90 }, (_, i) => ({ passS: i, inView: true, dopplerHz: 0, tunedOffsetHz: 0, heard: i < 30 || i > 60 }));
+  assert.equal(passDebrief(log).part, 'overhead');
+  assert.equal(passDebrief(log.map(s => ({ ...s, heard: true }))).part, null);
+  assert.equal(passDebrief([]), null);
+});
