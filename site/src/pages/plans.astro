@@ -52,11 +52,7 @@ const guardrails = [
 ];
 ---
 <Base title="Plans | CubeSat Classroom" description="A draft for discussion: try it free in the browser, run it yourself free, or a proposed hosted Crew Plus plan (pricing to be decided)." canonical={siteOrigin + '/plans/'}>
-  <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Home', href: base + '/' },
-    { label: 'Quests', href: base + '/quests/' },
-    { label: 'Plans', href: base + '/plans/', current: true },
-  ]} />
+  <SiteHeader slot="header" home={base + '/'} current="plans" />
 
   <PageHero>
     <p class="inline-block rounded-full bg-horizon px-3 py-1 text-sm font-bold text-night">Draft for discussion. Nothing is for sale yet.</p>

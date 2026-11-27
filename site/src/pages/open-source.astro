@@ -80,11 +80,7 @@ const groups = [
 ];
 ---
 <Base title="Open-source neighbours | CubeSat Classroom" description="Open-source projects that welcome AI-assisted work and projects that accept only human-written work. Both choices are respected." canonical={siteOrigin + '/open-source/'}>
-  <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Home', href: base + '/' },
-    { label: 'Quests', href: base + '/quests/' },
-    { label: 'Open source', href: base + '/open-source/', current: true },
-  ]} />
+  <SiteHeader slot="header" home={base + '/'} current="open-source" />
   <PageHero>
     <h1 class="max-w-3xl">Two ways to build in the open, both respected</h1>
     <p class="lede mt-5">Some open-source projects work with real-time AI assistants, and some even fly AI in orbit. Others accept only code and text written by people. Both are careful choices made by their communities. We learn from both, and we follow each project's own rules when we contribute to it.</p>

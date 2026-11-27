@@ -1,5 +1,6 @@
 ---
 import { hubs, missionBriefing, repo } from '../hubs.mjs';
+import { mainNav, moreNav, navHref } from '../nav.mjs';
 
 interface Props {
   showHubs?: boolean;
@@ -8,16 +9,32 @@ interface Props {
 const { showHubs = true } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const homeFor = (hub: typeof hubs[number]) => hub.home ?? 'https://' + hub.host + (hub.path ?? '/');
+const columns = [
+  { title: 'Learn and play', links: mainNav.map(i => ({ label: i.label, href: navHref(i, base) })) },
+  ...moreNav.map(g => ({ title: g.group, links: g.items.map(i => ({ label: i.label, href: navHref(i, base) })) })),
+  {
+    title: 'Project sites',
+    links: [
+      // cubesat.app is already listed under Community.
+      ...(showHubs ? hubs.filter(hub => !moreNav.some(g => g.items.some(i => i.href === homeFor(hub)))).map(hub => ({ label: hub.name, href: homeFor(hub) })) : []),
+      { label: 'Mission briefing', href: missionBriefing },
+      { label: 'GitHub', href: repo },
+    ],
+  },
+];
 ---
 <footer class="site-footer text-sm">
-  <div class="shell flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-7">
-    <p>An independent volunteer open-source space education project.</p>
-    <nav class="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer">
-      {showHubs && hubs.map(hub => <a class="font-semibold underline underline-offset-4" href={homeFor(hub)}>{hub.name}</a>)}
-      <a class="font-semibold underline underline-offset-4" href={base + '/games/'}>Games</a>
-      <a class="font-semibold underline underline-offset-4" href={base + '/wiki/'}>Glossary</a>
-      <a class="font-semibold underline underline-offset-4" href={missionBriefing}>Mission briefing</a>
-      <a class="font-semibold underline underline-offset-4" href={repo}>GitHub</a>
+  <div class="shell py-8">
+    <p class="max-w-md">An independent volunteer open-source space education project.</p>
+    <nav class="cols mt-6" aria-label="Footer">
+      {columns.map(col => (
+        <div>
+          <h2 class="col-title">{col.title}</h2>
+          <ul>
+            {col.links.map(link => <li><a href={link.href}>{link.label}</a></li>)}
+          </ul>
+        </div>
+      ))}
     </nav>
   </div>
   <div class="shell t-src flex flex-wrap justify-between gap-x-6 gap-y-1 border-t border-white/15 py-3.5 text-white/70">
@@ -25,3 +42,11 @@ const homeFor = (hub: typeof hubs[number]) => hub.home ?? 'https://' + hub.host 
     <span>Volunteer site work by <a class="font-normal" href="https://hikd.ai/">hikd.ai</a></span>
   </div>
 </footer>
+
+<style>
+  .cols { display: grid; gap: 1.2rem 2rem; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); }
+  .cols ul { list-style: none; margin: .35rem 0 0; padding: 0; }
+  .col-title { margin: 0; font: 600 .72rem var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: rgb(255 255 255 / .6); }
+  .cols a { display: inline-flex; align-items: center; min-height: 2.5rem; font-weight: 600; color: #fff; text-decoration: underline; text-decoration-color: rgb(255 255 255 / .35); text-underline-offset: 4px; }
+  .cols a:hover { text-decoration-color: #fff; }
+</style>

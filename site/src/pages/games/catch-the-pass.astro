@@ -9,15 +9,9 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${text}</a>`;
 ---
 <Base title="Catch the Pass | CubeSat Classroom games" description="Track a CubeSat across the sky with a ground-station antenna, choose a LoRa spreading factor and download its packets before it sets. A free browser game." canonical={siteOrigin + '/games/catch-the-pass/'}>
-  <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Mission', href: base + '/mission/' },
-    { label: 'Lessons', href: base + '/quests/' },
-    { label: 'Games', href: base + '/games/', current: true },
-    { label: 'CAD', href: base + '/hardware/' },
-    { label: 'Glossary', href: base + '/wiki/' },
-  ]} />
+  <SiteHeader slot="header" home={base + '/'} current="games" />
   <div class="shell py-8 sm:py-12">
-    <p class="eyebrow t-label"><a href={base + '/games/'}>Games</a> · Play &amp; learn</p>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href={base + '/'}>Home</a><span aria-hidden="true">›</span><a href={base + '/games/'}>Games</a><span aria-hidden="true">›</span><span aria-current="page">Catch the Pass</span><a class="all" href={base + '/games/'}>← All games</a></nav>
     <h1>Catch the Pass</h1>
     <p class="lede mt-2">Keep your antenna on the CubeSat as it crosses the sky, and catch its packets before it sets.</p>
 
@@ -212,5 +206,8 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
   .small { font-size: .88rem; color: #c9d2ff; }
   .real :global(a) { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
   .real .small { color: var(--color-muted); }
-  .eyebrow a { color: inherit; }
+  .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .5rem; font-size: .9rem; color: var(--color-muted); }
+  .crumbs a { display: inline-flex; align-items: center; min-height: 2.75rem; font-weight: 600; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
+  .crumbs [aria-current] { font-weight: 600; color: var(--color-ink, inherit); }
+  .crumbs .all { margin-left: auto; padding: 0 .9rem; border-radius: 999px; background: var(--color-mist); border: 1px solid var(--color-line); text-decoration: none; }
 </style>

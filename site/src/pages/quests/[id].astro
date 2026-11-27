@@ -24,14 +24,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title=${encodeURIComponent('Quest feedback: ' + quest.data.title)}`;
 ---
 <Base title={quest.data.title + ' | Example quest | CubeSat Classroom'} description={quest.data.summary} canonical={`${siteOrigin}/quests/${quest.id}/`}>
-  <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Mission', href: base + '/mission/' },
-    { label: 'Lessons', href: base + '/quests/', current: true },
-    { label: 'Simulator', href: base + '/#demo' },
-    { label: 'CAD', href: base + '/hardware/' },
-    { label: 'Glossary', href: base + '/wiki/' },
-    { label: 'For teachers', href: base + '/#teachers' },
-  ]} />
+  <SiteHeader slot="header" home={base + '/'} current="lessons" />
   <div class="section-band">
     <div class="shell grid items-end gap-5 py-8 sm:py-11 lg:grid-cols-[1fr_auto]">
       <div>

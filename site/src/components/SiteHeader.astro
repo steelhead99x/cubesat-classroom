@@ -1,31 +1,125 @@
 ---
 import wordmark from '../../../docs/assets/cubesat-classroom-wordmark-reversed.svg';
+import { mainNav, moreNav, navHref } from '../nav.mjs';
 
 interface Props {
   brand?: string;
   mark?: string;
   home: string;
   label?: string;
-  links: { label: string; href: string; current?: boolean }[];
+  /** Key of the current page in src/nav.mjs, for the main site menu. */
+  current?: string;
+  /** A separate site's own flat menu (project hubs, the club page). Leave out for the main menu. */
+  links?: { label: string; href: string; current?: boolean }[];
 }
 
-const { brand = 'CubeSat Classroom', mark = 'mark.svg', home, label = 'Main', links } = Astro.props;
+const { brand = 'CubeSat Classroom', mark = 'mark.svg', home, label = 'Main', current, links } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 // The main site shows the reversed wordmark, as on the mission briefing.
 // Club and other hub sites keep their own mark and name.
 const main = brand === 'CubeSat Classroom';
+const top = links ?? mainNav.map(item => ({ label: item.label, href: navHref(item, base), current: item.key === current }));
+const groups = links ? [] : moreNav.map(g => ({ group: g.group, items: g.items.map(item => ({ label: item.label, href: navHref(item, base), current: item.key === current, external: !!item.href })) }));
+const moreCurrent = groups.some(g => g.items.some(i => i.current));
+const id = 'site-menu';
 ---
-<header class="site-header">
-  <div class="shell flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3.5">
+<header class="site-header" data-site-header>
+  <div class="shell bar">
     <a class="brand inline-flex items-center gap-3" href={home}>
       {main
-        ? <img src={wordmark.src} width="113" height="40" alt="CubeSat Classroom" class="h-10 w-auto">
+        ? <img src={wordmark.src} width="113" height="40" alt="CubeSat Classroom home" class="h-10 w-auto">
         : <><img src={base + '/' + mark} width="35" height="35" alt=""><span>{brand}</span></>}
     </a>
-    <nav class="flex flex-wrap items-center gap-x-4 gap-y-1 sm:gap-x-6" aria-label={label}>
-      {links.map(link => (
-        <a href={link.href} aria-current={link.current ? 'page' : undefined}>{link.label}</a>
-      ))}
+    {!links && <a class="quick" href={base + '/games/'} aria-current={current === 'games' ? 'page' : undefined}><span aria-hidden="true">🎮</span> Games</a>}
+    <button type="button" class="menu-toggle" data-menu-toggle aria-expanded="false" aria-controls={id} hidden>
+      <span class="burger" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span>Menu</span>
+    </button>
+    <nav class="menu" id={id} data-menu-panel aria-label={label}>
+      <ul class="top">
+        {top.map(link => (
+          <li><a href={link.href} aria-current={link.current ? 'page' : undefined}>{link.label}</a></li>
+        ))}
+        {groups.length > 0 && (
+          <li class="dd" data-dropdown>
+            <button type="button" class="dd-toggle" aria-expanded="false" aria-controls={id + '-more'} data-current={moreCurrent ? 'true' : undefined}>
+              More <span class="chev" aria-hidden="true">▾</span>
+            </button>
+            <div class="dd-menu" id={id + '-more'}>
+              {groups.map(g => (
+                <div class="dd-group">
+                  <p class="dd-head">{g.group}</p>
+                  <ul>
+                    {g.items.map(item => (
+                      <li><a href={item.href} aria-current={item.current ? 'page' : undefined}>{item.label}{item.external && <span class="ext" aria-hidden="true"> ↗</span>}</a></li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </li>
+        )}
+      </ul>
     </nav>
   </div>
 </header>
+
+<script>
+  import { initSiteNav } from '../scripts/site-nav';
+  initSiteNav();
+</script>
+
+<style>
+  .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .6rem; padding-block: .6rem; position: relative; }
+  .menu ul { list-style: none; margin: 0; padding: 0; }
+  .top { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .25rem; }
+  .site-header .menu a, .dd-toggle {
+    display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 .7rem; border-radius: .6rem;
+    color: rgb(255 255 255 / .82); font-size: .95rem; font-weight: 600; text-decoration: none; background: none; border: 0; cursor: pointer;
+  }
+  .site-header .menu a:hover, .dd-toggle:hover { color: #fff; background: rgb(255 255 255 / .08); }
+  .site-header .menu a[aria-current="page"], .dd-toggle[data-current] { color: #fff; background: rgb(255 255 255 / .12); box-shadow: inset 0 -3px 0 var(--color-flag, #e0313f); text-decoration: none; }
+  .chev { margin-left: .3rem; font-size: .75rem; transition: transform .15s; }
+  .dd { position: relative; }
+  .dd-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .dd-menu {
+    display: none; position: absolute; right: 0; top: calc(100% + .4rem); z-index: 50; min-width: 25rem;
+    grid-template-columns: 1fr 1fr; gap: .25rem 1rem; padding: .8rem; border-radius: .9rem;
+    background: var(--color-night, #000046); border: 1px solid rgb(255 255 255 / .15); box-shadow: 0 18px 40px rgb(0 0 30 / .45);
+  }
+  .dd[data-open] .dd-menu, .site-header:not([data-js]) .dd:focus-within .dd-menu { display: grid; }
+  .dd-head { margin: 0 0 .2rem; padding: 0 .7rem; font: 600 .7rem var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: rgb(255 255 255 / .55); }
+  .dd-menu a { width: 100%; }
+  .ext { opacity: .7; }
+  .menu-toggle {
+    align-items: center; gap: .55rem; min-height: 2.75rem; padding: 0 .9rem; border-radius: .7rem;
+    background: rgb(255 255 255 / .08); border: 1px solid rgb(255 255 255 / .2); color: #fff; font: 700 .95rem var(--font-sans); cursor: pointer;
+  }
+  .burger { display: grid; gap: 4px; width: 18px; }
+  .burger i { display: block; height: 2px; border-radius: 2px; background: currentColor; transition: transform .2s, opacity .2s; }
+  .menu-toggle[aria-expanded="true"] .burger i:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .menu-toggle[aria-expanded="true"] .burger i:nth-child(2) { opacity: 0; }
+  .menu-toggle[aria-expanded="true"] .burger i:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* Narrow screens: a Menu button opens one list with every link. Without scripts the list just shows. */
+  @media (max-width: 56rem) {
+    .site-header[data-js] .menu-toggle { display: inline-flex; }
+    .menu { flex-basis: 100%; }
+    .site-header[data-js] .menu:not([data-open]) { display: none; }
+    .menu[data-open] { padding-bottom: .6rem; }
+    .top { flex-direction: column; align-items: stretch; gap: .15rem; }
+    .site-header .menu a { display: flex; min-height: 3rem; font-size: 1.05rem; padding: 0 .9rem; }
+    .dd-toggle { display: none; }
+    .dd-menu, .dd[data-open] .dd-menu { display: grid; position: static; min-width: 0; grid-template-columns: 1fr; padding: .4rem 0 0; background: none; border: 0; border-radius: 0; box-shadow: none; border-top: 1px solid rgb(255 255 255 / .12); margin-top: .4rem; }
+    .dd-group + .dd-group { margin-top: .4rem; }
+    .dd-head { padding: .5rem .9rem .2rem; }
+  }
+  /* A Games shortcut beside the Menu button, so it is one tap away on phones. */
+  .quick { display: none; }
+  @media (max-width: 56rem) {
+    .site-header[data-js] .quick { display: inline-flex; align-items: center; gap: .35rem; min-height: 2.75rem; padding: 0 .85rem; margin-left: auto; border-radius: .7rem; background: var(--color-solar, #ffd23f); color: #14183a; font-weight: 800; font-size: .95rem; text-decoration: none; }
+    .site-header[data-js] .quick[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--color-flag, #e0313f); }
+  }
+  @media (min-width: 56.01rem) { .menu-toggle { display: none !important; } }
+  @media (prefers-reduced-motion: reduce) { .chev, .burger i { transition: none; } }
+</style>

@@ -49,11 +49,19 @@
   .diagram { width: 100%; height: auto; margin-top: 8px; }
   footer { padding: 0 32px 40px; color: var(--soft); font-size: 14px; max-width: 1100px; }
   code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: #EFEBE2; padding: 1px 4px; border-radius: 4px; }
+  .sitenav { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 0 0 12px; }
+  .sitenav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; color: #cfe0ff; font-weight: 600; text-decoration: none; background: rgba(255,255,255,.08); }
+  .sitenav a:hover, .sitenav a:focus-visible { color: #fff; background: rgba(255,255,255,.16); }
 </style>
 </head>
 <body>
 <header>
-  <p><a href="../../quests/#play-and-learn" style="color: #a4c9ff">← CubeSat Classroom · Play &amp; learn</a></p>
+  <nav class="sitenav" aria-label="CubeSat Classroom">
+    <a href="../../">← CubeSat Classroom</a>
+    <a href="../../quests/">Lessons</a>
+    <a href="../../games/">Games</a>
+    <a href="../../quests/#play-and-learn">Play &amp; learn</a>
+  </nav>
   <p class="label">Hands-on activity for older learners, with an adult. Model rockets fly only at a club launch, under its safety officer.</p>
   <h1>Ground-flight workbook</h1>
   <p>Enter what your class measured on the bench, pick a certified motor, and get the prediction to beat at the club launch: stability, thrust-to-weight, rail exit speed, apogee, the ejection delay to buy, and whether the rocket stays a Class 1 model rocket. Then record each flight next to the prediction.</p>

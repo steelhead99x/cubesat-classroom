@@ -24,13 +24,7 @@ const gates = [
 ];
 ---
 <Base title="The research flight | CubeSat Classroom" description="How a classroom can prepare a sensor kit for a suborbital research flight." canonical={siteOrigin + '/mission/'}>
-  <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Mission', href: base + '/mission/', current: true },
-    { label: 'Lessons', href: base + '/quests/' },
-    { label: 'Simulator', href: base + '/#demo' },
-    { label: 'CAD', href: base + '/hardware/' },
-    { label: 'Glossary', href: base + '/wiki/' },
-  ]} />
+  <SiteHeader slot="header" home={base + '/'} current="mission" />
 
   <section class="classroom-hero">
     <div class="shell py-11 sm:py-16">
