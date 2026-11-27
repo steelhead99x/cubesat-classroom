@@ -1,7 +1,7 @@
 // Every browser lesson needs its guide answers, a patch colour and a patch icon.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { byQuest } from '../src/guide/answers.mjs';
 
 const dir = new URL('../src/content/quests/', import.meta.url);
@@ -40,4 +40,10 @@ test("each patch's label outline was generated from the quest's current patch na
 test('lesson order numbers are 1 to n with no gaps', () => {
   const orders = ids.map(id => Number(readFileSync(new URL(`${id}.md`, dir), 'utf8').match(/^order: (\d+)$/m)[1])).sort((a, b) => a - b);
   assert.deepEqual(orders, orders.map((_, i) => i + 1));
+});
+
+test('each patch has a print file for the patches page to link', () => {
+  for (const id of ids) {
+    assert.ok(existsSync(new URL(`../../hardware/patches/print/${id}.3mf`, import.meta.url)), `print file for ${id}`);
+  }
 });
