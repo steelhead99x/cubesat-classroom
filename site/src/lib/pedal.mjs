@@ -8,6 +8,7 @@ export const CARRIER = 0.12;
 export const STEP_KHZ = 5;
 export const MAX_OFFSET = 20;
 export const GAIN_MAX_DB = 42;
+export const amplitudeGain = db => 10 ** (db / 20);
 /** Knob travel, like a real pot: 270 degrees from fully left to fully right. */
 export const KNOB_SWEEP = 270;
 /** Degrees the TUNE encoder turns per 5 kHz step (20 detents a turn). */
@@ -35,7 +36,7 @@ export function clampOffset(offset) {
  */
 export function signal(noise, { band, offset, gainDb }) {
   const tuned = band === '2' && offset === 0;
-  const g = 10 ** (gainDb / 20);
+  const g = amplitudeGain(gainDb);
   const samples = noise.map((n, i) => ((tuned ? CARRIER * Math.sin((i * Math.PI) / 20) : 0) + NOISE * n) * g);
   return { tuned, samples, peak: Math.max(...samples.map(Math.abs)) };
 }

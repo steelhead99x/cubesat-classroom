@@ -1,9 +1,11 @@
 // Catch the Pass: drawing, input, sound and the live sky. The rules are in logic.mjs.
 import * as G from './logic.mjs';
+import { inputPercent } from '../../lib/pedal.mjs';
 import type { LiveSky, StationState, PacketNote, SkyStatus } from './net';
 
 type Game = ReturnType<typeof G.createGame>;
 type Level = (typeof G.LEVELS)[number] | typeof G.LIVE;
+type Antenna = keyof typeof G.ANTENNAS;
 
 const root = document.querySelector<HTMLElement>('[data-ctp]');
 if (root) init(root);
@@ -32,7 +34,9 @@ function init(root: HTMLElement) {
   })();
   const prefsKey = 'catch-the-pass:prefs';
   const prefs = (() => { try { const p = JSON.parse(localStorage.getItem(prefsKey) ?? '{}'); return p && typeof p === 'object' ? p : {}; } catch { return {}; } })();
-  const savePrefs = () => { try { localStorage.setItem(prefsKey, JSON.stringify({ easy: slow, level: levelIndex })); } catch { /* private mode */ } };
+  const savePrefs = () => { try { localStorage.setItem(prefsKey, JSON.stringify({ easy: slow, level: levelIndex, antenna: antennaChoice })); } catch { /* private mode */ } };
+  let antennaChoice = typeof prefs.antenna === 'string' && Object.hasOwn(G.ANTENNAS, prefs.antenna) ? prefs.antenna as Antenna : '';
+  const receiver = { ...G.DEFAULT_RECEIVER };
 
   let mode: 'missions' | 'live' = 'missions';
   let levelIndex = 0;
@@ -56,11 +60,11 @@ function init(root: HTMLElement) {
   let audio: AudioContext | null = null;
   let soundOn = false;
   function beep(freq: number, ms: number, type: OscillatorType = 'sine', gain = 0.06) {
-    if (!soundOn || !audio) return;
+    if (!soundOn || !audio || receiver.level === 0) return;
     const o = audio.createOscillator(), g = audio.createGain();
     o.type = type; o.frequency.value = freq;
-    g.gain.setValueAtTime(gain, audio.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + ms / 1000);
+    g.gain.setValueAtTime(gain * receiver.level / G.DEFAULT_RECEIVER.level, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.000001, audio.currentTime + ms / 1000);
     o.connect(g).connect(audio.destination);
     o.start(); o.stop(audio.currentTime + ms / 1000);
   }
@@ -152,7 +156,8 @@ function init(root: HTMLElement) {
     if (helpOpen) setHelp(false);
     afterHelp = null;
     renderLevels();
-    game = G.createGame(currentLevel(), (Math.random() * 2 ** 31) | 0);
+    const level = currentLevel();
+    game = G.createGame(level, (Math.random() * 2 ** 31) | 0, antennaChoice || level.antenna, receiver);
     running = false; paused = false; countdown = 0;
     clearAim();
     pauseBtn.textContent = 'Start';
@@ -268,6 +273,52 @@ function init(root: HTMLElement) {
   sfButtons.forEach(b => b.addEventListener('click', () => { if (game) { G.setSf(game, Number(b.dataset.sf)); hud(); } }));
   $('[data-tx]').addEventListener('click', () => { if (game) { G.setTransmit(game, !game.transmit); hud(); } });
 
+  const antennaSelect = $<HTMLSelectElement>('[data-antenna]');
+  const antennaNote = $('[data-antenna-note]');
+  antennaSelect.value = antennaChoice;
+  antennaSelect.addEventListener('change', () => {
+    const value = antennaSelect.value;
+    antennaChoice = Object.hasOwn(G.ANTENNAS, value) ? value as Antenna : '';
+    savePrefs();
+    if (game) {
+      game.antenna = antennaChoice || game.level.antenna;
+      refreshReceiver();
+    }
+  });
+
+  const engageButton = $<HTMLButtonElement>('[data-rx-engage]');
+  const tuneInput = $<HTMLInputElement>('[data-rx-tune]');
+  const gainInput = $<HTMLInputElement>('[data-rx-gain]');
+  const levelInput = $<HTMLInputElement>('[data-rx-level]');
+  const receiverHud = {
+    peak: $('[data-rx-input]'), status: $('[data-rx-state]'), meter: $('[data-rx-meter]'),
+    tune: $('[data-rx-tune-label]'), gain: $('[data-rx-gain-label]'), level: $('[data-rx-level-label]'),
+  };
+  function refreshReceiver() {
+    if (!game) return;
+    Object.assign(game.receiver, receiver);
+    game.snr = G.readReceiver(game).snr;
+    game.locked = game.snr >= G.SF[game.sf as 7 | 9 | 12].minSnr;
+    hud();
+    draw();
+  }
+  engageButton.addEventListener('click', () => {
+    receiver.engaged = !receiver.engaged;
+    refreshReceiver();
+  });
+  tuneInput.addEventListener('input', () => {
+    receiver.offset = tuneInput.valueAsNumber;
+    refreshReceiver();
+  });
+  gainInput.addEventListener('input', () => {
+    receiver.gainDb = gainInput.valueAsNumber;
+    refreshReceiver();
+  });
+  levelInput.addEventListener('input', () => {
+    receiver.level = levelInput.valueAsNumber;
+    hud();
+  });
+
   // ---- Keyboard: arrows or WASD aim, 1/2/3 SF, Space transmitter, P pause, Enter start. ----
   const aimKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'];
   root.addEventListener('keydown', e => {
@@ -282,7 +333,7 @@ function init(root: HTMLElement) {
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const inCanvas = e.target === canvas;
     // Arrows also steer from the game's buttons (after a tap on the pad, say), not only the sky.
-    const aimFrom = inCanvas || (target.matches('button') && !target.matches('[data-level], [data-mode]'));
+    const aimFrom = inCanvas || (target.matches('button') && !target.matches('[data-level], [data-mode], [data-rx-engage]'));
     if (aimKeys.includes(k) && aimFrom) { keys.add(k); pointer = null; e.preventDefault(); }
     else if (k === '1' || k === '2' || k === '3') { if (game) G.setSf(game, G.SF_ORDER[Number(k) - 1]); hud(); }
     else if (k === ' ' && inCanvas) { if (game) G.setTransmit(game, !game.transmit); hud(); e.preventDefault(); }
@@ -415,7 +466,7 @@ function init(root: HTMLElement) {
       const sat = G.satPosition(game.level, Math.max(0, game.t / game.level.duration - lag));
       s.az += (sat.az + wobble - s.az) * Math.min(1, dt * 3);
       s.el += (Math.max(0, sat.el - wobble / 2) - s.el) * Math.min(1, dt * 3);
-      s.snr = G.snrAt(game, s.az, s.el);
+      s.snr = G.snrAt(game, s.az, s.el, game.t, G.LIVE.antenna);
       const floor = G.SF[s.sf as 7 | 9 | 12].minSnr;
       s.locked = s.snr >= floor;
       if (s.slot !== liveSlot) { s.slot = liveSlot; s.rx = 0; s.score = 0; }
@@ -435,8 +486,9 @@ function init(root: HTMLElement) {
     const { slot, elapsed, seed } = G.liveSlot(sharedNow());
     if (slot !== liveSlot) {
       liveSlot = slot;
-      game = G.createGame(G.LIVE, seed);
+      game = G.createGame(G.LIVE, seed, antennaChoice || G.LIVE.antenna, receiver);
       pops.length = 0;
+      hud();
     }
     const skipped = G.syncLiveTime(game!, elapsed);
     return skipped ? 0 : Math.max(0, elapsed - game!.t);
@@ -459,10 +511,10 @@ function init(root: HTMLElement) {
         }
       } else if (game) game.events.length = 0;
       moveDemoStations(dt);
-      sky?.sendStation({ az: round(game!.ant.az), el: round(game!.ant.el), sf: game!.sf, snr: round(game!.snr), locked: game!.locked, rx: game!.rx, score: game!.score, slot: liveSlot });
+      sky?.sendStation({ az: round(game!.ant.az), el: round(game!.ant.el), sf: game!.sf, snr: round(game!.snr), locked: game!.locked, rx: game!.rx, score: game!.score, slot: liveSlot, antenna: game!.antenna as Antenna });
     } else if (running && !paused && game) {
       if (countdown > 0) { countdown -= dt; if (countdown <= 0) announce('Acquisition of signal. Track the satellite.'); }
-      else update(dt);
+      else update(dt * G.MISSION_SPEED);
     }
     for (const [id, v] of stations) if (!v.demo && now - v.seen > 6000) stations.delete(id);
     for (const p of pops) p.age += dt;
@@ -540,7 +592,7 @@ function init(root: HTMLElement) {
   function css(el: HTMLElement, prop: 'width' | 'left', value: string) { if (el.style[prop] !== value) el.style[prop] = value; }
   function hud() {
     if (!game) return;
-    const left = Math.max(0, game.level.duration - game.t);
+    const left = Math.max(0, game.level.duration - game.t) / (mode === 'missions' ? G.MISSION_SPEED : 1);
     put(hudEl.snr, (game.snr < -60 ? '—' : game.snr.toFixed(1) + ' dB') + (game.locked ? ' · locked' : ''));
     css(hudEl.bar, 'width', pct(game.snr) + '%');
     hudEl.bar.dataset.ok = String(game.locked);
@@ -555,6 +607,18 @@ function init(root: HTMLElement) {
     put(hudEl.light, G.inEclipse(game.level, game.t / game.level.duration) ? 'In Earth\u2019s shadow' : 'Sunlit');
     hudEl.tx.setAttribute('aria-pressed', String(game.transmit));
     put(hudEl.tx, game.transmit ? '📡 Sending: on' : '📡 Sending: resting');
+    const antenna = G.ANTENNAS[game.antenna as Antenna];
+    put(antennaNote, `${antenna.name} · ${antenna.note}`);
+    const { peak, status } = G.readReceiver(game);
+    put(receiverHud.peak, inputPercent(peak) + '%');
+    put(receiverHud.status, status);
+    css(receiverHud.meter, 'width', Math.min(100, peak * 100) + '%');
+    receiverHud.meter.dataset.clip = String(peak >= 1);
+    engageButton.setAttribute('aria-pressed', String(receiver.engaged));
+    put(engageButton, receiver.engaged ? 'Engaged' : 'Bypassed');
+    put(receiverHud.tune, G.receiverFrequency(receiver.offset).toFixed(3) + ' MHz');
+    put(receiverHud.gain, receiver.gainDb + ' dB');
+    put(receiverHud.level, receiver.level + '%');
     sfButtons.forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.sf) === game!.sf)));
     if (game.log[0] && hudEl.log.dataset.seq !== String(game.log[0].seq)) {
       hudEl.log.dataset.seq = String(game.log[0].seq);
@@ -658,7 +722,8 @@ function init(root: HTMLElement) {
     for (const v of stations.values()) {
       const s = v.state;
       ctx.strokeStyle = 'rgba(185,164,255,.75)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(toX(s.az), toY(s.el), level.beam / 2 * pxPerDeg, 0, Math.PI * 2); ctx.stroke();
+      const radius = G.antennaFor(G.LIVE, s.antenna).beam / 2 * pxPerDeg;
+      ctx.beginPath(); ctx.arc(toX(s.az), toY(s.el), radius, 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]); ctx.fillStyle = 'rgba(185,164,255,.9)'; ctx.fillText(s.cs, toX(s.az) + 6, toY(s.el) - 6);
     }
     // Satellite
@@ -697,7 +762,7 @@ function init(root: HTMLElement) {
     }
     // Your antenna beam
     const ax = toX(game.ant.az), ay = toY(game.ant.el);
-    const br = level.beam / 2 * pxPerDeg;
+    const br = G.antennaFor(level, game.antenna).beam / 2 * pxPerDeg;
     const col = game.locked ? '111,211,160' : '255,210,63';
     ctx.strokeStyle = `rgba(${col},.25)`; ctx.lineWidth = 2; ctx.setLineDash([4, 6]);
     ctx.beginPath(); ctx.moveTo(w / 2, h - pad.b + 2); ctx.lineTo(ax, ay); ctx.stroke(); ctx.setLineDash([]);
