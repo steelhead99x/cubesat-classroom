@@ -51,6 +51,10 @@ export function cleanSnapshot(raw) {
       out.shops[r] = cleanList(list);
     }
   }
+  // Display only: the turn number whose balloon this player has lifted but not yet released,
+  // so other screens can show it rising. It never changes the match.
+  const rising = int(raw.rising, 0, 9999);
+  if (rising !== null) out.rising = rising;
   if (raw.host && typeof raw.host === 'object') {
     const h = raw.host;
     const seed = int(h.seed, 0, 4294967295), rounds = int(h.rounds, 1, 10);

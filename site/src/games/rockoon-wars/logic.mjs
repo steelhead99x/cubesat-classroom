@@ -246,6 +246,16 @@ export function readyWeapon(match, playerIndex) {
   return unit && ammo && WEAPON[unit.weapon] && ammo[unit.weapon] > 0 ? unit.weapon : 'baby';
 }
 
+/** The highest ground under a pad's 13 px footprint, so a pad never hangs over a crater edge. */
+function groundUnder(terrain, x) {
+  let ground = 0;
+  for (let dx = -6; dx <= 6; dx++) ground = Math.max(ground, terrain[Math.max(0, Math.min(W - 1, x + dx))]);
+  return ground;
+}
+
+/** How wide a rocket's ground impact is: bigger rockets carve bigger craters. */
+export const craterRadius = weapon => Math.round(WEAPON[weapon].radius * 0.75 + 8);
+
 /** Ground impacts change only the game terrain and pad positions. */
 function crater(field, end, radius) {
   const { terrain, units } = field;
@@ -269,7 +279,7 @@ function crater(field, end, radius) {
       const right = Math.floor((slot + 1) * slotWidth) - 9;
       pad.x = Math.max(left, Math.min(right, pad.x + direction * shift));
     }
-    pad.y = terrain[pad.x];
+    pad.y = groundUnder(terrain, pad.x);
   }
 }
 
@@ -295,7 +305,7 @@ export function fire(match, shot) {
   me.score += points;
   me.credits += points * 50;
   const events = [{ type: 'scan', points }];
-  const radius = Math.min(36, w.radius + 8);
+  const radius = craterRadius(weapon);
   const blast = end ? { ...end, r: radius, dirt: false } : null;
   if (end) crater(match.field, end, radius);
   match.log.push({ round: match.round, player: shooter, angle: unit.angle, power: unit.power, weapon });
