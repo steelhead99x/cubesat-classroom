@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as R from '../src/games/rockoon-wars/logic.mjs';
 
+const under = (terrain, x) => Math.max(...Array.from({ length: 13 }, (_, i) => terrain[Math.max(0, Math.min(R.W - 1, x + i - 6))]));
 const players = n => Array.from({ length: n }, (_, i) => ({ id: 'p' + i, name: 'P' + (i + 1) }));
 const begin = (n = 2, seed = 42, rounds = 3) => R.startRound(R.createMatch({ seed, players: players(n), rounds }));
 
@@ -66,7 +67,7 @@ test('rocket releases above its pad and scores against the ring only', () => {
     const m = begin();
     m.field.wind = 0;
     const [pad, other] = m.field.units;
-    other.x = pad.x; other.y = pad.y;
+    const otherPad = { ...other };
     const ground = [...m.field.terrain];
     const release = pad.y + R.LIFT + R.PIVOT_Y + 14;
     m.field.target = { x: pad.x + offset, y: release + 20 };
@@ -75,8 +76,27 @@ test('rocket releases above its pad and scores against the ring only', () => {
     assert.equal(m.players[0].score, points);
     assert.equal(m.players[0].credits, R.START_CREDITS + 50 * points);
     assert.equal(m.players[1].score, 0);
-    assert.deepEqual(m.field.terrain, ground);
+    assert.ok(result.blast, 'a landing makes a crater');
+    const centre = Math.floor(result.blast.x);
+    assert.ok(m.field.terrain[centre] < ground[centre]);
+    assert.notEqual(pad.x, centre, 'the nearby pad slides away from the impact');
+    assert.equal(pad.y, under(m.field.terrain, pad.x), 'the pad sits on the highest ground under it');
+    assert.deepEqual(other, otherPad, 'the distant pad stays put');
   }
+});
+
+test('a rocket that leaves the field does not change terrain or pad positions', () => {
+  const m = begin();
+  const { terrain, units } = m.field;
+  m.field.wind = 0;
+  const pad = units[m.turn];
+  pad.x = 12;
+  pad.y = terrain[pad.x];
+  const ground = [...terrain];
+  const pads = units.map(({ x, y }) => ({ x, y }));
+  assert.equal(R.fire(m, { angle: 180, power: 100, weapon: 'baby' }).blast, null);
+  assert.deepEqual(terrain, ground);
+  assert.deepEqual(units.map(({ x, y }) => ({ x, y })), pads);
 });
 
 test('ammo is spent, and an empty weapon uses the free Scout', () => {
@@ -410,4 +430,67 @@ test('the controls show the Scout once the picked rocket has run out', () => {
   assert.equal(R.readyWeapon(m, 0), 'baby', 'but the Scout is what will launch');
   m.field.units[1].weapon = 'nonsense';
   assert.equal(R.readyWeapon(m, 1), 'baby');
+});
+
+test('each rocket cuts a different profile and the next balloon uses the pad it moved', () => {
+  const profiles = new Map();
+  for (const rocket of R.WEAPONS) {
+    const m = begin();
+    const crew = m.turn;
+    const pad = m.field.units[crew];
+    const before = pad.x;
+    m.field.wind = 0;
+    m.field.terrain.fill(100);
+    for (const unit of m.field.units) unit.y = 100;
+    if (rocket.price) m.players[crew].ammo[rocket.id] = 1;
+    const result = R.fire(m, { angle: 90, power: 25, weapon: rocket.id });
+    assert.ok(result.blast, rocket.name);
+    const { x, cutDepth, moved } = result.blast;
+    const width = m.field.terrain.filter(height => height < 100).length;
+    profiles.set(rocket.id, { width, cutDepth });
+    assert.equal(m.field.terrain[Math.floor(x)], 100 - rocket.impact.depth);
+    assert.equal(cutDepth, rocket.impact.depth);
+    assert.deepEqual(moved, [{ crew, dx: pad.x - before, dy: pad.y - 100 }]);
+    assert.notEqual(pad.x, before);
+    assert.equal(pad.y, under(m.field.terrain, pad.x));
+    R.skip(m);
+    assert.equal(m.turn, crew);
+    assert.deepEqual(R.balloonPosition(pad, m.field.wind, 0), { x: pad.x, y: pad.y });
+    const next = R.trajectory(m, m.field.units[crew], 90, 25);
+    assert.ok(Math.abs(next.path[0][0] - pad.x) < 1e-8);
+  }
+  assert.equal(new Set([...profiles.values()].map(p => JSON.stringify(p))).size, R.WEAPONS.length);
+  assert.ok(profiles.get('rocket').cutDepth > profiles.get('dirt').cutDepth);
+  assert.ok(profiles.get('dirt').width > profiles.get('rocket').width);
+});
+
+test('an impact on exposed bedrock leaves the ground and pads unchanged', () => {
+  const m = begin();
+  m.field.wind = 0;
+  m.field.terrain.fill(0);
+  const before = m.field.units.map(unit => ({ x: unit.x, y: 0 }));
+  for (const unit of m.field.units) unit.y = 0;
+  const { blast } = R.fire(m, { angle: 90, power: 25, weapon: 'baby' });
+  assert.equal(blast.cutDepth, 0);
+  assert.deepEqual(blast.moved, []);
+  assert.ok(m.field.terrain.every(height => height === 0));
+  assert.deepEqual(m.field.units.map(({ x, y }) => ({ x, y })), before);
+});
+
+test('a pad moved by a crater never hangs over the edge', () => {
+  for (let seed = 1; seed <= 30; seed++) {
+    const m = R.createMatch({ seed, players: players(2) });
+    R.startRound(m);
+    m.field.wind = 0;
+    for (let k = 0; k < 4 && m.phase === 'play'; k++) {
+      R.fire(m, { angle: 60 + 20 * k, power: 18 + 5 * k, weapon: 'baby' });
+      for (const pad of m.field.units) assert.equal(pad.y, under(m.field.terrain, pad.x), `seed ${seed}`);
+    }
+  }
+});
+
+test('the rising flag is display only and checked like everything else', () => {
+  const base = { cs: 'GS-AA1', joined: 1, turns: {}, shops: {} };
+  assert.equal(Room.cleanSnapshot({ ...base, rising: 4 }).rising, 4);
+  for (const bad of [-1, 1e6, 'x', 2.5, null]) assert.equal(Room.cleanSnapshot({ ...base, rising: bad }).rising, undefined, String(bad));
 });

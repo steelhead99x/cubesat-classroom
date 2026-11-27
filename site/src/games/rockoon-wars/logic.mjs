@@ -45,11 +45,11 @@ export const START_CREDITS = 600;
  * (The ids are the old ones, kept so rooms and tests still line up.)
  */
 export const WEAPONS = [
-  { id: 'baby', name: 'Scout', radius: 12, price: 0, pack: 0 },
-  { id: 'rocket', name: 'Tracker', radius: 20, price: 150, pack: 5 },
-  { id: 'dirt', name: 'Mapper', radius: 28, price: 150, pack: 3 },
-  { id: 'big', name: 'Surveyor', radius: 38, price: 250, pack: 2 },
-  { id: 'mega', name: 'Observatory', radius: 50, price: 300, pack: 1 },
+  { id: 'baby', name: 'Scout', radius: 12, price: 0, pack: 0, impact: { radius: 14, depth: 7, shove: 6, name: 'Small dent' } },
+  { id: 'rocket', name: 'Tracker', radius: 20, price: 150, pack: 5, impact: { radius: 20, depth: 18, shove: 9, name: 'Deep pit' } },
+  { id: 'dirt', name: 'Mapper', radius: 28, price: 150, pack: 3, impact: { radius: 31, depth: 10, shove: 14, name: 'Wide scrape' } },
+  { id: 'big', name: 'Surveyor', radius: 38, price: 250, pack: 2, impact: { radius: 38, depth: 23, shove: 20, name: 'Broad crater' } },
+  { id: 'mega', name: 'Observatory', radius: 50, price: 300, pack: 1, impact: { radius: 48, depth: 34, shove: 30, name: 'Largest crater' } },
 ];
 export const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 export const COLORS = ['#ef6b6c', '#6fd3a0', '#ffd23f', '#b9a4ff'];
@@ -224,7 +224,12 @@ export function trajectory(match, from, angle, power) {
     if (i % 2 === 0) path.push([x, y]);
     if (x < 0 || x >= W) return { path, end: null };
     const col = Math.floor(x);
-    if (y <= terrain[col]) return { path, end: { x, y: Math.max(y, 0) } };
+    if (y <= terrain[col]) {
+      const end = { x, y: terrain[col] };
+      if (i % 2 === 0) path.pop();
+      path.push([end.x, end.y]);
+      return { path, end };
+    }
     // Leaving through the top is fine; the shot comes back down. Below the field it is gone.
     if (y < -50) return { path, end: null };
   }
@@ -241,6 +246,49 @@ export function readyWeapon(match, playerIndex) {
   return unit && ammo && WEAPON[unit.weapon] && ammo[unit.weapon] > 0 ? unit.weapon : 'baby';
 }
 
+/** The highest ground under a pad's 13 px footprint, so a pad never hangs over a crater edge. */
+function groundUnder(terrain, x) {
+  let ground = 0;
+  for (let dx = -6; dx <= 6; dx++) ground = Math.max(ground, terrain[Math.max(0, Math.min(W - 1, x + dx))]);
+  return ground;
+}
+
+/** World radius of a rocket's ground impact, separate from its scan radius. */
+export const craterRadius = weapon => WEAPON[weapon].impact.radius;
+
+/** Cut the terrain, then settle any pad reached by the impact inside its own launch lane. */
+function crater(field, end, { radius, depth, shove }) {
+  const { terrain, units } = field;
+  const centre = Math.floor(end.x);
+  let cutDepth = 0;
+  for (let x = Math.max(0, centre - radius); x <= Math.min(W - 1, centre + radius); x++) {
+    const offset = (x - centre) / radius;
+    const cut = Math.min(terrain[x], Math.round(depth * (1 - offset * offset)));
+    terrain[x] -= cut;
+    cutDepth = Math.max(cutDepth, cut);
+  }
+
+  const moved = [];
+  if (!cutDepth) return { cutDepth, moved };
+  const slotWidth = W / units.length;
+  for (const [crew, pad] of units.entries()) {
+    const { x, y } = pad;
+    const offset = x - centre;
+    const distance = Math.abs(offset);
+    if (distance < radius) {
+      const slot = Math.floor(x / slotWidth);
+      const direction = offset < 0 || (offset === 0 && x < W / 2) ? -1 : 1;
+      const shift = Math.ceil(shove * (1 - distance / radius));
+      const left = Math.ceil(slot * slotWidth) + 8;
+      const right = Math.floor((slot + 1) * slotWidth) - 9;
+      pad.x = Math.max(left, Math.min(right, x + direction * shift));
+    }
+    if (distance <= radius + 6) pad.y = groundUnder(terrain, pad.x);
+    if (pad.x !== x || pad.y !== y) moved.push({ crew, dx: pad.x - x, dy: pad.y - y });
+  }
+  return { cutDepth, moved };
+}
+
 export function fire(match, shot) {
   if (match.phase !== 'play') throw new Error('not in play');
   const shooter = match.turn, me = match.players[shooter], unit = match.field.units[shooter];
@@ -251,7 +299,7 @@ export function fire(match, shot) {
   unit.power = Math.max(0, Math.min(100, Math.round(shot.power)));
   unit.weapon = weapon;
   const w = WEAPON[weapon];
-  const { path } = trajectory(match, unit, unit.angle, unit.power);
+  const { path, end } = trajectory(match, unit, unit.angle, unit.power);
   const target = match.field.target;
   let closest = Infinity;
   for (const [x, y] of path) {
@@ -263,7 +311,8 @@ export function fire(match, shot) {
   me.score += points;
   me.credits += points * 50;
   const events = [{ type: 'scan', points }];
-  const blast = points ? { ...target, r: TARGET_RADIUS, dirt: false } : null;
+  const radius = craterRadius(weapon);
+  const blast = end ? { ...end, r: radius, ...crater(match.field, end, w.impact) } : null;
   match.log.push({ round: match.round, player: shooter, angle: unit.angle, power: unit.power, weapon });
   endTurn(match, events);
   return { path, blast, events, weapon };
@@ -304,7 +353,7 @@ export function fingerprint(match) {
   if (match.field) {
     add(match.field.launches); add(match.field.target.x); add(match.field.target.y);
     for (const u of match.field.units) { add(u.x); add(u.y); }
-    for (let x = 0; x < W; x += 4) add(match.field.terrain[x]);
+    for (const height of match.field.terrain) add(height);
   }
   return (h >>> 0).toString(16);
 }
