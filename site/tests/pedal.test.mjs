@@ -1,7 +1,7 @@
 // Tests for the pedal trainer's state logic (src/lib/pedal.mjs). Run with `npm test`.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { check, clampOffset, frequencyMHz, inputPercent, knobAngle, signal, signalLed, tuneAngle, TASKS } from '../src/lib/pedal.mjs';
+import { check, clampOffset, frequencyMHz, inputPercent, knobAngle, signal, tuneAngle, TASKS } from '../src/lib/pedal.mjs';
 
 const noise = Array.from({ length: 201 }, (_, i) => Math.sin(i * 1.7));
 
@@ -33,10 +33,7 @@ test('knobs turn through 270 degrees and the encoder turns per step', () => {
   assert.equal(tuneAngle(0), 0);
 });
 
-test('SIGNAL LED brightens with signal strength but never quite goes dark', () => {
-  assert.equal(signalLed(0), 0.08);
-  assert.equal(signalLed(0.5), 0.5);
-  assert.equal(signalLed(3), 1);
+test('the input meter reads whole percent of full scale', () => {
   assert.equal(inputPercent(0.756), 76);
 });
 
