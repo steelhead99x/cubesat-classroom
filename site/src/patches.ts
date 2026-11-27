@@ -6,6 +6,12 @@ export const patchTones: Record<string, string> = {
   'lose-the-signal': '#ef6b6c',
   'fresh-or-historical': '#6fd3a0',
   'light-and-shadow': '#b9a4ff',
+  'catch-the-pass': '#6fd3a0',
+  'rockoon-battle': '#ef6b6c',
+  'follow-the-doppler': '#ffd23f',
+  'predict-a-pass': '#a4c9ff',
+  'who-may-transmit': '#b9a4ff',
+  'predict-a-rocket': '#ffd23f',
 };
 
 const KEY = 'cubesat.patches';
