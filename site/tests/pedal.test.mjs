@@ -53,7 +53,7 @@ test('the three steps pass in order with the right hints', () => {
 });
 
 import { chain, carrierOffsetKhz, EXPERIMENTS, gainTimes, judge } from '../src/lib/pedal.mjs';
-import { passDebrief } from '../src/lib/pass.mjs';
+import { passDebrief, score } from '../src/lib/pass.mjs';
 
 const reading = (o = {}) => {
   const r = { band: '2', offset: 0, gainDb: 20, level: 30, engaged: true, ...o };
@@ -99,4 +99,26 @@ test('the pass debrief names where the learner fell behind', () => {
   assert.equal(passDebrief(log).part, 'overhead');
   assert.equal(passDebrief(log.map(s => ({ ...s, heard: true }))).part, null);
   assert.equal(passDebrief([]), null);
+});
+
+test('below the horizon the tuner says there is no carrier yet, not that you are off tune', () => {
+  const b = Object.fromEntries(chain({ band: '2', offsetKhz: null, peak: 0.3, gainDb: 20, level: 30, engaged: true, noCarrier: true }).map(x => [x.id, x]));
+  assert.equal(b.mixer.status, 'idle');
+  assert.match(b.mixer.now, /no carrier yet/);
+  assert.doesNotMatch(b.mixer.why, /Turn TUNE (up|down)/);
+  assert.equal(b.out.now, 'only noise');
+});
+
+test('a muted pass is explained as muted, not as tuning', () => {
+  const sec = (passS, extra) => ({ passS, inView: true, dopplerHz: 0, tunedOffsetHz: 0, heard: true, decoded: true, engaged: true, ...extra });
+  // Tuned to the carrier the whole time, but ENGAGE off for most of it.
+  const log = Array.from({ length: 60 }, (_, i) => sec(i, { engaged: i >= 45 }));
+  const tip = passDebrief(log);
+  assert.equal(tip.part, 'muted');
+  assert.match(tip.text, /ENGAGE/);
+  assert.doesNotMatch(tip.text, /start the pass tuned|retune|keep turning TUNE/);
+  assert.equal(score(log).heard, 25, 'muted seconds do not count');
+  // Engaged but mistuned while rising: tuning advice, as before.
+  const off = Array.from({ length: 60 }, (_, i) => sec(i, { heard: i >= 20 }));
+  assert.equal(passDebrief(off).part, 'rising');
 });

@@ -319,7 +319,7 @@ const parts = [
   const pass = makePass();
   const SPEED = 20, FRAME_MS = 100;
   let passS: number | null = null, passOffsetHz = 0, stepIndex = 0, passTimer = 0, lastLogged = -1;
-  let passLog: { passS: number; inView: boolean; heard: boolean; decoded: boolean; dopplerHz: number; tunedOffsetHz: number }[] = [];
+  let passLog: { passS: number; inView: boolean; heard: boolean; decoded: boolean; engaged: boolean; dopplerHz: number; tunedOffsetHz: number }[] = [];
   const passState = () => passS === null ? null : pass.at(passS, { gainDb: Number(gain.value), tunedHz: band.value === '2' ? pass.nominalHz + passOffsetHz : 0 });
   // Keep the input waveform stable while learners compare settings.
   const noise = Array.from({ length: 201 }, () => Math.random() * 2 - 1);
@@ -369,7 +369,7 @@ const parts = [
       ? (band.value === '2' && state.inView ? state.offsetHz / 1000 : null)
       : carrierOffsetKhz(band.value, offset);
     renderSpectrum(offsetKhz, peak, state ? state.heard : tuned);
-    renderChain(chain({ band: band.value, offsetKhz, peak, gainDb: Number(gain.value), level: Number(volume.value), engaged, passbandKhz: PASSBAND_HZ / 1000 }));
+    renderChain(chain({ band: band.value, offsetKhz, peak, gainDb: Number(gain.value), level: Number(volume.value), engaged, passbandKhz: PASSBAND_HZ / 1000, noCarrier: !!state && !state.inView }));
     if (!state) watchExperiments({ band: band.value, offset, gainDb: Number(gain.value), level: Number(volume.value), engaged, peak, tuned });
     get('[data-level-label]').textContent = volume.value + '%';
     const task = get('#pedal-task');
@@ -489,7 +489,7 @@ const parts = [
     }
     parts.push(band, `<path d="${line}" fill="none" stroke="#8dffb6" stroke-width="1.5" vector-effect="non-scaling-stroke" />`);
     parts.push(`<path d="${seen.map((s, i) => `${i ? 'L' : 'M'}${x(s.passS).toFixed(1)} ${y(s.dopplerHz).toFixed(1)}`).join('')}" fill="none" stroke="#ffd36b" stroke-width="2" vector-effect="non-scaling-stroke" />`);
-    for (const s of seen) if (!s.heard) parts.push(`<rect x="${x(s.passS).toFixed(1)}" y="${bottom + 2}" width="${(W / seen.length).toFixed(1)}" height="5" fill="#ef6b6c" />`);
+    for (const s of seen) if (!s.heard || !s.engaged) parts.push(`<rect x="${x(s.passS).toFixed(1)}" y="${bottom + 2}" width="${(W / seen.length).toFixed(1)}" height="5" fill="#ef6b6c" />`);
     parts.push(`<text x="4" y="${y(range) + 9}" fill="#9fcbb0" font-size="8">+5 kHz</text><text x="4" y="${y(-range) - 2}" fill="#9fcbb0" font-size="8">−5 kHz</text>`);
     get('[data-pass-chart-body]').innerHTML = parts.join('');
     get<HTMLElement>('[data-pass-chart]').hidden = false;
@@ -552,7 +552,8 @@ const parts = [
       const whole = Math.floor(passS!);
       if (whole > lastLogged && whole >= 0) {
         const st = passState()!;
-        passLog.push({ passS: whole, inView: st.inView, heard: st.heard && engaged, decoded: st.decoded && engaged, dopplerHz: st.dopplerHz, tunedOffsetHz: band.value === '2' ? passOffsetHz : NaN });
+        // Tuning and ENGAGE are logged apart, so the debrief can tell a muted second from a mistuned one.
+        passLog.push({ passS: whole, inView: st.inView, heard: st.heard, decoded: st.decoded, engaged, dopplerHz: st.dopplerHz, tunedOffsetHz: band.value === '2' ? passOffsetHz : NaN });
         lastLogged = whole;
       }
       if (passS! > pass.duration + 5) return stopPass(true);

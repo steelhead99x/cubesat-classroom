@@ -92,32 +92,47 @@ export function makePass(options = {}) {
 }
 
 /**
- * Score a finished pass: the share of in-view seconds the carrier was heard and decoded.
- * @param {{inView: boolean, heard: boolean, decoded: boolean}[]} log one entry per simulated second
+ * Score a finished pass: the share of in-view seconds the carrier was heard and decoded with
+ * the pedal engaged (a muted second plays nothing, however well tuned).
+ * @param {{inView: boolean, heard: boolean, decoded: boolean, engaged?: boolean}[]} log one entry per simulated second
  */
 export function score(log) {
   const seen = log.filter((s) => s.inView);
   if (seen.length === 0) return { heard: 0, decoded: 0 };
+  const on = s => s.engaged !== false;
   return {
-    heard: Math.round((100 * seen.filter((s) => s.heard).length) / seen.length),
-    decoded: Math.round((100 * seen.filter((s) => s.decoded).length) / seen.length),
+    heard: Math.round((100 * seen.filter((s) => s.heard && on(s)).length) / seen.length),
+    decoded: Math.round((100 * seen.filter((s) => s.decoded && on(s)).length) / seen.length),
   };
 }
 
 /**
- * After a pass: where the learner fell behind the Doppler shift. `log` has one entry per
- * simulated second with { passS, inView, dopplerHz, tunedOffsetHz, heard }.
+ * After a pass: why seconds were missed. `log` has one entry per simulated second with
+ * { passS, inView, dopplerHz, tunedOffsetHz, heard, engaged }, where `heard` is about tuning
+ * alone and `engaged` says whether the output was on. Muted seconds are explained as muted,
+ * never as tuning; tuning advice comes only from seconds when the pedal was engaged.
  * Returns the part of the pass with the most missed seconds and a sentence about it, or null.
  */
 export function passDebrief(log) {
   const seen = log.filter(s => s.inView);
   if (!seen.length) return null;
-  const missed = seen.filter(s => !s.heard);
+  const on = s => s.engaged !== false;
+  const missed = seen.filter(s => !(s.heard && on(s)));
   if (!missed.length) return { part: null, text: 'You kept the carrier in the passband for the whole pass. Notice where you had to retune most often: near the top of the pass, where the Doppler shift changes fastest.' };
+  const muted = missed.filter(s => !on(s));
+  const offTune = missed.filter(s => on(s));
+  if (muted.length >= offTune.length) {
+    const tuned = muted.filter(s => s.heard).length;
+    return {
+      part: 'muted',
+      text: `The pedal was muted (ENGAGE off) for ${muted.length} s of the pass, so nothing played${tuned ? `, even though you were tuned to the carrier for ${tuned} s of that` : ''}. Tap ENGAGE before the satellite rises, and check its light stays on.`,
+      missedS: missed.length,
+    };
+  }
   const start = seen[0].passS, len = seen[seen.length - 1].passS - start || 1;
   const parts = ['rising', 'overhead', 'setting'];
   const counts = [0, 0, 0];
-  for (const s of missed) counts[Math.min(2, Math.floor((3 * (s.passS - start)) / len))]++;
+  for (const s of offTune) counts[Math.min(2, Math.floor((3 * (s.passS - start)) / len))]++;
   const part = parts[counts.indexOf(Math.max(...counts))];
   const text = {
     rising: 'You missed most while the satellite was rising. It arrives about 3.4 kHz high, so start the pass tuned above 145.800 MHz instead of on it.',

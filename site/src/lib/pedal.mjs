@@ -94,11 +94,13 @@ export function carrierOffsetKhz(band, offset) {
  * The receiver's signal chain, antenna to OUT, with what each stage is doing right now. The
  * trainer draws it as a row of blocks: `status` colours a block (ok, warn, stop or idle),
  * `now` is its live reading and `why` explains it.
- * @param {{band: string, offsetKhz: number | null, inBand?: boolean, peak: number, gainDb: number, level: number, engaged: boolean, passbandKhz?: number}} s
+ * @param {{band: string, offsetKhz: number | null, inBand?: boolean, peak: number, gainDb: number, level: number, engaged: boolean, passbandKhz?: number, noCarrier?: boolean}} s
  *   offsetKhz: carrier minus tuning in kHz (null when the band filter blocks it).
+ *   noCarrier: there is no carrier to tune to yet (the satellite is below the horizon).
  */
-export function chain({ band, offsetKhz, peak, gainDb, level, engaged, passbandKhz = 1.5 }) {
+export function chain({ band, offsetKhz, peak, gainDb, level, engaged, passbandKhz = 1.5, noCarrier = false }) {
   const onBand = band === '2';
+  const waiting = onBand && noCarrier;
   const inPass = offsetKhz !== null && Math.abs(offsetKhz) <= passbandKhz;
   const clipping = peak > 1;
   const blocks = [
@@ -111,9 +113,11 @@ export function chain({ band, offsetKhz, peak, gainDb, level, engaged, passbandK
       why: onBand
         ? 'BAND picks a filter. The 2 m filter passes about 125–185 MHz, around the 144–148 MHz band, and blocks strong signals outside it, such as FM radio near 100 MHz.'
         : 'BAND is on 70 cm: that filter passes about 370–520 MHz, so it blocks the 145.800 MHz satellite before it reaches the tuner. Flip BAND to 2 m.' },
-    { id: 'mixer', name: 'Tuner', status: !onBand ? 'idle' : inPass ? 'ok' : 'stop',
-      now: !onBand ? 'nothing to tune to' : inPass ? `carrier ${fmtKhz(offsetKhz)} from the tuning: inside the passband` : `carrier ${fmtKhz(offsetKhz)} from the tuning: outside the ±${passbandKhz} kHz passband`,
-      why: inPass || !onBand
+    { id: 'mixer', name: 'Tuner', status: !onBand || waiting ? 'idle' : inPass ? 'ok' : 'stop',
+      now: !onBand ? 'nothing to tune to' : waiting ? 'no carrier yet: the satellite is below the horizon' : inPass ? `carrier ${fmtKhz(offsetKhz)} from the tuning: inside the passband` : `carrier ${fmtKhz(offsetKhz)} from the tuning: outside the ±${passbandKhz} kHz passband`,
+      why: waiting
+        ? `There is nothing to tune to until the satellite rises. It will arrive about 3.4 kHz high, so you can get ready by tuning a little above 145.800 MHz.`
+        : inPass || !onBand
         ? `TUNE sets the frequency the mixer listens around. Only signals within about ±${passbandKhz} kHz of it are heard.`
         : `The carrier is ${fmtKhz(offsetKhz)} away, but only ±${passbandKhz} kHz around the tuning gets through. Turn TUNE ${offsetKhz > 0 ? 'up' : 'down'} toward it.` },
     { id: 'adc', name: `ADC · GAIN ${gainDb} dB`, status: clipping ? 'stop' : peak >= 0.6 ? 'ok' : peak >= 0.2 ? 'warn' : 'idle',
@@ -125,7 +129,7 @@ export function chain({ band, offsetKhz, peak, gainDb, level, engaged, passbandK
       now: engaged ? `output at ${level}%` : 'muted until you ENGAGE',
       why: 'LEVEL only sets how loud the OUT jack is. It comes after the ADC, so it cannot fix a clipped or missing signal.' },
     { id: 'out', name: 'OUT', status: !engaged ? 'idle' : (onBand && inPass && !clipping ? 'ok' : 'warn'),
-      now: !engaged ? 'muted' : onBand && inPass ? (clipping ? 'distorted beacon' : 'clean beacon') : 'only noise',
+      now: !engaged ? 'muted' : onBand && inPass && !waiting ? (clipping ? 'distorted beacon' : 'clean beacon') : 'only noise',
       why: 'The ¼ inch jack sends the sound to an amplifier or a computer. ENGAGE turns it on.' },
   ];
   return blocks;
