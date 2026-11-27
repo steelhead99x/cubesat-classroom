@@ -1,9 +1,10 @@
 ---
-import '../../styles/bricks.css';
 import Base from '../../layouts/Base.astro';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
+import GameSteps from '../../components/GameSteps.astro';
 import { WEAPONS, START_CREDITS } from '../../games/rockoon-wars/logic.mjs';
+import { STEPS, KEYS } from '../../games/rockoon-wars/steps.mjs';
 import { siteOrigin } from '../../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -15,56 +16,55 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <h1 class="rw-h1">Rockoon Battle</h1>
     <p class="lede mt-2">Launch your balloon from the hillside. Watch it climb and release its rocket. Can you fly through the gold ring?</p>
 
-    <section class="rw bricks plate mt-5" data-rw data-playing="false" aria-labelledby="rw-title">
+    <section class="rw mt-5" data-rw data-playing="false" aria-labelledby="rw-title">
       <h2 id="rw-title" class="sr-only">Game</h2>
       <div class="bar">
-        <ol class="board" data-board aria-label="Players"></ol>
+        <ol class="board" data-board aria-label="Players" tabindex="0"></ol>
         <span class="round" data-round></span>
-        <div class="tools brick-auto">
-          <button type="button" class="white no-tick" data-help aria-label="Help: how to play" title="How to play"><span class="i" aria-hidden="true">❓</span><span class="w">Help</span></button>
-          <button type="button" class="white" data-sound aria-pressed="false" aria-label="Sound off" title="Sound (M)"><span class="i" aria-hidden="true">🔇</span><span class="w">Sound</span></button>
-          <button type="button" class="white" data-pause aria-pressed="false" aria-label="Pause" title="Pause (P)"><span class="i" aria-hidden="true">⏸️</span><span class="w">Pause</span></button>
-          <button type="button" class="white no-tick" data-full aria-pressed="false" aria-label="Full screen" title="Full screen"><span class="i" aria-hidden="true">🔲</span><span class="w">Full screen</span></button>
-          <button type="button" class="white" data-quit aria-label="Leave the game" title="Leave the game"><span class="i" aria-hidden="true">🚪</span><span class="w">Leave</span></button>
+        <div class="tools">
+          <button type="button" data-help aria-label="How to play" title="How to play">?</button>
+          <button type="button" data-sound aria-pressed="false" aria-label="Sound off" title="Sound (M)">🔇</button>
+          <button type="button" data-pause aria-pressed="false" aria-label="Pause" title="Pause (P)">⏸</button>
+          <button type="button" data-full aria-pressed="false" aria-label="Full screen" title="Full screen">⛶</button>
+          <button type="button" data-quit aria-label="Back to the start" title="Back to the start">⌂</button>
         </div>
       </div>
-      <p class="now" data-now></p>
-      <div class="stage on-dark">
+      <p class="now" data-now aria-live="off"></p>
+      <div class="stage">
         <canvas tabindex="0" aria-label="Launch field. On your turn, drag from your rockoon to aim." aria-describedby="rw-keys"></canvas>
         <div class="toast" data-toast aria-hidden="true"></div>
         <p class="net" data-net aria-live="polite"></p>
         <p class="sideways" aria-hidden="true">↻ Turn your phone sideways for a bigger view</p>
-        <div class="overlay brick-auto" data-overlay hidden></div>
+        <div class="overlay" data-overlay hidden></div>
       </div>
       <p class="air" data-air hidden></p>
-      <div class="controls brick-auto" data-controls role="group" aria-label="Aim and launch">
-        <div class="grp" role="group" aria-labelledby="rw-aim">
-          <button type="button" class="blue" data-adj="angle:1" aria-label="Aim more to the left">◀</button>
-          <div class="val"><span class="step" id="rw-aim"><i aria-hidden="true">1</i> Aim</span><b data-angle>—</b></div>
-          <button type="button" class="blue" data-adj="angle:-1" aria-label="Aim more to the right">▶</button>
+      <div class="controls" data-controls role="group" aria-label="Aim and launch">
+        <div class="grp">
+          <button type="button" data-adj="angle:1" aria-label="Aim more to the left">◀</button>
+          <div class="val"><small>Aim</small><b data-angle>—</b></div>
+          <button type="button" data-adj="angle:-1" aria-label="Aim more to the right">▶</button>
         </div>
-        <div class="grp" role="group" aria-labelledby="rw-power">
-          <button type="button" class="green" data-adj="power:-1" aria-label="Less power">−</button>
-          <div class="val"><span class="step" id="rw-power"><i aria-hidden="true">2</i> Power</span><b data-power>—</b></div>
-          <button type="button" class="green" data-adj="power:1" aria-label="More power">+</button>
+        <div class="grp">
+          <button type="button" data-adj="power:-1" aria-label="Less power">−</button>
+          <div class="val"><small>Power</small><b data-power>—</b></div>
+          <button type="button" data-adj="power:1" aria-label="More power">+</button>
         </div>
-        <button type="button" class="rocket white" data-adj="weapon:1"><span class="ico" data-rocket-icon aria-hidden="true"></span><span class="val"><span class="step">Rocket <small>(tap to change)</small></span><b data-rocket>—</b></span></button>
-        <button type="button" data-fire class="fire red big"><span class="step"><i aria-hidden="true">3</i></span> Launch</button>
+        <button type="button" class="rocket" data-adj="weapon:1"><span class="ico" data-rocket-icon aria-hidden="true"></span><span class="val"><small>Rocket · tap to change</small><b data-rocket>—</b></span></button>
+        <button type="button" data-fire class="fire">Launch</button>
         <p class="wait" data-wait aria-hidden="true"></p>
       </div>
       <p class="sr-only" data-status role="status" aria-live="polite"></p>
     </section>
 
+    <div class="mt-8"><GameSteps steps={STEPS} keysNote={KEYS} listId="rw-keys" /></div>
+
     <div class="mt-8 grid gap-8 lg:grid-cols-2">
-      <section aria-labelledby="how-title">
-        <h2 id="how-title">How to play</h2>
-        <ul id="rw-keys" class="mt-3 list-disc space-y-1.5 pl-5">
-          <li><strong>Aim with a finger or the mouse:</strong> on your turn, press on the playfield and drag toward where you want to shoot. Farther from your rockoon means more power. The yellow dots show how your rocket starts.</li>
-          <li><strong>Or use the buttons:</strong> ◀ ▶ change the angle and − + the power (hold to go faster). Tap the rocket to change it, then Launch.</li>
-          <li><strong>Keyboard:</strong> Left and Right arrows aim, Up and Down set power (Shift moves by 5), Q and E change rocket, Space or Enter launches, P pauses, M turns sound on (it starts off).</li>
-          <li>Read the balloon’s barometer from pad to release. Altitudes are simulated metres above sea level. Pressure follows the <a href="https://www.weather.gov/index.php/ama/conversions">standard atmosphere</a>. Local weather can give a different reading.</li>
-          <li>Each crew gets three launches per round. Fly through the ring for 3 points or scan its edge for 1. Each point earns 50 credits. Highest total after the last round wins: three rounds, or one per crew with four crews, so every crew launches once from every spot on the hill. Spend credits in the shop between rounds. Everyone starts with {START_CREDITS} credits.</li>
-          <li><strong>Online:</strong> make a room and tell your friends its 5-letter code. Players get random names like GS-AB1. There is no chat.</li>
+      <section aria-labelledby="know-title">
+        <h2 id="know-title">Good to know</h2>
+        <ul class="mt-3 list-disc space-y-1.5 pl-5">
+          <li>Each point earns 50 credits, and everyone starts with {START_CREDITS}. A match has three rounds, or one per crew with four crews, so every crew launches once from every spot on the hill.</li>
+          <li>The barometer reads from pad to release. Altitudes are simulated metres above sea level, and pressure follows the <a href="https://www.weather.gov/index.php/ama/conversions">standard atmosphere</a>. Local weather can give a different reading.</li>
+          <li><strong>Online:</strong> players get random names like GS-AB1. There is no chat.</li>
         </ul>
       </section>
       <section aria-labelledby="arms-title">
@@ -86,122 +86,126 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 <style>
   .rw-h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); }
-  /* The game sits on a studded baseplate (bricks.css); the sky inside it is the playfield. */
   .rw {
-    display: flex; flex-direction: column; gap: .5rem; padding: .55rem;
-    height: calc(100svh - .75rem); min-height: 480px; max-height: 1000px; overflow: hidden;
+    --ink: #e8ecff; --panel: #121a46; --line: #2b3a85; --gold: #ffd23f;
+    display: flex; flex-direction: column; height: calc(100svh - .75rem); min-height: 440px; max-height: 960px;
+    background: #0b1240; color: var(--ink); border-radius: .9rem; overflow: hidden; box-shadow: 0 10px 40px rgb(8 12 40 / .35);
   }
-  .rw:fullscreen { height: 100dvh; min-height: 0; max-height: none; border-radius: 0; border: 0; }
-  .rw [data-quit][data-armed] { --b: var(--brick-red); --fg: #fff; }
+  .rw:fullscreen { height: 100dvh; min-height: 0; max-height: none; border-radius: 0; }
+  .rw button { font: 700 1rem var(--font-sans); color: #fff; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .rw :global(:focus-visible) { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .rw [data-quit][data-armed] { background: #ef6b6c; color: #fff; }
 
-  /* Top bar: players, round and the tool bricks, each with a picture and a word. */
-  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; }
-  .board { min-width: 0; display: flex; flex-wrap: wrap; gap: .35rem; list-style: none; margin: 0; padding: 0; flex: 1; }
-  .board :global(li) { display: flex; align-items: center; gap: .45rem; min-height: 40px; padding: .2rem .7rem .2rem .3rem; border-radius: 8px; background: #fff; border: 3px solid var(--brick-ink); white-space: nowrap; font-size: 1rem; }
-  .board :global(li::before) { content: ''; flex: none; width: 1.4rem; height: 1.4rem; border-radius: 4px; background: var(--c); box-shadow: inset 0 0 0 2px var(--brick-ink); }
-  .board :global(li.now) { background: var(--brick-yellow); box-shadow: 0 0 0 3px var(--brick-yellow), 0 0 0 6px var(--brick-ink); }
-  .board :global(li.now b::after) { content: ' (turn)'; font-weight: 400; }
-  .board :global(.cr), .board :global(.pt) { font-variant-numeric: tabular-nums; font-weight: 700; }
-  .round { font-weight: 700; font-size: 1rem; white-space: nowrap; }
-  .tools { display: flex; flex-wrap: wrap; gap: .35rem; }
-  .tools button { min-height: 44px; padding: .35rem .7rem .5rem; font-size: .95rem; }
-  .tools .i { font-size: 1.1rem; line-height: 1; }
+  /* Top bar: players, round and small tool buttons. It sits above the playfield, never on it. */
+  .bar { display: flex; align-items: center; gap: .5rem; padding: .45rem .55rem; background: rgb(8 12 36 / .92); border-bottom: 1px solid var(--line); min-height: 3.1rem; }
+  .board { min-width: 0; display: flex; gap: .35rem; list-style: none; margin: 0; padding: 0; overflow-x: auto; flex: 1; scrollbar-width: none; }
+  .board :global(li) { display: flex; align-items: center; gap: .45rem; padding: .25rem .6rem .25rem .5rem; border-radius: 999px; background: var(--panel); border: 2px solid transparent; white-space: nowrap; font-size: .85rem; }
+  .board :global(li::before) { content: ''; width: .7rem; height: .7rem; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px rgb(255 255 255 / .15); }
+  .board :global(li.now) { border-color: var(--c); background: color-mix(in srgb, var(--c) 22%, var(--panel)); }
+  .board :global(li.out) { opacity: .45; }
+  .board :global(.cr), .board :global(.pt) { font: 600 .8rem var(--font-mono); opacity: .9; }
+  .round { font: 700 .8rem var(--font-mono); opacity: .8; white-space: nowrap; }
+  .tools { display: flex; flex: none; gap: .3rem; }
+  .tools button { width: 2.75rem; height: 2.75rem; border-radius: .6rem; background: var(--panel); border: 1px solid var(--line); font-size: 1.05rem; line-height: 1; }
+  .tools button:hover { background: #1d2b6b; }
+  .tools button[aria-pressed="true"] { background: var(--gold); color: #0b1240; }
 
   /* The playfield fills the rest; the canvas matches it pixel for pixel. */
-  .stage { position: relative; flex: 1; min-height: 0; border: 3px solid var(--brick-ink); border-radius: 8px; overflow: hidden; background: #0b1240; }
+  .stage { position: relative; flex: 1; min-height: 0; }
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
-  .toast { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); opacity: 0; pointer-events: none; padding: .6rem 1.4rem; border-radius: 10px; background: #fff; color: var(--brick-ink); border: 4px solid var(--brick-ink); box-shadow: 0 5px 0 var(--brick-ink), inset 0 -6px 0 var(--c, var(--brick-yellow)); font: 700 clamp(1.3rem, 4.5vw, 2.2rem)/1.15 var(--brick-font); white-space: nowrap; }
-  .toast :global(small) { display: block; margin-top: .3rem; max-width: min(80vw, 28rem); white-space: normal; font: 700 clamp(.95rem, 2.6vw, 1.1rem)/1.35 var(--brick-font); text-align: center; }
-  .net { position: absolute; left: .6rem; bottom: .4rem; margin: 0; padding: .1rem .5rem; border-radius: 6px; background: #fff; color: var(--brick-ink); font-size: .9rem; pointer-events: none; }
-  .net:empty { display: none; }
-  .sideways { display: none; position: absolute; top: .6rem; left: 50%; transform: translateX(-50%); margin: 0; font-size: .95rem; padding: .25rem .8rem; border-radius: 8px; background: #fff; color: var(--brick-ink); border: 2px solid var(--brick-ink); white-space: nowrap; pointer-events: none; }
+  .toast { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); opacity: 0; pointer-events: none; padding: .6rem 1.4rem; border-radius: 999px; background: rgb(8 12 36 / .8); border: 3px solid var(--c, var(--gold)); font: 900 clamp(1.3rem, 4.5vw, 2.2rem)/1.1 var(--font-sans); white-space: nowrap; text-shadow: 0 2px 0 rgb(0 0 0 / .4); }
+  .toast :global(small) { display: block; margin-top: .3rem; max-width: min(80vw, 28rem); white-space: normal; font: 700 clamp(.8rem, 2.6vw, 1rem)/1.3 var(--font-sans); text-align: center; color: #e8ecff; }
+  .net { position: absolute; left: .6rem; bottom: .4rem; margin: 0; font-size: .75rem; opacity: .75; pointer-events: none; }
+  .sideways { display: none; position: absolute; top: 3.4rem; left: 50%; transform: translateX(-50%); margin: 0; font-size: .8rem; padding: .2rem .7rem; border-radius: 999px; background: rgb(8 12 36 / .55); white-space: nowrap; pointer-events: none; }
   @media (orientation: portrait) and (max-width: 600px) { .rw[data-playing="true"] .sideways { display: block; } }
+  /* Portrait phones: the world is wide, so give it a sky-sized stage instead of a tall empty one while playing. */
   @media (orientation: portrait) and (max-width: 600px) {
     .rw[data-playing="true"]:not(:fullscreen) { height: auto; min-height: 0; }
     .rw[data-playing="true"]:not(:fullscreen) .stage { flex: none; aspect-ratio: 640 / 540; }
   }
 
-  /* Menus, the shop and results: a white brick card over the dimmed sky. */
-  .overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: .8rem; background: rgb(11 18 64 / .6); }
+  /* Menus, the shop and results: a card over the (dimmed) playfield. */
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: .8rem; background: rgb(6 10 32 / .55); backdrop-filter: blur(2px); }
   .overlay[hidden] { display: none; }
-  .overlay :global(.panel) { display: grid; gap: .8rem; justify-items: center; text-align: center; width: min(100%, 46rem); max-height: 100%; overflow: auto; padding: clamp(1rem, 3vw, 1.6rem); border-radius: 12px; background: #fff; color: var(--brick-ink); border: 4px solid var(--brick-ink); box-shadow: 0 6px 0 var(--brick-ink); }
-  .overlay :global(h3) { font: 700 clamp(1.45rem, 4vw, 2.1rem)/1.15 var(--brick-font); display: flex; align-items: center; gap: .5rem; }
-  .overlay :global(.title) { font-size: clamp(2.1rem, 7vw, 3.2rem); }
+  .overlay :global(.panel) { display: grid; gap: .75rem; justify-items: center; text-align: center; width: min(100%, 44rem); max-height: 100%; overflow: auto; padding: clamp(1rem, 3vw, 1.6rem); border-radius: 1rem; background: rgb(14 20 60 / .94); border: 1px solid var(--line); box-shadow: 0 20px 50px rgb(0 0 0 / .45); }
+  .overlay :global(h3) { font-size: clamp(1.35rem, 4vw, 2rem); display: flex; align-items: center; gap: .5rem; }
+  .overlay :global(.title) { font-size: clamp(2rem, 7vw, 3.2rem); letter-spacing: -.01em; }
   .overlay :global(.logo) { font-size: 2.6rem; line-height: 1; margin-bottom: -.4rem; }
-  .overlay :global(p) { max-width: 36rem; font-size: 1.1rem; line-height: 1.45; }
-  .overlay :global(.row) { display: flex; gap: .7rem; justify-content: center; align-items: center; flex-wrap: wrap; }
+  .overlay :global(p) { max-width: 34rem; font-size: 1.02rem; color: #d6dcff; }
+  .overlay :global(.row) { display: flex; gap: .6rem; justify-content: center; align-items: center; flex-wrap: wrap; }
   .overlay :global(.row.col) { flex-direction: column; width: min(100%, 22rem); }
   .overlay :global(.row.col button) { width: 100%; }
-  .overlay :global(button) { --b: var(--brick-blue); }
-  .overlay :global(button.go) { --b: var(--brick-green); }
-  .overlay :global(button.go.alt) { --b: var(--brick-blue); }
-  .overlay :global(button.big) { min-height: 62px; min-width: 13rem; font-size: 1.25rem; }
-  .overlay :global(button.num) { min-width: 4rem; font-size: 1.7rem; }
-  .overlay :global(.small) { font-size: 1rem; }
-  .overlay :global(.bigcode) { display: flex; gap: clamp(.2rem, 1vw, .45rem); justify-content: center; font: 700 clamp(1.5rem, 6vw, 3.4rem)/1 var(--brick-font); }
-  .overlay :global(.bigcode span) { background: var(--brick-yellow); border: 3px solid var(--brick-ink); border-radius: 8px; padding: .3rem clamp(.25rem, 1vw, .55rem); min-width: 1.35em; box-shadow: 0 4px 0 var(--brick-ink); }
-  .overlay :global(.code-in) { width: 12rem; min-height: 62px; text-align: center; border: 3px solid var(--brick-ink); border-radius: 8px; background: #fff; color: var(--brick-ink); font: 700 2rem var(--brick-font); letter-spacing: .2em; text-transform: uppercase; }
-  .overlay :global(.people) { font-size: 1.05rem; line-height: 1.8; list-style: none; padding: 0; }
-  .overlay :global(.people i), .overlay :global(.dot) { display: inline-block; width: 1rem; height: 1rem; border-radius: 3px; box-shadow: inset 0 0 0 2px var(--brick-ink); }
-  /* How to play: three steps, each a coloured brick with its number. */
-  .overlay :global(.steps) { list-style: none; padding: 0; display: grid; gap: .9rem; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); width: 100%; counter-reset: step; }
-  .overlay :global(.steps li) { position: relative; display: grid; gap: .3rem; justify-items: center; align-content: start; padding: 1rem .8rem .9rem; border-radius: 8px; color: #fff; border: 3px solid var(--brick-ink); box-shadow: inset 0 -6px 0 rgb(0 0 0 / .25); }
-  .overlay :global(.steps li:nth-child(1)) { background: var(--brick-blue); }
-  .overlay :global(.steps li:nth-child(2)) { background: var(--brick-green); }
-  .overlay :global(.steps li:nth-child(3)) { background: var(--brick-red); }
-  .overlay :global(.pic) { font-size: 2.3rem; line-height: 1; }
-  .overlay :global(.steps b) { font-size: 1.2rem; }
-  .overlay :global(.steps span:last-child) { font-size: 1.02rem; line-height: 1.4; }
-  .overlay :global(.wallet) { font-size: 1.3rem; font-weight: 700; }
-  /* The shop: one white brick per rocket. */
-  .overlay :global(.shop) { list-style: none; padding: 0; display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr)); width: 100%; }
-  .overlay :global(.card) { display: grid; gap: .3rem; justify-items: center; align-content: start; padding: .8rem .7rem; border-radius: 8px; background: var(--brick-plate); border: 3px solid var(--brick-ink); }
-  .overlay :global(.card b) { font-size: 1.15rem; }
-  .overlay :global(.card .say) { font-size: 1rem; min-height: 2.6em; }
-  .overlay :global(.card .price), .overlay :global(.card .have) { font-weight: 700; }
-  .overlay :global(.card button) { width: 100%; }
+  .overlay :global(button) { min-height: 46px; padding: .5rem 1.1rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--panel); }
+  .overlay :global(button:hover:not(:disabled)) { filter: brightness(1.15); }
+  .overlay :global(button:disabled) { opacity: .5; cursor: not-allowed; }
+  .overlay :global(button.go) { background: linear-gradient(#ffe27a, #ffc62e); color: #0b1240; border-color: #ffc62e; box-shadow: 0 4px 0 #b88a10; }
+  .overlay :global(button.go.alt) { background: linear-gradient(#8fd8ff, #4fb4f0); border-color: #4fb4f0; box-shadow: 0 4px 0 #2a6f99; }
+  .overlay :global(button.go:active) { transform: translateY(2px); box-shadow: 0 2px 0 #b88a10; }
+  .overlay :global(button.big) { min-height: 60px; min-width: 12rem; font-size: 1.2rem; font-weight: 800; padding-inline: 1.4rem; }
+  .overlay :global(button.num) { min-width: 3.6rem; padding-inline: .75rem; font-size: 1.65rem; }
+  .overlay :global(.small) { font-size: .92rem; color: #c9d2ff; }
+  .overlay :global(.bigcode) { display: flex; gap: clamp(.15rem, 1vw, .4rem); justify-content: center; font: 800 clamp(1.35rem, 6vw, 3.4rem)/1 var(--font-mono); color: #0b1240; }
+  .overlay :global(.bigcode span) { background: var(--gold); border-radius: .5rem; padding: .3rem clamp(.2rem, 1vw, .5rem); min-width: 1.35em; box-shadow: 0 4px 0 #b88a10; }
+  .overlay :global(.code-in) { width: 12rem; min-height: 62px; text-align: center; border: 2px solid var(--gold); border-radius: .7rem; background: #0b1240; color: #fff; font: 800 2rem var(--font-mono); letter-spacing: .25em; text-transform: uppercase; }
+  .overlay :global(.people) { font: 1rem/1.7 var(--font-mono); list-style: none; padding: 0; }
+  .overlay :global(.people i), .overlay :global(.dot) { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; }
+  .overlay :global(.steps) { list-style: none; padding: 0; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr)); width: 100%; }
+  .overlay :global(.steps li), .overlay :global(.card) { display: grid; gap: .25rem; justify-items: center; align-content: start; padding: .8rem .7rem; border-radius: .8rem; background: #18225a; border: 1px solid var(--line); }
+  .overlay :global(.pic) { font-size: 2.2rem; line-height: 1; }
+  .overlay :global(.steps b), .overlay :global(.card b) { font-size: 1.08rem; }
+  .overlay :global(.steps span:last-child) { font-size: .92rem; color: #c9d2ff; }
+  .overlay :global(.wallet) { font-size: 1.25rem; font-weight: 800; color: var(--gold); }
+  .overlay :global(.shop) { list-style: none; padding: 0; display: grid; gap: .55rem; grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr)); width: 100%; }
+  .overlay :global(.card .say) { font-size: .85rem; color: #c9d2ff; min-height: 2.2em; }
+  .overlay :global(.card .price) { font-weight: 800; color: var(--gold); }
+  .overlay :global(.card .have) { font-size: .8rem; opacity: .8; }
+  .overlay :global(.card.poor) { opacity: .7; }
+  .overlay :global(.card button) { width: 100%; margin-top: .2rem; min-height: 42px; }
 
-  /* The air line: simulated wind and standard pressure for this launch, in words. */
-  .air { margin: 0; padding: .35rem .7rem; border-radius: 8px; background: #fff; border: 2px solid var(--brick-ink); font-size: .98rem; line-height: 1.4; }
-
-  /* The control bricks: 1 Aim, 2 Power, the rocket, 3 Launch. */
-  .controls { position: relative; display: grid; grid-template-columns: auto auto minmax(0, 1fr) minmax(9rem, 13rem); gap: .6rem; align-items: end; }
+  /* Bottom controls: one tidy row on wide screens, two on phones. Space is kept even between
+     turns, so the playfield never jumps. */
+  /* What to do now: one instruction and a link to that step below the game. */
+  .now { margin: 0; padding: .4rem .7rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem; background: rgb(8 12 36 / .92); border-bottom: 1px solid var(--line); font-size: .98rem; }
+  .now:empty { display: none; }
+  .now :global(.now-n) { font: 600 .78rem var(--font-mono); letter-spacing: .06em; color: var(--gold); }
+  .now :global(a), .overlay :global(a) { color: #fff; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+  @media (orientation: landscape) and (max-height: 500px) { .now { display: none; } }
+  .air { margin: 0; padding: .35rem .7rem; font: .8rem/1.4 var(--font-mono); color: #d7e6ff; }
+  .controls { position: relative; display: grid; grid-template-columns: auto auto minmax(0, 1fr) minmax(8rem, 12rem); gap: .5rem; align-items: stretch; padding: .5rem; background: rgb(8 12 36 / .92); border-top: 1px solid var(--line); }
   .rw[data-playing="false"] .controls > * { visibility: hidden; }
   .controls[data-wait="true"] > :not(.wait) { visibility: hidden; }
-  .wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font: 700 1.25rem var(--brick-font); visibility: hidden; }
+  .wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font: 800 1.15rem var(--font-sans); color: #c9d2ff; visibility: hidden; }
   .controls[data-wait="true"] .wait { visibility: visible; }
-  .grp { display: grid; grid-template-columns: 3.4rem 5.2rem 3.4rem; gap: .35rem; align-items: end; }
-  .grp button { min-height: 56px; padding: 0; font-size: 1.5rem; }
-  .val { display: grid; place-content: center; text-align: center; line-height: 1.15; min-height: 56px; border: 3px solid var(--brick-ink); border-radius: 8px; background: #fff; }
-  .step { font-size: .98rem; font-weight: 700; }
-  .step i { display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; margin-right: .1rem; border-radius: 50%; background: var(--brick-ink); color: #fff; font-style: normal; font-size: .85rem; }
-  .val b { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
-  .rocket { justify-content: flex-start; min-height: 56px; text-align: left; }
-  .rocket .val { border: 0; background: none; min-height: 0; place-content: center start; text-align: left; }
-  .rocket .val small { font-weight: 400; }
-  .rocket .val b { font-size: 1.1rem; }
+  .grp { display: grid; grid-template-columns: 3rem 4.4rem 3rem; gap: .3rem; align-items: stretch; }
+  .grp button, .rocket { min-height: 52px; border-radius: .7rem; background: var(--panel); border: 1px solid var(--line); font-size: 1.4rem; }
+  .grp button:active:not(:disabled), .rocket:active:not(:disabled) { background: #26357f; }
+  .val { display: grid; place-content: center; text-align: center; line-height: 1.1; }
+  .val small { font: 600 .68rem var(--font-sans); letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
+  .val b { font: 800 1.2rem var(--font-mono); }
+  .rocket { display: flex; align-items: center; gap: .5rem; padding: 0 .7rem; text-align: left; font-size: 1rem; }
+  .rocket .val { place-content: center start; text-align: left; }
+  .rocket .val b { font: 800 1rem var(--font-sans); }
   .rocket .ico { display: grid; }
-  .fire { min-height: 62px; font-size: 1.45rem; }
-  .fire .step i { background: #fff; color: var(--brick-red); }
-  @media (max-width: 760px) {
-    .board { flex-basis: 100%; }
-    .round { margin-right: auto; }
-    .air { font-size: .9rem; }
+  .fire { min-height: 52px; border-radius: .8rem; border: 0; background: linear-gradient(#ff8a7a, #e8463c); box-shadow: 0 4px 0 #9b2a22; font-size: 1.35rem !important; font-weight: 900 !important; letter-spacing: .04em; }
+  .fire:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #9b2a22; }
+  .controls button:disabled { opacity: .45; }
+  @media (max-width: 720px) {
     .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .grp { grid-template-columns: 3rem minmax(0, 1fr) 3rem; }
-    .tools .w { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-    .tools button { min-width: 48px; padding-inline: .5rem; }
+    .grp { grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; }
+    .round { display: none; }
+    .board :global(.pt) { display: none; }
   }
-  @media (max-width: 380px) {
-    .rw { padding: .35rem; }
-    .grp { gap: .2rem; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; }
-    .rocket { padding-inline: .5rem; }
+  @media (max-width: 360px) {
+    .bar { gap: .3rem; padding-inline: .35rem; }
+    .tools { gap: .15rem; }
+    .controls { gap: .35rem; padding-inline: .35rem; }
+    .grp { gap: .15rem; }
+    .val small { letter-spacing: 0; }
+    .rocket { padding-inline: .35rem; gap: .25rem; }
   }
   @media (orientation: landscape) and (max-height: 500px) {
-    .rw:fullscreen .controls { grid-template-columns: auto auto minmax(0, 1fr) minmax(7rem, 10rem); }
-    .now { display: none; }
+    .rw:fullscreen .controls { grid-template-columns: auto auto minmax(0, 1fr) minmax(6rem, 9rem); }
   }
-  /* The page around the game. */
   .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .5rem; font-size: .9rem; color: var(--color-muted); }
   .crumbs a { display: inline-flex; align-items: center; min-height: 2.75rem; font-weight: 600; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
   .crumbs [aria-current] { font-weight: 600; color: var(--color-ink, inherit); }

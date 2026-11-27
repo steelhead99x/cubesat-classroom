@@ -1,6 +1,7 @@
 // Catch the Pass: drawing, input, sound and the live sky. The rules are in logic.mjs.
 import * as G from './logic.mjs';
 import { inputPercent } from '../../lib/pedal.mjs';
+import { STEPS } from './steps.mjs';
 import type { LiveSky, StationState, PacketNote, SkyStatus } from './net';
 
 type Game = ReturnType<typeof G.createGame>;
@@ -72,7 +73,7 @@ function init(root: HTMLElement) {
     soundOn = !soundOn;
     if (soundOn && !audio) audio = new AudioContext();
     (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(soundOn));
-    (e.currentTarget as HTMLElement).querySelector('.i')!.textContent = soundOn ? '🔊' : '🔇';
+    (e.currentTarget as HTMLElement).textContent = soundOn ? '🔊' : '🔇';
     (e.currentTarget as HTMLElement).setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off');
     beep(660, 80);
   });
@@ -167,7 +168,7 @@ function init(root: HTMLElement) {
       <p class="goal">Goal: ${currentLevel().goal.map((g, i) => `${'★'.repeat(i + 1)} ${g} packets`).join(' · ')}</p>
       <button type="button" class="go" data-go>▶ Start</button>`);
     hud(); draw();
-    // Shown on a first visit, without moving focus: the page has only just loaded, so keyboard
+    // Shown on a first visit without moving focus: the page has only just loaded, so keyboard
     // and screen-reader users start at the top (skip link, header) like on every other page.
     if (!seenHowto() && !helpOpen) showHowto(false);
   }
@@ -186,12 +187,13 @@ function init(root: HTMLElement) {
     // Opened from a results card: bring that card (and its Next level button) back afterwards.
     afterHelp = mode === 'missions' && !running && game?.done && !overlay.hidden ? overlay.innerHTML : null;
     setHelp(true);
+    // The key steps from the page's step-by-step instructions (steps.mjs), with their numbers.
+    const pick = ['start', 'track', 'radio'].map(id => [STEPS.findIndex(s => s.id === id), STEPS.find(s => s.id === id)!] as const);
     show(`<h3>How to play</h3>
       <ol class="steps">
-        <li><span class="pic" aria-hidden="true">🛰️</span><b>Find the satellite</b><span>It rises on the left and crosses the sky.</span></li>
-        <li><span class="pic" aria-hidden="true">📡</span><b>Keep the circle on it</b><span>Use the ▲ ◀ ▶ ▼ buttons, drag on the sky, or press the arrow keys.</span></li>
-        <li><span class="pic" aria-hidden="true">📦</span><b>Catch packets</b><span>A green signal bar means you are catching packets and earning credits. Lost it? Try Far.</span></li>
+        ${pick.map(([i, s]) => `<li><span class="pic" aria-hidden="true">${s.pic}</span><b>Step ${i + 1}: ${s.title}</b><span>${s.text}</span></li>`).join('')}
       </ol>
+      <p class="small"><a href="#steps">See all ${STEPS.length} steps</a>, each with its own link to share.</p>
       <button type="button" class="go" data-howto>Got it!</button>`);
     const got = overlay.querySelector<HTMLButtonElement>('[data-howto]')!;
     got.addEventListener('click', closeHowto);
@@ -221,8 +223,7 @@ function init(root: HTMLElement) {
   }
 
   function show(html: string) {
-    // Each card is one white brick panel; a saved card (afterHelp) already has its panel.
-    overlay.innerHTML = html.startsWith('<div class="panel">') ? html : `<div class="panel">${html}</div>`;
+    overlay.innerHTML = html;
     overlay.hidden = false;
     canvas.inert = true;
     overlay.querySelector<HTMLButtonElement>('[data-go]')?.addEventListener('click', start);
@@ -583,6 +584,12 @@ function init(root: HTMLElement) {
 
   // ---- HUD (HTML, so it is readable and zoomable) ----
   const nowEl = $<HTMLParagraphElement>('[data-now]');
+  /** The "what to do now" line: one instruction, and a link to that step on the page. */
+  function sayNow(stepId: string, text: string) {
+    const i = STEPS.findIndex(s => s.id === stepId);
+    const html = `<span class="now-n">Step ${i + 1} of ${STEPS.length}</span> ${text} <a href="#step-${stepId}">How?</a>`;
+    if (nowEl.dataset.html !== html) { nowEl.innerHTML = html; nowEl.dataset.html = html; }
+  }
   const hudEl = {
     snr: $('[data-snr]'), bar: $<HTMLElement>('[data-snr-bar]'), floor: $<HTMLElement>('[data-snr-floor]'),
     battery: $('[data-battery]'), batteryBar: $<HTMLElement>('[data-battery-bar]'),
@@ -601,7 +608,7 @@ function init(root: HTMLElement) {
     css(hudEl.bar, 'width', pct(game.snr) + '%');
     hudEl.bar.dataset.ok = String(game.locked);
     css(hudEl.floor, 'left', pct(G.SF[game.sf as 7 | 9 | 12].minSnr) + '%');
-    put(hudEl.battery, Math.round(game.battery) + '%' + (game.safe ? ' (safe mode)' : ''));
+    put(hudEl.battery, Math.round(game.battery) + '%' + (game.safe ? ' · SAFE MODE' : ''));
     css(hudEl.batteryBar, 'width', game.battery + '%');
     hudEl.batteryBar.dataset.low = String(game.battery < 25);
     put(hudEl.rx, String(game.rx));
@@ -624,14 +631,13 @@ function init(root: HTMLElement) {
     put(receiverHud.gain, receiver.gainDb + ' dB');
     put(receiverHud.level, receiver.level + '%');
     sfButtons.forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.sf) === game!.sf)));
-    // One plain instruction above the sky: what to do right now, in words.
-    put(nowEl, countdown > 0 ? 'Get ready: the satellite is about to rise on the left.'
-      : !running ? 'Press Start when you are ready.'
-      : paused ? 'Paused. Press Resume to keep going.'
-      : game.safe ? 'The battery is low. Press Sending to let the satellite rest.'
-      : !receiver.engaged ? 'Your receiver is off. Press Engaged on the receiver pedal.'
-      : game.locked ? 'You are catching packets! Keep the circle on the satellite.'
-      : 'Move the circle onto the satellite until the signal bar turns green.');
+    if (!running) sayNow('start', 'Press Start when you are ready.');
+    else if (countdown > 0) sayNow('track', 'Get ready: the satellite rises on the left.');
+    else if (paused) sayNow('start', 'Paused. Press Resume to keep going.');
+    else if (game.safe) sayNow('battery', 'The battery is low. Press Sending to let the satellite rest.');
+    else if (!receiver.engaged) sayNow('receiver', 'The receiver is off. Press Engaged on the receiver pedal.');
+    else if (game.locked) sayNow('track', 'You are catching packets. Keep the circle on the satellite.');
+    else sayNow('track', 'Move the circle onto the satellite until the signal bar turns green.');
     if (game.log[0] && hudEl.log.dataset.seq !== String(game.log[0].seq)) {
       hudEl.log.dataset.seq = String(game.log[0].seq);
       hudEl.log.replaceChildren(...game.log.slice(0, 5).map(r => Object.assign(document.createElement('li'), {

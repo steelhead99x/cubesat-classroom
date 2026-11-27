@@ -3,6 +3,7 @@
 // written into a player's snapshot and room.mjs decides what happens next, so both modes run
 // the very same rules.
 import * as G from './logic.mjs';
+import { STEPS } from './steps.mjs';
 import * as Room from './room.mjs';
 import { Renderer, rocketSvg, type Scene } from './render';
 import type { RoomLink, LinkStatus, Snapshot } from './net';
@@ -116,7 +117,7 @@ function start(root: HTMLElement) {
     sound = !sound;
     soundBtn.setAttribute('aria-pressed', String(sound));
     soundBtn.setAttribute('aria-label', sound ? 'Sound on' : 'Sound off');
-    soundBtn.querySelector('.i')!.textContent = sound ? '🔊' : '🔇';
+    soundBtn.textContent = sound ? '🔊' : '🔇';
     if (sound) void (audio ??= new AudioContext()).resume();
   }
   pauseBtn.addEventListener('click', () => togglePause());
@@ -135,7 +136,7 @@ function start(root: HTMLElement) {
     if (inMatch && !quitArmed) {
       quitBtn.dataset.armed = 'true';
       quitBtn.setAttribute('aria-label', 'Tap again to leave the match');
-      say('Press Leave again to leave this match.');
+      say('Tap ⌂ again to leave this match.');
       quitArmed = setTimeout(disarmQuit, 3000);
       return;
     }
@@ -334,8 +335,8 @@ function start(root: HTMLElement) {
     if (field && pad) {
       const ground = pad.y * G.METRES_PER_PIXEL;
       const release = ground + G.LIFT * G.METRES_PER_PIXEL;
-      const wind = field.wind === 0 ? 'calm' : `${Math.abs(field.wind)} of 10, blowing ${field.wind < 0 ? 'left' : 'right'}`;
-      hud.air.textContent = `Wind (simulated): ${wind}. Air pressure (standard atmosphere): ${Math.round(G.pressureHpa(ground))} hPa at the pad, ${ground} m up; ${Math.round(G.pressureHpa(release))} hPa where the rocket lets go, ${release} m up.`;
+      const wind = field.wind === 0 ? 'calm' : `${Math.abs(field.wind)}/10 ${field.wind < 0 ? 'left' : 'right'}`;
+      hud.air.textContent = `Simulated wind · ${wind} | Standard pressure · pad ${ground} m: ${Math.round(G.pressureHpa(ground))} hPa → release ${release} m: ${Math.round(G.pressureHpa(release))} hPa`;
     }
     hud.angle.textContent = u ? `${u.angle}°` : '—';
     hud.power.textContent = u ? String(u.power) : '—';
@@ -364,11 +365,16 @@ function start(root: HTMLElement) {
     }
     hud.controls.dataset.wait = wait ? 'true' : 'false';
     hud.wait.textContent = wait;
-    // One plain instruction above the sky: what to do right now, in words.
-    let now = '';
-    if (playing && act && p) now = `${p.name}: 1 aim, 2 set the power, 3 press Launch. Try to fly through the gold ring.`;
-    else if (playing && wait) now = wait;
-    hud.now.textContent = now;
+    // The "what to do now" line: one instruction, and a link to that step on the page.
+    const step = (id: string, text: string) => {
+      const i = STEPS.findIndex(s => s.id === id);
+      return `<span class="now-n">Step ${i + 1} of ${STEPS.length}</span> ${esc(text)} <a href="#step-${id}">How?</a>`;
+    };
+    const now = playing && act && p ? step('aim', `${p.name}: aim at the gold ring, set the power, then press Launch.`)
+      : playing && wait ? esc(wait)
+      : match?.phase === 'shop' && !banner && !howto ? step('shop', 'Each crew chooses rockets, then presses Done.')
+      : '';
+    if (hud.now.dataset.html !== now) { hud.now.innerHTML = now; hud.now.dataset.html = now; }
   }
 
   /** A big, short "whose turn" card when the turn changes. */
@@ -418,12 +424,13 @@ function start(root: HTMLElement) {
   }
 
   function howtoHtml() {
+    // The key steps from the page's step-by-step instructions (steps.mjs), with their numbers.
+    const pick = ['wind', 'aim', 'launch'].map(id => [STEPS.findIndex(s => s.id === id), STEPS.find(s => s.id === id)!] as const);
     return `<h3>How to play</h3>
       <ol class="steps">
-        <li><span class="pic" aria-hidden="true">👆</span><b>1. Aim</b><span>Drag from your pad toward the sky ring. Farther means more power. Or use the ◀ ▶ and − + buttons.</span></li>
-        <li><span class="pic" aria-hidden="true">🌬️</span><b>2. Mind the wind</b><span>The arrow at the top shows the wind. It carries your balloon sideways and pushes your rocket. The yellow dots show how it starts.</span></li>
-        <li><span class="pic" aria-hidden="true">🚀</span><b>3. Launch</b><span>Press Launch. Your balloon lifts off, then releases its rocket. Fly through the ring for 3 points.</span></li>
+        ${pick.map(([i, s]) => `<li><span class="pic" aria-hidden="true">${s.pic}</span><b>Step ${i + 1}: ${esc(s.title)}</b><span>${esc(s.text)}</span></li>`).join('')}
       </ol>
+      <p class="small"><a href="#steps">See all ${STEPS.length} steps</a>, each with its own link to share.</p>
       <div class="row"><button type="button" class="go big" data-act="howto">Got it!</button></div>`;
   }
 
