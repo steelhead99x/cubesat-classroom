@@ -35,16 +35,21 @@ export const TARGET_RADIUS = 16;
 export const RING_CLEARANCE = 80;
 export const LAUNCHES = 3;
 export const MAX_PLAYERS = 4;
-// Everyone starts with enough credits for a couple of better rockets (a Rocket pack and a Surveyor).
+// Everyone starts with enough credits for a couple of better rockets (a Tracker pack and a
+// Surveyor pack).
 export const START_CREDITS = 600;
 
-/** Weapons, in shop order. The Scout is free and never runs out. */
+/**
+ * Rockets, in shop order, from the narrowest scan to the widest. The Scout is free and never
+ * runs out; each step up costs more per rocket, so a wider scan is always a trade.
+ * (The ids are the old ones, kept so rooms and tests still line up.)
+ */
 export const WEAPONS = [
   { id: 'baby', name: 'Scout', radius: 12, price: 0, pack: 0 },
   { id: 'rocket', name: 'Tracker', radius: 20, price: 150, pack: 5 },
-  { id: 'big', name: 'Surveyor', radius: 38, price: 400, pack: 2 },
-  { id: 'mega', name: 'Observatory', radius: 64, price: 900, pack: 1 },
-  { id: 'dirt', name: 'Mapper', radius: 34, price: 200, pack: 3 },
+  { id: 'dirt', name: 'Mapper', radius: 28, price: 150, pack: 3 },
+  { id: 'big', name: 'Surveyor', radius: 38, price: 250, pack: 2 },
+  { id: 'mega', name: 'Observatory', radius: 50, price: 300, pack: 1 },
 ];
 export const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 export const COLORS = ['#ef6b6c', '#6fd3a0', '#ffd23f', '#b9a4ff'];
@@ -126,9 +131,13 @@ export function startRound(match) {
   const r = rng(match.seed + match.round * 7919);
   const terrain = makeTerrain(match.seed ^ (match.round * 2654435761));
   const n = match.players.length, slot = W / n;
-  // Shuffle who starts where, then spread the rockoons out with a little jitter.
-  const order = match.players.map((_, i) => i);
-  for (let i = n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  // Who starts where: shuffled once per match, then moved along one slot each round, so over n
+  // rounds every crew launches once from every slot (no crew keeps the spot nearest the ring).
+  // Then the rockoons are spread out with a little jitter.
+  const start = rng(match.seed ^ 0x5bd1e995);
+  const first = match.players.map((_, i) => i);
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(start() * (i + 1)); [first[i], first[j]] = [first[j], first[i]]; }
+  const order = first.map((_, k) => first[(k + match.round - 1) % n]);
   const units = match.players.map(() => null);
   order.forEach((pi, k) => {
     const x = Math.round(slot * k + slot * (0.3 + r() * 0.4));
@@ -147,8 +156,10 @@ export function startRound(match) {
 /**
  * The sky ring, shared by every crew: above the hills, and at least RING_CLEARANCE from every
  * crew's release point (so nobody scores with a gentle launch straight up), in the middle half
- * of the field when there is room there. If no spot is that clear, the one farthest from every
- * release point. Squared distances only (see the note at the top).
+ * of the field when there is room there, and as even as it can be: among those spots, the ones
+ * where the nearest and farthest crews are closest in sideways distance (within 8 px of the
+ * best). If no spot is that clear, the one farthest from every release point. Squared
+ * distances only (see the note at the top).
  */
 function placeRing(terrain, units, wind, r) {
   const releases = units.map(u => { const p = releasePoint(u, wind); return { x: p.x, y: p.y + PIVOT_Y }; });
@@ -161,7 +172,15 @@ function placeRing(terrain, units, wind, r) {
   const far = RING_CLEARANCE * RING_CLEARANCE;
   const middle = spots.filter(x => x >= W / 4 && x <= W * 3 / 4 && room(x) >= far);
   const clear = middle.length ? middle : spots.filter(x => room(x) >= far);
-  const x = clear.length ? clear[Math.floor(r() * clear.length)] : spots.reduce((a, b) => (room(b) > room(a) ? b : a));
+  const spread = x => {
+    let lo = Infinity, hi = 0;
+    for (const p of releases) { const d = Math.abs(x - p.x); lo = Math.min(lo, d); hi = Math.max(hi, d); }
+    return hi - lo;
+  };
+  let best = Infinity;
+  for (const x of clear) best = Math.min(best, spread(x));
+  const even = clear.filter(x => spread(x) <= best + 8);
+  const x = even.length ? even[Math.floor(r() * even.length)] : spots.reduce((a, b) => (room(b) > room(a) ? b : a));
   return { x, y };
 }
 

@@ -45,9 +45,10 @@ test('a straight-up shot with no wind comes back down near the shooter', () => {
 test('wind pushes a shot sideways', () => {
   const m = begin(2, 3);
   const u = m.field.units[m.turn];
-  m.field.wind = 10; const right = R.trajectory(m, u, 90, 40).end;
-  m.field.wind = -10; const left = R.trajectory(m, u, 90, 40).end;
-  assert.ok(right.x > u.x + 5 && left.x < u.x - 5);
+  // Where each shot was last seen, whether it landed or flew off the side.
+  m.field.wind = 10; const [rx] = R.trajectory(m, u, 90, 40).path.at(-1);
+  m.field.wind = -10; const [lx] = R.trajectory(m, u, 90, 40).path.at(-1);
+  assert.ok(rx > u.x + 5 && lx < u.x - 5);
 });
 
 test('more power goes farther', () => {
@@ -83,6 +84,7 @@ test('ammo is spent, and an empty weapon uses the free Scout', () => {
   assert.ok(R.buy(m, 0, 'rocket'));
   assert.equal(m.players[0].ammo.rocket, 5);
   assert.equal(m.players[0].credits, R.START_CREDITS - 150);
+  m.players[1].credits = R.WEAPON.mega.price - 1;
   assert.equal(R.buy(m, 1, 'mega'), false, 'not enough credits');
   R.startRound(m);
   m.turn = 0;
@@ -252,9 +254,10 @@ test('committed history never changes once written', () => {
 test('everyone starts with credits for a couple of better rockets', () => {
   const m = R.createMatch({ seed: 2, players: players(4) });
   for (const p of m.players) assert.equal(p.credits, R.START_CREDITS);
-  assert.ok(R.START_CREDITS >= R.WEAPON.rocket.price + R.WEAPON.big.price);
+  const cost = R.WEAPON.rocket.price + R.WEAPON.big.price;
+  assert.ok(R.START_CREDITS >= cost);
   assert.ok(R.buy(m, 0, 'rocket') && R.buy(m, 0, 'big'));
-  assert.equal(m.players[0].credits, R.START_CREDITS - 550);
+  assert.equal(m.players[0].credits, R.START_CREDITS - cost);
   assert.equal(Object.hasOwn(m.players[0], 'money'), false);
 });
 
@@ -355,4 +358,40 @@ test('the rules use no ** or Math.pow, which browsers may round differently', as
   const src = await readFile(new URL('../src/games/rockoon-wars/logic.mjs', import.meta.url), 'utf8');
   const rules = src.replace(/export function pressureHpa[\s\S]*?\n}\n/, '');
   assert.ok(!/\*\*|Math\.pow/.test(rules.replace(/\/\*\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')));
+});
+
+test('a wider scan always costs more per rocket', () => {
+  // Review finding: the Mapper (34 px, 3 for 200) beat the Surveyor (38 px, 2 for 400).
+  const paid = R.WEAPONS.filter(w => w.price);
+  for (let i = 1; i < paid.length; i++) {
+    assert.ok(paid[i].radius > paid[i - 1].radius, `${paid[i].name} scans wider`);
+    assert.ok(paid[i].price / paid[i].pack > paid[i - 1].price / paid[i - 1].pack, `${paid[i].name} costs more each`);
+  }
+  assert.ok(R.WEAPONS[0].price === 0 && R.WEAPONS[0].radius < paid[0].radius);
+});
+
+test('over n rounds every crew launches once from every slot', () => {
+  // Review finding: crews in the middle slots usually started nearest the ring.
+  for (const n of [2, 3, 4]) {
+    for (const seed of [1, 9, 77]) {
+      const m = R.createMatch({ seed, players: players(n), rounds: n });
+      const slots = Array.from({ length: n }, () => new Set());
+      for (let round = 1; round <= n; round++) {
+        R.startRound(m);
+        const byX = m.field.units.map((u, i) => [u.x, i]).sort((a, b) => a[0] - b[0]);
+        byX.forEach(([, i], k) => slots[i].add(k));
+        while (m.phase === 'play') R.skip(m);
+      }
+      for (const s of slots) assert.equal(s.size, n, `n=${n} seed ${seed}: a crew missed a slot`);
+    }
+  }
+});
+
+test('with two crews the ring is about as far from each', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const m = R.createMatch({ seed, players: players(2) });
+    R.startRound(m);
+    const [a, b] = m.field.units.map(u => Math.abs(m.field.target.x - R.releasePoint(u, m.field.wind).x));
+    assert.ok(Math.abs(a - b) <= 16, `seed ${seed}: ${a} vs ${b}`);
+  }
 });

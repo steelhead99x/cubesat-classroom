@@ -13,11 +13,13 @@ type Match = ReturnType<typeof G.createMatch>;
 type Field = NonNullable<Match['field']>;
 type Events = { type: string; points?: number }[];
 
-const ROUNDS = 3;
+/** At least three rounds, and one per crew, so every crew launches once from every slot. */
+const roundsFor = (crews: number) => Math.max(3, crews);
 const HOWTO_KEY = 'rockoon-battle:how-to-seen';
 const FLIGHT_SPEED = 1.6; // path points are 1/60 s of game time; play a little faster than real
 const LIFT_TIME = 1.1;
-const BOOM_TIME = 0.45, SETTLE_TIME = 0.5;
+const BOOM_TIME = 0.45;
+const SETTLE_TIME = 0.8; // the balloon's trip back down to its pad
 
 const root = document.querySelector<HTMLElement>('[data-rw]');
 if (root) start(root);
@@ -272,9 +274,15 @@ function start(root: HTMLElement) {
     const names = match.players.map(p => p.name), colors = match.players.map(p => p.color);
     if (anim) {
       const { before, phase, t, shooter } = anim;
-      const lift = phase === 'lift' ? Math.min(1, t / LIFT_TIME) : 1;
+      // Up to the release point, then (once the rocket has landed or flown off) gently back
+      // down to the pad, where the next rocket is loaded.
+      const back = Math.min(1, t / SETTLE_TIME);
+      const lift = phase === 'lift' ? Math.min(1, t / LIFT_TIME)
+        : phase === 'settle' ? 1 - back * back * (3 - 2 * back)
+        : phase === 'rest' ? 0 : 1;
       const units = before.units.map((u, i) => i === shooter ? { ...u, ...G.balloonPosition(u, before.wind, lift) } : u);
-      return { ...before, units, colors, names, released: phase === 'lift' ? undefined : shooter, active: -1, preview: null, drag: null,
+      const away = phase === 'flight' || phase === 'boom' || phase === 'settle';
+      return { ...before, units, colors, names, released: away ? shooter : undefined, active: -1, preview: null, drag: null,
         shot: phase === 'flight' ? { path: anim.path, pos: anim.pos } : null };
     }
     const act = canAct() && match.phase === 'play';
@@ -430,7 +438,7 @@ function start(root: HTMLElement) {
         <div class="row"><button type="button" data-act="back">◀ Back</button></div>`;
     }
     return `<p class="logo" aria-hidden="true">🎈🚀</p><h3 class="title">Rockoon Battle</h3>
-      <p>Lift off from the hillside. Send your rocket through the sky ring. Highest score after three rounds wins.</p>
+      <p>Lift off from the hillside. Send your rocket through the sky ring. Highest score after the last round wins.</p>
       <div class="row col"><button type="button" class="go big" data-act="to-local">🖥️ Play on this computer</button><button type="button" class="go big alt" data-act="to-online">🌐 Play online</button></div>`;
   }
 
@@ -541,7 +549,7 @@ function start(root: HTMLElement) {
     const order = Array.from({ length: Math.max(2, Math.min(4, n || 2)) }, (_, i) => String(i + 1).padStart(12, '0'));
     const names: Record<string, string> = {};
     order.forEach((id, i) => { names[id] = `Player ${i + 1}`; snaps.set(id, { cs: names[id], joined: i, turns: {}, shops: {} }); });
-    host = { seed: crypto.getRandomValues(new Uint32Array(1))[0], rounds: ROUNDS, order, names };
+    host = { seed: crypto.getRandomValues(new Uint32Array(1))[0], rounds: roundsFor(order.length), order, names };
     mine = order;
     mode = 'local';
     match = Room.matchFor(host);
@@ -610,7 +618,7 @@ function start(root: HTMLElement) {
     if (people.length < 2) return;
     const order = [me, ...people.map(([id]) => id).filter(id => id !== me)].slice(0, G.MAX_PLAYERS);
     const names = Object.fromEntries(order.map(id => [id, snapOf(id).cs]));
-    snapOf(me).host = { seed: crypto.getRandomValues(new Uint32Array(1))[0], rounds: ROUNDS, order, names };
+    snapOf(me).host = { seed: crypto.getRandomValues(new Uint32Array(1))[0], rounds: roundsFor(order.length), order, names };
     snapOf(me).log = {};
     snapOf(me).shopLog = {};
     publish();
