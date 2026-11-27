@@ -7,13 +7,19 @@
 <style>
   :root { --ink:#0F1B2D; --paper:#F5F3EE; --card:#FBFAF6; --rule:#D9D4C8; --soft:#46536A; --accent:#E07A2E; --ok:#1F6B45; --warn:#8A5A00; --fail:#A12C2C; }
   * { box-sizing: border-box; }
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  header :focus-visible { outline-color: #fff; }
+  .skip { position: absolute; left: 1rem; top: -4rem; z-index: 10; padding: .5rem .8rem; background: #fff; color: var(--ink); border-radius: 6px; font-weight: 600; }
+  .skip:focus { top: 1rem; }
+  .tscroll { overflow-x: auto; }
+  h2, h3, p, li, dd, dt { overflow-wrap: anywhere; }
   body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 Inter, system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
   header { background: var(--ink); color: var(--paper); padding: 28px 32px 24px; }
   header h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.5px; }
   header p { margin: 0; color: #C5D0E0; max-width: 900px; }
   .label { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #F0A35E; }
-  main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: 24px; padding: 24px 32px 48px; max-width: 1500px; }
-  @media (max-width: 960px) { main { grid-template-columns: 1fr; padding: 16px; } }
+  main { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 24px; padding: 24px 32px 48px; max-width: 1500px; }
+  @media (max-width: 960px) { main { grid-template-columns: minmax(0, 1fr); padding: 16px; } header { padding: 20px 16px; } }
   section { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; }
   h2 { font-size: 18px; margin: 0 0 4px; }
   h3 { font-size: 15px; margin: 16px 0 6px; }
@@ -55,6 +61,7 @@
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to the workbook</a>
 <header>
   <nav class="sitenav" aria-label="CubeSat Classroom">
     <a href="../../">← CubeSat Classroom</a>
@@ -67,7 +74,7 @@
   <p>Enter what your class measured on the bench, pick a certified motor, and get the prediction to beat at the club launch: stability, thrust-to-weight, rail exit speed, apogee, the ejection delay to buy, and whether the rocket stays a Class 1 model rocket. Then record each flight next to the prediction.</p>
   <span class="label">Desk simulation · the rockoon kit’s own Rust simulator, running in this page</span>
 </header>
-<main>
+<main id="main" tabindex="-1">
 <div>
   <section>
     <h2>1. Motor</h2>
@@ -92,7 +99,7 @@
     <h2>3. Weighed masses</h2>
     <p class="hint">Weigh each printed part on a 1 g scale. Blank uses the CAD estimate.</p>
     <label class="field"><span>Printed in</span><select id="material"><option>ASA</option><option>PETG</option><option>PLA</option></select></label>
-    <table><thead><tr><th>Part</th><th class="num">CAD (g)</th><th class="num">Weighed (g, each)</th></tr></thead><tbody id="parts"></tbody></table>
+    <div class="tscroll" role="region" tabindex="0" aria-label="Weighed masses table"><table><thead><tr><th>Part</th><th class="num">CAD (g)</th><th class="num">Weighed (g, each)</th></tr></thead><tbody id="parts"></tbody></table></div>
     <label class="field"><span>Parachute, cord, wadding, altimeter, glue (g)<small>Weigh them together</small></span><input type="number" id="extra_rocket_g" step="1" min="0" max="1000" value="60"></label>
     <label class="field"><span>Inert payload in the nose (g)<small>0 for none; an inert nano FlatSat is about 85 g</small></span><input type="number" id="payload_g" step="1" min="0" max="1000" value="0"></label>
   </section>
@@ -114,10 +121,10 @@
     <h2>Flights: prediction against measurement</h2>
     <p class="hint">After each flight, enter the altimeter’s apogee and times. Entries stay in this browser only, so copy the CSV into your crew log.</p>
     <div class="row" style="margin-bottom:8px"><label for="flight_motor">Motor flown</label> <select id="flight_motor" style="width:auto"></select></div>
-    <table>
+    <div class="tscroll" role="region" tabindex="0" aria-label="Flights table"><table>
       <thead><tr><th>Measure</th><th class="num">Predicted</th><th class="num">Flight 1</th><th class="num">Flight 2</th><th class="num">Flight 3</th></tr></thead>
       <tbody id="flights"></tbody>
-    </table>
+    </table></div>
     <div class="row" style="margin-top:12px"><button class="plain" id="csv">Copy CSV</button><button class="plain secondary" id="clear">Clear this configuration</button><button class="plain secondary" id="legacy" hidden>Show earlier notes</button><span id="copied" class="hint" style="margin:0" aria-live="polite"></span></div>
     <textarea id="legacytext" readonly aria-label="Earlier notes with unverified configuration" hidden></textarea>
     <textarea id="csvtext" readonly aria-label="Flights as CSV" hidden style="margin-top:10px"></textarea>

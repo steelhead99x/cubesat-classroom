@@ -38,7 +38,7 @@ const ld = {
         <p id="wiki-count" class="mt-2 text-sm text-muted" role="status" aria-live="polite">{entries.length} terms</p>
       </div>
       <nav aria-label="Jump to letter" class="flex flex-wrap gap-x-3 gap-y-1 font-mono text-sm">
-        {groups.map(group => <a class="text-accent underline underline-offset-4" href={`#letter-${group.id}`} data-letter-link={group.id}>{group.letter}</a>)}
+        {groups.map(group => <a class="text-accent inline-grid min-h-6 min-w-6 place-items-center underline underline-offset-4" href={`#letter-${group.id}`} data-letter-link={group.id}>{group.letter}</a>)}
       </nav>
     </div>
 

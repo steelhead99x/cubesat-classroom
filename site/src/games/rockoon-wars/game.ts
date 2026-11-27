@@ -3,6 +3,9 @@
 // written into a player's snapshot and room.mjs decides what happens next, so both modes run
 // the very same rules.
 import * as G from './logic.mjs';
+import { STEPS } from './steps.mjs';
+import { icon } from '../icons.mjs';
+import { patch } from '../patches.mjs';
 import * as Room from './room.mjs';
 import { Renderer, rocketSvg, type Scene } from './render';
 import type { RoomLink, LinkStatus, Snapshot } from './net';
@@ -33,7 +36,7 @@ function start(root: HTMLElement) {
   const toast = $<HTMLDivElement>('[data-toast]');
   const hud = {
     air: $('[data-air]'), angle: $('[data-angle]'), power: $('[data-power]'), rocket: $('[data-rocket]'), rocketIcon: $('[data-rocket-icon]'),
-    round: $('[data-round]'), board: $('[data-board]'), controls: $('[data-controls]'), wait: $('[data-wait]'),
+    round: $('[data-round]'), board: $('[data-board]'), controls: $('[data-controls]'), wait: $('[data-wait]'), now: $('[data-now]'),
   };
   const pauseBtn = $<HTMLButtonElement>('[data-pause]');
   const soundBtn = $<HTMLButtonElement>('[data-sound]');
@@ -116,7 +119,7 @@ function start(root: HTMLElement) {
     sound = !sound;
     soundBtn.setAttribute('aria-pressed', String(sound));
     soundBtn.setAttribute('aria-label', sound ? 'Sound on' : 'Sound off');
-    soundBtn.textContent = sound ? '🔊' : '🔇';
+    soundBtn.innerHTML = icon(sound ? 'sound-on' : 'sound-off');
     if (sound) void (audio ??= new AudioContext()).resume();
   }
   pauseBtn.addEventListener('click', () => togglePause());
@@ -124,6 +127,7 @@ function start(root: HTMLElement) {
     // Online, the match runs on everyone's screens, so one player cannot pause it.
     if (mode === 'menu' || (mode === 'online' && !paused)) return;
     paused = !paused;
+    pauseBtn.innerHTML = icon(paused ? 'play' : 'pause');
     pauseBtn.setAttribute('aria-pressed', String(paused));
     say(paused ? 'Paused.' : 'Playing again.');
     render();
@@ -350,7 +354,7 @@ function start(root: HTMLElement) {
     hud.round.textContent = match ? `Round ${Math.max(1, match.round)}/${match.rounds}` : '';
     const board = match ? match.players.map((pl, i) => {
       const cls = i === turn && !anim ? 'now' : '';
-      return `<li${cls ? ` class="${cls}"` : ''} style="--c:${pl.color}"><b>${esc(pl.name)}</b><span class="cr" title="Credits">🪙 ${pl.credits}</span><span class="pt" title="Points">⭐ ${pl.score}</span></li>`;
+      return `<li${cls ? ` class="${cls}"` : ''} style="--c:${pl.color}"><b>${esc(pl.name)}</b><span class="cr" title="Credits">${icon('credit', 15)}<span class="sr-only">Credits</span> ${pl.credits}</span><span class="pt" title="Points">${icon('star', 15)}<span class="sr-only">Points</span> ${pl.score}</span></li>`;
     }).join('') : '';
     if (hud.board.dataset.html !== board) { hud.board.innerHTML = board; hud.board.dataset.html = board; }
     const act = canAct();
@@ -367,6 +371,16 @@ function start(root: HTMLElement) {
     }
     hud.controls.dataset.wait = wait ? 'true' : 'false';
     hud.wait.textContent = wait;
+    // The "what to do now" line: one instruction, and a link to that step on the page.
+    const step = (id: string, text: string) => {
+      const i = STEPS.findIndex(s => s.id === id);
+      return `<span class="now-n">Step ${i + 1} of ${STEPS.length}</span> ${esc(text)} <a href="#step-${id}">How?</a>`;
+    };
+    const now = playing && act && p ? step('aim', `${p.name}: aim at the gold ring, set the power, then press Launch.`)
+      : playing && wait ? esc(wait)
+      : match?.phase === 'shop' && !banner && !howto ? step('shop', 'Each crew chooses rockets, then presses Done.')
+      : '';
+    if (hud.now.dataset.html !== now) { hud.now.innerHTML = now; hud.now.dataset.html = now; }
   }
 
   /** A big, short "whose turn" card when the turn changes. */
@@ -394,10 +408,10 @@ function start(root: HTMLElement) {
   function renderOverlay() {
     let html = '', kind = '';
     if (howto) { kind = 'howto'; html = howtoHtml(); }
-    else if (paused) { kind = 'pause'; html = `<h3>Paused</h3><div class="row"><button type="button" class="go big" data-act="resume">▶ Keep playing</button></div>`; }
+    else if (paused) { kind = 'pause'; html = `<h3>Paused</h3><div class="row"><button type="button" class="go big" data-act="resume">${icon('play')} Keep playing</button></div>`; }
     else if (mode === 'menu') { kind = 'menu'; html = menuHtml(); }
     else if (mode === 'online' && !host) { kind = 'lobby'; html = lobbyHtml(); }
-    else if (banner) { kind = 'banner'; html = `<h3>${esc(banner.title)}</h3><p>${esc(banner.text)}</p>${scoresHtml()}<div class="row"><button type="button" class="go big" data-act="banner">${match?.phase === 'over' ? 'Back to the start' : 'Next ▶'}</button></div>`; }
+    else if (banner) { kind = 'banner'; html = `<h3>${esc(banner.title)}</h3><p>${esc(banner.text)}</p>${scoresHtml()}<div class="row"><button type="button" class="go big" data-act="banner">${match?.phase === 'over' ? 'Back to the start' : 'Next'}</button></div>`; }
     else if (match && !anim && match.phase === 'shop') { kind = 'shop'; html = shopHtml(); }
     const changedPanel = overlay.dataset.kind !== kind;
     const focusWasInside = overlay.contains(document.activeElement);
@@ -416,12 +430,13 @@ function start(root: HTMLElement) {
   }
 
   function howtoHtml() {
+    // The key steps from the page's step-by-step instructions (steps.mjs), with their numbers.
+    const pick = ['wind', 'aim', 'launch'].map(id => [STEPS.findIndex(s => s.id === id), STEPS.find(s => s.id === id)!] as const);
     return `<h3>How to play</h3>
       <ol class="steps">
-        <li><span class="pic" aria-hidden="true">👆</span><b>1. Aim</b><span>Drag from your pad toward the sky ring. Farther means more power. Or use the ◀ ▶ and − + buttons.</span></li>
-        <li><span class="pic" aria-hidden="true">🌬️</span><b>2. Mind the wind</b><span>The arrow at the top shows the wind. It carries your balloon sideways and pushes your rocket. The yellow dots show how it starts.</span></li>
-        <li><span class="pic" aria-hidden="true">🚀</span><b>3. Launch</b><span>Press Launch. Your balloon lifts off, then releases its rocket. Fly through the ring for 3 points.</span></li>
+        ${pick.map(([i, s]) => `<li><span class="pic">${icon(s.pic, 34)}</span><b>Step ${i + 1}: ${esc(s.title)}</b><span>${esc(s.text)}</span></li>`).join('')}
       </ol>
+      <p class="small"><a href="#steps">See all ${STEPS.length} steps</a>, each with its own link to share.</p>
       <div class="row"><button type="button" class="go big" data-act="howto">Got it!</button></div>`;
   }
 
@@ -436,13 +451,13 @@ function start(root: HTMLElement) {
     if (menuStep === 'join') {
       return `<h3>Join a room</h3><p>Type the 5-letter code your friend sees.</p>
         <div class="row"><input data-code class="code-in" aria-label="Room code" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="ABC12" value="${esc(joinCode)}" /></div>
-        <div class="row"><button type="button" class="go big" data-act="join">Join ▶</button></div>
+        <div class="row"><button type="button" class="go big" data-act="join">Join</button></div>
         <p class="small" role="alert">${esc(menuNote)}</p>
         <div class="row"><button type="button" data-act="back">◀ Back</button></div>`;
     }
-    return `<p class="logo" aria-hidden="true">🎈🚀</p><h3 class="title">Rockoon Battle</h3>
+    return `<div class="logo">${patch('rockoon', 'Rockoon Battle')}</div><h3 class="title">Rockoon Battle</h3>
       <p>Lift off from the hillside. Send your rocket through the sky ring. Highest score after the last round wins.</p>
-      <div class="row col"><button type="button" class="go big" data-act="to-local">🖥️ Play on this computer</button><button type="button" class="go big alt" data-act="to-online">🌐 Play online</button></div>`;
+      <div class="row col"><button type="button" class="go big" data-act="to-local">${icon('crew')} Play on this computer</button><button type="button" class="go big alt" data-act="to-online">${icon('globe')} Play online</button></div>`;
   }
 
   function present() {
@@ -455,7 +470,7 @@ function start(root: HTMLElement) {
     if (!link || link.status !== 'live' || !snaps.has(me)) {
       const offline = link?.status === 'offline';
       return offline
-        ? `<h3>Online play is not working right now</h3><p>${esc(netDetail || 'We could not reach the game server.')}</p><div class="row"><button type="button" class="go big" data-act="quit">🖥️ Play on this computer</button></div>`
+        ? `<h3>Online play is not working right now</h3><p>${esc(netDetail || 'We could not reach the game server.')}</p><div class="row"><button type="button" class="go big" data-act="quit">${icon('crew')} Play on this computer</button></div>`
         : `<h3>Connecting…</h3><div class="row"><button type="button" data-act="quit">Cancel</button></div>`;
     }
     const people = present();
@@ -466,13 +481,13 @@ function start(root: HTMLElement) {
     return `<p class="t-label">Room code</p><p class="bigcode" aria-label="Room code ${esc(link.room.split('').join(' '))}">${code}</p>
       <p>${creator ? 'Tell your friends this code so they can join.' : 'You are in! Waiting for the room maker to press Start.'}</p>
       <ol class="people" aria-label="Players here">${list}</ol>
-      <div class="row">${creator ? `<button type="button" class="go big" data-act="start"${canStart ? '' : ' disabled'}>${canStart ? '▶ Start' : 'Waiting for a friend…'}</button>` : ''}
+      <div class="row">${creator ? `<button type="button" class="go big" data-act="start"${canStart ? '' : ' disabled'}>${canStart ? `${icon('start')} Start` : 'Waiting for a friend…'}</button>` : ''}
       <button type="button" data-act="quit">Leave</button></div>`;
   }
 
   function scoresHtml() {
     return `<ol class="people">${[...match!.players].sort((a, b) => b.score - a.score)
-      .map(p => `<li><i style="background:${p.color}"></i> ${esc(p.name)}: ⭐ ${p.score} points · 🪙 ${p.credits} credits</li>`).join('')}</ol>`;
+      .map(p => `<li><i style="background:${p.color}"></i> ${esc(p.name)}: ${p.score} points, ${p.credits} credits</li>`).join('')}</ol>`;
   }
 
   function shopHtml() {
@@ -489,10 +504,10 @@ function start(root: HTMLElement) {
       const have = p.ammo[w.id as keyof typeof p.ammo] + picks.filter(x => x === w.id).length * w.pack;
       const poor = credits < w.price;
       return `<li class="card${poor ? ' poor' : ''}">${rocketSvg(w.id, 48)}<b>${esc(w.name)}</b><span class="say">${esc(`Scans ${w.radius} pixels beyond the ring.`)}</span>
-        <span class="price">${w.pack} for 🪙 ${w.price}</span><span class="have">You have ${have}</span>
+        <span class="price">${w.pack} for ${w.price} credits</span><span class="have">You have ${have}</span>
         <button type="button" data-act="buy" data-w="${w.id}"${poor ? ' disabled' : ''} aria-label="Buy ${w.pack} ${esc(w.name)} for ${w.price} credits">${poor ? 'Not enough' : 'Buy'}</button></li>`;
     }).join('');
-    return `<h3><span class="dot" style="background:${p.color}"></span>${esc(p.name)}'s shop</h3><p class="wallet">🪙 ${credits} credits to spend</p>
+    return `<h3><span class="dot" style="background:${p.color}"></span>${esc(p.name)}'s shop</h3><p class="wallet">${icon('credit')} ${credits} credits to spend</p>
       <ul class="shop">${cards}</ul>
       <div class="row">${picks.length ? '<button type="button" data-act="undo">↩ Undo</button>' : ''}<button type="button" class="go big" data-act="done" data-id="${id}">Done ✓</button></div>`;
   }
@@ -579,7 +594,7 @@ function start(root: HTMLElement) {
         if (link !== thisLink) return; // a room this screen has already left
         if (s === 'live') liveSince = Date.now();
         netDetail = detail ?? '';
-        net.textContent = s === 'live' ? `🌐 Room ${code} · you are ${thisLink.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : s === 'offline' ? 'Offline' : '';
+        net.textContent = s === 'live' ? `Room ${code}, you are ${thisLink.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : s === 'offline' ? 'Offline' : '';
         render();
       },
       peer(id: string, snap: Snapshot) {
