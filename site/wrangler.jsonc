@@ -44,9 +44,9 @@
     { "name": "GAME_TOKEN_LIMIT", "namespace_id": "4411", "simple": { "limit": 60, "period": 60 } }
   ],
   // The games' MoQ relay. The signing key is the secret MOQ_GAMES_SIGNING_KEY (never here), and
-  // MOQ_GAMES_ROOT is the relay path the key signs under. Until both are set the games play offline.
+  // MOQ_GAMES_ROOT is the relay path the key signs under (the moq.pro project is `hikd`). Until both are set the games play offline.
   // If the relay host changes, change connect-src in src/worker.mjs and src/layouts/Base.astro too.
-  "vars": { "MOQ_GAMES_RELAY": "https://cdn.moq.pro" },
+  "vars": { "MOQ_GAMES_RELAY": "https://cdn.moq.pro", "MOQ_GAMES_ROOT": "hikd/games" },
   // Workers Logs, so console.error from the guide and the preview gate can be read in the
   // dashboard. Traces are left off.
   "observability": { "enabled": true }
