@@ -64,6 +64,16 @@ if ! (cd "$d/gen" && ./export.sh >"$d/export.log" 2>&1); then
   exit 1
 fi
 echo "ok    baseline export"
+
+# The pedal's nested fab directory must resolve from KiCad's working directory.
+d=$(fresh)
+if ! (cd "$d/gen" && CSC_BOARD=csc-r1p-ctl ./export.sh >"$d/export.log" 2>&1); then
+  cat "$d/export.log" >&2
+  echo "FAIL  pedal control export" >&2
+  exit 1
+fi
+test -s "$d/pedal/fab/controls/gerbers/csc-r1p-ctl-F_Cu.gtl"
+echo "ok    pedal control export"
 # 1. A failing netlist checker.
 d=$(fresh); printf 'import sys\nprint("mismatches: 1")\nsys.exit(1)\n' > "$d/gen/check_net.py"
 expect_refused "failing netlist check" "$d" "mismatches: 1"
