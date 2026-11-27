@@ -58,6 +58,7 @@ command -v shellcheck >/dev/null 2>&1 || { echo "error: shellcheck is required" 
 shellcheck docs/start.sh scripts/*.sh
 (cd hardware/solar-face/gen && python3 test_drc.py)
 python3 hardware/rideshare-flatsat/test_lab.py
+python3 hardware/rideshare-flatsat-ground/test_ground.py
 
 echo "=== Firmware builds ==="
 bash scripts/firmware.sh

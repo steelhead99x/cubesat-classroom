@@ -10,7 +10,6 @@ publish.workspace = true
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 crc32fast = "1"
-serde.workspace = true
 serde_json.workspace = true
 
 [target.'cfg(unix)'.dependencies]

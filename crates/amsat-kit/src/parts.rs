@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 use manifold_csg::{CrossSection, FillRule, Manifold};
 
 use crate::boards::NANO_USB_CENTRE;
+use crate::brand;
 use crate::design::Design;
 use crate::geom::{
     EPS, FACETS, Mesh, bounds, bx, chamfered_square, cone, cyl, offset, poly, rect, union_all,
@@ -320,10 +321,16 @@ pub fn payload_plate(d: &Design, tooth_r: Option<f64>, deflect: f64) -> Result<M
     let slab = plate_outline(d)
         .extrude(d.plate_t)
         .difference(&plate_cuts(d, tooth_r));
-    let relief = branding(d)?
-        .extrude(d.letter_h + EPS)
-        .translate(0.0, 0.0, d.plate_t - EPS);
-    Ok(union_all(&[slab, board_features(d, deflect), relief]))
+    // The branding is a second-colour inlay in the top face (see `plate_brand`).
+    Ok(union_all(&[slab, board_features(d, deflect)]))
+}
+
+/// The payload plate's logo inlay: the mark and words in the open middle under the Uno, flush
+/// in the top face. The fit plate keeps the same spot.
+pub fn plate_brand(d: &Design) -> Result<Manifold, String> {
+    Ok(branding(d)?
+        .extrude(d.letter_h + 1.0)
+        .translate(0.0, 0.0, d.plate_t - d.letter_h))
 }
 
 // ---------- fit plate ----------
@@ -350,7 +357,15 @@ pub fn fit_plate(d: &Design) -> Result<Manifold, String> {
         2.5,
         FACETS,
     ));
-    keep = keep.union(&offset(&branding(d)?, 1.0, 16));
+    keep = keep.union(&offset(&branding(d)?, brand::MARGIN + 1.0, 16));
+    let pockets = isogrid_pockets(d, &outline, &keep);
+    Ok(payload_plate(d, None, 0.0)?.difference(&pockets))
+}
+
+/// The kit's one way of lightening a plate: everything in `outline` that `keep` doesn't need
+/// becomes triangular isogrid pockets between 2.4 mm ribs at 60 degrees, with 1 mm fillets in
+/// their corners, through the plate. Tiny slivers stay solid.
+pub fn isogrid_pockets(d: &Design, outline: &CrossSection, keep: &CrossSection) -> Manifold {
     let mut ribs = CrossSection::empty();
     let pitch = TRUSS_PITCH * 3f64.sqrt() / 2.0;
     for angle in [0.0, 60.0, 120.0] {
@@ -368,7 +383,7 @@ pub fn fit_plate(d: &Design) -> Result<Manifold, String> {
         }
     }
     let pockets = offset(
-        &offset(&outline.difference(&keep).difference(&ribs), -1.0, 16),
+        &offset(&outline.difference(keep).difference(&ribs), -1.0, 16),
         1.0,
         16,
     )
@@ -383,10 +398,9 @@ pub fn fit_plate(d: &Design) -> Result<Manifold, String> {
                 > MIN_POCKET
         })
         .collect();
-    let pockets = CrossSection::from_polygons(&big)
+    CrossSection::from_polygons(&big)
         .extrude(d.plate_t + 2.0)
-        .translate(0.0, 0.0, -1.0);
-    Ok(payload_plate(d, None, 0.0)?.difference(&pockets))
+        .translate(0.0, 0.0, -1.0)
 }
 
 // ---------- test coupons ----------
@@ -414,18 +428,22 @@ pub fn coupon_pin_base(d: &Design) -> Manifold {
 
 /// A piece of plate with the keyed slot and fingers, at a fit clearance, marked with dots on its
 /// rigid tongue. `tooth_r` moves the teeth, for the checks.
+/// How far a pin tab's grip reaches past the fork.
+pub const TAB_GRIP: f64 = 11.0;
+
 pub fn coupon_pin_tab(d: &Design, fit: f64, dots: usize, tooth_r: Option<f64>) -> Manifold {
     let tooth_r = tooth_r.unwrap_or_else(|| ladder_tooth_r(d, fit));
     let [lo, hi] = {
         let b = finger_outline(d, 0.0, 0.0, 0.0, fit).bounds();
         [b.min(), b.max()]
     };
+    // A grip past the fork's root end, which also carries the logo.
     let slab = bx(
         lo[0] - 2.0,
         lo[1] - 2.0,
         0.0,
         hi[0] + 2.0,
-        hi[1] + 2.0,
+        hi[1] + 2.0 + TAB_GRIP,
         d.plate_t,
     )
     .difference(

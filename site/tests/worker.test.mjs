@@ -181,3 +181,11 @@ test('the preview gate keeps hashed files private', async () => {
   const res = await call('https://cubesatclass.org/_astro/app.abc123.css', { headers: { authorization: 'Basic ' + btoa('u:pw') } }, { SITE_PASSWORD: 'pw' });
   assert.match(res.headers.get('cache-control'), /^private/);
 });
+
+test('only the rockoon workbook may compile WebAssembly', async () => {
+  const workbook = await call('https://cubesatclass.org/rockoon/workbook/');
+  assert.match(workbook.headers.get('content-security-policy'), /^script-src 'self' 'wasm-unsafe-eval'; /);
+  const home = await call('https://cubesatclass.org/');
+  assert.match(home.headers.get('content-security-policy'), /^script-src 'self'; /);
+  assert.doesNotMatch(home.headers.get('content-security-policy'), /wasm-unsafe-eval|unsafe-inline/);
+});

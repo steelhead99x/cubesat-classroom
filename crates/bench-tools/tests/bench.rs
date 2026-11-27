@@ -105,6 +105,33 @@ fn row_for<'a>(out: &'a str, file: &str) -> &'a str {
         .unwrap_or_else(|| panic!("no row for {file} in\n{out}"))
 }
 
+#[cfg(unix)]
+#[test]
+fn invalid_recorder_settings_preserve_existing_evidence() {
+    let dir = scratch("power-record-settings");
+    let csv = path(&dir, "existing.csv");
+    std::fs::write(&csv, "earlier bench run\n").unwrap();
+    let mut args = power::Record {
+        port: path(&dir, "missing-serial-port"),
+        minutes: 1.0,
+        shunt: 0.1,
+        label: "test".into(),
+        out: csv.clone(),
+    };
+    for minutes in [0.0, -1.0, f64::INFINITY, f64::NAN, f64::MAX] {
+        args.minutes = minutes;
+        assert!(refused(|out| power::record(&args, out)).contains("--minutes"));
+    }
+    args.minutes = 1.0;
+    args.shunt = 0.0;
+    assert!(refused(|out| power::record(&args, out)).contains("--shunt"));
+    assert_eq!(
+        std::fs::read_to_string(&csv).unwrap(),
+        "earlier bench run\n"
+    );
+    assert!(!std::path::Path::new(&format!("{csv}.json")).exists());
+}
+
 #[test]
 fn sweeps() {
     let d = scratch("sweeps");
@@ -284,7 +311,7 @@ fn compare_refuses_mismatched_settings() {
 
 #[test]
 fn sparse_bins_and_incomplete_labels() {
-    let d = scratch("sparse");
+    let d = scratch("sparse-labels");
     let (a, b) = (path(&d, "a.csv"), path(&d, "b.csv"));
     for (file, levels) in [(&a, "-10,-inf,-inf,-10"), (&b, "-inf,-50,-50,-inf")] {
         std::fs::write(file, format!("date,time,0,40,10,1,{levels}\n")).unwrap();

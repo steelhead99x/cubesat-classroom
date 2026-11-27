@@ -340,10 +340,12 @@ async function privately(response, env) {
 }
 
 // Defence in depth for every response. The site's scripts are all files on its own origin
-// (no inline scripts), so scripts may load only from 'self'.
-function secured(response) {
+// (no inline scripts), so scripts may load only from 'self'. The rockoon workbook runs its
+// simulator as WebAssembly, so its pages may also compile WebAssembly ('wasm-unsafe-eval').
+function secured(response, pathname = '') {
   const out = new Response(response.body, response);
-  out.headers.set('content-security-policy', "script-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'");
+  const wasm = pathname.startsWith('/rockoon/workbook/') ? " 'wasm-unsafe-eval'" : '';
+  out.headers.set('content-security-policy', `script-src 'self'${wasm}; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'`);
   out.headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   out.headers.set('x-content-type-options', 'nosniff');
   out.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
@@ -370,7 +372,7 @@ export default {
     if (gate instanceof Response) return secured(gate);
     const response = await privately(cachedLong(request, await route(request, env)), env);
     if (gate?.setCookie) response.headers.append('set-cookie', gate.setCookie);
-    return secured(response);
+    return secured(response, new URL(request.url).pathname);
   },
 };
 

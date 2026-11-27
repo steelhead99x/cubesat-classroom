@@ -5,6 +5,7 @@ import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import LevelPicker from '../components/LevelPicker.astro';
 import PedalLab from '../components/PedalLab.astro';
+import PlayLearn from '../components/PlayLearn.astro';
 import StationDemo from '../components/StationDemo.astro';
 import MissionFanout from '../components/MissionFanout.astro';
 import ProposalCard from '../components/ProposalCard.astro';
@@ -76,6 +77,8 @@ const labs = [
       <MissionEmblem class="mx-auto lg:w-[19rem] xl:w-[21rem]" />
     </div>
   </section>
+
+  <div class="shell pt-12 sm:pt-16"><PlayLearn /></div>
 
   <section id="quests" class="shell scroll-mt-6 py-12 sm:py-16" aria-labelledby="lessons-title">
     <div class="grid gap-6 lg:grid-cols-[.8fr_1.2fr] lg:gap-16">

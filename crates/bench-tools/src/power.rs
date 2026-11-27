@@ -84,11 +84,27 @@ mod port {
 /// Read the logger sketch for `minutes` and save a CSV plus a `.json` label.
 ///
 /// # Errors
-/// If the port or output cannot be opened, or on a platform without termios.
+/// If the record settings are invalid, the port or output cannot be opened, or
+/// the platform lacks termios.
 pub fn record(r: &Record, out: &mut impl Write) -> Result<(), Fail> {
     #[cfg(unix)]
     {
         use std::io::Read;
+        use std::time::{Duration, Instant};
+
+        let Ok(duration) = Duration::try_from_secs_f64(r.minutes * 60.0) else {
+            return fail(
+                "--minutes must be a finite, positive duration within the supported range",
+            );
+        };
+        if duration.is_zero() || Instant::now().checked_add(duration).is_none() {
+            return fail(
+                "--minutes must be a finite, positive duration within the supported range",
+            );
+        }
+        if !r.shunt.is_finite() || r.shunt <= 0.0 {
+            return fail("--shunt must be a finite, positive resistance in ohms");
+        }
         let mut port = port::open(&r.port).map_err(|e| Fail(format!("{}: {e}", r.port)))?;
         let mut file =
             std::fs::File::create(&r.out).map_err(|e| Fail(format!("{}: {e}", r.out)))?;
@@ -101,11 +117,11 @@ pub fn record(r: &Record, out: &mut impl Write) -> Result<(), Fail> {
             ])
             .as_bytes(),
         )?;
-        let end = std::time::Instant::now() + std::time::Duration::from_secs_f64(r.minutes * 60.0);
+        let start = Instant::now();
         let mut pending: Vec<u8> = Vec::new();
         let mut buf = [0u8; 512];
         let mut n = 0u64;
-        while std::time::Instant::now() < end {
+        while start.elapsed() < duration {
             let got = port.read(&mut buf)?;
             pending.extend_from_slice(&buf[..got]);
             while let Some(at) = pending.iter().position(|&b| b == b'\n') {

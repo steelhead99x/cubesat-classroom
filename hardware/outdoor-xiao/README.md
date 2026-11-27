@@ -1,6 +1,6 @@
 # Outdoor XIAO station: XIAO ESP32-S3 on Wi-Fi HaLow, XIAO MG24 Sense and a 3000 mAh battery
 
-A fork of the [outdoor ground station](../outdoor-station/README.md): the same sealed box, lid, gasket, battery pocket and tripod thread, with a **XIAO plate** in place of the payload plate, and two SMA bulkheads in the wall that faces up, for antennas. The rules behind it are in the [design guide](../DESIGN-GUIDE.md).
+A fork of the [outdoor ground station](../outdoor-station/README.md): the same sealed box, latching lid and O-ring, battery pocket and tripod thread (no screws), with a **XIAO plate** in place of the payload plate, and two SMA bulkheads in the wall that faces up, for antennas. The rules behind it are in the [design guide](../DESIGN-GUIDE.md).
 
 **Status: design checks only.** Nothing in this folder has been printed. Several board sizes are assumptions, so print the XIAO coupon and try your boards in it before you print a plate.
 
@@ -22,10 +22,9 @@ A fork of the [outdoor ground station](../outdoor-station/README.md): the same s
 
 | File | Plate | What's on it |
 | --- | --- | --- |
-| **[p1s/outdoor-xiao-test-coupons.3mf](p1s/outdoor-xiao-test-coupons.3mf)** (print first) | Test coupons | The XIAO coupon (both boards' mounts), the tripod-thread coupon, and the snap pin with its fit ladder |
+| **[p1s/outdoor-xiao-test-coupons.3mf](p1s/outdoor-xiao-test-coupons.3mf)** (print first) | Test coupons | The XIAO coupon (both boards' mounts), the tripod-thread coupon, the latch coupon, and the snap pin with its fit ladder |
 | **[p1s/outdoor-xiao.3mf](p1s/outdoor-xiao.3mf)** | 1. Box | The box, with the two SMA holes |
-| | 2. Lid and XIAO plate | The lid and the XIAO plate (10 cm³) |
-| | 3. Gasket | The gasket, in TPU 95A |
+| | 2. Lid and XIAO plate | The lid and the XIAO plate (14 cm³, on an isogrid) |
 
 Print in ASA or PETG, no supports. The [outdoor station's README](../outdoor-station/README.md) covers the material, the tripod-thread coupon, assembly, the water test and how the box fits.
 
