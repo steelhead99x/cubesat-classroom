@@ -30,7 +30,7 @@ const total = quests.reduce((sum, quest) => sum + quest.data.minutes, 0);
           <span aria-hidden="true">{String(quest.data.order).padStart(2, '0')}</span>
           <div class="grid gap-x-5 gap-y-2 sm:grid-cols-[1fr_auto]">
             <div>
-              <a href={`${base}/quests/${quest.id}/`} class="font-bold text-accent underline underline-offset-4">{quest.data.title}</a>
+              <a href={`${base}/quests/${quest.id}/`} class="tap font-bold text-accent underline underline-offset-4">{quest.data.title}</a>
               <p class="mt-1">{quest.data.summary}</p>
             </div>
             <p class="sm:text-right">{quest.data.minutes} min · {quest.data.skill}</p>
