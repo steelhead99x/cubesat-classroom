@@ -19,9 +19,9 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
   <div class="shell py-8 sm:py-12">
     <p class="eyebrow t-label"><a href={base + '/games/'}>Games</a> · Play &amp; learn</p>
     <h1>Catch the Pass</h1>
-    <p class="lede mt-3">Keep your antenna on the CubeSat as it crosses the sky, and pick the right spreading factor to download its packets before it sets.</p>
+    <p class="lede mt-2">Keep your antenna on the CubeSat as it crosses the sky, and catch its packets before it sets.</p>
 
-    <section class="ctp mt-7" data-ctp aria-labelledby="ctp-title">
+    <section class="ctp mt-5" data-ctp aria-labelledby="ctp-title">
       <h2 id="ctp-title" class="sr-only">Game</h2>
       <div class="ctp-top">
         <div role="tablist" aria-label="Mode" class="tabs">
@@ -29,11 +29,11 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
           <button type="button" role="tab" data-mode="live" aria-selected="false">🌐 Play with others</button>
         </div>
         <div class="tools">
-          <button type="button" data-help>❓ How to play</button>
-          <button type="button" data-pause aria-pressed="false">Start</button>
-          <button type="button" data-restart>↺ Start again</button>
-          <button type="button" data-sound aria-pressed="false">🔇 Sound off</button>
-          <label class="slow"><input type="checkbox" data-slow checked /> 🙂 Easy mode</label>
+          <label class="slow" title="Slower passes and a bigger antenna circle"><input type="checkbox" data-slow checked /> 🙂 Easy</label>
+          <button type="button" data-pause aria-pressed="false" class="start">Start</button>
+          <button type="button" data-restart class="ico" aria-label="Start again" title="Start again">↺</button>
+          <button type="button" data-sound aria-pressed="false" class="ico" aria-label="Sound off" title="Sound">🔇</button>
+          <button type="button" data-help class="ico" aria-label="How to play" title="How to play">?</button>
         </div>
       </div>
       <div data-missions class="levels" role="group" aria-label="Levels">
@@ -48,26 +48,30 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
         <p class="small">Everyone in the live sky tracks the same satellite at the same time. A new pass starts every minute. Stations are anonymous call signs. There are no names and no chat.</p>
       </div>
 
+      <div class="dash">
+        <dl class="numbers">
+          <div><dt>📦 Packets</dt><dd data-rx>0</dd></div>
+          <div><dt>🪙 Credits</dt><dd data-score>0</dd></div>
+          <div><dt>🔥 In a row</dt><dd data-streak>0</dd></div>
+          <div><dt>⏱ Time</dt><dd data-time>—</dd></div>
+        </dl>
+        <div class="meter">
+          <span class="t-label">📶 Signal <span data-snr>—</span></span>
+          <div class="bar" aria-hidden="true"><i data-snr-bar></i><b data-snr-floor title="You need a signal past this line to catch packets"></b></div>
+        </div>
+        <div class="meter">
+          <span class="t-label">🔋 Battery <span data-battery>—</span> · <span data-light>Sunlit</span></span>
+          <div class="bar" aria-hidden="true"><i data-battery-bar class="battery"></i></div>
+        </div>
+      </div>
       <div class="stage">
         <canvas tabindex="0" aria-label="Sky view" aria-describedby="ctp-keys"></canvas>
         <div class="overlay" data-overlay></div>
       </div>
-      <div class="pad" role="group" aria-label="Move the antenna">
-        <span class="pad-lbl">📡 Move the antenna</span>
-        <button type="button" data-aim="ArrowUp" aria-label="Antenna up" class="up">▲</button>
-        <button type="button" data-aim="ArrowLeft" aria-label="Antenna left" class="left">◀</button>
-        <button type="button" data-aim="ArrowRight" aria-label="Antenna right" class="right">▶</button>
-        <button type="button" data-aim="ArrowDown" aria-label="Antenna down" class="down">▼</button>
-      </div>
       <p class="sr-only" data-status role="status" aria-live="polite"></p>
 
-      <div class="hud">
-        <div class="meter">
-          <span class="t-label">📶 Signal</span>
-          <div class="bar" aria-hidden="true"><i data-snr-bar></i><b data-snr-floor title="You need a signal past this line to catch packets"></b></div>
-          <span data-snr>—</span>
-        </div>
-        <div class="sf" role="group" aria-label="Spreading factor">
+      <div class="deck">
+        <div class="sf" role="group" aria-label="Radio setting (spreading factor)">
           <span class="t-label">📻 Radio setting</span>
           <div>
             <button type="button" data-sf="7" aria-pressed="false">🐇 Fast <small>SF7</small></button>
@@ -75,18 +79,13 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
             <button type="button" data-sf="12" aria-pressed="false">🐢 Far <small>SF12</small></button>
           </div>
         </div>
-        <div class="meter">
-          <span class="t-label">🔋 Satellite battery · <span data-light>Sunlit</span></span>
-          <div class="bar" aria-hidden="true"><i data-battery-bar class="battery"></i></div>
-          <span data-battery>—</span>
+        <button type="button" data-tx aria-pressed="true" class="tx">📡 Sending: on</button>
+        <div class="pad" role="group" aria-label="Move the antenna">
+          <button type="button" data-aim="ArrowUp" aria-label="Antenna up" class="up">▲</button>
+          <button type="button" data-aim="ArrowLeft" aria-label="Antenna left" class="left">◀</button>
+          <button type="button" data-aim="ArrowRight" aria-label="Antenna right" class="right">▶</button>
+          <button type="button" data-aim="ArrowDown" aria-label="Antenna down" class="down">▼</button>
         </div>
-        <div><button type="button" data-tx aria-pressed="true" class="tx">📡 Sending: on</button></div>
-        <dl class="numbers">
-          <div><dt>📦 Packets</dt><dd data-rx>0</dd></div>
-          <div><dt>🪙 Credits</dt><dd data-score>0</dd></div>
-          <div><dt>🔥 In a row</dt><dd data-streak>0</dd></div>
-          <div><dt>⏱ Time left</dt><dd data-time>—</dd></div>
-        </dl>
       </div>
 
       <div class="panels">
@@ -135,59 +134,70 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
 </script>
 
 <style>
-  .ctp { background: #081028; color: #e8ecff; border-radius: .6rem; padding: clamp(.8rem, 2.5vw, 1.4rem); }
-  .ctp button { min-height: 44px; padding: .45rem .85rem; border: 1px solid #5b6ab8; border-radius: .3rem; background: #121d4a; color: #fff; font: 600 .95rem var(--font-sans); }
-  .ctp button:hover:not(:disabled) { background: #1d2b6b; }
-  .ctp button[aria-pressed="true"], .ctp button[aria-selected="true"] { background: #ffd23f; color: #081028; border-color: #ffd23f; }
+  .ctp { --line: #2b3a85; --panel: #121a46; --gold: #ffd23f; background: #0b1240; color: #e8ecff; border-radius: .9rem; padding: .6rem; box-shadow: 0 10px 40px rgb(8 12 40 / .35); }
+  .ctp button { min-height: 44px; padding: .45rem .85rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--panel); color: #fff; font: 700 .95rem var(--font-sans); touch-action: manipulation; }
+  .ctp button:hover:not(:disabled) { filter: brightness(1.15); }
+  .ctp button[aria-pressed="true"], .ctp button[aria-selected="true"] { background: var(--gold); color: #0b1240; border-color: var(--gold); }
   .ctp button:disabled { opacity: .5; cursor: not-allowed; }
-  .ctp :focus-visible { outline: 3px solid #ffd23f; outline-offset: 2px; }
-  .ctp-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem; }
-  .tabs, .tools, .levels { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
-  .levels, .live-note { margin-top: .7rem; }
+  .ctp :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .ctp-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem; }
+  .tabs, .tools { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+  .tools .ico { width: 2.75rem; padding: 0; font-size: 1.1rem; }
+  .tools .start { background: linear-gradient(#ffe27a, #ffc62e); color: #0b1240; border-color: #ffc62e; min-width: 6rem; }
+  .slow { display: inline-flex; gap: .35rem; align-items: center; min-height: 44px; padding: 0 .7rem; border-radius: .7rem; background: var(--panel); border: 1px solid var(--line); font-weight: 700; font-size: .9rem; cursor: pointer; }
+  .slow input { width: 1.1rem; height: 1.1rem; accent-color: var(--gold); }
+  @media (max-width: 480px) { .tabs, .tools { width: 100%; flex-wrap: nowrap; } .tabs button { flex: 1; } .tools .start { flex: 1; min-width: 0; } .slow { padding: 0 .55rem; } .tools .ico { width: 2.6rem; flex: none; } }
+  /* Levels: one scrolling strip of chips instead of a block of buttons */
+  .levels { display: flex; gap: .4rem; margin-top: .55rem; overflow-x: auto; scrollbar-width: thin; padding-bottom: .15rem; }
+  .levels button { white-space: nowrap; flex: none; font-size: .88rem; min-height: 40px; border-radius: 999px; }
   .levels .n { font-family: var(--font-mono); opacity: .8; }
-  .stars-mini { font-size: .8rem; letter-spacing: .05em; opacity: .9; }
-  .ctp button { min-height: 48px; }
-  .pad { display: grid; grid-template-columns: repeat(3, 4.2rem); grid-template-rows: auto repeat(3, 4.2rem); gap: .35rem; justify-content: center; margin-top: .8rem; }
-  .pad-lbl { grid-column: 1 / -1; text-align: center; font-weight: 700; }
-  .pad button { min-height: 0; font-size: 1.6rem; touch-action: none; user-select: none; -webkit-user-select: none; }
-  .pad button[data-held="true"] { background: #ffd23f; color: #081028; }
-  .pad .up { grid-column: 2; grid-row: 2; } .pad .left { grid-column: 1; grid-row: 3; } .pad .right { grid-column: 3; grid-row: 3; } .pad .down { grid-column: 2; grid-row: 4; }
-  .overlay :global(.steps) { list-style: none; padding: 0; display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); max-width: 46rem; width: 100%; margin-inline: auto; }
-  .overlay :global(.steps li) { display: grid; gap: .3rem; justify-items: center; padding: .8rem; border-radius: .6rem; background: #121d4a; border: 1px solid #2b3a85; }
-  .overlay :global(.steps .pic) { font-size: 2.4rem; line-height: 1; }
-  .overlay :global(button.go) { min-height: 56px; font-size: 1.2rem; }
-  .stage[data-panel="howto"] canvas { visibility: hidden; }
-  .stage[data-panel="howto"] .overlay { position: absolute; grid-template-columns: minmax(0, 1fr); align-content: safe center; place-content: unset; }
-  @media (max-width: 40rem) { .stage[data-panel="howto"] canvas { display: none; } .stage[data-panel="howto"] .overlay { position: static; } }
-  .slow { display: inline-flex; gap: .4rem; align-items: center; min-height: 44px; }
-  .slow input { width: 1.2rem; height: 1.2rem; accent-color: #ffd23f; }
-  .stage { position: relative; margin-top: .8rem; }
-  canvas { display: block; width: 100%; border-radius: .4rem; touch-action: none; cursor: crosshair; background: #00005c; }
-  .overlay { position: absolute; inset: 0; display: grid; place-content: center; gap: .6rem; padding: 1rem; text-align: center; background: rgb(0 0 40 / .78); border-radius: .4rem; }
+  .stars-mini { font-size: .78rem; letter-spacing: .05em; opacity: .9; }
+  .live-note { margin-top: .55rem; }
+  /* HUD strip above the sky */
+  .dash { display: grid; grid-template-columns: auto 1fr 1fr; gap: .4rem 1rem; align-items: center; margin-top: .55rem; padding: .45rem .7rem; border-radius: .7rem; background: rgb(8 12 36 / .9); border: 1px solid var(--line); }
+  .numbers { display: flex; gap: .9rem; font-family: var(--font-mono); margin: 0; }
+  .numbers dt { font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; opacity: .75; white-space: nowrap; }
+  .numbers dd { font-size: 1.2rem; font-weight: 800; }
+  .meter { display: grid; gap: .25rem; font-family: var(--font-mono); }
+  .meter .t-label { font-size: .7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar { position: relative; height: .7rem; background: #1b2550; border-radius: 999px; overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #ffb13b, #ffd23f); border-radius: 999px; transition: width .15s linear; }
+  .bar i[data-ok="true"] { background: linear-gradient(90deg, #3fbf7f, #7ff0a8); }
+  .bar i.battery { background: linear-gradient(90deg, #3fbf7f, #7ff0a8); }
+  .bar i.battery[data-low="true"] { background: #ef6b6c; }
+  .bar b { position: absolute; top: 0; bottom: 0; width: 3px; background: #fff; box-shadow: 0 0 4px #fff; }
+  @media (max-width: 720px) { .dash { grid-template-columns: 1fr 1fr; } .numbers { grid-column: 1 / -1; justify-content: space-between; } }
+  .stage { position: relative; margin-top: .5rem; }
+  canvas { display: block; width: 100%; border-radius: .7rem; touch-action: none; cursor: crosshair; background: #0b1240; }
+  /* Controls under the sky: radio setting and sending on one side, the antenna pad on the other */
+  .deck { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "sf pad" "tx pad"; gap: .5rem 1rem; align-items: center; margin-top: .55rem; padding: .55rem .7rem; border-radius: .7rem; background: rgb(8 12 36 / .9); border: 1px solid var(--line); }
+  .sf { grid-area: sf; }
+  .sf .t-label { font-size: .72rem; }
+  .sf > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem; margin-top: .3rem; }
+  .sf button { display: grid; line-height: 1.15; min-height: 52px; }
+  .sf small { font-weight: 500; opacity: .75; font-size: .72rem; }
+  .tx { grid-area: tx; min-height: 48px; }
+  .pad { grid-area: pad; display: grid; grid-template-columns: repeat(3, 3.4rem); grid-template-rows: repeat(3, 3.4rem); gap: .3rem; }
+  .pad button { min-height: 0; padding: 0; font-size: 1.4rem; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: .8rem; }
+  .pad button[data-held="true"] { background: var(--gold); color: #0b1240; }
+  .pad .up { grid-column: 2; grid-row: 1; } .pad .left { grid-column: 1; grid-row: 2; } .pad .right { grid-column: 3; grid-row: 2; } .pad .down { grid-column: 2; grid-row: 3; }
+  @media (max-width: 480px) { .pad { grid-template-columns: repeat(3, 2.9rem); grid-template-rows: repeat(3, 2.9rem); } .deck { gap: .45rem; padding: .5rem; } .sf button { padding: .3rem .2rem; font-size: .82rem; } .sf small { font-size: .66rem; } }
+  .overlay { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-content: safe center; justify-items: center; gap: .6rem; padding: 1rem; text-align: center; background: rgb(6 10 32 / .72); backdrop-filter: blur(2px); border-radius: .7rem; overflow: auto; }
   .overlay[hidden] { display: none; }
   .overlay :global(h3) { font-size: clamp(1.4rem, 3vw, 2rem); }
-  .overlay :global(p) { max-width: 36rem; margin-inline: auto; }
-  .overlay :global(.stars) { font-size: 2.4rem; color: #ffd23f; letter-spacing: .1em; }
-  .overlay :global(.goal) { font-family: var(--font-mono); font-size: .9rem; color: #ffd23f; }
+  .overlay :global(p) { max-width: 36rem; margin-inline: auto; color: #d6dcff; }
+  .overlay :global(.stars) { font-size: 2.4rem; color: var(--gold); letter-spacing: .1em; }
+  .overlay :global(.goal) { font-family: var(--font-mono); font-size: .9rem; color: var(--gold); }
   .overlay :global(.row) { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; }
-  .overlay :global(button) { justify-self: center; min-height: 44px; padding: .5rem 1.1rem; border: 1px solid #5b6ab8; border-radius: .3rem; background: #121d4a; color: #fff; font: 600 1rem var(--font-sans); }
-  .overlay :global(button.go) { background: #ffd23f; color: #081028; border-color: #ffd23f; font-size: 1.05rem; padding-inline: 1.4rem; }
-  .hud { display: grid; gap: .8rem 1.2rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); align-items: end; margin-top: .9rem; }
-  .meter { display: grid; gap: .3rem; font-family: var(--font-mono); }
-  .bar { position: relative; height: .8rem; background: #1b2550; border-radius: .2rem; overflow: hidden; }
-  .bar i { position: absolute; inset: 0 auto 0 0; background: #ffd23f; }
-  .bar i[data-ok="true"] { background: #6fd3a0; }
-  .bar i.battery { background: #6fd3a0; }
-  .bar i.battery[data-low="true"] { background: #ef6b6c; }
-  .bar b { position: absolute; top: 0; bottom: 0; width: 3px; background: #fff; }
-  .sf > div { display: flex; gap: .4rem; margin-top: .3rem; }
-  .sf small { font-weight: 400; opacity: .8; }
-  .tx { width: 100%; }
-  .numbers { display: flex; gap: 1rem; flex-wrap: wrap; font-family: var(--font-mono); }
-  .numbers dt { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; opacity: .75; }
-  .numbers dd { font-size: 1.4rem; font-weight: 600; }
-  .panels { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin-top: 1rem; }
-  .log { margin-top: .4rem; font: .85rem/1.5 var(--font-mono); color: #c9d2ff; }
+  .overlay :global(button) { justify-self: center; min-height: 46px; padding: .5rem 1.1rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--panel); color: #fff; font: 700 1rem var(--font-sans); }
+  .overlay :global(button.go) { min-height: 56px; background: linear-gradient(#ffe27a, #ffc62e); color: #0b1240; border-color: #ffc62e; box-shadow: 0 4px 0 #b88a10; font-size: 1.2rem; padding-inline: 1.6rem; }
+  .overlay :global(.steps) { list-style: none; padding: 0; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr)); max-width: 46rem; width: 100%; margin-inline: auto; }
+  .overlay :global(.steps li) { display: grid; gap: .3rem; justify-items: center; padding: .8rem; border-radius: .8rem; background: #18225a; border: 1px solid var(--line); }
+  .overlay :global(.steps .pic) { font-size: 2.2rem; line-height: 1; }
+  .stage[data-panel="howto"] canvas { visibility: hidden; }
+  @media (max-width: 40rem) { .stage[data-panel="howto"] canvas { display: none; } .stage[data-panel="howto"] .overlay { position: static; } }
+  .panels { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin-top: .8rem; padding: 0 .3rem .3rem; }
+  .log { margin-top: .4rem; font: .82rem/1.5 var(--font-mono); color: #c9d2ff; }
   .small { font-size: .88rem; color: #c9d2ff; }
   .real :global(a) { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
   .real .small { color: var(--color-muted); }
