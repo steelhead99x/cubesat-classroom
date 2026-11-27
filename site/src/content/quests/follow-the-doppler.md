@@ -13,11 +13,12 @@ beginner:
   steps:
     - Do the three pedal tasks shown above the pedal. Tap ENGAGE, tune to 145.800 MHz, then set GAIN and LEVEL.
     - Write down the frequency, gain and level that worked.
-    - Press **Start a pass**. When the satellite rises, turn TUNE to keep the readout saying **carrier heard**.
+    - Check the ENGAGE light is on, then press **Start a pass**. When the satellite rises, turn TUNE to keep the readout saying **carrier heard**. The score only counts time with the pedal engaged.
   check: You have the three settings written down and the percent of the pass you heard, from the result line.
   discuss: The satellite's signal seems to change frequency as it goes past. Have you heard a siren change pitch as it drives by?
 intermediate:
   steps:
+    - Tap ENGAGE so its light is on before every pass. The score only counts seconds while the pedal is engaged, so a muted pass scores 0%. **Restart** turns ENGAGE off again.
     - Run one pass with TUNE in 5 kHz steps. Record the percent heard.
     - Tap TUNE to switch to 1 kHz steps and run another pass. Record the percent heard again.
     - During the second pass, write down the Doppler value at rise, at the highest point and at set.
