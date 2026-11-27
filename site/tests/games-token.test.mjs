@@ -113,6 +113,16 @@ test('Rockoon Battle tokens are scoped to one room, joined by code', async () =>
   }
 });
 
+test('the terrain rules use a separate room namespace from old clients', async () => {
+  const room = 'K7QX2';
+  const legacy = await (await ask(configured, { body: { game: 'rockoon-battle', room } })).json();
+  const current = await (await ask(configured, { body: {
+    game: 'rockoon-battle-v2', room, player: legacy.player, ticket: legacy.ticket,
+  } })).json();
+  assert.equal(new URL(current.url).pathname, `/proj/games/rockoon-battle-v2/${room}`);
+  assert.notEqual(current.player, legacy.player);
+});
+
 test('a seat ticket keeps the same player id in the same room, and only there', async () => {
   const first = await (await ask(configured, { body: { game: 'rockoon-battle', room: 'K7QX2' } })).json();
   const again = await (await ask(configured, { body: { game: 'rockoon-battle', room: 'K7QX2', player: first.player, ticket: first.ticket } })).json();
