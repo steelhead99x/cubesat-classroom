@@ -8,3 +8,6 @@ __pycache__/
 /.wrangler/
 /site/.astro/
 /site/.cloudflare/
+
+# Local Worker secrets for `wrangler dev`. Never commit.
+.dev.vars*
