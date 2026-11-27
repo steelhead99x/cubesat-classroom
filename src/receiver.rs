@@ -109,6 +109,9 @@ pub(crate) struct Scenario {
     pub level_at_1000km_dbfs: f64,
     /// Retune for Doppler, as a tracking station would.
     pub track_doppler: bool,
+    /// The receiver hears a carrier within this many Hz of where it is tuned. Off-tune carriers
+    /// outside it are not heard or decoded.
+    pub passband_hz: f64,
 }
 
 /// Where a snapshot came from. Shown beside every value.
@@ -182,7 +185,11 @@ pub(crate) struct Stats {
     pub noise_dbfs: f64,
     /// `None` with no signal.
     pub snr_db: Option<f64>,
-    pub clipping: bool,
+    /// Whether the receiver's input is near full scale. Only a source that sees the ADC samples
+    /// can tell (the simulator); `rtl_power` prints averaged FFT bin power, not sample levels,
+    /// so the bridge leaves this out rather than guess.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clipping: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub doppler_hz: Option<f64>,
     /// Received carrier minus tuned frequency.
@@ -322,18 +329,26 @@ impl Scenario {
             self.nominal_hz
         };
         let received_hz = self.nominal_hz as f64 + doppler_hz;
+        // The carrier is only heard (and decoded) inside the receiver's passband.
+        let in_band = (received_hz - tuned_hz as f64).abs() <= self.passband_hz;
         let noise_dbfs = self.source.noise_at_zero_gain_dbfs() + self.gain_db;
         let signal_dbfs = if in_view {
             self.level_at_1000km_dbfs + self.gain_db + 20.0 * (1000.0 / geo.range_km).log10()
         } else {
             f64::NEG_INFINITY
         };
-        // Signal and noise add as power.
-        let total = 10f64.powf(noise_dbfs / 10.0) + 10f64.powf(signal_dbfs / 10.0);
-        let raw = 10.0 * total.log10();
-        let clipping = raw > -1.0;
-        let dbfs = raw.min(0.0);
-        let snr_db = if in_view {
+        let power = |db: f64| 10f64.powf(db / 10.0);
+        // The ADC sees the carrier wherever it is in the dongle's bandwidth, so an off-tune
+        // carrier can still clip the input.
+        let clipping = 10.0 * (power(noise_dbfs) + power(signal_dbfs)).log10() > -1.0;
+        // The level and SNR are measured in the passband: signal and noise add as power there.
+        let heard_dbfs = if in_band {
+            signal_dbfs
+        } else {
+            f64::NEG_INFINITY
+        };
+        let dbfs = (10.0 * (power(noise_dbfs) + power(heard_dbfs)).log10()).min(0.0);
+        let snr_db = if in_view && in_band {
             signal_dbfs - noise_dbfs
         } else {
             f64::NEG_INFINITY
@@ -366,7 +381,7 @@ impl Scenario {
             gain_db: round1(self.gain_db),
             noise_dbfs: round1(noise_dbfs),
             snr_db: snr_db.is_finite().then(|| round1(snr_db)),
-            clipping,
+            clipping: Some(clipping),
             doppler_hz: Some(round1(doppler_hz)),
             offset_hz: Some(round1(received_hz - tuned_hz as f64)),
             range_km: Some(round1(geo.range_km)),
@@ -467,6 +482,10 @@ pub(crate) struct SimArgs {
     /// Retune for Doppler during the pass.
     #[arg(long)]
     track_doppler: bool,
+    /// The receiver hears a carrier within this many Hz of where it is tuned. The default
+    /// matches the website's pass simulator (site/src/lib/pass.mjs, PASSBAND_HZ).
+    #[arg(long, default_value_t = 1500.0)]
+    passband_hz: f64,
     /// Seconds of output when printing (0 = one full cycle).
     #[arg(long, default_value_t = 0)]
     seconds: u64,
@@ -508,7 +527,12 @@ impl SimArgs {
             gain_db: self.gain_db,
             level_at_1000km_dbfs: self.level_at_1000km_dbfs,
             track_doppler: self.track_doppler,
+            passband_hz: self.passband_hz,
         };
+        ensure!(
+            self.passband_hz > 0.0 && self.passband_hz.is_finite(),
+            "--passband-hz must be above 0"
+        );
         ensure!(
             scenario.pass_duration_s() + 60.0 < self.cycle_s as f64,
             "a {:.0} s pass does not fit a {} s cycle; raise --cycle-s",
@@ -666,14 +690,18 @@ pub(crate) fn from_rtl_power(
         station: publisher.station.clone(),
         source: args.satellite.clone(),
         provenance: args.label.provenance(),
-        utc: utc_string(captured_unix_ms),
+        // When the sweep was taken, from the row itself; the time it reached the bridge only
+        // if the row's time cannot be read.
+        utc: utc_string(sweep_unix_ms(row).unwrap_or(captured_unix_ms)),
         contact: if snr_db >= HEARD_SNR_DB {
             Contact::Acquired
         } else {
             Contact::Idle
         },
         frequency_hz: tuned_hz,
-        level_dbfs: round1(peak.min(0.0)),
+        // Relative dB from rtl_power's FFT, which can be above 0; it is not full scale, so it
+        // is not capped there and says nothing about clipping.
+        level_dbfs: round1(peak),
         elevation_deg: None,
         sensors: None,
         receiver: args.source,
@@ -682,12 +710,27 @@ pub(crate) fn from_rtl_power(
         gain_db: round1(args.gain_db),
         noise_dbfs: round1(noise),
         snr_db: Some(round1(snr_db)),
-        clipping: peak > -1.0,
+        clipping: None,
         doppler_hz: None,
         offset_hz: None,
         range_km: None,
         pass_s: None,
     })
+}
+
+/// The time at the start of an rtl_power row (`2026-11-27, 18:30:05, ...`) as Unix ms.
+/// rtl_power writes this computer's local time, so it is converted with the local time zone.
+fn sweep_unix_ms(row: &str) -> Option<u64> {
+    let mut fields = row.split(',').map(str::trim);
+    let (date, time) = (fields.next()?, fields.next()?);
+    let mut d = date.split('-').map(|v| v.parse::<i32>().ok());
+    let mut t = time.split(':').map(|v| v.parse::<i32>().ok());
+    let (y, mo, da) = (d.next()??, d.next()??, d.next()??);
+    let (h, mi, se) = (t.next()??, t.next()??, t.next()??);
+    if d.next().is_some() || t.next().is_some() {
+        return None;
+    }
+    bench_tools::util::local_to_unix_s(y, mo, da, h, mi, se).map(|s| s * 1000)
 }
 
 pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
@@ -816,7 +859,7 @@ pub(crate) fn describe(s: &Stats) -> String {
         s.frequency_hz as f64 / 1e6,
         s.gain_db
     );
-    if s.clipping {
+    if s.clipping == Some(true) {
         line.push_str("; CLIPPING, turn the gain down");
     }
     for (name, r) in s.sensors.iter().flatten() {
@@ -852,6 +895,7 @@ mod tests {
             gain_db: 20.0,
             level_at_1000km_dbfs: -80.0,
             track_doppler: false,
+            passband_hz: 1500.0,
         }
     }
 
@@ -981,7 +1025,7 @@ mod tests {
             ..scenario()
         };
         let st = s.snapshot(&publisher(), top(&s), 0);
-        assert!(st.clipping);
+        assert_eq!(st.clipping, Some(true));
         assert!(st.level_dbfs <= 0.0);
         assert!(st.sensors.is_none(), "a clipped signal does not decode");
     }
@@ -1061,6 +1105,72 @@ mod tests {
                 .unwrap()
                 .provenance,
             Provenance::HardwareBench
+        );
+    }
+
+    #[test]
+    fn an_off_tune_carrier_outside_the_passband_is_not_heard_or_decoded() {
+        let strong = Scenario {
+            level_at_1000km_dbfs: -50.0,
+            ..scenario()
+        };
+        // Early in the pass the Doppler shift is largest; find a second where it is outside
+        // the 1.5 kHz passband of a receiver left on the published frequency.
+        let rise = (60..900)
+            .find(|&q| {
+                let st = strong.snapshot(&publisher(), q, 0);
+                st.elevation_deg.unwrap() > 5.0 && st.offset_hz.unwrap().abs() > 1500.0
+            })
+            .expect("a second with a large offset");
+        let fixed = strong.snapshot(&publisher(), rise, 0);
+        assert_eq!(fixed.contact, Contact::Lost);
+        assert!(
+            fixed.sensors.is_none(),
+            "nothing decodes outside the passband"
+        );
+        assert!(fixed.snr_db.is_none());
+        // A station that follows the Doppler shift hears and decodes the same second.
+        let tracked = Scenario {
+            track_doppler: true,
+            ..strong
+        }
+        .snapshot(&publisher(), rise, 0);
+        assert_eq!(tracked.contact, Contact::Acquired);
+        assert!(tracked.sensors.is_some());
+    }
+
+    #[test]
+    fn bridge_levels_are_relative_and_say_nothing_about_clipping() {
+        let args = bridge_args(&[]);
+        // rtl_power bins are averaged FFT power and can be above 0 dB without clipping.
+        let row = "2026-11-27, 18:30:05, 145799000, 145801000, 1000.00, 1000, -20.0, 4.5";
+        let st = from_rtl_power(row, &args, &publisher(), 0, 0).unwrap();
+        assert_eq!(st.level_dbfs, 4.5, "not capped at 0");
+        assert_eq!(st.clipping, None);
+        let json = serde_json::to_value(&st).unwrap();
+        assert!(
+            json.get("clipping").is_none(),
+            "left out, not reported as false"
+        );
+        assert!(!describe(&st).contains("CLIPPING"));
+    }
+
+    #[test]
+    fn bridge_keeps_the_sweep_time() {
+        let args = bridge_args(&[]);
+        let row = "2026-11-27, 18:30:05, 145799000, 145801000, 1000.00, 1000, -40, -20";
+        let late = 1_900_000_000_000; // the row reached the bridge much later
+        let st = from_rtl_power(row, &args, &publisher(), 0, late).unwrap();
+        let sweep = bench_tools::util::local_to_unix_s(2026, 11, 27, 18, 30, 5).unwrap() * 1000;
+        assert_eq!(st.utc, utc_string(sweep));
+        assert_ne!(st.utc, utc_string(late));
+        // A row whose time cannot be read falls back to when it arrived.
+        let odd = "2026-02-31, 18:30:05, 145799000, 145801000, 1000.00, 1000, -40, -20";
+        assert_eq!(
+            from_rtl_power(odd, &args, &publisher(), 0, late)
+                .unwrap()
+                .utc,
+            utc_string(late)
         );
     }
 
