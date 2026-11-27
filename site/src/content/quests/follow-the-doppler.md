@@ -18,9 +18,9 @@ beginner:
   discuss: The satellite's signal seems to change frequency as it goes past. Have you heard a siren change pitch as it drives by?
 intermediate:
   steps:
-    - Tap ENGAGE so its light is on before every pass. The score only counts seconds while the pedal is engaged, so a muted pass scores 0%. **Restart** turns ENGAGE off again.
-    - Run one pass with TUNE in 5 kHz steps. Record the percent heard.
-    - Tap TUNE to switch to 1 kHz steps and run another pass. Record the percent heard again.
+    - Before each pass, check the ENGAGE light. If it is off, tap ENGAGE. The score only counts seconds while the pedal is engaged, so a muted pass scores 0%. **Restart** turns ENGAGE off again.
+    - Set the TUNE step to 5 kHz before starting the first pass. Record the percent heard.
+    - Use the TUNE step button to select 1 kHz, then run another pass. Record the percent heard again.
     - During the second pass, write down the Doppler value at rise, at the highest point and at set.
   check: You have two scores, one for each step size, and three Doppler values with units.
   discuss: The receiver hears signals within 1.5 kHz of where it is tuned. Using that, explain why 5 kHz steps miss the start of the pass.

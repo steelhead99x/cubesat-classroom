@@ -18,16 +18,16 @@ beginner:
   discuss: The balloon carries the rocket before it launches. How does the wind move your rocket twice?
 intermediate:
   steps:
-    - The wind, the hills and the ring stay the same for a whole round and change when the next round starts, so compare launches within one round.
-    - In one round, record the wind (a number out of 10), then make your first launch aimed straight at the ring. Record angle, power and score (3, 1 or 0).
-    - For your later launches in the same round, aim upwind and change only how far upwind. Record each launch the same way.
-  check: Your table has at least four launches from one round, all with the same wind, and a sentence on whether aiming upwind helped compared with your first launch.
+    - Pick one crew and a round with wind. For that crew’s first launch, aim straight at the ring and record the wind, angle, power, rocket and score (3, 1 or 0).
+    - Use the same power and rocket for that crew’s two remaining launches. Change only the angle to aim a little upwind.
+    - Compare the three scores. If the launch pad shifted during the round, note that before comparing.
+  check: Your table has three launches by the same crew in one round, and one sentence about what changed when you aimed upwind.
   discuss: Real rockoon teams wait for low winds before they launch. Using your table, explain why.
 professional:
   steps:
     - Read `balloonPosition`, `releasePoint` and `WIND_ACCEL` in `site/src/games/rockoon-wars/logic.mjs`. For a wind of 10, work out how far sideways the balloon drifts before release, in game pixels.
-    - In the game, keep the same angle and power for several launches within one round, so the wind and the ring stay fixed. Note the wind (shown as a number out of 10) and whether you missed left or right of the ring. Repeat in a round with a different wind.
-    - The readout also shows the air pressure at the pad and at release. Use the two values to explain why rockoons launch from a balloon at all.
-  check: You have the drift from the code with working, at least four launches that show the wind's effect, and a sentence about the pressure difference.
+    - Compare the dashed balloon path with your calculated drift. Check a second round with a different wind. Record the wind strength and direction for each observation.
+    - Record the simulated air pressure at the pad and at release. Describe how it changed as the balloon climbed.
+  check: You have the drift from the code with working, two wind observations, and a sentence about the pressure difference.
   discuss: The game rules avoid `Math.pow` and use a seeded random number generator so every screen in an online room computes the same flight. Why does that matter when one computer replays another's moves?
 ---
