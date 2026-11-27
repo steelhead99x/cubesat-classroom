@@ -30,7 +30,7 @@ function start(root: HTMLElement) {
   const net = $<HTMLParagraphElement>('[data-net]');
   const toast = $<HTMLDivElement>('[data-toast]');
   const hud = {
-    angle: $('[data-angle]'), power: $('[data-power]'), rocket: $('[data-rocket]'), rocketIcon: $('[data-rocket-icon]'),
+    air: $('[data-air]'), angle: $('[data-angle]'), power: $('[data-power]'), rocket: $('[data-rocket]'), rocketIcon: $('[data-rocket-icon]'),
     round: $('[data-round]'), board: $('[data-board]'), controls: $('[data-controls]'), wait: $('[data-wait]'),
   };
   const pauseBtn = $<HTMLButtonElement>('[data-pause]');
@@ -267,7 +267,7 @@ function start(root: HTMLElement) {
     if (anim) {
       const { before, phase, t, shooter } = anim;
       const lift = phase === 'lift' ? Math.min(1, t / LIFT_TIME) : 1;
-      const units = before.units.map((u, i) => i === shooter ? { ...u, y: u.y + G.LIFT * lift } : u);
+      const units = before.units.map((u, i) => i === shooter ? { ...u, ...G.balloonPosition(u, before.wind, lift) } : u);
       return { ...before, units, colors, names, released: phase === 'lift' ? undefined : shooter, active: -1, preview: null, drag: null,
         shot: phase === 'flight' ? { path: anim.path, pos: anim.pos } : null };
     }
@@ -314,6 +314,15 @@ function start(root: HTMLElement) {
     const turn = playing ? match!.turn : -1;
     const u = playing ? shooter() : null;
     const p = turn >= 0 ? match!.players[turn] : null;
+    const field = anim?.before ?? match?.field;
+    const pad = anim ? anim.before.units[anim.shooter] : u;
+    hud.air.hidden = !pad;
+    if (field && pad) {
+      const ground = pad.y * G.METRES_PER_PIXEL;
+      const release = ground + G.LIFT * G.METRES_PER_PIXEL;
+      const wind = field.wind === 0 ? 'calm' : `${Math.abs(field.wind)}/10 ${field.wind < 0 ? 'left' : 'right'}`;
+      hud.air.textContent = `Simulated wind · ${wind} | Standard pressure · pad ${ground} m: ${Math.round(G.pressureHpa(ground))} hPa → release ${release} m: ${Math.round(G.pressureHpa(release))} hPa`;
+    }
     hud.angle.textContent = u ? `${u.angle}°` : '—';
     hud.power.textContent = u ? String(u.power) : '—';
     if (u && p) {
@@ -393,7 +402,7 @@ function start(root: HTMLElement) {
     return `<h3>How to play</h3>
       <ol class="steps">
         <li><span class="pic" aria-hidden="true">👆</span><b>1. Aim</b><span>Drag from your pad toward the sky ring. Farther means more power. Or use the ◀ ▶ and − + buttons.</span></li>
-        <li><span class="pic" aria-hidden="true">🌬️</span><b>2. Mind the wind</b><span>The arrow at the top shows the wind. It pushes your rocket. The yellow dots show how it starts.</span></li>
+        <li><span class="pic" aria-hidden="true">🌬️</span><b>2. Mind the wind</b><span>The arrow at the top shows the wind. It carries your balloon sideways and pushes your rocket. The yellow dots show how it starts.</span></li>
         <li><span class="pic" aria-hidden="true">🚀</span><b>3. Launch</b><span>Press Launch. Your balloon lifts off, then releases its rocket. Fly through the ring for 3 points.</span></li>
       </ol>
       <div class="row"><button type="button" class="go big" data-act="howto">Got it!</button></div>`;

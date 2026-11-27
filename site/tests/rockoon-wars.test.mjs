@@ -291,3 +291,24 @@ test('a tied top score is a shared win', () => {
   assert.deepEqual(m.winners, [0, 1]);
   assert.equal(m.winner, 0);
 });
+
+test('barometer agrees with standard atmosphere reference pressures', () => {
+  for (const [height, hPa] of [[0, 1013.25], [1000, 898.75], [3000, 701.09]]) {
+    assert.ok(Math.abs(R.pressureHpa(height) - hPa) < 0.1);
+    assert.ok(R.pressureHpa(height + R.LIFT * R.METRES_PER_PIXEL) < hPa);
+  }
+});
+
+test('a windy ascent drifts from the pad to the shared preview and flight origin', () => {
+  const m = begin();
+  const pad = m.field.units[m.turn];
+  for (const wind of [-10, 0, 10]) {
+    m.field.wind = wind;
+    assert.deepEqual(R.balloonPosition(pad, wind, 0), { x: pad.x, y: pad.y });
+    const release = R.balloonPosition(pad, wind, 1);
+    assert.equal(Math.sign(release.x - pad.x), Math.sign(wind));
+    assert.equal(release.y, pad.y + R.LIFT);
+    pad.angle = 90;
+    assert.ok(Math.abs(R.aimPreview(m)[0][0] - release.x) < 1e-8);
+  }
+});

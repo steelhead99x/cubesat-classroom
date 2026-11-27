@@ -7,6 +7,19 @@ export const WIND_ACCEL = 6; // px/s^2 per point of wind
 export const DT = 1 / 120;
 export const MAX_STEPS = 120 * 30;
 export const LIFT = 48;
+// Map the vertical scenery to an illustrative altitude for the balloon barometer.
+export const METRES_PER_PIXEL = 10;
+
+// Standard troposphere (0–11 km), pressure in hectopascals.
+export function pressureHpa(altitudeMetres) {
+  return 1013.25 * (1 - 0.0065 * altitudeMetres / 288.15) ** 5.25588;
+}
+
+// Arcade drift in pixels. The animation and launch origin use the same ascent.
+export function balloonPosition(pad, wind, progress) {
+  return { x: pad.x + wind * 1.5 * progress, y: pad.y + LIFT * progress };
+}
+
 export const TARGET_RADIUS = 16;
 export const LAUNCHES = 3;
 export const MAX_PLAYERS = 4;
@@ -148,7 +161,8 @@ export function trajectory(match, from, angle, power) {
   const { terrain, wind } = match.field;
   const a = Math.max(0, Math.min(180, Math.round(angle)));
   const v = Math.max(0, Math.min(100, Math.round(power))) * SPEED;
-  let x = from.x + cosDeg(a) * 14, y = from.y + LIFT + PIVOT_Y + sinDeg(a) * 14;
+  const release = balloonPosition(from, wind, 1);
+  let x = release.x + cosDeg(a) * 14, y = release.y + PIVOT_Y + sinDeg(a) * 14;
   let vx = cosDeg(a) * v, vy = sinDeg(a) * v;
   const path = [[x, y]];
   for (let i = 0; i < MAX_STEPS; i++) {
