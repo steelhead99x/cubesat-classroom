@@ -184,17 +184,35 @@ function start(root: HTMLElement) {
   const shooter = () => match!.field!.units[match!.turn];
 
   /** Runs every action that is ready. Shots animate one at a time. */
+  /** Records the next turn if this screen is the committer, and keeps a copy of the history. */
+  function record() {
+    if (!match || !host) return;
+    const gone = goneIds();
+    const committer = Room.committerFor(host, gone);
+    let changed = mine.includes(committer) && Room.commit(match, host, snaps, gone, committer);
+    if (mode === 'online' && host.order.includes(me) && Room.mirror(host, snaps, me)) changed = true;
+    if (changed) publish();
+  }
+
   function step() {
-    if (!match || !host || anim || paused) return render();
-    // A round's result stays up until it's dismissed, but the host keeps recording turns for
-    // everyone else while it's showing.
+    if (!match || !host) return render();
+    // Two copies of the history disagreed and the earlier player's won: start again from it.
+    if (mode === 'online' && Room.diverged(match, host, snaps)) {
+      anim = null; banner = null; ghosts = { round: -1, paths: {} };
+      clearAscent();
+      match = Room.replay(host, snaps).match;
+      say('Caught up with the room.');
+    }
+    if (anim || paused) return render();
+    // A round's result stays up until it's dismissed, but the committer keeps recording turns
+    // for everyone else while it's showing.
     if (banner) {
-      if (amHost() && Room.commit(match, host, snaps, goneIds())) publish();
+      record();
       return render();
     }
     for (let guard = 0; guard < 50; guard++) {
-      // The host records each turn once; everyone, the host included, then plays that record.
-      if (amHost() && Room.commit(match, host, snaps, goneIds())) publish();
+      // The committer records each turn once; everyone, the committer included, then plays that record.
+      record();
       const action = Room.nextAction(match, host, snaps);
       if (action.kind === 'fire') {
         const before = structuredClone(match.field!) as Field;
@@ -228,10 +246,8 @@ function start(root: HTMLElement) {
     render();
   }
 
-  /** In local games this screen is the host. Online, the room creator is. */
-  const amHost = () => !!host && mine.includes(host.order[0]);
-
-  /** Players the host gives up on after 30 seconds without a snapshot. Their turns are skipped. */
+  /** Players this screen gives up on after 30 seconds without a snapshot. Their turns are
+   * skipped, and if the committer is one of them the next player in the order takes over. */
   function goneIds() {
     if (mode !== 'online' || !host) return [];
     const now = Date.now();
@@ -710,18 +726,17 @@ function start(root: HTMLElement) {
     render();
   }
 
-  /** Follows the room creator's match once it starts. */
+  /** Follows the room's match once it starts: from the creator, or, if the creator has left,
+   * from any player in the match who carries a copy. */
   function adoptHost() {
     if (host) return;
-    for (const [id, s] of snaps) {
-      if (s.host && s.host.order[0] === id && s.creator) {
-        host = s.host;
-        // Catch up without animating everything that already happened.
-        match = Room.replay(host, snaps).match;
-        say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');
-        return;
-      }
-    }
+    const carriers = [...snaps].filter(([id, s]) => s.host && s.host.order.includes(id) && s.host.names[id] === s.cs);
+    const pick = carriers.find(([id, s]) => s.creator && s.host!.order[0] === id) ?? carriers[0];
+    if (!pick) return;
+    host = pick[1].host!;
+    // Catch up without animating everything that already happened.
+    match = Room.replay(host, snaps).match;
+    say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');
   }
 
   function hostStart() {

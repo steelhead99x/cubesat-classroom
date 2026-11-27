@@ -5,11 +5,17 @@
 //     shops: { [round]: [weaponId, ...] }, log?: {...}, shopLog?: {...} }
 // The room creator adds `host` when the match starts: the seed, the player order and the rounds.
 //
-// Players' `turns` and `shops` are requests. Only the host decides what each turn was: it copies
-// the shot (or "skip" for a player who left) into `log`, and each round's purchases into
-// `shopLog`, once, and never changes an entry. Every client, including one that reconnects, replays
-// only that committed history through logic.mjs, so a late shot and a skip can never be applied in
-// different orders on different screens.
+// Players' `turns` and `shops` are requests. One player at a time decides what each turn was:
+// the committer, normally the room creator (order[0]). It copies the shot (or "skip" for a
+// player who left) into `log`, and each round's purchases into `shopLog`, once, and never
+// changes an entry. If the committer leaves, the next player in the order who is still here
+// takes over (committerFor), so the match keeps going.
+//
+// Every player in the match republishes `host` and a copy of the committed history, so a
+// player who joins or reconnects after the creator has left can still catch up. When two
+// players' copies disagree about an entry, the one earlier in the order wins (historyEntry);
+// a screen that already played the other one replays from the start (diverged), so every
+// screen ends up with the same match.
 import { WEAPON, createMatch, buy, startRound, fire, skip } from './logic.mjs';
 
 const ID = /^[0-9a-f]{12}$/;
@@ -93,65 +99,119 @@ export function matchFor(host) {
 
 const getter = snapshots => id => (snapshots instanceof Map ? snapshots.get(id) : snapshots[id]);
 
+/** The player who records turns: the first in the order who hasn't left. `gone` excludes this screen's own players. */
+export function committerFor(host, gone = []) {
+  return host.order.find(id => !gone.includes(id)) ?? host.order[0];
+}
+
+/** A committed log entry for turn k, or a shop list for a round: the copy earliest in the order wins. */
+function historyEntry(host, get, field, key) {
+  for (const id of host.order) {
+    const entry = get(id)?.[field]?.[key];
+    if (entry) return entry;
+  }
+  return undefined;
+}
+
 /**
- * What happens next in the match, from the host's committed history. One of:
- *   { kind: 'shop', buys: [[weaponId...] per player] }   the host closed the shop for the next round
- *   { kind: 'fire', shot }   the host committed the current player's shot
- *   { kind: 'skip' }          the host skipped the current player
- *   { kind: 'wait', ids, sent? }   waiting for these players (sent: their move is on its way to the host)
+ * What happens next in the match, from the committed history. One of:
+ *   { kind: 'shop', buys: [[weaponId...] per player] }   the shop for the next round is closed
+ *   { kind: 'fire', shot }   the current player's shot is committed
+ *   { kind: 'skip' }          the current player was skipped
+ *   { kind: 'wait', ids, sent? }   waiting for these players (sent: their move is on its way)
  *   { kind: 'over' }
+ * Actions taken from history carry `ref`, so apply() can note what was played.
  * @returns {NextAction}
  */
 export function nextAction(match, host, snapshots) {
   const get = getter(snapshots);
-  const hostSnap = get(host.order[0]);
   if (match.phase === 'over') return { kind: 'over' };
   if (match.phase === 'shop') {
     const round = match.round + 1;
-    const buys = hostSnap?.shopLog?.[round];
-    if (buys) return { kind: 'shop', buys };
+    const buys = historyEntry(host, get, 'shopLog', round);
+    if (buys) return { kind: 'shop', buys, ref: `S${round}` };
     const missing = host.order.filter(id => !get(id)?.shops?.[round]);
     return missing.length ? { kind: 'wait', ids: missing } : { kind: 'wait', ids: [], sent: true };
   }
   const k = match.log.length;
   const owner = host.order[match.turn];
-  const entry = hostSnap?.log?.[k];
-  if (entry === 'skip') return { kind: 'skip' };
-  if (entry) return { kind: 'fire', shot: entry };
+  const entry = historyEntry(host, get, 'log', k);
+  if (entry === 'skip') return { kind: 'skip', ref: `L${k}` };
+  if (entry) return { kind: 'fire', shot: entry, ref: `L${k}` };
   return get(owner)?.turns?.[k] ? { kind: 'wait', ids: [owner], sent: true } : { kind: 'wait', ids: [owner] };
 }
 
 /**
- * The host's side: records what the current turn or shop was, once. `gone` lists players the host
- * has given up on. Writes into the host's own snapshot and returns true when it added an entry.
+ * Copies the committed history into `id`'s own snapshot, so it survives the committer leaving.
+ * Returns true when it added anything.
  */
-export function commit(match, host, snapshots, gone = []) {
+export function mirror(host, snapshots, id) {
   const get = getter(snapshots);
-  const hostSnap = get(host.order[0]);
-  if (!hostSnap || match.phase === 'over') return false;
-  hostSnap.log ??= {};
-  hostSnap.shopLog ??= {};
+  const mine = get(id);
+  if (!mine || !host.order.includes(id)) return false;
+  let added = false;
+  if (!mine.host) { mine.host = structuredClone(host); added = true; }
+  mine.log ??= {};
+  mine.shopLog ??= {};
+  for (const field of ['log', 'shopLog']) {
+    const keys = new Set(host.order.flatMap(other => Object.keys(get(other)?.[field] ?? {})));
+    for (const key of keys) {
+      const entry = historyEntry(host, get, field, key);
+      if (entry && JSON.stringify(mine[field][key]) !== JSON.stringify(entry)) {
+        mine[field][key] = structuredClone(entry);
+        added = true;
+      }
+    }
+  }
+  return added;
+}
+
+/**
+ * The committer's side: records what the current turn or shop was, once. `gone` lists players
+ * this screen has given up on. `id` is the committer (committerFor). Writes into that player's
+ * own snapshot and returns true when it added an entry.
+ */
+export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
+  const get = getter(snapshots);
+  const mine = get(id);
+  if (!mine || match.phase === 'over') return false;
+  mine.log ??= {};
+  mine.shopLog ??= {};
   if (match.phase === 'shop') {
     const round = match.round + 1;
-    if (hostSnap.shopLog[round]) return false;
-    if (host.order.some(id => !get(id)?.shops?.[round] && !gone.includes(id))) return false;
-    hostSnap.shopLog[round] = host.order.map(id => [...(get(id)?.shops?.[round] ?? [])]);
+    if (historyEntry(host, get, 'shopLog', round)) return false;
+    if (host.order.some(p => !get(p)?.shops?.[round] && !gone.includes(p))) return false;
+    mine.shopLog[round] = host.order.map(p => [...(get(p)?.shops?.[round] ?? [])]);
     return true;
   }
   const k = match.log.length;
-  if (hostSnap.log[k]) return false;
+  if (historyEntry(host, get, 'log', k)) return false;
   const owner = host.order[match.turn];
   const shot = get(owner)?.turns?.[k];
-  if (shot) hostSnap.log[k] = { angle: shot.angle, power: shot.power, weapon: shot.weapon };
-  else if (gone.includes(owner)) hostSnap.log[k] = 'skip';
+  if (shot) mine.log[k] = { angle: shot.angle, power: shot.power, weapon: shot.weapon };
+  else if (gone.includes(owner)) mine.log[k] = 'skip';
   else return false;
   return true;
 }
 
-/** @typedef {{kind:'shop',buys:string[][]}|{kind:'fire',shot:{angle:number,power:number,weapon:string}}|{kind:'skip'}|{kind:'wait',ids:string[],sent?:boolean}|{kind:'over'}} NextAction */
+/** True when an entry this match has already played no longer matches the committed history. */
+export function diverged(match, host, snapshots) {
+  const get = getter(snapshots);
+  for (const [ref, played] of Object.entries(match.played ?? {})) {
+    const entry = historyEntry(host, get, ref[0] === 'S' ? 'shopLog' : 'log', Number(ref.slice(1)));
+    if (JSON.stringify(entry) !== played) return true;
+  }
+  return false;
+}
+
+/** @typedef {{kind:'shop',buys:string[][],ref?:string}|{kind:'fire',shot:{angle:number,power:number,weapon:string},ref?:string}|{kind:'skip',ref?:string}|{kind:'wait',ids:string[],sent?:boolean}|{kind:'over'}} NextAction */
 
 /** Applies one action from nextAction. Returns fire()'s result for a shot, else null. */
 export function apply(match, action) {
+  if (action.ref) {
+    match.played ??= {};
+    match.played[action.ref] = JSON.stringify(action.kind === 'shop' ? action.buys : action.kind === 'fire' ? action.shot : 'skip');
+  }
   if (action.kind === 'shop') {
     action.buys.forEach((list, i) => { for (const w of list) buy(match, i, w); });
     startRound(match);
@@ -162,7 +222,7 @@ export function apply(match, action) {
   return null;
 }
 
-/** Replays the host's committed history from the start. A reconnecting client uses this to catch up. */
+/** Replays the committed history from the start. A reconnecting client uses this to catch up. */
 export function replay(host, snapshots) {
   const match = matchFor(host);
   for (let guard = 0; guard < 5000; guard++) {
