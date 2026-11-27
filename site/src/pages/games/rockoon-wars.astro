@@ -7,12 +7,12 @@ import { siteOrigin } from '../../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
-<Base title="Rockoon Wars | CubeSat Classroom games" description="A turn-based artillery game for 2 to 4 players. Set the angle and power, mind the wind, and be the last rockoon flying. Play on one computer or online with a room code." canonical={siteOrigin + '/games/rockoon-wars/'}>
+<Base title="Rockoon Battle | CubeSat Classroom games" description="Launch a balloon from the ground and send its rocket through a sky ring. Play on one computer or online with a room code." canonical={siteOrigin + '/games/rockoon-wars/'}>
   <SiteHeader slot="header" home={base + '/'} current="games" />
   <div class="shell py-5 sm:py-8">
-    <nav class="crumbs" aria-label="Breadcrumb"><a href={base + '/'}>Home</a><span aria-hidden="true">›</span><a href={base + '/games/'}>Games</a><span aria-hidden="true">›</span><span aria-current="page">Rockoon Wars</span><a class="all" href={base + '/games/'}>← All games</a></nav>
-    <h1 class="rw-h1">Rockoon Wars</h1>
-    <p class="lede mt-2">Take turns launching rockets from balloons. Mind the wind, and be the last rockoon flying.</p>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href={base + '/'}>Home</a><span aria-hidden="true">›</span><a href={base + '/games/'}>Games</a><span aria-hidden="true">›</span><span aria-current="page">Rockoon Battle</span><a class="all" href={base + '/games/'}>← All games</a></nav>
+    <h1 class="rw-h1">Rockoon Battle</h1>
+    <p class="lede mt-2">Launch your balloon from the hillside. Watch it climb and release its rocket. Can you fly through the gold ring?</p>
 
     <section class="rw mt-5" data-rw data-playing="false" aria-labelledby="rw-title">
       <h2 id="rw-title" class="sr-only">Game</h2>
@@ -28,13 +28,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         </div>
       </div>
       <div class="stage">
-        <canvas tabindex="0" aria-label="Battlefield. On your turn, drag from your rockoon to aim." aria-describedby="rw-keys"></canvas>
+        <canvas tabindex="0" aria-label="Launch field. On your turn, drag from your rockoon to aim." aria-describedby="rw-keys"></canvas>
         <div class="toast" data-toast aria-hidden="true"></div>
         <p class="net" data-net aria-live="polite"></p>
         <p class="sideways" aria-hidden="true">↻ Turn your phone sideways for a bigger view</p>
         <div class="overlay" data-overlay hidden></div>
       </div>
-      <div class="controls" data-controls role="group" aria-label="Aim and fire">
+      <p class="air" data-air hidden></p>
+      <div class="controls" data-controls role="group" aria-label="Aim and launch">
         <div class="grp">
           <button type="button" data-adj="angle:1" aria-label="Aim more to the left">◀</button>
           <div class="val"><small>Aim</small><b data-angle>—</b></div>
@@ -46,7 +47,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
           <button type="button" data-adj="power:1" aria-label="More power">+</button>
         </div>
         <button type="button" class="rocket" data-adj="weapon:1" aria-label="Change rocket"><span class="ico" data-rocket-icon></span><span class="val"><small>Rocket · tap to change</small><b data-rocket>—</b></span></button>
-        <button type="button" data-fire class="fire">FIRE!</button>
+        <button type="button" data-fire class="fire">Launch</button>
         <p class="wait" data-wait aria-hidden="true"></p>
       </div>
       <p class="sr-only" data-status role="status" aria-live="polite"></p>
@@ -57,9 +58,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         <h2 id="how-title">How to play</h2>
         <ul id="rw-keys" class="mt-3 list-disc space-y-1.5 pl-5">
           <li><strong>Aim with a finger or the mouse:</strong> on your turn, press on the playfield and drag toward where you want to shoot. Farther from your rockoon means more power. The yellow dots show how your rocket starts.</li>
-          <li><strong>Or use the buttons:</strong> ◀ ▶ change the angle and − + the power (hold to go faster). Tap the rocket to change it, then FIRE.</li>
-          <li><strong>Keyboard:</strong> Left and Right arrows aim, Up and Down set power (Shift moves by 5), Q and E change rocket, Space or Enter fires, P pauses, M turns sound on (it starts off).</li>
-          <li>Hits earn credits, knocking a rockoon out earns a point, and the last one flying wins the round. Spend credits in the shop between rounds. Everyone starts with {START_CREDITS} credits.</li>
+          <li><strong>Or use the buttons:</strong> ◀ ▶ change the angle and − + the power (hold to go faster). Tap the rocket to change it, then Launch.</li>
+          <li><strong>Keyboard:</strong> Left and Right arrows aim, Up and Down set power (Shift moves by 5), Q and E change rocket, Space or Enter launches, P pauses, M turns sound on (it starts off).</li>
+          <li>Read the balloon’s barometer from pad to release. Altitudes are simulated metres above sea level. Pressure follows the <a href="https://www.weather.gov/index.php/ama/conversions">standard atmosphere</a>. Local weather can give a different reading.</li>
+          <li>Each crew gets three launches per round. Fly through the ring for 3 points or scan its edge for 1. Each point earns 50 credits. Highest total after the last round wins: three rounds, or one per crew with four crews, so every crew launches once from every spot on the hill. Spend credits in the shop between rounds. Everyone starts with {START_CREDITS} credits.</li>
           <li><strong>Online:</strong> make a room and tell your friends its 5-letter code. Players get random names like GS-AB1. There is no chat.</li>
         </ul>
       </section>
@@ -67,7 +69,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         <h2 id="arms-title">The shop</h2>
         <ul class="mt-3 list-disc space-y-1.5 pl-5">
           {WEAPONS.map(w => (
-            <li><strong>{w.name}:</strong> {w.price ? `${w.pack} for ${w.price} credits` : 'free, never runs out'}{w.dirt ? '. Builds a hill instead of blowing one up' : ''}.</li>
+            <li><strong>{w.name}:</strong> {w.price ? `${w.pack} for ${w.price} credits` : 'free, never runs out'}. Scan range beyond the ring: {w.radius} pixels.</li>
           ))}
         </ul>
       </section>
@@ -160,6 +162,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
   /* Bottom controls: one tidy row on wide screens, two on phones. Space is kept even between
      turns, so the playfield never jumps. */
+  .air { margin: 0; padding: .35rem .7rem; font: .8rem/1.4 var(--font-mono); color: #d7e6ff; }
   .controls { position: relative; display: grid; grid-template-columns: auto auto minmax(0, 1fr) minmax(8rem, 12rem); gap: .5rem; align-items: stretch; padding: .5rem; background: rgb(8 12 36 / .92); border-top: 1px solid var(--line); }
   .rw[data-playing="false"] .controls > * { visibility: hidden; }
   .controls[data-wait="true"] > :not(.wait) { visibility: hidden; }

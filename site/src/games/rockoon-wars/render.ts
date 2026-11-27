@@ -1,11 +1,12 @@
-// Rockoon Wars: everything drawn on the canvas. The world is 640 x 400 with y up (logic.mjs);
+// Rockoon Battle: everything drawn on the canvas. The world is 640 x 400 with y up (logic.mjs);
 // the view scales it to fill the canvas at the screen's real pixel density, bottom-aligned,
 // with sky above and the hills carried on past the edges.
 import * as G from './logic.mjs';
 
-type Unit = { x: number; y: number; hp: number; alive: boolean; angle: number; power: number; weapon: string };
+type Unit = { x: number; y: number; angle: number; power: number; weapon: string };
 export type Scene = {
-  terrain: number[]; units: Unit[]; wind: number; colors: string[]; names: string[];
+  target: { x: number; y: number }; terrain: number[]; units: Unit[]; wind: number; colors: string[]; names: string[];
+  released?: number;
   active: number; // whose turn it is (-1 for none)
   preview: number[][] | null; // aim dots
   ghost?: number[][] | null; // this player's last shot, faint, to correct from
@@ -124,15 +125,23 @@ export class Renderer {
     else ctx.drawImage(this.#groundFor(terrain), shx, shy, this.cw, this.ch);
     if (!scene) return;
     this.#world(shx, shy);
+    ctx.save();
+    ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(scene.target.x, scene.target.y, G.TARGET_RADIUS, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(scene.target.x, scene.target.y, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
     if (scene.ghost) this.#drawGhost(scene.ghost);
-    if (scene.preview) this.#drawPreview(scene.preview);
-    scene.units.forEach((u, i) => { if (u.alive) this.#drawRockoon(u, scene.colors[i], i === scene.active); });
-    if (scene.drag && scene.active >= 0) this.#drawDrag(scene.units[scene.active], scene.drag, scene.colors[scene.active]);
+    if (scene.preview) {
+      if (scene.active >= 0) this.#drawAscent(scene.units[scene.active], scene.wind, scene.colors[scene.active]);
+      this.#drawPreview(scene.preview);
+    }
+    scene.units.forEach((u, i) => { this.#drawRockoon(u, scene.colors[i], i === scene.active, i !== scene.released); });
+    if (scene.drag && scene.active >= 0) this.#drawDrag(G.releasePoint(scene.units[scene.active], scene.wind), scene.drag, scene.colors[scene.active]);
     if (scene.shot) this.#drawShot(scene.shot);
     this.#drawBooms();
     this.#drawParticles();
     this.#screen();
-    scene.units.forEach((u, i) => { if (u.alive) this.#drawTag(u, scene.names[i], scene.colors[i], i === scene.active); });
+    scene.units.forEach((u, i) => { this.#drawTag(u, scene.names[i], scene.colors[i], i === scene.active); });
     this.#drawFloats();
     this.#drawWind(scene.wind);
     if (this.#flash > 0) { ctx.fillStyle = `rgba(255,240,200,${this.#flash})`; ctx.fillRect(0, 0, this.cw, this.ch); }
@@ -251,7 +260,7 @@ export class Renderer {
     }
   }
 
-  #drawRockoon(u: Unit, color: string, active: boolean) {
+  #drawRockoon(u: Unit, color: string, active: boolean, carryingRocket: boolean) {
     const { ctx } = this, k = this.k;
     ctx.save();
     ctx.translate(u.x, u.y); ctx.scale(k, k);
@@ -286,7 +295,11 @@ export class Renderer {
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -(G.PIVOT_Y - 10)); ctx.stroke();
     ctx.rotate(u.angle * Math.PI / 180);
     ctx.fillStyle = shade(color, 0.5); roundRect(ctx, -2, -2.6, 16, 5.2, 1.6); ctx.fill();
-    ctx.fillStyle = '#e8ecff'; ctx.fillRect(11.5, -2.6, 2.5, 5.2);
+    if (carryingRocket) {
+      ctx.fillStyle = '#fff2ca'; ctx.fillRect(5, -2, 12, 4);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(17, -3); ctx.lineTo(23, 0); ctx.lineTo(17, 3); ctx.fill();
+    }
     ctx.restore();
     ctx.fillStyle = '#e8ecff'; ctx.beginPath(); ctx.arc(u.x, u.y + G.PIVOT_Y, 2.2, 0, Math.PI * 2); ctx.fill();
   }
@@ -294,10 +307,6 @@ export class Renderer {
   #drawTag(u: Unit, name: string, color: string, active: boolean) {
     const { ctx } = this, k = this.k;
     const x = this.screenX(u.x), y = this.screenY(u.y + 70 * k) ;
-    const w = 44, hp = Math.max(0, u.hp) / 100;
-    ctx.fillStyle = 'rgba(8,12,36,.72)'; roundRect(ctx, x - w / 2 - 3, y - 4, w + 6, 8, 4); ctx.fill();
-    ctx.fillStyle = hp > 0.5 ? '#6fdc8c' : hp > 0.25 ? '#ffd23f' : '#ff6b6b';
-    roundRect(ctx, x - w / 2, y - 2, w * hp, 4, 2); ctx.fill();
     ctx.font = `700 ${active ? 13 : 12}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,12,36,.85)'; ctx.strokeText(name, x, y - 6);
     ctx.fillStyle = active ? '#ffe27a' : tint(color, 0.35); ctx.fillText(name, x, y - 6);
@@ -329,7 +338,19 @@ export class Renderer {
     });
   }
 
-  #drawDrag(u: Unit, p: { x: number; y: number }, color: string) {
+  /** The climb the balloon will make before it lets go: pad to release point, dashed. */
+  #drawAscent(u: Unit, wind: number, color: string) {
+    const { ctx } = this, r = G.releasePoint(u, wind);
+    ctx.save();
+    ctx.setLineDash([2, 4]); ctx.strokeStyle = tint(color, 0.5); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(u.x, u.y + G.PIVOT_Y); ctx.lineTo(r.x, r.y + G.PIVOT_Y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(r.x, r.y + G.PIVOT_Y, 3, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  /** The drag line, from where the balloon will release the rocket (`u`) to the pointer. */
+  #drawDrag(u: { x: number; y: number }, p: { x: number; y: number }, color: string) {
     const { ctx } = this;
     ctx.setLineDash([4, 4]); ctx.strokeStyle = tint(color, 0.4); ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(u.x, u.y + G.PIVOT_Y); ctx.lineTo(p.x, p.y); ctx.stroke();
