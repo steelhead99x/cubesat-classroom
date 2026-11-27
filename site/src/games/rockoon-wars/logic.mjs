@@ -15,7 +15,8 @@ export const DT = 1 / 120;
 export const MAX_STEPS = 120 * 30;
 export const UNIT_R = 10;
 export const MAX_PLAYERS = 4;
-export const START_MONEY = 500;
+// Everyone starts with enough credits for a couple of better rockets (a Rocket pack and a Big Bang).
+export const START_CREDITS = 600;
 
 /** Weapons, in shop order. The Baby Rocket is free and never runs out. */
 export const WEAPONS = [
@@ -82,7 +83,7 @@ export function createMatch({ seed, players, rounds = 3 }) {
   return {
     seed: seed >>> 0, rounds, round: 0, phase: 'shop', turn: 0,
     players: players.map((p, i) => ({
-      id: p.id, name: p.name, color: COLORS[i], money: START_MONEY, score: 0,
+      id: p.id, name: p.name, color: COLORS[i], credits: START_CREDITS, score: 0,
       ammo: { baby: Infinity, rocket: 0, big: 0, mega: 0, dirt: 0 },
     })),
     field: null, winner: null, log: [],
@@ -92,8 +93,8 @@ export function createMatch({ seed, players, rounds = 3 }) {
 /** Buys one pack of a weapon for a player, if they can afford it. Returns true if bought. */
 export function buy(match, playerIndex, weaponId) {
   const p = match.players[playerIndex], w = WEAPON[weaponId];
-  if (!p || !w || !w.price || match.phase !== 'shop' || p.money < w.price) return false;
-  p.money -= w.price;
+  if (!p || !w || !w.price || match.phase !== 'shop' || p.credits < w.price) return false;
+  p.credits -= w.price;
   p.ammo[weaponId] += w.pack;
   return true;
 }
@@ -124,6 +125,12 @@ export function startRound(match) {
 }
 
 export const alive = match => match.field.units.filter(u => u.alive).length;
+
+/** The first part of the current player's shot, for the aim line: a list of [x, y] points. */
+export function aimPreview(match, points = 30) {
+  const u = match.field.units[match.turn];
+  return trajectory(match, u, u.angle, u.power).path.slice(0, points);
+}
 
 /** Flies a shot and returns the path (for animation) and where it ended. Does not change the match. */
 export function trajectory(match, from, angle, power) {
@@ -168,7 +175,7 @@ export function carve(terrain, cx, cy, r, dirt = false) {
 
 /**
  * Fires the current player's shot: { angle, power, weapon }. Applies damage, falls, kills,
- * money and the next turn. Returns { path, blast, events } for the screen.
+ * credits and the next turn. Returns { path, blast, events } for the screen.
  */
 export function fire(match, shot) {
   if (match.phase !== 'play') throw new Error('not in play');
@@ -220,11 +227,11 @@ function hurt(match, i, dmg, by, events) {
   const real = Math.min(u.hp, dmg);
   u.hp -= real;
   events.push({ type: 'hit', who: i, dmg: real, by });
-  if (by !== i) match.players[by].money += real * 5;
+  if (by !== i) match.players[by].credits += real * 5;
   if (u.hp <= 0) {
     u.alive = false;
     events.push({ type: 'kill', who: i, by });
-    if (by !== i) { match.players[by].money += 200; match.players[by].score += 1; }
+    if (by !== i) { match.players[by].credits += 200; match.players[by].score += 1; }
   }
 }
 
@@ -232,8 +239,8 @@ function endTurn(match, events) {
   const n = match.players.length;
   if (alive(match) <= 1) {
     const last = match.field.units.findIndex(u => u.alive);
-    if (last >= 0) { match.players[last].score += 2; match.players[last].money += 300; }
-    for (const p of match.players) p.money += 100;
+    if (last >= 0) { match.players[last].score += 2; match.players[last].credits += 300; }
+    for (const p of match.players) p.credits += 100;
     events.push({ type: 'round', winner: last });
     if (match.round >= match.rounds) {
       match.phase = 'over';
@@ -258,7 +265,7 @@ export function fingerprint(match) {
   let h = 2166136261;
   const add = v => { h ^= Math.round(v) & 0xffff; h = Math.imul(h, 16777619) >>> 0; };
   add(match.round); add(match.turn);
-  for (const p of match.players) { add(p.money); add(p.score); }
+  for (const p of match.players) { add(p.credits); add(p.score); }
   if (match.field) {
     for (const u of match.field.units) { add(u.x); add(u.y); add(u.hp); }
     for (let x = 0; x < W; x += 4) add(match.field.terrain[x]);
