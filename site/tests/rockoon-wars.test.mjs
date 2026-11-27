@@ -395,3 +395,19 @@ test('with two crews the ring is about as far from each', () => {
     assert.ok(Math.abs(a - b) <= 16, `seed ${seed}: ${a} vs ${b}`);
   }
 });
+
+test('the controls show the Scout once the picked rocket has run out', () => {
+  // Review finding: after the last Observatory the controls still named it, then launched a Scout.
+  const m = R.createMatch({ seed: 4, players: players(2) });
+  assert.ok(R.buy(m, 0, 'mega'));
+  R.startRound(m);
+  m.turn = 0;
+  m.field.units[0].weapon = 'mega';
+  assert.equal(R.readyWeapon(m, 0), 'mega');
+  assert.equal(R.fire(m, { angle: 45, power: 50, weapon: 'mega' }).weapon, 'mega');
+  assert.equal(m.players[0].ammo.mega, 0);
+  assert.equal(m.field.units[0].weapon, 'mega', 'the last pick is remembered');
+  assert.equal(R.readyWeapon(m, 0), 'baby', 'but the Scout is what will launch');
+  m.field.units[1].weapon = 'nonsense';
+  assert.equal(R.readyWeapon(m, 1), 'baby');
+});
