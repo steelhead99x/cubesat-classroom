@@ -35,7 +35,7 @@ function start(root: HTMLElement) {
   const net = $<HTMLParagraphElement>('[data-net]');
   const toast = $<HTMLDivElement>('[data-toast]');
   const hud = {
-    air: $('[data-air]'), angle: $('[data-angle]'), power: $('[data-power]'), rocket: $('[data-rocket]'), rocketIcon: $('[data-rocket-icon]'),
+    launch: $<HTMLButtonElement>('[data-fire]'), air: $('[data-air]'), angle: $('[data-angle]'), power: $('[data-power]'), rocket: $('[data-rocket]'), rocketIcon: $('[data-rocket-icon]'),
     round: $('[data-round]'), board: $('[data-board]'), controls: $('[data-controls]'), wait: $('[data-wait]'), now: $('[data-now]'),
   };
   const pauseBtn = $<HTMLButtonElement>('[data-pause]');
@@ -60,7 +60,8 @@ function start(root: HTMLElement) {
   let me = '';
   let paused = false;
   let howto = !seenHowto();
-  let anim: null | { phase: 'lift' | 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; blast: { x: number; y: number; r: number; dirt: boolean } | null; events: Events; shooter: number } = null;
+  let ascent: { turn: number; elapsed: number } | null = null;
+  let anim: null | { phase: 'lift' | 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; after: Field; blast: { x: number; y: number; r: number; dirt: boolean } | null; events: Events; shooter: number } = null;
   /** Each player's last shot this round, drawn faintly so they can correct for the wind. */
   let ghosts: { round: number; paths: Record<number, number[][]> } = { round: -1, paths: {} };
   let banner: null | { title: string; text: string } = null; // round or match results, until dismissed
@@ -194,15 +195,19 @@ function start(root: HTMLElement) {
         const before = structuredClone(match.field!) as Field;
         before.units[match.turn].angle = action.shot.angle;
         const shooterIndex = match.turn;
+        const staged = ascent?.turn === match.log.length && ascent.elapsed >= LIFT_TIME;
+        ascent = null;
         const result = Room.apply(match, action) as ReturnType<typeof G.fire>;
         if (ghosts.round !== match.round) ghosts = { round: match.round, paths: {} };
         ghosts.paths[shooterIndex] = result.path;
         // match.field is the same object until the next round starts, so keep a copy to draw.
-        anim = { phase: 'lift', t: 0, pos: 0, path: result.path, before, blast: result.blast, events: result.events, shooter: shooterIndex };
+        anim = { phase: staged ? 'flight' : 'lift', t: 0, pos: 0, path: result.path, before, after: match.field!, blast: result.blast, events: result.events, shooter: shooterIndex };
         drag = null;
+        if (staged) beep('fire');
         return render();
       }
       if (action.kind === 'shop' || action.kind === 'skip') {
+        ascent = null;
         Room.apply(match, action); shopPick = {};
         if (action.kind === 'skip' && match.phase !== 'play') { shotNote = 'Turn skipped.'; showRoundResult(); break; }
         continue;
@@ -228,6 +233,13 @@ function start(root: HTMLElement) {
 
   function fireNow() {
     if (!match || !canAct()) return;
+    if (!ascent) {
+      ascent = { turn: match.log.length, elapsed: 0 };
+      say('Balloon rising.', true);
+      renderHud();
+      return;
+    }
+    if (ascent.elapsed < LIFT_TIME) return;
     const u = shooter(), id = host!.order[match.turn];
     u.weapon = G.readyWeapon(match, match.turn);
     snapOf(id).turns[match.log.length] = { angle: u.angle, power: u.power, weapon: u.weapon };
@@ -242,6 +254,13 @@ function start(root: HTMLElement) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     if (anim && !paused) advance(dt);
+    if (ascent && !paused && ascent.elapsed < LIFT_TIME) {
+      ascent.elapsed = Math.min(LIFT_TIME, ascent.elapsed + dt);
+      if (ascent.elapsed === LIFT_TIME) {
+        say('Balloon ready. Release rocket.', true);
+        renderHud();
+      }
+    }
     view.draw(scene(), paused ? 0 : dt, sceneSeed());
   }
   requestAnimationFrame(frame);
@@ -278,21 +297,32 @@ function start(root: HTMLElement) {
     if (!match?.field) return null;
     const names = match.players.map(p => p.name), colors = match.players.map(p => p.color);
     if (anim) {
-      const { before, phase, t, shooter } = anim;
+      const { before, after, phase, t, shooter } = anim;
       // Up to the release point, then (once the rocket has landed or flown off) gently back
       // down to the pad, where the next rocket is loaded.
       const back = Math.min(1, t / SETTLE_TIME);
       const lift = phase === 'lift' ? Math.min(1, t / LIFT_TIME)
         : phase === 'settle' ? 1 - back * back * (3 - 2 * back)
         : phase === 'rest' ? 0 : 1;
-      const units = before.units.map((u, i) => i === shooter ? { ...u, ...G.balloonPosition(u, before.wind, lift) } : u);
+      const landed = phase === 'settle' || phase === 'rest';
+      const pads = landed ? after.units : before.units;
+      const units = pads.map((pad, i) => {
+        if (i !== shooter) return pad;
+        const start = G.balloonPosition(before.units[i], before.wind, 1);
+        return landed
+          ? { ...pad, x: pad.x + (start.x - pad.x) * lift, y: pad.y + (start.y - pad.y) * lift }
+          : { ...pad, ...G.balloonPosition(pad, before.wind, lift) };
+      });
       const away = phase === 'flight' || phase === 'boom' || phase === 'settle';
-      return { ...before, units, colors, names, released: away ? shooter : undefined, active: -1, preview: null, drag: null,
+      return { ...before, terrain: landed ? after.terrain : before.terrain, pads, units, colors, names, released: away ? shooter : undefined, active: -1, preview: null, drag: null,
         shot: phase === 'flight' ? { path: anim.path, pos: anim.pos } : null };
     }
     const act = canAct() && match.phase === 'play';
+    const pads = match.field.units;
+    const units = ascent ? pads.map((u, i) => i === match!.turn
+      ? { ...u, ...G.balloonPosition(u, match!.field!.wind, ascent!.elapsed / LIFT_TIME) } : u) : pads;
     return {
-      target: match.field.target, terrain: match.field.terrain, units: match.field.units, wind: match.field.wind, colors, names,
+      target: match.field.target, terrain: match.field.terrain, pads, units, wind: match.field.wind, colors, names,
       active: match.phase === 'play' ? match.turn : -1,
       preview: act ? G.aimPreview(match, 40) : null, drag: act ? drag : null, shot: null,
       ghost: act && ghosts.round === match.round ? ghosts.paths[match.turn] ?? null : null,
@@ -300,7 +330,8 @@ function start(root: HTMLElement) {
   }
   function finishShot() {
     const points = anim!.events.find(e => e.type === 'scan')?.points ?? 0;
-    shotNote = points === 3 ? 'Through the ring! +3 points.' : points === 1 ? 'Outer scan! +1 point.' : 'Missed the ring. Check your last trail.';
+    const score = points === 3 ? 'Through the ring! +3 points.' : points === 1 ? 'Outer scan! +1 point.' : 'Missed the ring.';
+    shotNote = anim!.blast ? `${score} Ground impact reshaped the hill.` : score;
     anim = null;
     if (match!.phase !== 'play') showRoundResult();
     say(shotNote, true);
@@ -329,7 +360,7 @@ function start(root: HTMLElement) {
   }
 
   function renderHud() {
-    const playing = !!match?.field && match.phase === 'play';
+    const playing = match?.phase === 'play';
     const turn = playing ? match!.turn : -1;
     const u = playing ? shooter() : null;
     const p = turn >= 0 ? match!.players[turn] : null;
@@ -359,10 +390,14 @@ function start(root: HTMLElement) {
     if (hud.board.dataset.html !== board) { hud.board.innerHTML = board; hud.board.dataset.html = board; }
     const act = canAct();
     for (const b of hud.controls.querySelectorAll('button')) (b as HTMLButtonElement).disabled = !act;
-    root.dataset.playing = String(playing);
+    root.dataset.playing = String(playing || !!anim);
+    const rising = !!ascent && ascent.elapsed < LIFT_TIME;
+    const label = rising ? 'Balloon rising…' : ascent ? 'Release rocket' : 'Launch balloon';
+    if (hud.launch.textContent !== label) hud.launch.textContent = label;
+    hud.launch.setAttribute('aria-disabled', String(!act || rising));
     // When it is not this screen's turn, the controls make way for a short note.
     let wait = '';
-    if (playing && !act) {
+    if (anim || (playing && !act)) {
       const a = waitingOn();
       if (anim) wait = anim.phase === 'lift' ? 'Balloon rising…' : 'Rocket released';
       else if (paused) wait = 'Paused';
@@ -376,7 +411,9 @@ function start(root: HTMLElement) {
       const i = STEPS.findIndex(s => s.id === id);
       return `<span class="now-n">Step ${i + 1} of ${STEPS.length}</span> ${esc(text)} <a href="#step-${id}">How?</a>`;
     };
-    const now = playing && act && p ? step('aim', `${p.name}: aim at the gold ring, set the power, then press Launch.`)
+    const now = playing && act && p ? (rising ? 'Balloon rising…' : ascent
+      ? step('launch', 'Balloon ready. Adjust your aim and press Release rocket.')
+      : step('aim', `${p.name}: aim at the gold ring, then press Launch balloon.`))
       : playing && wait ? esc(wait)
       : match?.phase === 'shop' && !banner && !howto ? step('shop', 'Each crew chooses rockets, then presses Done.')
       : '';
@@ -646,7 +683,7 @@ function start(root: HTMLElement) {
 
   function quit() {
     link?.stop(); link = null;
-    mode = 'menu'; menuStep = 'home'; host = null; match = null; anim = null; banner = null; paused = false; drag = null;
+    mode = 'menu'; menuStep = 'home'; host = null; match = null; anim = null; ascent = null; banner = null; paused = false; drag = null;
     snaps.clear(); seen.clear(); mine = []; me = ''; lastTurnKey = '';
     pauseBtn.setAttribute('aria-pressed', 'false');
     net.textContent = '';

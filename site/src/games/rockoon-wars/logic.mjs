@@ -224,7 +224,12 @@ export function trajectory(match, from, angle, power) {
     if (i % 2 === 0) path.push([x, y]);
     if (x < 0 || x >= W) return { path, end: null };
     const col = Math.floor(x);
-    if (y <= terrain[col]) return { path, end: { x, y: Math.max(y, 0) } };
+    if (y <= terrain[col]) {
+      const end = { x, y: terrain[col] };
+      if (i % 2 === 0) path.pop();
+      path.push([end.x, end.y]);
+      return { path, end };
+    }
     // Leaving through the top is fine; the shot comes back down. Below the field it is gone.
     if (y < -50) return { path, end: null };
   }
@@ -241,6 +246,33 @@ export function readyWeapon(match, playerIndex) {
   return unit && ammo && WEAPON[unit.weapon] && ammo[unit.weapon] > 0 ? unit.weapon : 'baby';
 }
 
+/** Ground impacts change only the game terrain and pad positions. */
+function crater(field, end, radius) {
+  const { terrain, units } = field;
+  const centre = Math.floor(end.x);
+  const depth = Math.round(radius / 2);
+  for (let x = Math.max(0, centre - radius); x <= Math.min(W - 1, centre + radius); x++) {
+    const offset = x - centre;
+    const cut = Math.round(depth * (1 - offset * offset / (radius * radius)));
+    terrain[x] = Math.max(0, terrain[x] - cut);
+  }
+
+  const slotWidth = W / units.length;
+  for (const pad of units) {
+    const offset = pad.x - centre;
+    const distance = Math.abs(offset);
+    if (distance < radius) {
+      const slot = Math.floor(pad.x / slotWidth);
+      const direction = offset < 0 || (offset === 0 && pad.x < W / 2) ? -1 : 1;
+      const shift = Math.ceil((radius - distance) / 2);
+      const left = Math.ceil(slot * slotWidth) + 8;
+      const right = Math.floor((slot + 1) * slotWidth) - 9;
+      pad.x = Math.max(left, Math.min(right, pad.x + direction * shift));
+    }
+    pad.y = terrain[pad.x];
+  }
+}
+
 export function fire(match, shot) {
   if (match.phase !== 'play') throw new Error('not in play');
   const shooter = match.turn, me = match.players[shooter], unit = match.field.units[shooter];
@@ -251,7 +283,7 @@ export function fire(match, shot) {
   unit.power = Math.max(0, Math.min(100, Math.round(shot.power)));
   unit.weapon = weapon;
   const w = WEAPON[weapon];
-  const { path } = trajectory(match, unit, unit.angle, unit.power);
+  const { path, end } = trajectory(match, unit, unit.angle, unit.power);
   const target = match.field.target;
   let closest = Infinity;
   for (const [x, y] of path) {
@@ -263,7 +295,9 @@ export function fire(match, shot) {
   me.score += points;
   me.credits += points * 50;
   const events = [{ type: 'scan', points }];
-  const blast = points ? { ...target, r: TARGET_RADIUS, dirt: false } : null;
+  const radius = Math.min(36, w.radius + 8);
+  const blast = end ? { ...end, r: radius, dirt: false } : null;
+  if (end) crater(match.field, end, radius);
   match.log.push({ round: match.round, player: shooter, angle: unit.angle, power: unit.power, weapon });
   endTurn(match, events);
   return { path, blast, events, weapon };
