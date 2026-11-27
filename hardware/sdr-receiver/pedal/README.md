@@ -2,7 +2,7 @@
 
 CSC-R1P is the [CSC-R1 Rev A](../README.md) receiver rebuilt to fit a guitar-pedal box, so the first board built is already the pedal. It receives the 2 m and 70 cm amateur satellite bands and plays the audio out of a ¼ inch jack. It only listens: there is no HaLow radio on this board. The XIAO's own Wi-Fi does transmit when the firmware turns it on.
 
-**Status:** the control board is routed and passes the KiCad 10.0.8 design-rule check. The main board still has open connections. Both boards need independent layout review and a physical fit check before fabrication.
+**Status:** both boards are routed and pass the KiCad 10.0.8 design-rule check. Both boards need independent layout review and a physical fit check before fabrication.
 
 | | |
 | --- | --- |
@@ -108,18 +108,18 @@ KiCad 10.0.8 results for the PCB files in Git, using the checked-in project rule
 
 | Board | DRC violations | Unconnected items | Status |
 | --- | ---: | ---: | --- |
-| Main | 0 | 393 | Placement and initial RF traces |
+| Main | 0 | 0 | 1,801 track segments, 96 vias and one connected In1 ground pour |
 | Control | 0 | 0 | 381 track segments, 22 vias and four filled GND pours |
 
-The earlier maze-router estimates (about 15 opens on the main and one on the control) came from trial routes. The control board now uses Freerouting copper with the project’s ground pours and silkscreen. The project’s schematic and PCB checks agree on all 19 nets and 33 footprints. A test export produced Gerbers, drill, BOM and placement files. KiCad’s optional schematic-parity check still flags pre-existing generator differences in net names, the intentionally unused ADC alert pin, MPN fields and mounting-hole BOM attributes.
+The main layout preserves all 120 original hand-routed segments. Signal routes use F.Cu, In2.Cu and B.Cu. In1.Cu is reserved for ground. Freerouting handled the initial copper, with local edits for board-edge clearance, synthesizer power, DAC outputs and the demodulator control lines.
 
-A main-board routing trial kept the original RF traces and left 30 open items and 15 clearance violations in KiCad. The trial remains outside the design files. For the main board, preserve the hand-routed RF and the In1 ground plane. Review placement and escapes around the ADF4351, especially PLL_LE, PLL_DATA, PLL_CLK, PLL_CE, MUXOUT, supply pin 10 and the TCXO output. Refill the finished routes and run the DRC gate before export.
+The project’s schematic and PCB checks agree on the pad connections for both boards. Test exports produced Gerbers, drill, BOM and placement files. KiCad’s optional schematic-parity report still flags pre-existing differences in generated net names, unused pins, MPN fields and mounting-hole BOM attributes.
 
 An independent reviewer must check both boards before ordering. See [CONTRIBUTING.md](../../../CONTRIBUTING.md).
 
 ## Open items
 
-- Finish main-board routing and pours. Review the copper and prepare Gerbers, BOM and placement files for prototype fabrication.
+- Review the copper and the generated fabrication files for both boards, including synthesizer supply paths, RF return paths and the enclosure fit.
 - Stack height: check the 15 mm standoffs, the 2×4 header and socket, and the pot bushing length against the 35 mm inside height with real parts.
 - Panel jacks and switches are not on the BOM yet: DC jack, ¼ inch jack, SMA and RP-SMA bulkheads, U.FL pigtails, USB-C panel extension, footswitch, toggle, LED bezel, knobs.
 - The TCXO land pattern is still generic, as on Rev A.
@@ -137,4 +137,4 @@ python3 check_shared.py             # pedal RF blocks against Rev A
 python3 face_template.py            # drilling template
 ```
 
-These commands rebuild PCB files from placement and run the maze router. Run the control-board rebuild in a separate checkout to preserve the routed copper in Git. To verify the checked-in boards, run `CSC_BOARD=csc-r1p-ctl python3 drc.py gate` and `CSC_BOARD=csc-r1p python3 drc.py gate` from the generator directory. The main board currently fails the connectivity gate.
+These commands regenerate placement and run the maze router. Use a separate checkout to preserve the routed copper in Git. To check the routed files, run `CSC_BOARD=csc-r1p python3 drc.py gate` and `CSC_BOARD=csc-r1p-ctl python3 drc.py gate` from the generator directory. For a review package, use the same board names with `./export.sh`.
