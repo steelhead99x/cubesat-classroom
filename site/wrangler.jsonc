@@ -37,9 +37,16 @@
   // PREVIEW_COOKIE_SECRET secret (see src/worker.mjs, tooManyGuesses) but no KV store; the
   // optional GUIDE_LIMITS store adds a daily cap on wrong guesses.
   // namespace_id is account-wide: keep it different from cubesat.app's TOKEN_LIMIT (4401).
+  // Game relay tokens (POST /api/games/moq-token, src/games-token.mjs): 60 a minute per network
+  // address, so a whole classroom behind one address can join the live sky together.
   "ratelimits": [
-    { "name": "UNLOCK_LIMIT", "namespace_id": "4410", "simple": { "limit": 20, "period": 60 } }
+    { "name": "UNLOCK_LIMIT", "namespace_id": "4410", "simple": { "limit": 20, "period": 60 } },
+    { "name": "GAME_TOKEN_LIMIT", "namespace_id": "4411", "simple": { "limit": 60, "period": 60 } }
   ],
+  // The games' MoQ relay. The signing key is the secret MOQ_GAMES_SIGNING_KEY (never here), and
+  // MOQ_GAMES_ROOT is the relay path the key signs under (the moq.pro project is `hikd`). Until both are set the games play offline.
+  // If the relay host changes, change connect-src in src/worker.mjs and src/layouts/Base.astro too.
+  "vars": { "MOQ_GAMES_RELAY": "https://cdn.moq.pro", "MOQ_GAMES_ROOT": "hikd/games" },
   // Workers Logs, so console.error from the guide and the preview gate can be read in the
   // dashboard. Traces are left off.
   "observability": { "enabled": true }

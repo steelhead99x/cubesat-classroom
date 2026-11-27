@@ -1,0 +1,51 @@
+---
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import { siteOrigin } from '../../origin';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const games = [
+  {
+    href: base + '/games/catch-the-pass/',
+    name: 'Catch the Pass',
+    text: 'Aim a ground-station antenna at a CubeSat as it crosses the sky. Pick the right LoRa spreading factor, dodge 915 MHz noise and save the satellite’s battery to download every packet you can. Five levels, plus a live sky shared with other stations over Media over QUIC.',
+    meta: 'Ages 8 and up · 1 minute a pass · keyboard, mouse or touch',
+  },
+];
+---
+<Base title="Games | CubeSat Classroom" description="Free browser games about satellites and radio, from the CubeSat Classroom project." canonical={siteOrigin + '/games/'}>
+  <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Mission', href: base + '/mission/' },
+    { label: 'Lessons', href: base + '/quests/' },
+    { label: 'Games', href: base + '/games/', current: true },
+    { label: 'CAD', href: base + '/hardware/' },
+    { label: 'Glossary', href: base + '/wiki/' },
+  ]} />
+  <div class="shell space-y-8 py-10 sm:py-14">
+    <header>
+      <p class="eyebrow t-label">Play &amp; learn</p>
+      <h1>Games</h1>
+      <p class="lede mt-3">Short games that teach how real satellite ground stations work. No account, no ads, no tracking.</p>
+    </header>
+    <ul class="grid gap-5 md:grid-cols-2">
+      {games.map(game => (
+        <li class="game-card">
+          <h2><a href={game.href}>{game.name}</a></h2>
+          <p class="mt-2">{game.text}</p>
+          <p class="t-label mt-3 text-muted">{game.meta}</p>
+          <a class="button play mt-4" href={game.href}>Play {game.name} <span class="arrow" aria-hidden="true">→</span></a>
+        </li>
+      ))}
+    </ul>
+    <p class="text-muted">Want the classroom version? Try the <a class="text-accent underline" href={base + '/quests/'}>five lessons</a> in the ground station simulator, or look up a word in the <a class="text-accent underline" href={base + '/wiki/'}>glossary</a>.</p>
+  </div>
+  <SiteFooter slot="footer" />
+</Base>
+<style>
+  .game-card { border: 1px solid var(--color-line); border-radius: .5rem; padding: 1.4rem; background: #fff; }
+  .game-card h2 a { color: var(--color-ink); text-decoration: none; }
+  .game-card h2 a:hover { color: var(--color-accent); }
+  .play { background: var(--color-night); color: #fff; }
+  .play:hover { background: var(--color-orbit); }
+</style>

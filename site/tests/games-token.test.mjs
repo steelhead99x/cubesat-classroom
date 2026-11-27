@@ -1,0 +1,99 @@
+// POST /api/games/moq-token (src/games-token.mjs), through the Worker as a browser would call it.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import worker from '../src/worker.mjs';
+
+const ASSETS = { fetch: async () => new Response('page', { headers: { 'content-type': 'text/html' } }) };
+const allow = { limit: async () => ({ success: true }) };
+const deny = { limit: async () => ({ success: false }) };
+
+const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+const privateJwk = { ...(await crypto.subtle.exportKey('jwk', pair.privateKey)), kid: 'test-kid', alg: 'ES256', key_ops: ['sign', 'verify'] };
+// `moq auth generate` writes the JWK as base64url text; accept that form.
+const keyText = Buffer.from(JSON.stringify(privateJwk)).toString('base64url');
+const configured = { MOQ_GAMES_SIGNING_KEY: keyText, MOQ_GAMES_RELAY: 'https://cdn.moq.pro/', MOQ_GAMES_ROOT: 'proj/games', GAME_TOKEN_LIMIT: allow };
+
+const ask = (env, { origin = 'https://cubesatclass.org', site = 'same-origin', body = { game: 'catch-the-pass' }, method = 'POST', type = 'application/json' } = {}) =>
+  worker.fetch(new Request('https://cubesatclass.org/api/games/moq-token', {
+    method,
+    headers: { ...(origin ? { origin } : {}), ...(site ? { 'sec-fetch-site': site } : {}), 'content-type': type },
+    ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),
+  }), { ASSETS, ...env });
+
+const part = (jwt, i) => JSON.parse(Buffer.from(jwt.split('.')[i], 'base64url').toString());
+
+test('a same-site request gets a short-lived token scoped to its own station', async () => {
+  const res = await ask(configured);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  const body = await res.json();
+  assert.match(body.player, /^[0-9a-f]{12}$/);
+  assert.match(body.callsign, /^GS-[A-Z]{2}\d$/);
+  const url = new URL(body.url);
+  assert.equal(url.origin, 'https://cdn.moq.pro');
+  assert.equal(url.pathname, '/proj/games/catch-the-pass/live');
+  const jwt = url.searchParams.get('jwt');
+  assert.deepEqual(part(jwt, 0), { typ: 'JWT', alg: 'ES256', kid: 'test-kid' });
+  const claims = part(jwt, 1);
+  assert.equal(claims.root, 'proj/games/catch-the-pass/live');
+  assert.deepEqual(claims.put, [body.player]);
+  assert.deepEqual(claims.get, ['']);
+  assert.ok(claims.exp - claims.iat <= 600 && claims.exp > Date.now() / 1000);
+  const [h, p, s] = jwt.split('.');
+  const ok = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pair.publicKey, Buffer.from(s, 'base64url'), new TextEncoder().encode(h + '.' + p));
+  assert.ok(ok, 'signature verifies with the public key');
+  assert.doesNotMatch(JSON.stringify(body), new RegExp(privateJwk.d), 'the private key is never returned');
+});
+
+test('each request gets a different player', async () => {
+  const a = await (await ask(configured)).json();
+  const b = await (await ask(configured)).json();
+  assert.notEqual(a.player, b.player);
+});
+
+test('other sites, missing origins and cross-site fetches are refused', async () => {
+  assert.equal((await ask(configured, { origin: 'https://evil.example' })).status, 403);
+  assert.equal((await ask(configured, { origin: null })).status, 403);
+  assert.equal((await ask(configured, { site: 'cross-site' })).status, 403);
+  assert.equal((await ask(configured, { type: 'text/plain' })).status, 415);
+  assert.equal((await ask(configured, { method: 'GET' })).status, 405);
+});
+
+test('unknown games and the rate limit are refused', async () => {
+  assert.equal((await ask(configured, { body: { game: 'other' } })).status, 400);
+  assert.equal((await ask({ ...configured, GAME_TOKEN_LIMIT: deny })).status, 429);
+});
+
+test('without the key, relay or limiter the game is told to play offline', async () => {
+  for (const missing of ['MOQ_GAMES_SIGNING_KEY', 'MOQ_GAMES_RELAY', 'MOQ_GAMES_ROOT', 'GAME_TOKEN_LIMIT']) {
+    const res = await ask({ ...configured, [missing]: undefined });
+    assert.equal(res.status, 503, missing);
+    assert.equal((await res.json()).offline, true);
+  }
+  const res = await ask({ ...configured, MOQ_GAMES_RELAY: 'http://insecure.example' });
+  assert.equal(res.status, 503);
+});
+
+test('a broken key fails closed without leaking it', async () => {
+  const errors = [];
+  const original = console.error;
+  console.error = (...args) => errors.push(args.join(' '));
+  try {
+    const res = await ask({ ...configured, MOQ_GAMES_SIGNING_KEY: '{"kty":"EC","crv":"P-256","d":"bad-secret-value","x":"1","y":"2"}' });
+    assert.equal(res.status, 503);
+    assert.doesNotMatch(await res.text(), /bad-secret-value/);
+    assert.doesNotMatch(errors.join('\n'), /bad-secret-value/);
+  } finally {
+    console.error = original;
+  }
+});
+
+test('HS256 and Ed25519 keys work too', async () => {
+  const hs = await crypto.subtle.exportKey('jwk', await crypto.subtle.generateKey({ name: 'HMAC', hash: 'SHA-256' }, true, ['sign']));
+  const ed = await crypto.subtle.exportKey('jwk', (await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify'])).privateKey);
+  for (const [key, alg] of [[hs, 'HS256'], [ed, 'EdDSA']]) {
+    const res = await ask({ ...configured, MOQ_GAMES_SIGNING_KEY: JSON.stringify(key) });
+    assert.equal(res.status, 200, alg);
+    assert.equal(part(new URL((await res.json()).url).searchParams.get('jwt'), 0).alg, alg);
+  }
+});

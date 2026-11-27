@@ -1,0 +1,173 @@
+---
+import Base from '../../layouts/Base.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import { LEVELS } from '../../games/catch-the-pass/logic.mjs';
+import { siteOrigin } from '../../origin';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${text}</a>`;
+---
+<Base title="Catch the Pass | CubeSat Classroom games" description="Track a CubeSat across the sky with a ground-station antenna, choose a LoRa spreading factor and download its packets before it sets. A free browser game." canonical={siteOrigin + '/games/catch-the-pass/'}>
+  <SiteHeader slot="header" home={base + '/'} links={[
+    { label: 'Mission', href: base + '/mission/' },
+    { label: 'Lessons', href: base + '/quests/' },
+    { label: 'Games', href: base + '/games/', current: true },
+    { label: 'CAD', href: base + '/hardware/' },
+    { label: 'Glossary', href: base + '/wiki/' },
+  ]} />
+  <div class="shell py-8 sm:py-12">
+    <p class="eyebrow t-label"><a href={base + '/games/'}>Games</a> · Play &amp; learn</p>
+    <h1>Catch the Pass</h1>
+    <p class="lede mt-3">Keep your antenna on the CubeSat as it crosses the sky, and pick the right spreading factor to download its packets before it sets.</p>
+
+    <section class="ctp mt-7" data-ctp aria-labelledby="ctp-title">
+      <h2 id="ctp-title" class="sr-only">Game</h2>
+      <div class="ctp-top">
+        <div role="tablist" aria-label="Mode" class="tabs">
+          <button type="button" role="tab" data-mode="missions" aria-selected="true">Missions</button>
+          <button type="button" role="tab" data-mode="live" aria-selected="false">Live sky</button>
+        </div>
+        <div class="tools">
+          <button type="button" data-pause aria-pressed="false">Start</button>
+          <button type="button" data-restart>Restart</button>
+          <button type="button" data-sound aria-pressed="false">Sound off</button>
+          <label class="slow"><input type="checkbox" data-slow /> Slower passes</label>
+        </div>
+      </div>
+      <div data-missions class="levels" role="group" aria-label="Levels">
+        {LEVELS.map((level, i) => (
+          <button type="button" data-level={i} aria-pressed={i === 0 ? 'true' : 'false'}>
+            <span class="n">{i + 1}</span> {level.name} <span data-stars class="stars-mini">☆☆☆</span>
+          </button>
+        ))}
+      </div>
+      <div data-live class="live-note" hidden>
+        <p data-sky-status aria-live="polite">Not connected.</p>
+        <p class="small">Everyone in the live sky tracks the same satellite at the same time. A new pass starts every minute. Stations are anonymous call signs. There are no names and no chat.</p>
+      </div>
+
+      <div class="stage">
+        <canvas tabindex="0" aria-label="Sky view" aria-describedby="ctp-keys"></canvas>
+        <div class="overlay" data-overlay></div>
+      </div>
+      <p class="sr-only" data-status role="status" aria-live="polite"></p>
+
+      <div class="hud">
+        <div class="meter">
+          <span class="t-label">Signal (SNR)</span>
+          <div class="bar" aria-hidden="true"><i data-snr-bar></i><b data-snr-floor title="Weakest signal this SF can decode"></b></div>
+          <span data-snr>—</span>
+        </div>
+        <div class="sf" role="group" aria-label="Spreading factor">
+          <span class="t-label">Spreading factor</span>
+          <div>
+            <button type="button" data-sf="7" aria-pressed="false">SF7 <small>fast</small></button>
+            <button type="button" data-sf="9" aria-pressed="true">SF9</button>
+            <button type="button" data-sf="12" aria-pressed="false">SF12 <small>far</small></button>
+          </div>
+        </div>
+        <div class="meter">
+          <span class="t-label">Satellite battery · <span data-light>Sunlit</span></span>
+          <div class="bar" aria-hidden="true"><i data-battery-bar class="battery"></i></div>
+          <span data-battery>—</span>
+        </div>
+        <div><button type="button" data-tx aria-pressed="true" class="tx">Transmitter on</button></div>
+        <dl class="numbers">
+          <div><dt>Packets</dt><dd data-rx>0</dd></div>
+          <div><dt>Score</dt><dd data-score>0</dd></div>
+          <div><dt>Streak</dt><dd data-streak>0</dd></div>
+          <div><dt>Time left</dt><dd data-time>—</dd></div>
+        </dl>
+      </div>
+
+      <div class="panels">
+        <div>
+          <h3 class="t-label">Downlinked packets</h3>
+          <ol data-log class="log"><li>No packets yet.</li></ol>
+        </div>
+        <div data-live-board>
+          <h3 class="t-label">Live sky stations</h3>
+          <p data-total class="small">Open the Live sky tab to join.</p>
+          <ol data-board class="log"></ol>
+          <h3 class="t-label mt-3">Heard across the sky</h3>
+          <ul data-feed class="log"></ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="mt-8 grid gap-8 lg:grid-cols-2">
+      <section aria-labelledby="how-title">
+        <h2 id="how-title">How to play</h2>
+        <ul id="ctp-keys" class="mt-3 list-disc space-y-1.5 pl-5">
+          <li><strong>Aim:</strong> move the mouse over the sky, drag with a finger, or click the sky and use the arrow keys or W A S D. The antenna turns at a limited speed, just like a real rotator.</li>
+          <li><strong>Spreading factor:</strong> press 1, 2 or 3 (or tap SF7, SF9, SF12). The line on the signal bar is the weakest signal that SF can hear.</li>
+          <li><strong>Transmitter:</strong> press Space to tell the satellite to hold or resume sending. Holding saves battery.</li>
+          <li><strong>Pause:</strong> P or Esc. <strong>Start:</strong> Enter. Sound starts off.</li>
+          <li>Earn 1 to 3 stars per pass. A star on a level unlocks the next one.</li>
+        </ul>
+      </section>
+      <section aria-labelledby="real-title">
+        <h2 id="real-title">What is real here</h2>
+        <div class="real mt-3 space-y-3">
+          <p set:html={`A ${wiki('ground-station', 'ground station')} must point its antenna at a ${wiki('cubesat', 'CubeSat')} in ${wiki('leo', 'low Earth orbit')} for the few minutes it is overhead. Low in the sky the satellite is up to five times farther away, so its ${wiki('downlink', 'downlink')} is weaker.`} />
+          <p set:html={`Many CubeSats send ${wiki('telemetry', 'telemetry')} with ${wiki('lora', 'LoRa')} radios at ${wiki('915-mhz', '915 MHz')}. Each spreading factor really does decode at a different ${wiki('rssi-snr', 'signal-to-noise ratio')}: SF7 needs about −7.5 dB and SF12 works down to −20 dB, but each SF12 packet takes about 30 times longer to send. The ${wiki('ism-band', 'ISM band')} is shared with other devices, which is the noise you have to avoid.`} />
+          <p set:html={`The live sky sends each station's antenna and packets over ${wiki('moq', 'Media over QUIC (MoQ)')}, the same relay technology the classroom plans to use to share real satellite passes between schools.`} />
+          <p class="small">Simplified for play: passes are sped up about 15 times, SF9 and SF12 packets are shortened, and the sky view flattens the dome into a rectangle.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+  <SiteFooter slot="footer" />
+</Base>
+
+<script>
+  import '../../games/catch-the-pass/game';
+</script>
+
+<style>
+  .ctp { background: #081028; color: #e8ecff; border-radius: .6rem; padding: clamp(.8rem, 2.5vw, 1.4rem); }
+  .ctp button { min-height: 44px; padding: .45rem .85rem; border: 1px solid #5b6ab8; border-radius: .3rem; background: #121d4a; color: #fff; font: 600 .95rem var(--font-sans); }
+  .ctp button:hover:not(:disabled) { background: #1d2b6b; }
+  .ctp button[aria-pressed="true"], .ctp button[aria-selected="true"] { background: #ffd23f; color: #081028; border-color: #ffd23f; }
+  .ctp button:disabled { opacity: .5; cursor: not-allowed; }
+  .ctp :focus-visible { outline: 3px solid #ffd23f; outline-offset: 2px; }
+  .ctp-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem; }
+  .tabs, .tools, .levels { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  .levels, .live-note { margin-top: .7rem; }
+  .levels .n { font-family: var(--font-mono); opacity: .8; }
+  .stars-mini { font-size: .8rem; letter-spacing: .05em; opacity: .9; }
+  .slow { display: inline-flex; gap: .4rem; align-items: center; min-height: 44px; }
+  .slow input { width: 1.2rem; height: 1.2rem; accent-color: #ffd23f; }
+  .stage { position: relative; margin-top: .8rem; }
+  canvas { display: block; width: 100%; border-radius: .4rem; touch-action: none; cursor: crosshair; background: #00005c; }
+  .overlay { position: absolute; inset: 0; display: grid; place-content: center; gap: .6rem; padding: 1rem; text-align: center; background: rgb(0 0 40 / .78); border-radius: .4rem; }
+  .overlay[hidden] { display: none; }
+  .overlay :global(h3) { font-size: clamp(1.4rem, 3vw, 2rem); }
+  .overlay :global(p) { max-width: 36rem; margin-inline: auto; }
+  .overlay :global(.stars) { font-size: 2.4rem; color: #ffd23f; letter-spacing: .1em; }
+  .overlay :global(.goal) { font-family: var(--font-mono); font-size: .9rem; color: #ffd23f; }
+  .overlay :global(.row) { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; }
+  .overlay :global(button) { justify-self: center; min-height: 44px; padding: .5rem 1.1rem; border: 1px solid #5b6ab8; border-radius: .3rem; background: #121d4a; color: #fff; font: 600 1rem var(--font-sans); }
+  .overlay :global(button.go) { background: #ffd23f; color: #081028; border-color: #ffd23f; font-size: 1.05rem; padding-inline: 1.4rem; }
+  .hud { display: grid; gap: .8rem 1.2rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); align-items: end; margin-top: .9rem; }
+  .meter { display: grid; gap: .3rem; font-family: var(--font-mono); }
+  .bar { position: relative; height: .8rem; background: #1b2550; border-radius: .2rem; overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; background: #ffd23f; }
+  .bar i[data-ok="true"] { background: #6fd3a0; }
+  .bar i.battery { background: #6fd3a0; }
+  .bar i.battery[data-low="true"] { background: #ef6b6c; }
+  .bar b { position: absolute; top: 0; bottom: 0; width: 3px; background: #fff; }
+  .sf > div { display: flex; gap: .4rem; margin-top: .3rem; }
+  .sf small { font-weight: 400; opacity: .8; }
+  .tx { width: 100%; }
+  .numbers { display: flex; gap: 1rem; flex-wrap: wrap; font-family: var(--font-mono); }
+  .numbers dt { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; opacity: .75; }
+  .numbers dd { font-size: 1.4rem; font-weight: 600; }
+  .panels { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin-top: 1rem; }
+  .log { margin-top: .4rem; font: .85rem/1.5 var(--font-mono); color: #c9d2ff; }
+  .small { font-size: .88rem; color: #c9d2ff; }
+  .real :global(a) { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+  .real .small { color: var(--color-muted); }
+  .eyebrow a { color: inherit; }
+</style>

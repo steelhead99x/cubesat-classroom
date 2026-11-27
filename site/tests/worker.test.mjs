@@ -57,6 +57,7 @@ test('apex hosts are served, with security headers', async () => {
   assert.equal(res.status, 200);
   assert.match(res.headers.get('strict-transport-security'), /includeSubDomains/);
   assert.match(res.headers.get('content-security-policy'), /script-src 'self'/);
+  assert.match(res.headers.get('content-security-policy'), /connect-src 'self' https:\/\/cdn\.moq\.pro wss:\/\/cdn\.moq\.pro;/);
   assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
 });
 

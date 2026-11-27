@@ -1,5 +1,6 @@
 import { classroomHost, hubs, redirects } from './hubs.mjs';
 import { answerFor, byQuest, questionText } from './guide/answers.mjs';
+import { gameToken } from './games-token.mjs';
 
 // Hubs with their own `path` live on another host (GitHub Pages or the classroom home), not here.
 const homeByHost = new Map(hubs.filter(hub => !hub.path).map(({ host, slug }) => [host, '/hub/' + slug + '/']));
@@ -342,10 +343,13 @@ async function privately(response, env) {
 // Defence in depth for every response. The site's scripts are all files on its own origin
 // (no inline scripts), so scripts may load only from 'self'. The rockoon workbook runs its
 // simulator as WebAssembly, so its pages may also compile WebAssembly ('wasm-unsafe-eval').
+// Pages may connect only to this site and to the games' MoQ relay, over WebTransport (https:)
+// or its WebSocket fallback (wss:).
+const CONNECT_SRC = "connect-src 'self' https://cdn.moq.pro wss://cdn.moq.pro";
 function secured(response, pathname = '') {
   const out = new Response(response.body, response);
   const wasm = pathname.startsWith('/rockoon/workbook/') ? " 'wasm-unsafe-eval'" : '';
-  out.headers.set('content-security-policy', `script-src 'self'${wasm}; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'`);
+  out.headers.set('content-security-policy', `script-src 'self'${wasm}; ${CONNECT_SRC}; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'`);
   out.headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   out.headers.set('x-content-type-options', 'nosniff');
   out.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
@@ -379,6 +383,7 @@ export default {
 async function route(request, env) {
   {
     const url = new URL(request.url);
+    if (url.pathname === '/api/games/moq-token') return gameToken(request, env);
     if (url.pathname === '/api/guide') {
       if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
       return guide(request, env);

@@ -8,6 +8,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const items = [
   {
+    tag: 'Game',
+    name: 'Catch the Pass',
+    text: 'Aim a ground-station antenna at a CubeSat, pick the right radio setting and grab its packets before it sets. Play solo or in the live sky with other stations.',
+    who: 'Ages 8 and up · keyboard, mouse or touch',
+    href: base + '/games/catch-the-pass/',
+    action: 'Play the game',
+  },
+  {
     tag: 'Play',
     name: 'Fly a practice CubeSat',
     text: 'Watch a pretend satellite pass overhead, read its sensors, then lose it over the horizon.',
@@ -43,8 +51,8 @@ const items = [
 ---
 <section id="play-and-learn" class="play-learn scroll-mt-6" aria-labelledby="play-learn-title">
   <Heading id="play-learn-title">Play &amp; learn</Heading>
-  <p class="mt-2 max-w-2xl text-muted">Try these right now in your browser. No account, nothing to install.</p>
-  <ul class="mt-5 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
+  <p class="mt-2 max-w-2xl text-muted">Try these right now in your browser. No account, nothing to install. <a class="font-bold text-accent underline underline-offset-4" href={base + '/games/'}>All games</a></p>
+  <ul class="mt-5 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
     {items.map(item => (
       <li class="flex flex-col gap-2 border border-line bg-paper p-5 border-t-4 border-t-orbit">
         <span class="t-label text-orbit">{item.tag}</span>
