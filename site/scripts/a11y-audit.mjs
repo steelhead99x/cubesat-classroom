@@ -5,8 +5,8 @@
 // For every page, at desktop and phone sizes: axe-core's WCAG 2.0–2.2 A and AA rules. Then,
 // by hand-written checks: one h1, a lang attribute, a working skip link, unique titles, no
 // sideways scrolling at 320 px wide (WCAG 1.4.10), and a visible focus ring on everything Tab
-// reaches (2.4.7). Both games are also checked in each state a player sees: the first card,
-// the menus and shop, and play. Exits 1 if anything fails.
+// reaches (2.4.7). Both games also get a local playthrough through their start and pause states.
+// Exits 1 if anything fails.
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
@@ -93,25 +93,48 @@ for (const path of pages) {
   await context.close();
 }
 
-// The games, in each state a player sees.
-for (const path of ['/games/rockoon-wars/', '/games/catch-the-pass/']) {
+// Exercise specific controls so the audit fails if it never reaches active play.
+const gameChecks = [
+  {
+    path: '/games/rockoon-wars/', scope: 'section[data-rw]',
+    steps: [
+      ['[data-act="howto"]', 'main menu'],
+      ['[data-act="to-local"]', 'player count'],
+      ['[data-act="local"][data-n="2"]', 'first shop'],
+      ['[data-act="done"]', 'second shop'],
+      ['[data-act="done"]', 'aiming', '[data-fire]:enabled'],
+      ['[data-pause]', 'paused', '[data-act="resume"]'],
+    ],
+  },
+  {
+    path: '/games/catch-the-pass/', scope: 'section[data-ctp]',
+    steps: [
+      ['[data-howto]', 'ready', '[data-go]'],
+      ['[data-go]', 'playing', '[data-pause]:text-is("Pause")'],
+      ['[data-pause]', 'paused', '[data-resume]'],
+    ],
+  },
+];
+
+for (const { path, scope, steps } of gameChecks) {
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport, bypassCSP: true });
     const page = await context.newPage();
-    await page.goto(origin + path); await page.evaluate(() => localStorage.clear()); await page.reload();
     const where = state => `${path} ${viewport.width}px, ${state}`;
-    await axeOn(page, where('first card'), 'section[data-rw], section[data-ctp]');
-    for (let i = 0; i < 8; i++) {
-      const buttons = await page.locator('[data-overlay]:not([hidden]) button:not([disabled])').allInnerTexts();
-      const pick = buttons.find(t => /got it/i.test(t)) ?? buttons.find(t => /this computer/i.test(t)) ?? buttons.find(t => t.trim() === '2') ?? buttons.find(t => /done|start/i.test(t));
-      if (!pick) break;
-      await page.locator('[data-overlay]:not([hidden]) button', { hasText: pick }).first().click();
-      await page.waitForTimeout(300);
-      await axeOn(page, where(`after "${pick.trim()}"`), 'section[data-rw], section[data-ctp]');
+    try {
+      await page.goto(origin + path);
+      await page.locator(steps[0][0]).waitFor({ timeout: 5000 });
+      await axeOn(page, where('first card'), scope);
+      for (const [selector, state, expected] of steps) {
+        await page.locator(selector).click({ timeout: 5000 });
+        if (expected) await page.locator(expected).waitFor({ timeout: 5000 });
+        await axeOn(page, where(state), scope);
+      }
+    } catch (error) {
+      fail(where(error.message));
+    } finally {
+      await context.close();
     }
-    await page.waitForTimeout(2500);
-    await axeOn(page, where('playing'), 'section[data-rw], section[data-ctp]');
-    await context.close();
   }
 }
 

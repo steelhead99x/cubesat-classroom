@@ -17,7 +17,7 @@ const { steps, keysNote, heading = 'How to play', listId = 'steps-list' } = Astr
       <li id={`step-${s.id}`} class="step" aria-labelledby={`step-${s.id}-title`}>
         <div class="step-top">
           <span class="step-n">Step {i + 1}</span>
-          <a class="step-link" href={`#step-${s.id}`} data-step-link aria-label={`Copy link to step ${i + 1}: ${s.title}`}><Fragment set:html={icon('link', 16)} /><span data-step-link-text>Copy link</span></a>
+          <a class="step-link" href={`#step-${s.id}`} data-step-link aria-label={`Copy link to step ${i + 1}: ${s.title}`}><Fragment set:html={icon('link', 16)} /><span>Copy link<span data-step-confirmation aria-hidden="true" hidden> · Copied</span></span></a>
         </div>
         <span class="step-pic" set:html={icon(s.pic, 30)} />
         <h3 id={`step-${s.id}-title`}>{s.title}</h3>
@@ -36,18 +36,28 @@ const { steps, keysNote, heading = 'How to play', listId = 'steps-list' } = Astr
   // Copy link: put the step's full address on the clipboard. Without JavaScript (or without
   // clipboard access) the link still works as an ordinary link to the step.
   const status = document.querySelector<HTMLElement>('[data-step-status]');
+  const feedbackTimers = new WeakMap<HTMLAnchorElement, ReturnType<typeof setTimeout>>();
   for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-step-link]')) {
     link.addEventListener('click', async e => {
-      const url = new URL(link.getAttribute('href')!, location.href).href;
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || !navigator.clipboard) return;
+
+      const url = new URL(link.href);
+      e.preventDefault();
       try {
-        await navigator.clipboard.writeText(url);
-        e.preventDefault();
-        history.replaceState(null, '', url);
-        const label = link.querySelector('[data-step-link-text]')!;
-        label.textContent = 'Link copied';
-        if (status) status.textContent = 'Link to this step copied.';
-        setTimeout(() => { label.textContent = 'Copy link'; }, 2000);
-      } catch { /* no clipboard: follow the link instead */ }
+        await navigator.clipboard.writeText(url.href);
+      } catch {
+        location.hash = url.hash;
+        return;
+      }
+
+      const confirmation = link.querySelector<HTMLElement>('[data-step-confirmation]')!;
+      confirmation.hidden = false;
+      if (status) {
+        const message = `Link to ${link.closest('li')!.querySelector('h3')!.textContent} copied.`;
+        status.replaceChildren(document.createTextNode(message));
+      }
+      clearTimeout(feedbackTimers.get(link));
+      feedbackTimers.set(link, setTimeout(() => { confirmation.hidden = true; }, 2000));
     });
   }
 </script>
