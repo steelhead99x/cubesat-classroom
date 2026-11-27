@@ -156,12 +156,14 @@ export function readReceiver(game) {
   const { carrier, noise } = linkAt(game, game.ant.az, game.ant.el, game.t, game.antenna);
   // Match the pedal trainer's gain curve. The LoRa input scale is calibrated for gameplay.
   const tuned = offset === 0;
-  const inputDb = Math.max(tuned && game.transmit && !game.safe ? carrier : -30, noise - 18);
+  // A satellite holding its transmitter (or in safe mode) sends nothing to lock on to.
+  const sending = game.transmit && !game.safe;
+  const inputDb = Math.max(tuned && sending ? carrier : -30, noise - 18);
   const peak = 0.42 * amplitudeGain(inputDb + gainDb - DEFAULT_RECEIVER.gainDb);
   const lowGain = Math.max(0, DEFAULT_RECEIVER.gainDb - gainDb) / 3;
   const overload = peak > 1 ? 40 * Math.log10(peak) : 0;
-  const status = peak >= 1 ? 'Clipping' : !tuned ? 'Off frequency' : lowGain >= 2 ? 'Low gain' : 'Ready';
-  return { peak, snr: tuned ? carrier - noise - lowGain - overload : -99, status };
+  const status = peak >= 1 ? 'Clipping' : !tuned ? 'Off frequency' : !sending ? 'No signal' : lowGain >= 2 ? 'Low gain' : 'Ready';
+  return { peak, snr: tuned && sending ? carrier - noise - lowGain - overload : -99, status };
 }
 
 export function inEclipse(level, p) {
