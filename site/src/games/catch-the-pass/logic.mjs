@@ -202,6 +202,8 @@ export function createGame(level, seed = 1, antenna = level.antenna, receiver = 
     packet: freshPacket(),
     /** For the debrief: lost packets by cause, seconds resting or in safe mode, and a trace. */
     causes: { pointing: 0, weak: 0, noise: 0, receiver: 0 },
+    /** Too-weak losses by the spreading factor each packet was sent on, so the debrief names the right one. */
+    weakBySf: { 7: 0, 9: 0, 12: 0 },
     restS: 0, safeS: 0,
     /** @type {{ t: number, snr: number, floor: number, el: number, on: boolean }[]} every half second */
     trace: [],
@@ -317,6 +319,7 @@ export function step(game, input = {}, dt = 1 / 60) {
         game.lost++; game.streak = 0;
         const cause = lossCause(pk);
         game.causes[cause]++;
+        if (cause === 'weak') game.weakBySf[game.sf]++;
         game.events.push({ type: 'lost', seq: game.seq, cause });
         if (game.packets.length < 200) game.packets.push({ t: game.t, ok: false, cause });
       }
@@ -364,7 +367,10 @@ export function liveSlot(nowMs) {
  * time the satellite could not send. Returns { cause, text }, or null after a clean pass.
  */
 export function debrief(game) {
-  const sfName = { 7: 'Fast', 9: 'Middle', 12: 'Far' }[game.sf];
+  // The setting the weak packets were sent on, not the one selected now.
+  const weakSf = Object.entries(game.weakBySf ?? {}).sort((a, b) => b[1] - a[1] || Number(b[0]) - Number(a[0]))[0];
+  const sentSf = weakSf && weakSf[1] > 0 ? Number(weakSf[0]) : game.sf;
+  const sfName = { 7: 'Fast', 9: 'Middle', 12: 'Far' }[sentSf];
   const top = LOSS_CAUSES.map(c => [c, game.causes[c]]).sort((a, b) => b[1] - a[1])[0];
   const plural = n => (n === 1 ? '1 packet was' : `${n} packets were`);
   if (game.safeS >= 3 && (!top || game.safeS * 0.7 > top[1])) {
@@ -378,7 +384,9 @@ export function debrief(game) {
   const [cause, n] = top;
   const text = {
     pointing: `${plural(n)} lost while the antenna pointed away. Keep the circle on the satellite, and move ahead of it when it is high and fast.`,
-    weak: `${plural(n)} too weak to decode at ${sfName} even with the antenna on target. When the satellite is low and far away, switch to Far (SF12).`,
+    weak: sentSf === 12
+      ? `${plural(n)} too weak to decode even at Far (SF12) with the antenna on target. Very low in the sky the signal is too faint for any setting; rest the satellite then to save battery.`
+      : `${plural(n)} too weak to decode at ${sfName} even with the antenna on target. When the satellite is low and far away, switch to Far (SF12).`,
     noise: `${plural(n)} drowned out by noise. Keep the antenna away from the busy device on the right horizon, and expect short noise bursts.`,
     receiver: `${plural(n)} lost at the receiver. Keep the pedal engaged, tuned to 915.000 MHz, and the gain out of the red.`,
   }[cause];

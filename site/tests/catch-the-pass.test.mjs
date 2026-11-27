@@ -264,6 +264,21 @@ test('lost packets are put down to a cause, and the debrief names the biggest on
   }
   assert.equal(G.debrief(low).cause, 'weak');
   assert.match(G.debrief(low).text, /Far \(SF12\)/);
+  // Switching to Far after the pass, without sending another packet, doesn't change who's blamed.
+  assert.ok(low.weakBySf[7] > 0 && low.weakBySf[12] === 0);
+  G.setSf(low, 12);
+  assert.match(G.debrief(low).text, /at Fast even/);
+});
+
+test('weak losses are put down to the setting they were sent on', () => {
+  const g = G.createGame(G.LEVELS[1], 5);
+  g.causes.weak = 3;
+  g.weakBySf = { 7: 0, 9: 0, 12: 3 };
+  g.sf = 7;
+  assert.match(G.debrief(g).text, /even at Far \(SF12\)/);
+  g.weakBySf = { 7: 2, 9: 1, 12: 0 };
+  g.sf = 12;
+  assert.match(G.debrief(g).text, /at Fast even/);
 });
 
 test('the debrief trace covers the pass and resting time is counted', () => {
