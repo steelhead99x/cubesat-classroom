@@ -242,7 +242,7 @@ const parts = [
   const signal = () => computeSignal(noise, { band: band.value, offset, gainDb: Number(gain.value) });
   const rotate = (el: Element, deg: number, cx: number, cy: number) => el.setAttribute('transform', `rotate(${deg} ${cx} ${cy})`);
 
-  function renderPedal(tuned: boolean, peak: number, frequency: number) {
+  function renderPedal(tuned: boolean, peak: number, frequency: number, clipping: boolean) {
     rotate(get('[data-knob="gain"]'), knobAngle(Number(gain.value), 0, GAIN_MAX_DB), 15.8, 20);
     rotate(get('[data-knob="level"]'), knobAngle(Number(volume.value), 0, 100), 49.8, 20);
     rotate(get('[data-knob="tune"]'), passS === null ? tuneAngle(offset) : (passOffsetHz / 1000) * TUNE_DEGREES, 32.8, 20);
@@ -251,7 +251,7 @@ const parts = [
     get('[data-oled-top]').textContent = (band.value === '2' ? '2m ' : '70cm') + (passS === null ? '  SIM  ' : '  PASS ') + (engaged ? 'ON' : 'MUTE');
     get('[data-oled-freq]').textContent = frequency.toFixed(3);
     get('[data-oled-bar]').setAttribute('width', String(36.5 * Math.min(1, peak)));
-    get('[data-oled-note]').textContent = peak > 1 ? 'input CLIP' : 'input ' + inputPercent(peak) + '%' + (tuned && band.value === '2' ? '  ISS' : '');
+    get('[data-oled-note]').textContent = clipping ? 'input CLIP' : 'input ' + inputPercent(peak) + '%' + (tuned && band.value === '2' ? '  ISS' : '');
   }
 
   function render() {
@@ -262,7 +262,7 @@ const parts = [
       tuned = state.heard;
       const carrier = state.heard ? Math.min(0.9, 0.08 * 10 ** (state.snrDb / 20)) : 0;
       samples = noise.map((n, i) => carrier * Math.sin((i * Math.PI) / 20) + 0.08 * n);
-      peak = Math.max(0, (state.dbfs + 100) / 100);
+      peak = 10 ** (state.adcDbfs / 20);
       frequency = (band.value === '2' ? pass.nominalHz + passOffsetHz : 435_000_000) / 1e6;
       get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · ' + state.dbfs.toFixed(0) + ' dBFS · ' +
         (state.heard ? 'carrier heard' : state.inView ? 'carrier outside the passband' : 'satellite below the horizon') + (engaged ? ' · output on' : ' · muted');
@@ -284,7 +284,7 @@ const parts = [
     const task = get('#pedal-task');
     const want = passS === null ? TASKS[stage] : 'Pass · Keep the carrier within 1.5 kHz as the Doppler shift changes. Tap TUNE for 1 kHz steps.';
     if (task.textContent !== want) task.textContent = want;
-    renderPedal(tuned, peak, frequency);
+    renderPedal(tuned, peak, frequency, state?.clipping ?? peak > 1);
     if (state) renderPass(state);
   }
 

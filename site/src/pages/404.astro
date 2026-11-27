@@ -7,7 +7,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 <Base
   title="Page not found | CubeSat Classroom"
-  description="That address is not on CubeSat Classroom. Try the home page or the five classroom lessons."
+  description="That address is not on CubeSat Classroom. Try the home page or the classroom lessons."
   robots="noindex"
 >
   <SiteHeader slot="header" home={base + '/'} />
@@ -17,7 +17,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <p class="lede mt-5">The address may be mistyped, or the page may have moved. The lessons and the practice ground station are still on the home page.</p>
     <div class="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
       <a class="button primary" href={base + '/'}>Back to the home page</a>
-      <a class="font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>Open the five lessons</a>
+      <a class="font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>Open the lessons</a>
     </div>
   </section>
   <SiteFooter slot="footer" />

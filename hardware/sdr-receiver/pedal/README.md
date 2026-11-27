@@ -2,7 +2,7 @@
 
 CSC-R1P is the [CSC-R1 Rev A](../README.md) receiver rebuilt to fit a guitar-pedal box, so the first board built is already the pedal. It receives the 2 m and 70 cm amateur satellite bands and plays the audio out of a ¼ inch jack. It only listens: there is no HaLow radio on this board. The XIAO's own Wi-Fi does transmit when the firmware turns it on.
 
-**Status: designed, placed, routing unfinished, not built, not tested.** The schematics match the designs and the parts are placed with no overlaps. The autorouter leaves about 15 connections on the main board and 1 on the control board, so the fab gate refuses to export Gerbers. See [Routing](#routing). Everything else in this file is desk review, not measurement.
+**Status:** the control board is routed and passes the KiCad 10.0.8 design-rule check. The main board still has open connections. Both boards need independent layout review and a physical fit check before fabrication.
 
 | | |
 | --- | --- |
@@ -104,24 +104,22 @@ Stacking header: 1 3V3_DIG, 2 GND, 3 SDA, 4 SCL, 5 CTL_INT, 6 GND, 7 +5V, 8 GND.
 
 ## Routing
 
-The generator places both boards and then runs the project's own maze router (`gen/route.py`) for several passes, keeping the best. On the pedal boards it stops short:
+KiCad 10.0.8 results for the PCB files in Git, using the checked-in project rules:
 
-- **Main board: about 15 connections left.** The same ones fail on every pass: the ADF4351's serial lines (PLL_LE, PLL_DATA, PLL_CLK, PLL_CE), its MUXOUT and supply pin 10, and the TCXO output. The synthesizer is boxed in by its decoupling and the demodulator, so its control lines can't get out to the XIAO. More passes don't help. It needs a floorplan change around the synthesizer (rotate it, or move the XIAO's synthesizer pins closer), or a better router.
-- **Control board: 1 connection left**, ENC_A into pin 4 of the expander (U1), on every pass. Rotating the expander or swapping ENC_A to a spare bit would likely clear it.
+| Board | DRC violations | Unconnected items | Status |
+| --- | ---: | ---: | --- |
+| Main | 0 | 393 | Placement and initial RF traces |
+| Control | 0 | 0 | 381 track segments, 22 vias and four filled GND pours |
 
-Ways to finish, cheapest first:
+The earlier maze-router estimates (about 15 opens on the main and one on the control) came from trial routes. The control board now uses Freerouting copper with the project’s ground pours and silkscreen. The project’s schematic and PCB checks agree on all 19 nets and 33 footprints. A test export produced Gerbers, drill, BOM and placement files. KiCad’s optional schematic-parity check still flags pre-existing generator differences in net names, the intentionally unused ADC alert pin, MPN fields and mounting-hole BOM attributes.
 
-1. Open the boards in KiCad 7, run Freerouting (the KiCad plugin) on the remaining nets, or route them by hand. Then run `gen/finish.py` (pours and silk), `gen/drc.py gate` and `gen/export.sh`. The gate must pass before the fab files mean anything.
-2. Import the KiCad files into Flux and use its autorouter, then bring the result back for the same checks.
-3. Change the floorplan around the synthesizer in `gen_pcb_r1p.py` and rerun `place_route.sh`.
+A main-board routing trial kept the original RF traces and left 30 open items and 15 clearance violations in KiCad. The trial remains outside the design files. For the main board, preserve the hand-routed RF and the In1 ground plane. Review placement and escapes around the ADF4351, especially PLL_LE, PLL_DATA, PLL_CLK, PLL_CE, MUXOUT, supply pin 10 and the TCXO output. Refill the finished routes and run the DRC gate before export.
 
-If none of those works, the two fallbacks are a 6-layer main board or the larger 1590BB box.
-
-A routed board must also pass a review by a person who did not write it before anything is ordered (see [CONTRIBUTING.md](../../../CONTRIBUTING.md)).
+An independent reviewer must check both boards before ordering. See [CONTRIBUTING.md](../../../CONTRIBUTING.md).
 
 ## Open items
 
-- Routing, as above, then pours, DRC gate, Gerbers, BOM and placement files.
+- Finish main-board routing and pours. Review the copper and prepare Gerbers, BOM and placement files for prototype fabrication.
 - Stack height: check the 15 mm standoffs, the 2×4 header and socket, and the pot bushing length against the 35 mm inside height with real parts.
 - Panel jacks and switches are not on the BOM yet: DC jack, ¼ inch jack, SMA and RP-SMA bulkheads, U.FL pigtails, USB-C panel extension, footswitch, toggle, LED bezel, knobs.
 - The TCXO land pattern is still generic, as on Rev A.
@@ -139,4 +137,4 @@ python3 check_shared.py             # pedal RF blocks against Rev A
 python3 face_template.py            # drilling template
 ```
 
-`build.sh` stops at the first failing check, so today it stops after routing. Rev A still builds the same way with no `CSC_BOARD` set, and its BOM and placement come out unchanged.
+These commands rebuild PCB files from placement and run the maze router. Run the control-board rebuild in a separate checkout to preserve the routed copper in Git. To verify the checked-in boards, run `CSC_BOARD=csc-r1p-ctl python3 drc.py gate` and `CSC_BOARD=csc-r1p python3 drc.py gate` from the generator directory. The main board currently fails the connectivity gate.

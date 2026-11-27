@@ -23,7 +23,7 @@ BOARDS = {
     'csc-r1p-ctl': dict(
         design='design_r1p_ctl', placer='gen_pcb_r1p_ctl.py', kicad='../pedal/kicad', fab='../pedal/fab/controls',
         edge_ref=None, edge_max=0,
-        render=(0, 0, 54, 64), router_passes=6,
+        render=(0, 0, 54, 72), router_passes=6,
     ),
 }
 

@@ -62,10 +62,13 @@ export function makePass(options = {}) {
     const noiseDbfs = o.noiseAtZeroGainDbfs + gainDb;
     // Off tune, the carrier falls outside the passband and is not heard.
     const heard = inView && Math.abs(offsetHz) <= PASSBAND_HZ;
-    const signalDbfs = heard ? o.levelAt1000kmDbfs + gainDb + 20 * Math.log10(1000 / geo.rangeKm) : -Infinity;
-    const snrDb = signalDbfs - noiseDbfs;
-    const total = 10 * Math.log10(10 ** (noiseDbfs / 10) + 10 ** (signalDbfs / 10));
-    const clipping = total > -1;
+    const signalDbfs = inView ? o.levelAt1000kmDbfs + gainDb + 20 * Math.log10(1000 / geo.rangeKm) : -Infinity;
+    const noisePower = 10 ** (noiseDbfs / 10);
+    const signalPower = 10 ** (signalDbfs / 10);
+    const snrDb = heard ? signalDbfs - noiseDbfs : -Infinity;
+    const adcDbfs = 10 * Math.log10(noisePower + signalPower);
+    const total = 10 * Math.log10(noisePower + (heard ? signalPower : 0));
+    const clipping = adcDbfs > -1;
     return {
       label: 'desk simulation',
       passS,
@@ -78,6 +81,7 @@ export function makePass(options = {}) {
       heard,
       dbfs: Math.min(0, total),
       noiseDbfs,
+      adcDbfs,
       snrDb,
       clipping,
       decoded: heard && !clipping && snrDb >= DECODE_SNR_DB,

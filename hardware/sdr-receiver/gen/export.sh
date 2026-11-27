@@ -13,7 +13,7 @@ report=$(mktemp)
 # Build the whole package in a staging folder; the fab folder is replaced only when every step
 # has succeeded, so a failed export never leaves a half-written or empty package behind.
 mkdir -p "$fab"
-stage=$(mktemp -d "$fab/../.fab-stage.XXXXXX")
+stage=$(mktemp -d "$(cd "$fab/.." && pwd)/.fab-stage.XXXXXX")
 trap 'rm -f -- "$report"; rm -rf -- "$stage"' EXIT
 python3 drc.py gate "$report"
 PROJ="$proj" KICAD="$kicad" python3 - <<'PY'
