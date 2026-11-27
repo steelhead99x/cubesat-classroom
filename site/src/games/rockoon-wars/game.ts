@@ -250,6 +250,9 @@ function start(root: HTMLElement) {
 
   // ---- the HTML around the canvas ----
   function render() {
+    // For checking that online players stay in step: how many turns, and a hash of the match.
+    root.dataset.turns = match ? String(match.log.length) : '';
+    root.dataset.fp = match && !anim ? G.fingerprint(match) : '';
     draw();
     renderHud();
     renderOverlay();
