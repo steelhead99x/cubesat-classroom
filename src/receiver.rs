@@ -694,7 +694,20 @@ fn from_rtl_power(
     time_zone: &TimeZone,
     received_unix_ms: Option<u64>,
 ) -> Option<Stats> {
-    let captured_unix_ms = sweep_unix_ms(row, time_zone, received_unix_ms)?;
+    let Some(captured_unix_ms) = sweep_unix_ms(row, time_zone, received_unix_ms) else {
+        // A data row whose time couldn't be placed: say so, rather than drop it silently.
+        if row
+            .split(',')
+            .nth(1)
+            .is_some_and(|t| t.trim().contains(':'))
+        {
+            eprintln!(
+                "skipped an rtl_power row: its local time is invalid, never happened, or falls in the repeated hour when the clocks went back and can't be placed: {}",
+                row.split(',').take(2).collect::<Vec<_>>().join(",")
+            );
+        }
+        return None;
+    };
     let tuned_hz = args.frequency_hz.unwrap_or(args.band.default_hz());
     let (bins, _) = bench_tools::sweep::parse(row);
     let near = |f: f64| (f - tuned_hz as f64).abs() <= args.passband_hz;

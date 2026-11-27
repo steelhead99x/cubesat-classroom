@@ -302,10 +302,11 @@ const parts = [
     const off = (state.offsetHz / 1000).toFixed(1);
     get('[data-pass-readout]').textContent = state.inView
       ? `[desk simulation] elevation ${state.elevationDeg.toFixed(0)}° · range ${state.rangeKm.toFixed(0)} km · Doppler ${state.dopplerHz >= 0 ? '+' : ''}${(state.dopplerHz / 1000).toFixed(2)} kHz · you are ${off} kHz off · ${state.heard ? `SNR ${state.snrDb.toFixed(0)} dB` + (state.decoded ? ' · beacon decoded' : '') : 'not heard'}${state.clipping ? ' · input clipping, turn GAIN down' : ''}`
-      : state.passS < 0 ? `[desk simulation] satellite rises in ${Math.ceil(-state.passS)} s` : '[desk simulation] satellite has set';
+      : (state.passS < 0 ? `[desk simulation] satellite rises in ${Math.ceil(-state.passS)} s` : '[desk simulation] satellite has set') + (state.clipping ? ' · input clipping, turn GAIN down' : '');
     get('[data-oled-note]').textContent = state.inView
       ? (state.clipping ? `EL ${state.elevationDeg.toFixed(0)}  input CLIP` : `EL ${state.elevationDeg.toFixed(0)}  ${state.heard ? 'SNR ' + state.snrDb.toFixed(0) + 'dB' : 'NO CARRIER'}${state.decoded ? ' BCN' : ''}`)
-      : state.passS < 0 ? 'WAITING FOR AOS' : 'LOS';
+      // Noise alone can clip at high gain, so say so even with the satellite below the horizon.
+      : state.clipping ? 'input CLIP' : state.passS < 0 ? 'WAITING FOR AOS' : 'LOS';
   }
 
   function drawSky() {
