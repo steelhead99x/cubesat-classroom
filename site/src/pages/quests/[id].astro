@@ -28,7 +28,7 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
   <div class="section-band">
     <div class="shell grid items-end gap-5 py-8 sm:py-11 lg:grid-cols-[1fr_auto]">
       <div>
-        <a class="text-sm font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>All lessons</a>
+        <a class="tap text-sm font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>All lessons</a>
         <p class="mt-4 text-sm text-muted">Lesson {quest.data.order} of {total} · {quest.data.minutes} min · {quest.data.skill}</p>
         <h1 class="mt-2 max-w-3xl">{quest.data.title}</h1>
         <p class="lede mt-3">{quest.data.summary}</p>

@@ -239,3 +239,12 @@
   .wiki-search { width: 100%; min-height: 2.9rem; padding: .6rem .8rem; border: 1px solid #8a90ad; border-radius: .25rem; background: #fff; color: var(--color-ink); font: inherit; }
   .wiki-search:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
 }
+
+/* Tap targets: a link that stands on its own line (a call to action, a card link, a list of
+   downloads) is at least 44px tall on every screen. Links inside sentences stay inline.
+   Unlayered on purpose, so it wins over the Tailwind display utilities on the same link. */
+main a.inline-block, main a.mt-auto, main a.tap { display: inline-flex; align-items: center; min-height: 2.75rem; }
+main a.block { display: flex; align-items: center; min-height: 2.75rem; }
+/* Lesson lists whose titles are links: keep the row height and line the number up with the title. */
+.lesson-outline li:has(> div > a.tap:first-child) { padding-top: .25rem; }
+.lesson-outline li:has(> div > a.tap:first-child) > span { padding-top: .9rem; }

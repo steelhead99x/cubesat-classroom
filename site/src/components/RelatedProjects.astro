@@ -53,9 +53,9 @@ const projects = [
     {projects.map(project => (
       <li class="flex min-w-0 flex-col border-t-2 border-ink pt-4">
         <span class="text-sm font-bold text-faint">{project.kind}</span>
-        <a class="mt-1 text-lg font-bold text-ink underline-offset-4 hover:underline" href={project.href}>{project.name}</a>
+        <a class="tap mt-1 text-lg font-bold text-ink underline-offset-4 hover:underline" href={project.href}>{project.name}</a>
         <p class="mt-2 text-sm text-muted">{project.text}</p>
-        {project.join && <a class="mt-2 text-sm font-bold text-ink underline underline-offset-4" href={project.join.href}>{project.join.label}</a>}
+        {project.join && <a class="tap mt-2 text-sm font-bold text-ink underline underline-offset-4" href={project.join.href}>{project.join.label}</a>}
       </li>
     ))}
   </ul>

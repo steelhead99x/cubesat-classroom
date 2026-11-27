@@ -33,7 +33,7 @@ const id = 'site-menu';
     {!links && <a class="quick" href={base + '/games/'} aria-current={current === 'games' ? 'page' : undefined}><span aria-hidden="true">🎮</span> Games</a>}
     <button type="button" class="menu-toggle" data-menu-toggle aria-expanded="false" aria-controls={id} hidden>
       <span class="burger" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span>Menu</span>
+      <span class="menu-label">Menu</span>
     </button>
     <nav class="menu" id={id} data-menu-panel aria-label={label}>
       <ul class="top">
@@ -71,6 +71,7 @@ const id = 'site-menu';
 
 <style>
   .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .6rem; padding-block: .6rem; position: relative; }
+  .brand { min-height: 2.75rem; }
   .menu ul { list-style: none; margin: 0; padding: 0; }
   .top { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .25rem; }
   .site-header .menu a, .dd-toggle {
@@ -103,9 +104,9 @@ const id = 'site-menu';
 
   /* Narrow screens: a Menu button opens one list with every link. Without scripts the list just shows. */
   @media (max-width: 56rem) {
-    .site-header[data-js] .menu-toggle { display: inline-flex; }
+    .site-header[data-js] .menu-toggle, :global(html[data-nav]) .site-header .menu-toggle { display: inline-flex; }
     .menu { flex-basis: 100%; }
-    .site-header[data-js] .menu:not([data-open]) { display: none; }
+    .site-header[data-js] .menu:not([data-open]), :global(html[data-nav]) .site-header .menu:not([data-open]) { display: none; }
     .menu[data-open] { padding-bottom: .6rem; }
     .top { flex-direction: column; align-items: stretch; gap: .15rem; }
     .site-header .menu a { display: flex; min-height: 3rem; font-size: 1.05rem; padding: 0 .9rem; }
@@ -117,9 +118,17 @@ const id = 'site-menu';
   /* A Games shortcut beside the Menu button, so it is one tap away on phones. */
   .quick { display: none; }
   @media (max-width: 56rem) {
-    .site-header[data-js] .quick { display: inline-flex; align-items: center; gap: .35rem; min-height: 2.75rem; padding: 0 .85rem; margin-left: auto; border-radius: .7rem; background: var(--color-solar, #ffd23f); color: #14183a; font-weight: 800; font-size: .95rem; text-decoration: none; }
-    .site-header[data-js] .quick[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--color-flag, #e0313f); }
+    .site-header[data-js] .quick, :global(html[data-nav]) .site-header .quick { display: inline-flex; align-items: center; gap: .35rem; min-height: 2.75rem; padding: 0 .85rem; margin-left: auto; border-radius: .7rem; background: var(--color-solar, #ffd23f); color: #14183a; font-weight: 800; font-size: .95rem; text-decoration: none; }
+    .site-header[data-js] .quick[aria-current="page"], :global(html[data-nav]) .site-header .quick[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--color-flag, #e0313f); }
   }
   @media (min-width: 56.01rem) { .menu-toggle { display: none !important; } }
+  /* Small phones: the Menu button shows just its icon (the word stays for screen readers), so the
+     logo, Games and Menu fit on one row and the header doesn't grow when the web font loads. */
+  @media (max-width: 25rem) {
+    .menu-toggle { padding: 0 .8rem; min-width: 2.75rem; justify-content: center; }
+    .bar { column-gap: .4rem; }
+    .site-header[data-js] .quick, :global(html[data-nav]) .site-header .quick { padding: 0 .6rem; }
+    .menu-label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  }
   @media (prefers-reduced-motion: reduce) { .chev, .burger i { transition: none; } }
 </style>

@@ -29,8 +29,8 @@ const kitFiles = [
         <p class="lede mt-4">Build a real 1U frame: AMSAT's CubeSatSim frame with a printed plate for an Arduino Uno R3 and Nano 33 BLE Sense. Every part is printed, with no screws, nuts or metal standoffs. Print the test coupons first to check your printer's fit.</p>
         <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
           <a class="button primary" href={kit + kitFiles[0].file}>Download the test coupons</a>
-          <a class="font-bold text-accent underline underline-offset-4" href={guide}>AMSAT frame build guide</a>
-          <a class="font-bold text-accent underline underline-offset-4" href={repo + '/tree/main/crates/amsat-kit'}>Open the CAD source</a>
+          <a class="tap font-bold text-accent underline underline-offset-4" href={guide}>AMSAT frame build guide</a>
+          <a class="tap font-bold text-accent underline underline-offset-4" href={repo + '/tree/main/crates/amsat-kit'}>Open the CAD source</a>
         </div>
       </div>
       <figure class="bench-figure hud m-0">
@@ -54,7 +54,7 @@ const kitFiles = [
         <dl class="mt-5 divide-y divide-line border-y border-line">
           {kitFiles.map(file => (
             <div class="grid gap-2 py-4 sm:grid-cols-[13rem_1fr] sm:gap-6">
-              <dt><a class="text-accent" href={kit + file.file}>{file.name} (3MF)</a></dt>
+              <dt><a class="tap text-accent" href={kit + file.file}>{file.name} (3MF)</a></dt>
               <dd class="text-muted">{file.note}</dd>
             </div>
           ))}
