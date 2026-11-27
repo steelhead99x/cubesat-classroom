@@ -21,10 +21,20 @@ export const levels = [
 
 export type LevelId = typeof levels[number]['id'];
 
-/** Minimal inline formatting for quest steps: **bold** and `code`. */
-export function inline(text: string): string {
+/**
+ * Minimal inline formatting for quest steps: **bold**, `code` and [links](/path/). A link to a
+ * site path (starting with /) gets the site's base path; # anchors and https links are kept;
+ * anything else stays plain text.
+ */
+export function inline(text: string, base = ''): string {
   return text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (all, label: string, href: string) => {
+      const safe = href.replace(/"/g, '%22');
+      if (href.startsWith('/')) return `<a href="${base}${safe}">${label}</a>`;
+      if (href.startsWith('#') || href.startsWith('https://')) return `<a href="${safe}">${label}</a>`;
+      return label;
+    })
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/`(.+?)`/g, '<code>$1</code>');
 }

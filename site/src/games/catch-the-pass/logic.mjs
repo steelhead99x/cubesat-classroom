@@ -368,11 +368,11 @@ export function debrief(game) {
   const top = LOSS_CAUSES.map(c => [c, game.causes[c]]).sort((a, b) => b[1] - a[1])[0];
   const plural = n => (n === 1 ? '1 packet was' : `${n} packets were`);
   if (game.safeS >= 3 && (!top || game.safeS * 0.7 > top[1])) {
-    return { cause: 'battery', text: `The battery ran flat, so the satellite sent nothing for ${Math.round(game.safeS)} s. In Earth\u2019s shadow, rest it (Sending: resting) when you cannot hear it, and use faster settings.` };
+    return { cause: 'battery', ...LEARN.battery, text: `The battery ran flat, so the satellite sent nothing for ${Math.round(game.safeS)} s. In Earth\u2019s shadow, rest it (Sending: resting) when you cannot hear it, and use faster settings.` };
   }
   if (!top || top[1] === 0) {
     return game.restS >= 5
-      ? { cause: 'rest', text: `The satellite rested for ${Math.round(game.restS)} s. Resting saves battery, but it sends nothing while it rests.` }
+      ? { cause: 'rest', ...LEARN.battery, text: `The satellite rested for ${Math.round(game.restS)} s. Resting saves battery, but it sends nothing while it rests.` }
       : null;
   }
   const [cause, n] = top;
@@ -382,5 +382,17 @@ export function debrief(game) {
     noise: `${plural(n)} drowned out by noise. Keep the antenna away from the busy device on the right horizon, and expect short noise bursts.`,
     receiver: `${plural(n)} lost at the receiver. Keep the pedal engaged, tuned to 915.000 MHz, and the gain out of the red.`,
   }[cause];
-  return { cause, text };
+  return { cause, ...LEARN[cause], text };
 }
+
+/**
+ * Where to read more for each debrief: the How to play step (an anchor on the game page) and a
+ * glossary entry or lesson (a path on the site).
+ */
+export const LEARN = {
+  pointing: { step: 'track', stepTitle: 'Keep the circle on the satellite', learn: '/wiki/ground-station/', learnTitle: 'Ground station' },
+  weak: { step: 'radio', stepTitle: 'Pick a radio setting', learn: '/wiki/lora/', learnTitle: 'LoRa and spreading factors' },
+  noise: { step: 'track', stepTitle: 'Keep the circle on the satellite', learn: '/wiki/rssi-snr/', learnTitle: 'RSSI and SNR' },
+  receiver: { step: 'receiver', stepTitle: 'Tune the receiver', learn: '/quests/follow-the-doppler/', learnTitle: 'Lesson: Follow the Doppler shift' },
+  battery: { step: 'battery', stepTitle: 'Look after the battery', learn: '/quests/light-and-shadow/', learnTitle: 'Lesson: Light and shadow' },
+};

@@ -148,6 +148,19 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
           <p class="small">The game adapts the CSC-R1 pedal controls for a simulated 915 MHz LoRa receiver. The physical CSC-R1 receiver is designed for 2 m and 70 cm. Passes and packet airtimes are shortened for play.</p>
         </div>
       </section>
+
+      <section class="mt-8" aria-labelledby="links-title">
+        <h2 id="links-title">Link straight to a level</h2>
+        <p class="mt-3">Put one of these on a slide or in a lesson to open the game at that level. A level that is not open yet in the visitor’s browser says which level to play first. The <a href={base + '/quests/catch-the-pass/'}>Catch the Pass lesson</a> uses the same links.</p>
+        <ul class="level-links mt-3">
+          {LEVELS.map((l, i) => {
+            const slug = l.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            return <li><a href={`#level=${slug}`}>Level {i + 1}: {l.name}</a> <code>#level={slug}</code></li>;
+          })}
+          <li><a href="#mode=live">Live sky</a> <code>#mode=live</code></li>
+        </ul>
+        <p class="small mt-3">Each step under How to play also has its own link, such as <a href="#step-radio"><code>#step-radio</code></a>.</p>
+      </section>
     </div>
   </div>
   <SiteFooter slot="footer" />
@@ -158,6 +171,9 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
 </script>
 
 <style>
+  .level-links { display: grid; gap: .35rem; padding: 0; list-style: none; }
+  .level-links a { font-weight: 600; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
+  .level-links code { margin-left: .4rem; font-size: .8rem; color: var(--color-muted); }
   .ctp { --line: #2b3a85; --panel: #121a46; --gold: #ffd23f; background: #0b1240; color: #e8ecff; border-radius: .9rem; padding: .6rem; box-shadow: 0 10px 40px rgb(8 12 40 / .35); }
   .ctp button { min-height: 44px; padding: .45rem .85rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--panel); color: #fff; font: 700 .95rem var(--font-sans); touch-action: manipulation; }
   .ctp button:hover:not(:disabled) { filter: brightness(1.15); }

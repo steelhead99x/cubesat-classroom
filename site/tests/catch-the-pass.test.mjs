@@ -278,3 +278,16 @@ test('the debrief trace covers the pass and resting time is counted', () => {
   assert.equal(g.trace.slice(0, 19).some(p => p.on), false);
   assert.equal(g.packets.length, g.rx + g.lost);
 });
+
+test('every debrief links to a real How to play step and a real page', async () => {
+  const { existsSync } = await import('node:fs');
+  const { STEPS: steps } = await import('../src/games/catch-the-pass/steps.mjs');
+  const ids = new Set(steps.map(s => s.id));
+  for (const [cause, l] of Object.entries(G.LEARN)) {
+    assert.ok(ids.has(l.step), `${cause}: step ${l.step}`);
+    assert.equal(steps.find(s => s.id === l.step).title, l.stepTitle, `${cause}: step title`);
+    const [, kind, slug] = l.learn.match(/^\/(wiki|quests)\/([a-z0-9-]+)\/$/) ?? [];
+    const dir = kind === 'wiki' ? 'glossary' : 'quests';
+    assert.ok(slug && existsSync(new URL(`../src/content/${dir}/${slug}.md`, import.meta.url)), `${cause}: ${l.learn}`);
+  }
+});

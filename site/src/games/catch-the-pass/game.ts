@@ -13,6 +13,9 @@ type Antenna = keyof typeof G.ANTENNAS;
 const root = document.querySelector<HTMLElement>('[data-ctp]');
 if (root) init(root);
 
+/** The site's base path ("/cubesat-classroom" on GitHub Pages, "" on cubesatclass.org). */
+const siteBase = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 function init(root: HTMLElement) {
   const $ = <T extends Element = HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
   const canvas = $<HTMLCanvasElement>('canvas');
@@ -604,7 +607,8 @@ function init(root: HTMLElement) {
       <p class="stars" aria-label="${s} of 3 stars">${'★'.repeat(s)}${'☆'.repeat(3 - s)}</p>
       <p><strong>${game.rx}</strong> packets · <strong>${game.lost}</strong> lost · best streak <strong>${game.bestStreak}</strong> · <strong>${game.score}</strong> credits${game.battery >= 20 && game.seq > 0 ? ' (with +200 credits for a healthy battery)' : ''}</p>
       ${debriefChart(game)}
-      ${tip ? `<p class="tip"><strong>Next time:</strong> ${tip.text}</p>` : '<p class="tip"><strong>Clean pass!</strong> Every packet that was sent got through.</p>'}
+      ${tip ? `<p class="tip"><strong>Next time:</strong> ${tip.text}</p>
+      <p class="learn"><a href="#step-${tip.step}">How: ${tip.stepTitle}</a> · <a href="${siteBase}${tip.learn}" target="_blank" rel="noopener">${tip.learnTitle}<span class="sr-only"> (opens in a new tab)</span></a></p>` : '<p class="tip"><strong>Clean pass!</strong> Every packet that was sent got through.</p>'}
       <p>${lessons[levelIndex]}</p>
       <div class="row">${s && more ? '<button type="button" class="go" data-next>Next level</button>' : ''}<button type="button" class="${s && more ? '' : 'go'}" data-again>Try again</button></div>`);
     overlay.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
@@ -893,8 +897,46 @@ function init(root: HTMLElement) {
     setLabel(`Sky view. Satellite at elevation ${Math.round(sat.el)} degrees. Your antenna at elevation ${Math.round(game.ant.el)}. Signal ${game.locked ? 'locked' : 'not locked'}.`);
   }
 
+  // ---- Deep links ----
+  // A lesson or teacher can link straight to a level or the live sky:
+  //   #level=low-pass (or #level=2)   that level, if it is open in this browser
+  //   #mode=live                       the shared live pass
+  // Step links (#step-track) are ordinary anchors and are left alone.
+  const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  function applyHash() {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const want = params.get('level'), wantMode = params.get('mode');
+    if (!want && wantMode !== 'live' && wantMode !== 'levels') return false;
+    if (running && !paused && game && !game.done && mode === 'missions') setPaused(true, false);
+    if (wantMode === 'live') {
+      if (mode !== 'live') tabs.find(t => t.dataset.mode === 'live')?.click();
+      bringIntoView();
+      return true;
+    }
+    if (mode !== 'missions') tabs.find(t => t.dataset.mode === 'missions')?.click();
+    const i = want ? G.LEVELS.findIndex((l, n) => String(l.id) === want || slug(l.name) === want || String(n + 1) === want) : -1;
+    if (i >= 0 && unlocked(i)) {
+      levelIndex = i;
+      savePrefs();
+      ready();
+    } else if (i >= 0) {
+      // Not open yet in this browser: say why, and offer the level that opens it.
+      const open = G.LEVELS.findIndex((_, n) => !unlocked(n + 1));
+      levelIndex = Math.max(0, Math.min(open < 0 ? i : open, i - 1));
+      ready();
+      show(`<h3>Level ${i + 1}: ${G.LEVELS[i].name} is locked</h3>
+        <p>Levels open in order: earn at least one star on <strong>${G.LEVELS[i - 1].name}</strong> to open it. Stars are kept in this browser, so a new browser or a private window starts with only level 1 open.</p>
+        <button class="go" data-go>Play level ${levelIndex + 1}: ${G.LEVELS[levelIndex].name}</button>`);
+      announce(`${G.LEVELS[i].name} is locked. Play ${G.LEVELS[levelIndex].name} first.`);
+    }
+    bringIntoView();
+    return true;
+  }
+  addEventListener('hashchange', () => { applyHash(); });
+
   setTab();
   ready();
+  applyHash();
   resize();
   requestAnimationFrame(frame);
 }
