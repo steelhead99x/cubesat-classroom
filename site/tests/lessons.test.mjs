@@ -1,13 +1,13 @@
 // Every browser lesson needs its guide answers, a patch colour and a patch icon.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { byQuest } from '../src/guide/answers.mjs';
 
 const dir = new URL('../src/content/quests/', import.meta.url);
 const ids = readdirSync(dir).filter(f => f.endsWith('.md')).map(f => f.slice(0, -3));
-const tones = readFileSync(new URL('../src/patches.ts', import.meta.url), 'utf8');
-const icons = readFileSync(new URL('../src/components/Patch.astro', import.meta.url), 'utf8');
+const art = JSON.parse(readFileSync(new URL('../src/patch-art.json', import.meta.url), 'utf8'));
+const shapes = JSON.parse(readFileSync(new URL('../src/patch-shapes.json', import.meta.url), 'utf8'));
 
 test('each lesson has a hint and a why at every level', () => {
   assert.ok(ids.length >= 5);
@@ -22,8 +22,18 @@ test('each lesson has a hint and a why at every level', () => {
 
 test('each lesson has a patch colour and icon', () => {
   for (const id of ids) {
-    assert.match(tones, new RegExp(`'${id}':`), `tone for ${id}`);
-    assert.match(icons, new RegExp(`'${id}':`), `icon for ${id}`);
+    const patch = art.patches[id];
+    assert.match(patch?.tone ?? '', /^#[0-9a-f]{6}$/i, `tone for ${id}`);
+    assert.ok(patch.shapes.length > 0, `icon for ${id}`);
+  }
+});
+
+test("each patch's label outline was generated from the quest's current patch name", () => {
+  // Fails when a patch name changes without `python3 hardware/patches/gen/patches.py build`.
+  for (const id of ids) {
+    const label = readFileSync(new URL(`${id}.md`, dir), 'utf8').match(/^patch: (.+)$/m)[1].trim();
+    assert.equal(shapes.labels[id]?.label, label, `label outline for ${id}`);
+    assert.ok(shapes.labels[id].d.startsWith('M'), `label path for ${id}`);
   }
 });
 
@@ -39,4 +49,10 @@ test('lesson inline links keep the site base and format only their labels', asyn
   assert.equal(inline('[`logic.mjs`](https://example.com/**path**?a=1&b=2)'),
     '<a href="https://example.com/**path**?a=1&amp;b=2"><code>logic.mjs</code></a>');
   assert.equal(inline('[relative](//example.com) and `**literal**`'), 'relative and <code>**literal**</code>');
+});
+
+test('each patch has a print file for the patches page to link', () => {
+  for (const id of ids) {
+    assert.ok(existsSync(new URL(`../../hardware/patches/print/${id}.3mf`, import.meta.url)), `print file for ${id}`);
+  }
 });

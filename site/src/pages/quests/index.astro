@@ -39,9 +39,10 @@ const total = quests.reduce((sum, quest) => sum + quest.data.minutes, 0);
       ))}
     </ol>
     <PlayLearn />
-    <details class="reference-panel">
+    <details class="reference-panel" open>
       <summary>Mission patches</summary>
       <div class="mt-5"><PatchShelf size={84} /></div>
+      <p class="mt-4 text-sm text-muted">Every patch is also a three-colour 3D print. <a class="font-bold text-ink underline underline-offset-4" href={base + '/patches/'}>Print your patches</a></p>
     </details>
     <details class="reference-panel">
       <summary>Ground station questions</summary>
