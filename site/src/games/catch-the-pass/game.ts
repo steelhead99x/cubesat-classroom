@@ -72,7 +72,7 @@ function init(root: HTMLElement) {
     soundOn = !soundOn;
     if (soundOn && !audio) audio = new AudioContext();
     (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(soundOn));
-    (e.currentTarget as HTMLElement).textContent = soundOn ? '🔊' : '🔇';
+    (e.currentTarget as HTMLElement).querySelector('.i')!.textContent = soundOn ? '🔊' : '🔇';
     (e.currentTarget as HTMLElement).setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off');
     beep(660, 80);
   });
@@ -167,7 +167,9 @@ function init(root: HTMLElement) {
       <p class="goal">Goal: ${currentLevel().goal.map((g, i) => `${'★'.repeat(i + 1)} ${g} packets`).join(' · ')}</p>
       <button type="button" class="go" data-go>▶ Start</button>`);
     hud(); draw();
-    if (!seenHowto() && !helpOpen) showHowto();
+    // Shown on a first visit, without moving focus: the page has only just loaded, so keyboard
+    // and screen-reader users start at the top (skip link, header) like on every other page.
+    if (!seenHowto() && !helpOpen) showHowto(false);
   }
 
   // ---- The first-visit "How to play" card ----
@@ -177,7 +179,7 @@ function init(root: HTMLElement) {
     canvas.parentElement!.dataset.panel = open ? 'howto' : '';
   }
 
-  function showHowto() {
+  function showHowto(takeFocus = true) {
     if (helpOpen) return;
     if (running && mode === 'missions' && !paused) setPaused(true, false);
     clearAim();
@@ -193,7 +195,7 @@ function init(root: HTMLElement) {
       <button type="button" class="go" data-howto>Got it!</button>`);
     const got = overlay.querySelector<HTMLButtonElement>('[data-howto]')!;
     got.addEventListener('click', closeHowto);
-    got.focus({ preventScroll: true });
+    if (takeFocus) got.focus({ preventScroll: true });
   }
   function closeHowto() {
     try { localStorage.setItem(howtoKey, '1'); } catch { /* private mode */ }
@@ -211,7 +213,7 @@ function init(root: HTMLElement) {
       helpBtn.focus({ preventScroll: true });
     }
   }
-  helpBtn.addEventListener('click', showHowto);
+  helpBtn.addEventListener('click', () => showHowto());
 
   function hideOverlay() {
     overlay.hidden = true;
@@ -219,7 +221,8 @@ function init(root: HTMLElement) {
   }
 
   function show(html: string) {
-    overlay.innerHTML = html;
+    // Each card is one white brick panel; a saved card (afterHelp) already has its panel.
+    overlay.innerHTML = html.startsWith('<div class="panel">') ? html : `<div class="panel">${html}</div>`;
     overlay.hidden = false;
     canvas.inert = true;
     overlay.querySelector<HTMLButtonElement>('[data-go]')?.addEventListener('click', start);
@@ -579,6 +582,7 @@ function init(root: HTMLElement) {
   }
 
   // ---- HUD (HTML, so it is readable and zoomable) ----
+  const nowEl = $<HTMLParagraphElement>('[data-now]');
   const hudEl = {
     snr: $('[data-snr]'), bar: $<HTMLElement>('[data-snr-bar]'), floor: $<HTMLElement>('[data-snr-floor]'),
     battery: $('[data-battery]'), batteryBar: $<HTMLElement>('[data-battery-bar]'),
@@ -597,7 +601,7 @@ function init(root: HTMLElement) {
     css(hudEl.bar, 'width', pct(game.snr) + '%');
     hudEl.bar.dataset.ok = String(game.locked);
     css(hudEl.floor, 'left', pct(G.SF[game.sf as 7 | 9 | 12].minSnr) + '%');
-    put(hudEl.battery, Math.round(game.battery) + '%' + (game.safe ? ' · SAFE MODE' : ''));
+    put(hudEl.battery, Math.round(game.battery) + '%' + (game.safe ? ' (safe mode)' : ''));
     css(hudEl.batteryBar, 'width', game.battery + '%');
     hudEl.batteryBar.dataset.low = String(game.battery < 25);
     put(hudEl.rx, String(game.rx));
@@ -620,6 +624,14 @@ function init(root: HTMLElement) {
     put(receiverHud.gain, receiver.gainDb + ' dB');
     put(receiverHud.level, receiver.level + '%');
     sfButtons.forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.sf) === game!.sf)));
+    // One plain instruction above the sky: what to do right now, in words.
+    put(nowEl, countdown > 0 ? 'Get ready: the satellite is about to rise on the left.'
+      : !running ? 'Press Start when you are ready.'
+      : paused ? 'Paused. Press Resume to keep going.'
+      : game.safe ? 'The battery is low. Press Sending to let the satellite rest.'
+      : !receiver.engaged ? 'Your receiver is off. Press Engaged on the receiver pedal.'
+      : game.locked ? 'You are catching packets! Keep the circle on the satellite.'
+      : 'Move the circle onto the satellite until the signal bar turns green.');
     if (game.log[0] && hudEl.log.dataset.seq !== String(game.log[0].seq)) {
       hudEl.log.dataset.seq = String(game.log[0].seq);
       hudEl.log.replaceChildren(...game.log.slice(0, 5).map(r => Object.assign(document.createElement('li'), {

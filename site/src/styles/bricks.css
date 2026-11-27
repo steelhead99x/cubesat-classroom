@@ -1,0 +1,140 @@
+/* The brick look shared by the games and the Games page.
+   Chunky snap-together bricks on a light baseplate: every control is a brick you press, with a
+   picture and a word, big enough for small fingers. Built for every reader: one very legible
+   typeface (Atkinson Hyperlegible, made for low-vision readers), text contrast of at least
+   4.5:1, a chosen option shown by an outline and a tick as well as by colour, a thick focus
+   ring, and no motion unless you press something. Everything is scoped to .bricks. */
+@import '@fontsource/atkinson-hyperlegible/400.css';
+@import '@fontsource/atkinson-hyperlegible/700.css';
+
+.bricks {
+  /* Brick colours. Text on each passes WCAG AA: white on red 5.9:1, on blue 6.0:1, on green
+     5.5:1; ink on yellow 11.8:1 and on the plate 14:1. */
+  --brick-red: #c91a09;
+  --brick-blue: #0a5cc2;
+  --brick-yellow: #f5cd2f;
+  --brick-green: #237841;
+  --brick-ink: #1a2238;
+  --brick-plate: #e4e8ee;
+  --brick-plate-dark: #c9d1dc;
+  --brick-white: #ffffff;
+  --brick-font: 'Atkinson Hyperlegible', 'Inter Variable', system-ui, sans-serif;
+  --stud: 7px;
+
+  font-family: var(--brick-font);
+  color: var(--brick-ink);
+}
+
+/* The baseplate: a light, studded tray the game sits in. */
+.bricks.plate, .bricks .plate {
+  background-color: var(--brick-plate);
+  background-image: radial-gradient(circle, rgb(255 255 255 / .55) 0 4px, transparent 4.5px),
+    radial-gradient(circle, rgb(26 34 56 / .08) 0 5.5px, transparent 6px);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 1px;
+  border: 3px solid var(--brick-ink);
+  border-radius: 14px;
+}
+
+/* A brick: any button or link that does something. Mark a button .brick, or put buttons
+   inside a .brick-auto container (for buttons the game script writes). */
+.bricks :is(.brick, .brick-auto button) {
+  --b: var(--brick-blue);
+  --fg: var(--brick-white);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 48px;
+  min-width: 48px;
+  margin-top: var(--stud);
+  padding: .5rem 1rem .65rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--b);
+  color: var(--fg);
+  font: 700 1.05rem/1.15 var(--brick-font);
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: inset 0 -6px 0 rgb(0 0 0 / .25), 0 3px 0 var(--brick-ink);
+}
+/* Studs along the top edge. */
+.bricks :is(.brick, .brick-auto button)::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: calc(-1 * var(--stud));
+  height: var(--stud);
+  background: radial-gradient(ellipse 7px 5px at 50% 100%, var(--b) 0 100%, transparent 102%) 0 0 / 20px 100% repeat-x;
+  filter: brightness(1.12);
+  pointer-events: none;
+}
+.bricks :is(.brick, .brick-auto button):hover:not(:disabled) { filter: brightness(1.08); }
+.bricks :is(.brick, .brick-auto button):active:not(:disabled) { transform: translateY(3px); box-shadow: inset 0 -3px 0 rgb(0 0 0 / .25), 0 0 0 var(--brick-ink); }
+.bricks :is(.brick, .brick-auto button):disabled { cursor: not-allowed; opacity: .7; }
+.bricks :is(.brick, .brick-auto button).red { --b: var(--brick-red); }
+.bricks :is(.brick, .brick-auto button).blue { --b: var(--brick-blue); }
+.bricks :is(.brick, .brick-auto button).green { --b: var(--brick-green); }
+.bricks :is(.brick, .brick-auto button).yellow { --b: var(--brick-yellow); --fg: var(--brick-ink); }
+.bricks :is(.brick, .brick-auto button).white { --b: var(--brick-white); --fg: var(--brick-ink); box-shadow: inset 0 0 0 2px var(--brick-ink), inset 0 -6px 0 rgb(26 34 56 / .14), 0 3px 0 var(--brick-ink); }
+.bricks :is(.brick, .brick-auto button).white::before { filter: drop-shadow(0 -2px 0 var(--brick-ink)); }
+.bricks :is(.brick, .brick-auto button).big { min-height: 60px; padding-inline: 1.5rem; font-size: 1.25rem; }
+/* Chosen: yellow, a thick ink outline and a tick, so it never depends on colour alone. */
+.bricks :is(.brick, .brick-auto button)[aria-pressed='true'],
+.bricks :is(.brick, .brick-auto button)[aria-checked='true'] {
+  --b: var(--brick-yellow);
+  --fg: var(--brick-ink);
+  box-shadow: inset 0 0 0 3px var(--brick-ink), inset 0 -6px 0 rgb(0 0 0 / .2), 0 3px 0 var(--brick-ink);
+}
+.bricks :is(.brick, .brick-auto button)[aria-pressed='true']::after,
+.bricks :is(.brick, .brick-auto button)[aria-checked='true']::after { content: '✓'; font-weight: 700; }
+.bricks :is(.brick, .brick-auto button).no-tick::after { content: none; }
+
+/* Focus: thick and visible on the light plate and on the dark sky. */
+.bricks :focus-visible { outline: 4px solid var(--brick-ink); outline-offset: 3px; box-shadow: 0 0 0 7px var(--brick-white); }
+.bricks .on-dark :focus-visible { outline-color: var(--brick-white); box-shadow: 0 0 0 7px var(--brick-ink); }
+
+/* Labels are plain words in sentence case, never spaced-out capitals. */
+.bricks .t-label { font-family: var(--brick-font); letter-spacing: 0; text-transform: none; }
+
+/* A label next to a value: a word first, then the number. */
+.bricks .tag { font-size: .95rem; font-weight: 700; }
+.bricks .num { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* The "what to do now" line: one short instruction, always in words. */
+.bricks .now {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin: 0;
+  padding: .55rem .8rem;
+  border: 3px solid var(--brick-ink);
+  border-radius: 8px;
+  background: var(--brick-yellow);
+  color: var(--brick-ink);
+  font: 700 clamp(1rem, 2.6vw, 1.2rem)/1.3 var(--brick-font);
+}
+.bricks .now::before { content: '👉'; font-size: 1.3em; line-height: 1; }
+.bricks .now:empty { display: none; }
+
+/* Cards over the sky (menus, how to play, results): white bricks with ink borders. */
+.bricks .card-brick {
+  background: var(--brick-white);
+  color: var(--brick-ink);
+  border: 3px solid var(--brick-ink);
+  border-radius: 12px;
+  box-shadow: 0 6px 0 var(--brick-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bricks :is(.brick, .brick-auto button):active:not(:disabled) { transform: none; }
+}
+@media (forced-colors: active) {
+  .bricks :is(.brick, .brick-auto button) { border: 2px solid ButtonText; }
+  .bricks :is(.brick, .brick-auto button)[aria-pressed='true'] { outline: 3px solid Highlight; }
+  .bricks :is(.brick, .brick-auto button)::before { display: none; }
+}

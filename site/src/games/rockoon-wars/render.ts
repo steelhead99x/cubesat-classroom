@@ -52,8 +52,9 @@ export class Renderer {
     if (w === this.canvas.width && h === this.canvas.height && dpr === this.dpr) return;
     this.canvas.width = w; this.canvas.height = h;
     this.dpr = dpr; this.cw = r.width; this.ch = r.height;
-    // Fit the whole world, keep it on the ground, and leave sky above.
-    this.scale = Math.min(this.cw / G.W, this.ch / (G.H * 0.92));
+    // Fit the whole world, keep it on the ground, and leave sky above: all of its height plus
+    // a strip for the wind sign, so the sky ring is never cut off at the top.
+    this.scale = Math.min(this.cw / G.W, this.ch / (G.H + 40));
     this.ox = (this.cw - G.W * this.scale) / 2;
     this.oy = this.ch - G.H * this.scale;
     this.#skySeed = -1; this.#groundKey = '';
@@ -80,7 +81,7 @@ export class Renderer {
     this.#booms.push({ x, y, r, dirt, t: 0 });
     if (this.reduced) return;
     this.#shake = Math.min(14, 3 + r / 5);
-    this.#flash = dirt ? 0 : Math.min(0.35, r / 160);
+    this.#flash = dirt || this.reduced ? 0 : Math.min(0.35, r / 160); // no flash with reduced motion
     const n = Math.round(18 + r * 0.8);
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI, sp = 60 + Math.random() * (120 + r * 3);

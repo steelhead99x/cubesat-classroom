@@ -1,4 +1,5 @@
 ---
+import '../../styles/bricks.css';
 import Base from '../../layouts/Base.astro';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
@@ -13,6 +14,7 @@ const games = [
     mode: 'Solo levels or shared sky',
     time: 'About 1 minute per pass',
     theme: 'pass',
+    icon: '🛰️',
   },
   {
     href: base + '/games/rockoon-wars/',
@@ -21,12 +23,13 @@ const games = [
     mode: '2–4 players, local or online',
     time: '5–15 minutes',
     theme: 'rockoon',
+    icon: '🎈',
   },
 ];
 ---
 <Base title="Games | CubeSat Classroom" description="Free browser games about satellites and radio, from the CubeSat Classroom project." canonical={siteOrigin + '/games/'}>
   <SiteHeader slot="header" home={base + '/'} current="games" />
-  <div class="shell space-y-8 py-10 sm:py-14">
+  <div class="shell bricks space-y-8 py-10 sm:py-14">
     <header class="games-intro">
       <div>
         <h1>Classroom games</h1>
@@ -38,41 +41,51 @@ const games = [
       {games.map(game => (
         <li class:list={['game-card', game.theme]}>
           <div class="game-info">
+            <span class="game-icon" aria-hidden="true">{game.icon}</span>
             <h2>{game.name}</h2>
             <p>{game.text}</p>
           </div>
-          <ul class="game-details" aria-label="Game details"><li>{game.mode}</li><li>{game.time}</li></ul>
-          <a class="button play" href={game.href}>Play {game.name} <span class="arrow" aria-hidden="true">→</span></a>
+          <ul class="game-details" aria-label="Game details"><li><span aria-hidden="true">👥</span> {game.mode}</li><li><span aria-hidden="true">⏱</span> {game.time}</li></ul>
+          <a class="brick yellow big play" href={game.href}><span aria-hidden="true">▶</span> Play {game.name}</a>
         </li>
       ))}
     </ul>
     <section class="lesson-link" aria-labelledby="lessons-heading">
       <div><h2 id="lessons-heading">Practice with the ground station</h2><p>Try the five guided lessons on sensors, camera frames and signal loss.</p></div>
-      <a class="button" href={base + '/quests/'}>Open the lessons <span class="arrow" aria-hidden="true">→</span></a>
+      <a class="brick blue" href={base + '/quests/'}><span aria-hidden="true">📘</span> Open the lessons</a>
     </section>
   </div>
   <SiteFooter slot="footer" />
 </Base>
 <style>
   .games-intro { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1rem 2rem; }
-  .games-intro > p { max-width: 20rem; color: var(--color-muted); }
-  .games-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 1rem; list-style: none; padding: 0; }
+  .games-intro h1 { font-family: var(--brick-font); }
+  .games-intro p { font-size: 1.15rem; }
+  .games-intro > p { max-width: 22rem; color: var(--brick-ink); }
+  .games-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 2rem 1.25rem; list-style: none; padding: 1rem 0 0; }
+  /* Each game is one big brick: studs on top, a colour of its own, words in white. */
   .game-card {
-    display: flex; flex-direction: column; align-items: start; gap: 1rem;
-    min-width: 0; padding: clamp(1.25rem, 4vw, 2.2rem);
-    border: 1px solid #394985; border-radius: 1rem;
-    background: radial-gradient(ellipse at 100% 0%, var(--glow), transparent 66%), #101942;
-    color: #f2f4ff;
+    --b: var(--brick-blue);
+    position: relative; display: flex; flex-direction: column; align-items: start; gap: 1rem;
+    min-width: 0; padding: clamp(1.25rem, 4vw, 2rem);
+    border: 3px solid var(--brick-ink); border-radius: 10px;
+    background: var(--b); color: #fff;
+    box-shadow: inset 0 -10px 0 rgb(0 0 0 / .22), 0 5px 0 var(--brick-ink);
   }
-  .pass { --glow: #23598b; --action: #a9e3ff; }
-  .rockoon { --glow: #68417e; --action: #ffd786; }
+  .game-card::before {
+    content: ''; position: absolute; left: 18px; right: 18px; top: -15px; height: 13px;
+    background: radial-gradient(ellipse 12px 9px at 50% 100%, var(--b) 0 100%, transparent 102%) 0 0 / 34px 100% repeat-x;
+    filter: brightness(1.12) drop-shadow(0 -3px 0 var(--brick-ink));
+  }
+  .pass { --b: var(--brick-blue); }
+  .rockoon { --b: var(--brick-red); }
   .game-info { display: grid; gap: .5rem; }
-  .game-info p { max-width: 35ch; color: #e0e5fc; }
-  .game-details { display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin-block-start: auto; list-style: none; color: #d7def5; font-size: .9rem; }
-  .play { background: var(--action); color: #101942; border-color: transparent; }
-  .play:hover { background: #fff; color: #101942; }
-  .game-card a:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
-  .lesson-link { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem 1.5rem; border-top: 1px solid var(--color-line); padding-top: 1.2rem; }
-  .lesson-link h2 { font-size: 1.3rem; }
-  .lesson-link p { color: var(--color-muted); margin-top: .25rem; }
+  .game-icon { font-size: 2.8rem; line-height: 1; }
+  .game-info h2 { font-family: var(--brick-font); font-size: clamp(1.7rem, 3.5vw, 2.2rem); }
+  .game-info p { max-width: 36ch; font-size: 1.15rem; line-height: 1.45; }
+  .game-details { display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; padding: 0; margin-block-start: auto; list-style: none; font-size: 1.05rem; }
+  .game-card :global(.play:focus-visible), .game-card a:focus-visible { outline-color: #fff; box-shadow: 0 0 0 7px var(--brick-ink); }
+  .lesson-link { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem 1.5rem; border-top: 3px solid var(--brick-ink); padding-top: 1.2rem; }
+  .lesson-link h2 { font-family: var(--brick-font); font-size: 1.45rem; }
+  .lesson-link p { margin-top: .25rem; font-size: 1.1rem; }
 </style>

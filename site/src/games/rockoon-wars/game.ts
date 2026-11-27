@@ -33,7 +33,7 @@ function start(root: HTMLElement) {
   const toast = $<HTMLDivElement>('[data-toast]');
   const hud = {
     air: $('[data-air]'), angle: $('[data-angle]'), power: $('[data-power]'), rocket: $('[data-rocket]'), rocketIcon: $('[data-rocket-icon]'),
-    round: $('[data-round]'), board: $('[data-board]'), controls: $('[data-controls]'), wait: $('[data-wait]'),
+    round: $('[data-round]'), board: $('[data-board]'), controls: $('[data-controls]'), wait: $('[data-wait]'), now: $('[data-now]'),
   };
   const pauseBtn = $<HTMLButtonElement>('[data-pause]');
   const soundBtn = $<HTMLButtonElement>('[data-sound]');
@@ -116,7 +116,7 @@ function start(root: HTMLElement) {
     sound = !sound;
     soundBtn.setAttribute('aria-pressed', String(sound));
     soundBtn.setAttribute('aria-label', sound ? 'Sound on' : 'Sound off');
-    soundBtn.textContent = sound ? '🔊' : '🔇';
+    soundBtn.querySelector('.i')!.textContent = sound ? '🔊' : '🔇';
     if (sound) void (audio ??= new AudioContext()).resume();
   }
   pauseBtn.addEventListener('click', () => togglePause());
@@ -135,7 +135,7 @@ function start(root: HTMLElement) {
     if (inMatch && !quitArmed) {
       quitBtn.dataset.armed = 'true';
       quitBtn.setAttribute('aria-label', 'Tap again to leave the match');
-      say('Tap ⌂ again to leave this match.');
+      say('Press Leave again to leave this match.');
       quitArmed = setTimeout(disarmQuit, 3000);
       return;
     }
@@ -334,8 +334,8 @@ function start(root: HTMLElement) {
     if (field && pad) {
       const ground = pad.y * G.METRES_PER_PIXEL;
       const release = ground + G.LIFT * G.METRES_PER_PIXEL;
-      const wind = field.wind === 0 ? 'calm' : `${Math.abs(field.wind)}/10 ${field.wind < 0 ? 'left' : 'right'}`;
-      hud.air.textContent = `Simulated wind · ${wind} | Standard pressure · pad ${ground} m: ${Math.round(G.pressureHpa(ground))} hPa → release ${release} m: ${Math.round(G.pressureHpa(release))} hPa`;
+      const wind = field.wind === 0 ? 'calm' : `${Math.abs(field.wind)} of 10, blowing ${field.wind < 0 ? 'left' : 'right'}`;
+      hud.air.textContent = `Wind (simulated): ${wind}. Air pressure (standard atmosphere): ${Math.round(G.pressureHpa(ground))} hPa at the pad, ${ground} m up; ${Math.round(G.pressureHpa(release))} hPa where the rocket lets go, ${release} m up.`;
     }
     hud.angle.textContent = u ? `${u.angle}°` : '—';
     hud.power.textContent = u ? String(u.power) : '—';
@@ -364,6 +364,11 @@ function start(root: HTMLElement) {
     }
     hud.controls.dataset.wait = wait ? 'true' : 'false';
     hud.wait.textContent = wait;
+    // One plain instruction above the sky: what to do right now, in words.
+    let now = '';
+    if (playing && act && p) now = `${p.name}: 1 aim, 2 set the power, 3 press Launch. Try to fly through the gold ring.`;
+    else if (playing && wait) now = wait;
+    hud.now.textContent = now;
   }
 
   /** A big, short "whose turn" card when the turn changes. */
