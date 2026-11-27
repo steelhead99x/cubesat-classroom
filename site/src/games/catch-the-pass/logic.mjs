@@ -214,6 +214,8 @@ export function setSf(game, sf) {
 export function setTransmit(game, on) {
   if (game.transmit === !!on) return;
   game.transmit = !!on;
+  game.snr = readReceiver(game).snr;
+  game.locked = game.snr >= SF[game.sf].minSnr;
   game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity };
   game.events.push({ type: on ? 'tx-on' : 'tx-off' });
 }
@@ -249,14 +251,14 @@ export function step(game, input = {}, dt = 1 / 60) {
   // Scaled by dt so the fade behaves the same at any frame rate.
   const frames = dt * 60;
   game.fade = clamp(game.fade * 0.97 ** frames + (game.random() - 0.5) * 0.35 * Math.sqrt(frames), -1.5, 1.5);
-  game.snr = readReceiver(game).snr;
-  const sf = SF[game.sf];
-  game.locked = game.snr >= sf.minSnr;
-
   // Power: solar panels charge in sunlight. Transmitting costs energy whether or not anyone hears it.
   if (!inEclipse(level, p)) game.battery = Math.min(100, game.battery + level.charge * dt);
   if (!game.safe && game.battery < SAFE_AT) { game.safe = true; game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity }; game.events.push({ type: 'safe' }); }
   if (game.safe && game.battery >= RESUME_AT) { game.safe = false; game.events.push({ type: 'resume' }); }
+
+  game.snr = readReceiver(game).snr;
+  const sf = SF[game.sf];
+  game.locked = game.snr >= sf.minSnr;
 
   if (!game.safe && game.transmit) {
     const pk = game.packet;
