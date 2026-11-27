@@ -6,7 +6,7 @@ Part of the [cubesat-classroom hardware](../README.md). Results here are **desk 
 
 **Status: designed and rule-checked. Not built, not tested, not reviewed by an RF engineer. Do not order boards before working through "Review findings" below.**
 
-Date: 25 November 2026 (Rev A, fix round 1). Tool: KiCad 7.0.11.
+Date: 26 November 2026 (Rev A, fix round 1 and review fixes). Tool: KiCad 7.0.11.
 
 ## What is in this package
 
@@ -37,7 +37,7 @@ The local oscillator is an ADF4351 with a 25 MHz TCXO. An MCP4728 DAC drives the
 
 - **Board:** 120 × 78 mm, 4 layers, 1.6 mm. Layer 2 is an unbroken ground plane. Minimum track 0.2 mm, minimum clearance 0.16 mm, vias 0.6/0.3 mm, thermal vias 0.2 mm drill.
 - **Stackup to order:** 1.6 mm, 4 layers, with about 0.21 mm of 7628 prepreg (εr about 4.4) between layers 1 and 2. The 0.35 mm RF tracks are 50 Ω on that stackup (calculated). A thinner first prepreg makes them about 32 Ω, so check the board maker's stackup before ordering.
-- **Power:** 5 V from USB-C or a screw terminal, selected by jumper. Use a supply of at least 1.5 A. Four LP5907 3.3 V regulators (VCO, PLL, ADC, digital). USB VBUS has an SMAJ5.0A surge clamp; the screw terminal has P-channel MOSFET reverse-polarity protection (AO3401A, about 50 mΩ).
+- **Power:** 5 V from USB-C or a screw terminal, selected by jumper. Use a supply of at least 1.5 A. Four LP5907 3.3 V regulators (VCO, PLL, ADC, digital). USB VBUS has an SMAJ5.0A surge clamp (unidirectional: cathode, the banded end, to VBUS); the screw terminal has P-channel MOSFET reverse-polarity protection (AO3401A, about 50 mΩ).
 - **Demodulator supply jumper (I_DEMOD / SRC):** 1-2 feeds the LTC5584 from the kit's fused 5 V; 2-3 feeds it straight from the screw terminal, past the fuse, for a bench supply set to 5.0–5.2 V.
 - **I²C addresses:** ADC 0x4C, DAC 0x60, expander 0x20.
 
@@ -87,6 +87,8 @@ The local oscillator is an ADF4351 with a 25 MHz TCXO. An MCP4728 DAC drives the
 
 DRC categories set to "ignore": silkscreen overlaps and text size, and library-footprint comparison. The silkscreen has not been tidied.
 
+Every check above stops the build if it fails. `gen/export.sh` reruns the netlist, board and DRC checks itself and refuses to write the fab package unless the only DRC items left are the J3 edge items. `gen/test_gates.sh` proves this on a throwaway copy: it breaks the netlist check, a pad's net and a track, and confirms nothing is exported.
+
 Pin tables were taken from manufacturer datasheets (LTC5584, TLV320ADC3140, ADF4351, PE4259, TC1-1-13M+, PGA-103+). The other parts use KiCad's library symbols.
 
 ## Review findings
@@ -105,10 +107,12 @@ Fix round 1 (25 November 2026) closed what could be closed at the desk. Status i
 | 8 | 5 V headroom for the LTC5584 | **fixed (option), open (measure)** | Added the I_DEMOD / SRC jumper so a bench supply can feed the demodulator past the fuse. Measure the demodulator's supply under load. |
 | 9 | Land patterns | **fixed (LTC5584), resolved (SMA), open (TCXO)** | New LTC5584 footprint from LTC drawing 05-08-1697 Rev B: 2.45 mm exposed pad, 0.70 × 0.25 mm pads. The SMA footprint is drawn for a 1.57 mm board, matching the stackup. The TCXO footprint is a generic 2.5 × 2.0 mm 4-pad; check it against the TCXO chosen. |
 | 10 | 50 Ω track width assumed | **resolved** | Calculated 50.5 Ω for 0.35 mm on the stackup now written above. Confirm with the board maker. |
+| 11 | USB TVS diode D1 fitted backwards (review of #42, 26 November) | **fixed** | The SMAJ5.0A is unidirectional, but its cathode (pad 1, the banded end) was on GND and its anode on VBUS, so +5 V would have forward-biased it and shorted the USB supply. It now uses a unidirectional symbol with the cathode on VBUS, the part is turned 180° on the board so the existing tracks meet the right pads, and the Gerbers, placement file and BOM are regenerated. Check D1's band faces VBUS (toward the source jumper) when assembling. |
+| 12 | Build could export after a failed check (review of #42) | **fixed** | The checkers now exit with an error, `build.sh` stops on the first failure, and `export.sh` refuses to export unless every check passes with only the J3 edge items left. Proved by `gen/test_gates.sh`. |
 
 ### Known gaps
 
-- **Fixed:** USB-C VBUS surge clamp; screw-terminal reverse-polarity protection.
+- **Fixed:** USB-C VBUS surge clamp (orientation corrected, finding 11); screw-terminal reverse-polarity protection.
 - **Still open:**
   - No shield-can footprints. The Rev B plan treats shielding as a must.
   - No LNA bypass switch and no external-LO input. Use the U.FL break points instead.

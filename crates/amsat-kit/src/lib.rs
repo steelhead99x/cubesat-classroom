@@ -17,10 +17,14 @@
 //! original.
 
 pub mod bambu;
+pub mod battery;
 pub mod boards;
 pub mod checks;
 pub mod design;
 pub mod drawing;
 pub mod geom;
 pub mod joints;
+pub mod outdoor;
+pub mod outdoor_checks;
 pub mod parts;
+pub mod xiao;

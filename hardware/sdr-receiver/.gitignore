@@ -5,3 +5,6 @@ kicad/base.kicad_pro
 kicad/*.kicad_prl
 kicad/*-backups/
 kicad/fp-info-cache
+
+# export.sh staging folder (removed on exit)
+.fab-stage.*/

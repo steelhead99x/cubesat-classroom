@@ -101,6 +101,12 @@ Measure the [CSC-R1 receiver](/hardware/sdr-receiver/README.md) and its Rev B ra
 11. [Measure HaLow desense on the CSC-R1](/quest/m1/receiver-rev-a-desense.md)
 12. [Compare the CSC-R1 with the RTL-SDR V4 on a real pass](/quest/m1/receiver-rev-a-vs-v4.md)
 
+### Solar power
+
+One solar face, two kinds of cells: silicon for the bench, space cells for flight. See the [solar cost plan](/docs/solar-plan.md).
+
+1. [Measure a 1U solar face](/quest/m1/solar-face-bench.md)
+
 ### Flight heritage and the suborbital research flight
 
 These quests cover three rides for a classroom sensor kit: a glider, a suborbital research flight and the ISS. See the [suborbital flight plan](/docs/suborbital-flight-plan.md).

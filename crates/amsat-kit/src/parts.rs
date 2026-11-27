@@ -4,18 +4,19 @@
 //!   snap pins and one in a locating pin (frame coordinates)
 //! - `payload_plate`: holds both boards with built-in lips and snap hooks; snaps onto the columns
 //! - `fit_plate`: the payload plate as an open truss, for a fit test or a display piece
-//! - `coupon_*`: each joint on its own, a few grams, to test a printer first
+//! - `coupon_*`: the snap pin with a fit ladder of three tabs, and the Nano mount on its own, to
+//!   test a printer first
 
 use std::path::{Path, PathBuf};
 
 use manifold_csg::{CrossSection, FillRule, Manifold};
 
 use crate::boards::NANO_USB_CENTRE;
-use crate::design::{Design, Edge, Rect, Side};
+use crate::design::Design;
 use crate::geom::{
-    EPS, FACETS, Mesh, bx, chamfered_square, cone, cyl, offset, poly, rect, union_all,
+    EPS, FACETS, Mesh, bounds, bx, chamfered_square, cone, cyl, offset, poly, rect, union_all,
 };
-use crate::joints::{finger_cut, hook_cut, hook_post, lip, locating_pin, pin};
+use crate::joints::{finger_cut, finger_outline, hook_cut, hook_post, lip, locating_pin, pin};
 
 /// The kit's folder: AMSAT's upstream STLs, the lettering, and the output files.
 pub fn kit_dir() -> PathBuf {
@@ -55,8 +56,8 @@ pub fn bottom_with_columns(d: &Design) -> Result<Manifold, String> {
             y,
             -d.column_length - d.face_t / 2.0,
         );
-        let tip = if d.snap_a0(i).is_some() {
-            pin(d, x, y, 0.0, d.plate_t)
+        let tip = if let Some(angle) = d.snap_angle(i) {
+            pin(d, x, y, angle, 0.0, d.plate_t)
         } else {
             locating_pin(d, x, y, 0.0, d.plate_t)
         };
@@ -271,13 +272,14 @@ pub fn board_features(d: &Design, deflect: f64) -> Manifold {
     union_all(&parts)
 }
 
-/// Everything cut through the plate: the snap pins' fingers, the locating hole, and the slits
-/// that free the board hooks' fingers.
-pub fn plate_cuts(d: &Design, tooth_r: Option<f64>) -> Manifold {
+/// The snap pins' keyed slots and fingers and the locating hole, as cut through any plate that
+/// snaps onto the columns. `tooth_r` moves the teeth, for the checks.
+pub fn column_cuts(d: &Design, tooth_r: Option<f64>) -> Manifold {
+    let tooth_r = tooth_r.unwrap_or(d.tooth_r);
     let mut cuts = Vec::new();
     for (i, [x, y]) in d.plate_holes().into_iter().enumerate() {
-        cuts.push(match d.snap_a0(i) {
-            Some(a0) => finger_cut(d, x, y, a0, tooth_r)
+        cuts.push(match d.snap_angle(i) {
+            Some(angle) => finger_cut(d, x, y, angle, tooth_r, d.column_fit(i))
                 .extrude(d.plate_t + 2.0)
                 .translate(0.0, 0.0, -1.0),
             None => cyl(
@@ -289,6 +291,19 @@ pub fn plate_cuts(d: &Design, tooth_r: Option<f64>) -> Manifold {
             ),
         });
     }
+    union_all(&cuts)
+}
+
+/// A notch in the plate's top edge for cables: the battery's, and a USB cable to the boards.
+pub fn cable_notch(d: &Design) -> Manifold {
+    let e = d.plate / 2.0;
+    bx(-23.0, e - 6.0, -1.0, -13.0, e + 1.0, d.plate_t + 1.0)
+}
+
+/// Everything cut through the payload plate: the column cuts, the cable notch, and the slits
+/// that free the board hooks' fingers.
+pub fn plate_cuts(d: &Design, tooth_r: Option<f64>) -> Manifold {
+    let mut cuts = vec![column_cuts(d, tooth_r), cable_notch(d)];
     for (board, edges) in [(d.uno_rect(), &d.uno_hooks), (d.nano_rect(), &d.nano_hooks)] {
         for e in edges {
             cuts.push(hook_cut(d, board, e));
@@ -376,81 +391,126 @@ pub fn fit_plate(d: &Design) -> Result<Manifold, String> {
 
 // ---------- test coupons ----------
 
-/// x0, y0, width, height of the coupon's strip of test board.
-pub const COUPON_BOARD: Rect = [-10.0, -7.0, 20.0, 14.0];
-const COUPON_PAD_H: f64 = 1.5;
+/// Fits the ladder's three tabs try, and how many dots mark each: the kit's (it fit best on the
+/// first print), then two looser ones for printers that make holes small.
+pub const FIT_LADDER: [(f64, usize); 3] = [(0.1, 1), (0.2, 2), (0.3, 3)];
 pub const COUPON_PIN_AT: f64 = 5.4;
+
+/// Where a ladder tab's teeth sit: they move out with the tab's fit, from `d.tooth_r` at the
+/// 1-dot tab. Fixed by the ladder, not by `d.pin_fit`, so choosing a different kit fit never
+/// changes the coupons (or the strain in their fingers): a coupon print stays comparable.
+pub fn ladder_tooth_r(d: &Design, fit: f64) -> f64 {
+    d.tooth_r + fit - FIT_LADDER[0].0
+}
 
 /// A column stub with a snap pin, on a small base.
 pub fn coupon_pin_base(d: &Design) -> Manifold {
     union_all(&[
-        bx(-12.0, -12.0, 0.0, 12.0, 12.0, 2.4),
+        bx(-10.0, -10.0, 0.0, 10.0, 10.0, 2.4),
         cyl(d.column_od, 3.0 + EPS, 0.0, 0.0, 2.4 - EPS),
-        pin(d, 0.0, 0.0, COUPON_PIN_AT, d.plate_t),
+        pin(d, 0.0, 0.0, 0.0, COUPON_PIN_AT, d.plate_t),
     ])
 }
 
-/// A square of plate with the flex fingers, to snap onto the pin.
-pub fn coupon_pin_tab(d: &Design, tooth_r: Option<f64>) -> Manifold {
-    bx(-12.0, -12.0, 0.0, 12.0, 12.0, d.plate_t).difference(
-        &finger_cut(d, 0.0, 0.0, 0.0, tooth_r)
-            .extrude(d.plate_t + 2.0)
-            .translate(0.0, 0.0, -1.0),
-    )
-}
-
-pub fn coupon_board_top(d: &Design) -> f64 {
-    d.plate_t + COUPON_PAD_H + d.pcb_uno
-}
-
-pub fn coupon_edges() -> (Edge, Edge) {
-    (
-        Edge::new(Side::Left, 7.0, 1),
-        Edge::new(Side::Right, 4.0, 1),
-    )
-}
-
-/// A square of plate with one lip and one snap hook either side of a strip of test board.
-pub fn coupon_hook_base(d: &Design, deflect: f64) -> Manifold {
-    let board = COUPON_BOARD;
-    let [x0, y0, w, h] = board;
-    let (lip_edge, hook_edge) = coupon_edges();
-    let top = coupon_board_top(d);
-    let base = bx(
-        x0 - 5.0,
-        y0 - 2.0,
+/// A piece of plate with the keyed slot and fingers, at a fit clearance, marked with dots on its
+/// rigid tongue. `tooth_r` moves the teeth, for the checks.
+pub fn coupon_pin_tab(d: &Design, fit: f64, dots: usize, tooth_r: Option<f64>) -> Manifold {
+    let tooth_r = tooth_r.unwrap_or_else(|| ladder_tooth_r(d, fit));
+    let [lo, hi] = {
+        let b = finger_outline(d, 0.0, 0.0, 0.0, fit).bounds();
+        [b.min(), b.max()]
+    };
+    let slab = bx(
+        lo[0] - 2.0,
+        lo[1] - 2.0,
         0.0,
-        x0 + w + 5.0,
-        y0 + d.hook_len + 3.0,
+        hi[0] + 2.0,
+        hi[1] + 2.0,
         d.plate_t,
     )
-    .difference(&hook_cut(d, board, &hook_edge));
-    let pad_top = d.plate_t + COUPON_PAD_H;
-    union_all(&[
-        base,
-        bx(
-            x0 + 2.0,
-            y0 + 2.0,
-            d.plate_t - EPS,
-            x0 + 6.0,
-            y0 + h - 2.0,
-            pad_top,
-        ),
-        bx(
-            x0 + w - 7.0,
-            y0 + 2.0,
-            d.plate_t - EPS,
-            x0 + w - 3.0,
-            y0 + h - 2.0,
-            pad_top,
-        ),
-        lip(d, board, &lip_edge, top),
-        hook_post(d, board, &hook_edge, top, deflect),
-    ])
+    .difference(
+        &finger_cut(d, 0.0, 0.0, 0.0, tooth_r, fit)
+            .extrude(d.plate_t + 2.0)
+            .translate(0.0, 0.0, -1.0),
+    );
+    let marks: Vec<Manifold> = (0..dots)
+        .map(|i| {
+            cyl(
+                1.6,
+                0.6 + EPS,
+                0.0,
+                -d.pin_flat - fit - 2.6 - 2.4 * i as f64,
+                d.plate_t - EPS,
+            )
+        })
+        .collect();
+    union_all(&[vec![slab], marks].concat())
 }
 
-/// The strip of 1.6 mm board, printed flat.
-pub fn coupon_board(d: &Design) -> Manifold {
-    let [x0, y0, w, h] = COUPON_BOARD;
-    bx(x0, y0, 0.0, x0 + w, y0 + h, d.pcb_uno)
+/// The plate's Nano 33 BLE Sense mount on its own: the same pads, corner stops, lips and snap
+/// hooks, in the same places (plate coordinates), to try the bare board in.
+pub fn coupon_nano_base(d: &Design, deflect: f64) -> Manifold {
+    let rect_ = d.nano_rect();
+    let mut features = vec![nano_pads(d), nano_stops(d)];
+    for e in &d.nano_lips {
+        features.push(lip(d, rect_, e, d.nano_top()));
+    }
+    for e in &d.nano_hooks {
+        features.push(hook_post(d, rect_, e, d.nano_top(), deflect));
+    }
+    let cuts = union_all(
+        &d.nano_hooks
+            .iter()
+            .map(|e| hook_cut(d, rect_, e))
+            .collect::<Vec<_>>(),
+    );
+    let features = union_all(&features);
+    let (lo, hi) = bounds(&union_all(&[features.clone(), cuts.clone()]));
+    let outline = rect(lo[0] - 2.5, lo[1] - 2.5, hi[0] + 2.5, hi[1] + 2.5);
+    // Open everything but a rim, the mount's features with a margin, the hooks' surrounds and a
+    // rib across the middle that ties the lips to the hooks.
+    let [x0, _, w, _] = rect_;
+    let mid = x0 + w / 2.0;
+    let keep = outline
+        .difference(&outline.offset(-3.0, manifold_csg::JoinType::Miter, 2.0, 0))
+        .union(&offset(
+            &features.slice_to_cross_section(d.plate_t + 0.1),
+            2.5,
+            FACETS,
+        ))
+        .union(&offset(
+            &cuts.slice_to_cross_section(d.plate_t / 2.0),
+            2.5,
+            FACETS,
+        ))
+        .union(&rect(mid - 2.5, lo[1], mid + 2.5, hi[1]));
+    let pockets = offset(&offset(&outline.difference(&keep), -1.0, 16), 1.0, 16);
+    let big: Vec<Vec<[f64; 2]>> = pockets
+        .to_polygons()
+        .into_iter()
+        .filter(|p| {
+            CrossSection::from_polygons(std::slice::from_ref(p))
+                .area()
+                .abs()
+                > MIN_POCKET
+        })
+        .collect();
+    let slab = outline.extrude(d.plate_t).difference(&cuts).difference(
+        &CrossSection::from_polygons(&big)
+            .extrude(d.plate_t + 2.0)
+            .translate(0.0, 0.0, -1.0),
+    );
+    // A raised arrow on the rim points to where the Nano's USB end goes, low enough for its
+    // plug to pass over.
+    let (ax, ay) = (hi[0] + 1.0, y0_mid(d));
+    let arrow = poly(&[[ax - 1.0, ay - 1.3], [ax + 1.0, ay], [ax - 1.0, ay + 1.3]])
+        .extrude(0.6 + EPS)
+        .translate(0.0, 0.0, d.plate_t - EPS);
+    union_all(&[slab, features, arrow])
+}
+
+/// The middle of the Nano's long side.
+fn y0_mid(d: &Design) -> f64 {
+    let [_, y0, _, h] = d.nano_rect();
+    y0 + h / 2.0
 }

@@ -170,6 +170,9 @@ const STORE: usize = 64;
 /// Stored readings sent per poll at most, so a full store (about 7 KB of text) goes out
 /// over several polls and never crowds out the live lines sharing the serial buffer.
 const STORED_BATCH: usize = 16;
+/// How long a sent batch of stored readings waits for the receiver's `RECACK`s before it is
+/// sent again.
+const ACK_WAIT_MS: u32 = 10_000;
 /// The longest REC line, with room to spare.
 const REC_LINE: usize = 128;
 const LINE: usize = 72;
@@ -211,8 +214,10 @@ pub struct Mission {
     store_head: usize,
     store_count: usize,
     store_dropped: u32,
-    /// Stored readings written out but not yet confirmed sent (see [`Mission::delivered`]).
+    /// Stored readings written out but not yet acknowledged by the receiver (`RECACK`).
     in_flight: usize,
+    /// When the batch in flight was written.
+    in_flight_since: u32,
     recent: [Option<u32>; RECENT],
     recent_next: usize,
     line: [u8; LINE],
@@ -262,6 +267,7 @@ impl Mission {
             store_count: 0,
             store_dropped: 0,
             in_flight: 0,
+            in_flight_since: now,
             recent: [None; RECENT],
             recent_next: 0,
             line: [0; LINE],
@@ -385,7 +391,7 @@ impl Mission {
         }
 
         if self.in_contact && self.store_count > 0 {
-            self.send_stored(out);
+            self.send_stored(now, out);
         }
 
         if since(now, self.last_sample) >= self.period_ms {
@@ -606,46 +612,69 @@ impl Mission {
     }
 
     /// Write up to [`STORED_BATCH`] stored readings, oldest first, each as one whole REC
-    /// line. They stay stored, marked in flight, until the caller reports whether the text
-    /// really left the board: [`Mission::delivered`] retires them, [`Mission::undelivered`]
-    /// keeps them for the next poll. Nothing new is written while a batch awaits that answer.
-    fn send_stored(&mut self, out: &mut impl Write) {
+    /// line. They stay stored, marked in flight, until the receiver acknowledges each one
+    /// with `RECACK <seq>`: text leaving the board is not proof that anyone kept it. A batch
+    /// with readings still unacknowledged after [`ACK_WAIT_MS`] is sent again, and
+    /// [`Mission::undelivered`] sends it again on the next poll.
+    fn send_stored(&mut self, now: u32, out: &mut impl Write) {
         if self.in_flight > 0 {
-            return;
+            if since(now, self.in_flight_since) < ACK_WAIT_MS {
+                return;
+            }
+            self.in_flight = 0;
         }
-        let first = (self.store_head + STORE - self.store_count) % STORE;
+        let first = self.oldest();
         while self.in_flight < STORED_BATCH.min(self.store_count) {
             let f = self.store[(first + self.in_flight) % STORE];
             let mut line = LineBuf::new();
             if rec_line(&f, &mut line).is_err() || out.write_str(line.as_str()).is_err() {
-                return;
+                break;
             }
             self.in_flight += 1;
         }
+        self.in_flight_since = now;
     }
 
-    /// Everything written since the last poll reached the ground station: retire the stored
-    /// readings that were in it. Call after the output was sent in full.
-    pub fn delivered(&mut self) {
-        self.store_count -= self.in_flight.min(self.store_count);
-        self.in_flight = 0;
+    fn oldest(&self) -> usize {
+        (self.store_head + STORE - self.store_count) % STORE
+    }
+
+    /// The receiver kept the stored reading `seq`. Readings are retired oldest first, so only
+    /// the oldest one in flight can be acknowledged; an acknowledgment for one already retired
+    /// changes nothing.
+    fn acknowledge(&mut self, id: Option<u32>, arg: Option<&str>, out: &mut impl Write) {
+        let Some(seq) = arg.and_then(|a| a.parse::<u32>().ok()) else {
+            nak(out, id, "RECACK", "use RECACK <seq> from a REC line");
+            return;
+        };
+        let front = (self.in_flight > 0).then(|| self.store[self.oldest()].seq);
+        if front == Some(seq) {
+            self.store_count -= 1;
+            self.in_flight -= 1;
+        } else if let Some(expected) = front.filter(|f| seq.wrapping_sub(*f) < u32::MAX / 2) {
+            let _ = write!(out, "NAK - RECACK expected seq={expected}\r\n");
+            return;
+        }
+        ack(out, id, "RECACK");
+        let _ = write!(out, " stored={}\r\n", self.store_count);
     }
 
     /// The output was not sent (no terminal open, or a send failed): stored readings in it
-    /// stay stored and go out again on a later poll.
+    /// stay stored and go out again on the next poll.
     pub fn undelivered(&mut self) {
         self.in_flight = 0;
     }
 
     fn acquire(&mut self, now: u32, out: &mut impl Write) {
         self.in_contact = true;
+        self.in_flight = 0; // a new pass sends anything unacknowledged again
         self.contact_since = now;
         let _ = write!(
             out,
             "EVT AOS stored={} dropped={}\r\n",
             self.store_count, self.store_dropped
         );
-        self.send_stored(out);
+        self.send_stored(now, out);
         self.store_dropped = 0;
         self.flash = Some((
             Rgb {
@@ -800,6 +829,7 @@ impl Mission {
                 let _ = write!(out, " contact_s={up} gap_s={down}\r\n");
             }
             "CAL" => self.calibrate(id, arg1, out),
+            "RECACK" => self.acknowledge(id, arg1, out),
             "HELP" => {
                 ack(out, id, "HELP");
                 let _ = out.write_str("\r\n");
@@ -884,6 +914,8 @@ fn help(out: &mut impl Write) {
     let _ = out.write_str("#   PING  SENSE  STATUS  RATE <1-60 s>  SAFE  NOMINAL\r\n");
     let _ =
         out.write_str("#   LOS  AOS  ORBIT <contact s> <gap s>  ORBIT OFF  CAL <lux>  HELP\r\n");
+    let _ =
+        out.write_str("#   RECACK <seq>: you kept that REC line; it is deleted from the store\r\n");
 }
 
 fn ack(out: &mut impl Write, id: Option<u32>, cmd: &str) {

@@ -282,8 +282,10 @@ if __name__=='__main__':
     def span(n):
         ps=pads_by_net[n]; return (max(p['x'] for p in ps)-min(p['x'] for p in ps))+(max(p['y'] for p in ps)-min(p['y'] for p in ps))
     names.sort(key=span)
-    import os, json
-    pri=json.load(open('/tmp/priority.json')) if os.path.exists('/tmp/priority.json') else []
+    import json, sys
+    from pathlib import Path
+    priority, result = map(Path, sys.argv[1:])
+    pri = json.loads(priority.read_text()) if priority.exists() else []
     names=[n for n in pri if n in names]+[n for n in names if n not in pri]
     only=[]
     # ---------------- ground: give every surface-mount GND pad a short track to a via into the planes, then stitch
@@ -319,7 +321,6 @@ if __name__=='__main__':
     fn=[]
     for n,_,_ in failed:
         if n not in fn: fn.append(n)
-    json.dump(fn+[n for n in pri if n not in fn],open('/tmp/priority.json','w')); json.dump(len(failed),open('/tmp/nfail.json','w'))
     # stitching vias on a grid (denser beside the RF path)
     gcode=b.FindNet('GND').GetNetCode(); ps,vo=gmasks(); nst=0
     for yy in np.arange(2.0,H-1.9,2.5):
@@ -334,4 +335,7 @@ if __name__=='__main__':
         t=pcbnew.PCB_TRACK(b); t.SetStart(V(*a)); t.SetEnd(V(*bp)); t.SetWidth(mm(w)); t.SetLayer(LAYERS[l]); t.SetNetCode(code); b.Add(t)
     for code,x,y in new_vias:
         v=pcbnew.PCB_VIA(b); v.SetPosition(V(x,y)); v.SetWidth(mm(VIA_D)); v.SetDrill(mm(VIA_DRL)); v.SetViaType(pcbnew.VIATYPE_THROUGH); v.SetLayerPair(pcbnew.F_Cu,pcbnew.B_Cu); v.SetNetCode(code); b.Add(v)
-    pcbnew.SaveBoard(f'{OUT}/{PROJ}.kicad_pcb',b)
+    if not pcbnew.SaveBoard(f'{OUT}/{PROJ}.kicad_pcb', b):
+        sys.exit('could not save routed board')
+    priority.write_text(json.dumps(fn + [n for n in pri if n not in fn]))
+    result.write_text(json.dumps(len(failed)))

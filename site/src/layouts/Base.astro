@@ -34,7 +34,10 @@ const social = image ?? siteOrigin + preview.src.replace(base, '');
     <meta name="description" content={description}>
     {robots && <meta name="robots" content={robots}>}
     <meta name="theme-color" content="#01017f">
+    <link rel="icon" href={base + '/favicon.ico'} sizes="any">
     <link rel="icon" type="image/svg+xml" href={base + '/' + mark}>
+    <link rel="apple-touch-icon" href={base + '/apple-touch-icon.png'}>
+    <link rel="manifest" href={base + '/site.webmanifest'}>
     {canonical && <link rel="canonical" href={canonical}>}
     <meta property="og:site_name" content="CubeSat Classroom">
     <meta property="og:type" content="website">
@@ -50,6 +53,7 @@ const social = image ?? siteOrigin + preview.src.replace(base, '');
     <meta name="twitter:image:alt" content={imageAlt}>
     <title>{title}</title>
     <script is:inline src={base + '/level.js'}></script>
+    <slot name="head" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>

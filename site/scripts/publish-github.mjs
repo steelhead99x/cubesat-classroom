@@ -11,7 +11,8 @@ await rm(new URL('mission', pages), { recursive: true, force: true });
 await rm(new URL('volunteer', pages), { recursive: true, force: true });
 await rm(new URL('open-source', pages), { recursive: true, force: true });
 await rm(new URL('hub', pages), { recursive: true, force: true });
-for (const file of ['index.html', '404.html', 'robots.txt', 'sitemap.xml', 'level.js', 'favicon.svg', 'mark.svg', 'club-mark.svg', '_astro', 'quests', 'plans', 'hardware', 'mission', 'volunteer', 'open-source', 'hub']) {
+await rm(new URL('wiki', pages), { recursive: true, force: true });
+for (const file of ['index.html', '404.html', 'robots.txt', 'sitemap.xml', 'level.js', 'favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'site.webmanifest', 'mark.svg', 'club-mark.svg', '_astro', 'quests', 'plans', 'hardware', 'mission', 'volunteer', 'open-source', 'hub', 'wiki']) {
   await cp(new URL(file, build), new URL(file, pages), { recursive: true });
 }
 // docs/CNAME is managed by hand (or in the repository's Pages settings), not by this build:

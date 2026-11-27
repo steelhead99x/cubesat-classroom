@@ -40,7 +40,7 @@ add('J','Connector','Screw_Terminal_01x02','5V EXT','TerminalBlock_Phoenix:Termi
     {1:'VEXT_RAW',2:'GND'},B,mpn='Phoenix PT 1,5/2-3,5-H')
 add('Q','Transistor_FET','AO3401A','AO3401A','Package_TO_SOT_SMD:SOT-23',{1:'VEXT_G',2:'VEXT',3:'VEXT_RAW'},B,mpn='AOS AO3401A',note='reverse-polarity protection, about 50 mOhm')
 R('10k','VEXT_G','GND',B)
-add('D','Device','D_TVS','SMAJ5.0A','Diode_SMD:D_SMA',{1:'GND',2:'VUSB'},B,mpn='SMAJ5.0A (5 V stand-off)',note='USB VBUS surge/ESD clamp')
+add('D','Device','D_Zener','SMAJ5.0A','Diode_SMD:D_SMA',{1:'VUSB',2:'GND'},B,mpn='SMAJ5.0A (5 V stand-off, unidirectional)',note='USB VBUS surge/ESD clamp; cathode (band, pad 1) to VUSB, anode to GND')
 add('JP','Jumper','Jumper_3_Bridged12','SRC USB/EXT',FP_H3,{1:'VUSB',2:'VIN',3:'VEXT'},B,note='1-2 = USB-C, 2-3 = bench supply')
 add('F','Device','Polyfuse_Small','1.5A hold','Fuse:Fuse_1812_4532Metric',{1:'VIN',2:'+5V'},B,mpn='PTC resettable 1.5A/6V 1812')
 bypass('+5V',B,('22u','22u','100n'))
