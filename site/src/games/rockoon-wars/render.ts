@@ -5,6 +5,7 @@ import * as G from './logic.mjs';
 
 type Unit = { x: number; y: number; angle: number; power: number; weapon: string };
 export type Scene = {
+  pads: Unit[];
   target: { x: number; y: number }; terrain: number[]; units: Unit[]; wind: number; colors: string[]; names: string[];
   released?: number;
   active: number; // whose turn it is (-1 for none)
@@ -133,11 +134,17 @@ export class Renderer {
     ctx.restore();
     if (scene.ghost) this.#drawGhost(scene.ghost);
     if (scene.preview) {
-      if (scene.active >= 0) this.#drawAscent(scene.units[scene.active], scene.wind, scene.colors[scene.active]);
+      if (scene.active >= 0) this.#drawAscent(scene.pads[scene.active], scene.wind, scene.colors[scene.active]);
       this.#drawPreview(scene.preview);
     }
+    scene.pads.forEach(({ x, y }, i) => {
+      ctx.fillStyle = '#141b42';
+      ctx.fillRect(x - 10, y - 3, 20, 5);
+      ctx.fillStyle = scene.colors[i];
+      ctx.fillRect(x - 10, y + 1, 20, 2);
+    });
     scene.units.forEach((u, i) => { this.#drawRockoon(u, scene.colors[i], i === scene.active, i !== scene.released); });
-    if (scene.drag && scene.active >= 0) this.#drawDrag(G.releasePoint(scene.units[scene.active], scene.wind), scene.drag, scene.colors[scene.active]);
+    if (scene.drag && scene.active >= 0) this.#drawDrag(G.releasePoint(scene.pads[scene.active], scene.wind), scene.drag, scene.colors[scene.active]);
     if (scene.shot) this.#drawShot(scene.shot);
     this.#drawBooms();
     this.#drawParticles();

@@ -15,7 +15,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   <div class="shell py-5 sm:py-8">
     <nav class="crumbs" aria-label="Breadcrumb"><a href={base + '/'}>Home</a><span aria-hidden="true">›</span><a href={base + '/games/'}>Games</a><span aria-hidden="true">›</span><span aria-current="page">Rockoon Battle</span><a class="all" href={base + '/games/'}>← All games</a></nav>
     <h1 class="rw-h1">Rockoon Battle</h1>
-    <p class="lede mt-2">Launch your balloon from the hillside. Watch it climb and release its rocket. Can you fly through the gold ring?</p>
+    <p class="lede mt-2">Launch your balloon from the hillside. When it reaches the release point, send the rocket through the ring. Can you fly through the gold ring?</p>
 
     <section class="rw mt-5" data-rw data-playing="false" aria-labelledby="rw-title">
       <h2 id="rw-title" class="sr-only">Game</h2>
@@ -51,7 +51,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
           <button type="button" data-adj="power:1" aria-label="More power">+</button>
         </div>
         <button type="button" class="rocket" data-adj="weapon:1"><span class="ico" data-rocket-icon aria-hidden="true"></span><span class="val"><small>Rocket · tap to change</small><b data-rocket>—</b></span></button>
-        <button type="button" data-fire class="fire">Launch</button>
+        <button type="button" data-fire class="fire">Launch balloon</button>
         <p class="wait" data-wait aria-hidden="true"></p>
       </div>
       <p class="sr-only" data-status role="status" aria-live="polite"></p>
@@ -192,8 +192,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   .rocket .val b { font: 800 1rem var(--font-sans); }
   .rocket .ico { display: grid; }
   .fire { min-height: 52px; border-radius: .8rem; border: 0; background: linear-gradient(#ff8a7a, #e8463c); box-shadow: 0 4px 0 #9b2a22; font-size: 1.35rem !important; font-weight: 900 !important; letter-spacing: .04em; }
-  .fire:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #9b2a22; }
-  .controls button:disabled { opacity: .45; }
+  .fire:active:not([aria-disabled="true"]):not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #9b2a22; }
+  .controls button:disabled, .fire[aria-disabled="true"] { opacity: .45; }
   @media (max-width: 720px) {
     .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grp { grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; }

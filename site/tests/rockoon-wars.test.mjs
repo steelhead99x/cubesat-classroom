@@ -66,7 +66,7 @@ test('rocket releases above its pad and scores against the ring only', () => {
     const m = begin();
     m.field.wind = 0;
     const [pad, other] = m.field.units;
-    other.x = pad.x; other.y = pad.y;
+    const otherPad = { ...other };
     const ground = [...m.field.terrain];
     const release = pad.y + R.LIFT + R.PIVOT_Y + 14;
     m.field.target = { x: pad.x + offset, y: release + 20 };
@@ -75,8 +75,27 @@ test('rocket releases above its pad and scores against the ring only', () => {
     assert.equal(m.players[0].score, points);
     assert.equal(m.players[0].credits, R.START_CREDITS + 50 * points);
     assert.equal(m.players[1].score, 0);
-    assert.deepEqual(m.field.terrain, ground);
+    assert.ok(result.blast, 'a landing makes a crater');
+    const centre = Math.floor(result.blast.x);
+    assert.ok(m.field.terrain[centre] < ground[centre]);
+    assert.notEqual(pad.x, centre, 'the nearby pad slides away from the impact');
+    assert.equal(pad.y, m.field.terrain[pad.x]);
+    assert.deepEqual(other, otherPad, 'the distant pad stays put');
   }
+});
+
+test('a rocket that leaves the field does not change terrain or pad positions', () => {
+  const m = begin();
+  const { terrain, units } = m.field;
+  m.field.wind = 0;
+  const pad = units[m.turn];
+  pad.x = 12;
+  pad.y = terrain[pad.x];
+  const ground = [...terrain];
+  const pads = units.map(({ x, y }) => ({ x, y }));
+  assert.equal(R.fire(m, { angle: 180, power: 100, weapon: 'baby' }).blast, null);
+  assert.deepEqual(terrain, ground);
+  assert.deepEqual(units.map(({ x, y }) => ({ x, y })), pads);
 });
 
 test('ammo is spent, and an empty weapon uses the free Scout', () => {
