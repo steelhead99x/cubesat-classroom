@@ -1,18 +1,21 @@
 #!/bin/bash
-# Rebuilds every output from gen/design.py. Needs KiCad 7 (kicad-cli + pcbnew Python).
+# Rebuilds every output of one board from its design source. Needs KiCad 7 (kicad-cli + pcbnew Python).
+# CSC_BOARD picks the board: csc-r1 (dev kit, default), csc-r1p (pedal main), csc-r1p-ctl (pedal controls).
 set -euo pipefail                       # any failed check stops the build before export
 cd "$(dirname "$0")"
-python3 design.py                       # netlist sanity (no single-pin nets)
+proj=$(python3 boardcfg.py proj); kicad=$(python3 boardcfg.py kicad); net=$(python3 boardcfg.py net)
+python3 "$(python3 boardcfg.py design).py"   # netlist sanity (no single-pin nets)
 python3 footprints.py                   # project footprints (LTC UF24)
 python3 gen_sch.py                      # schematic + project symbol library
-( cd ../kicad && kicad-cli sch export netlist --format kicadsexpr -o rt.net csc-r1.kicad_sch >/dev/null && kicad-cli sch export pdf -o csc-r1-schematic.pdf csc-r1.kicad_sch >/dev/null )
+kicad-cli sch export netlist --format kicadsexpr -o "$net" "$kicad/$proj.kicad_sch" >/dev/null
+kicad-cli sch export pdf -o "$kicad/$proj-schematic.pdf" "$kicad/$proj.kicad_sch" >/dev/null
 python3 check_net.py | tail -1          # schematic netlist == design
 python3 fpaudit.py | tail -1            # every pin has a pad
 python3 rf_checks.py                    # loop filter, band filters, 50 ohm width (desk calculations)
-python3 gen_pcb.py | tail -1            # placement + hand-routed RF
+python3 "$(python3 boardcfg.py placer)" | tail -1   # placement + hand-routed RF
 python3 ovl.py | tail -1                # courtyard overlaps
-./iterate.sh 8                          # maze router, until 0 failures
+./iterate.sh                            # maze router, until 0 failures
 python3 finish.py                       # ground pours (once, on the routed board)
 python3 check_pcb.py                    # board pads == schematic netlist
-python3 drc.py gate                     # KiCad DRC: fails unless only the documented J3 edge items remain
+python3 drc.py gate                     # KiCad DRC: fails unless only the board's documented exceptions remain
 ./export.sh                             # Gerbers, drill, placement, BOM, PDFs, render

@@ -1,6 +1,6 @@
 // State logic for the satellite pedal trainer (src/components/PedalLab.astro).
 // Kept free of the DOM so tests/pedal.test.mjs can check it with node:test.
-// Everything here is a desk simulation of the proposed CSC-R1 Rev B pedal, not a measurement.
+// Everything here is a desk simulation of the CSC-R1P pedal (hardware/sdr-receiver/pedal), not a measurement.
 
 /** Off station there is only noise; on station a carrier rides above it. GAIN lifts both. */
 export const NOISE = 0.006;
@@ -49,11 +49,6 @@ export function knobAngle(value, min, max) {
 
 export function tuneAngle(offset) {
   return offset * TUNE_DEGREES_PER_STEP;
-}
-
-/** SIGNAL LED brightness 0..1: it brightens with signal strength, as in the Rev B plan. */
-export function signalLed(peak) {
-  return Math.max(0.08, Math.min(1, peak));
 }
 
 /** Input meter reading, as a whole percent of the ADC's full scale. */

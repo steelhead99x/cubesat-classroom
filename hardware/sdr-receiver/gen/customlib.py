@@ -36,4 +36,5 @@ syms=[
 ]
 def write(path):
     open(path,'w').write(dump([S('kicad_symbol_lib'),[S('version'),20220914],[S('generator'),S('csc_r1_gen')]]+syms)+'\n')
-if __name__=='__main__': write('../kicad/CSC_R1.kicad_sym')
+if __name__=='__main__':
+    import boardcfg; write(f'{boardcfg.KICAD}/CSC_R1.kicad_sym')

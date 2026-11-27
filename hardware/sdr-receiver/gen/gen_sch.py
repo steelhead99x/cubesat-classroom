@@ -1,7 +1,8 @@
 import uuid, math, json, os
 from sexp import Sym as S, dump, parse, find, first
-import symlib, design, customlib
-OUT='../kicad'; PROJ='csc-r1'
+import symlib, customlib, boardcfg
+design=boardcfg.design(); OUT=boardcfg.KICAD; PROJ=boardcfg.PROJ
+os.makedirs(OUT, exist_ok=True)
 customlib.write(f'{OUT}/CSC_R1.kicad_sym')
 symlib._cache.pop('CSC_R1',None); symlib.lib('CSC_R1',f'{OUT}/CSC_R1.kicad_sym')
 U=lambda: str(uuid.uuid4()); ROOT='5c5c0r10-0000-4000-8000-000000000001'.replace('r','a').replace('s','b')
@@ -88,8 +89,8 @@ ls=[S('lib_symbols')]
 for key,s in libsyms.items():
     s=list(s); s[1]=key; ls.append(s)
 sch=[S('kicad_sch'),[S('version'),20230121],[S('generator'),S('csc_r1_gen')],[S('uuid'),ROOT],[S('paper'),'User',PAGEW,round(PAGEH)],
-     [S('title_block'),[S('title'),'CSC-R1 receive-only SDR dev kit'],[S('date'),'2026-11-25'],[S('rev'),'A'],[S('company'),'cubesat-classroom'],
-      [S('comment'),1,'Nets are joined by label name. Generated from gen/design.py.'],[S('comment'),2,'UNBUILT, UNTESTED. Review before ordering.']],
+     [S('title_block'),[S('title'),getattr(design,'TITLE','CSC-R1 receive-only SDR dev kit')],[S('date'),'2026-11-25'],[S('rev'),'A'],[S('company'),'cubesat-classroom'],
+      [S('comment'),1,f'Nets are joined by label name. Generated from gen/{design.__name__}.py.'],[S('comment'),2,'UNBUILT, UNTESTED. Review before ordering.']],
      ls]+items+[[S('sheet_instances'),[S('path'),'/',[S('page'),'1']]]]
 open(f'{OUT}/{PROJ}.kicad_sch','w').write(dump(sch)+'\n')
 open(f'{OUT}/sym-lib-table','w').write('(sym_lib_table\n  (lib (name "CSC_R1")(type "KiCad")(uri "${KIPRJMOD}/CSC_R1.kicad_sym")(options "")(descr "CSC-R1 project symbols"))\n)\n')

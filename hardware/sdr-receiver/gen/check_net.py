@@ -1,7 +1,8 @@
 import sys; sys.setrecursionlimit(100000)
 from sexp import parse, find, first
-import design
-t=parse(open('../kicad/rt.net').read())
+import boardcfg
+design=boardcfg.design()
+t=parse(open(boardcfg.NET).read())
 got={}
 for n in find(first(t,'nets'),'net'):
     name=first(n,'name')[1]; got[name.lstrip('/')]=sorted((first(x,'ref')[1],first(x,'pin')[1]) for x in find(n,'node'))

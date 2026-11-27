@@ -7,6 +7,8 @@ import { repo } from '../hubs.mjs';
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const wiki = (slug: string) => `${base}/wiki/${slug}/`;
 const plan = `${repo}/blob/main/hardware/sdr-receiver/rev-b-pedal-plan.md`;
+const pedalDoc = `${repo}/blob/main/hardware/sdr-receiver/pedal/README.md`;
+const stationSim = `${repo}/blob/main/docs/classroom-receiver.md#stats-version-1`;
 const revA = `${repo}/blob/main/hardware/sdr-receiver/README.md`;
 
 // Hotspots on the real Rev A board render. Positions come from fab/csc-r1-cpl-top.csv
@@ -19,94 +21,91 @@ const parts = [
   { n: 5, left: 88.4, top: 62.5, name: 'Synthesizer (ADF4351, U11) and 25 MHz TCXO', job: 'Makes the tuning frequency. Turning TUNE changes it in 5 kHz steps.', terms: [] },
   { n: 6, left: 79.0, top: 45.5, name: 'ADC (TLV320ADC3140, U10)', job: 'Turns I and Q into numbers. The GAIN knob sets its gain, from 0 to 42 dB. Too much gain and the peaks clip.', terms: [] },
   { n: 7, left: 78.3, top: 14.4, name: 'XIAO microcontroller sockets (J12, J13)', job: 'The XIAO plugs in here. It is the pedal’s computer (MCU): it tunes the synthesizer, reads the ADC and sends the stream.', terms: [['xiao', 'XIAO']] },
-  { n: 8, left: 11.7, top: 95.9, name: 'USB-C (J1)', job: 'Power, and on the XIAO ESP32-S3 a USB stream to a laptop. Rev B adds a 9 V pedal power jack beside it.', terms: [] },
+  { n: 8, left: 11.7, top: 95.9, name: 'USB-C (J1)', job: 'Power, and on the XIAO ESP32-S3 a USB stream to a laptop. In the pedal it comes out through a USB-C panel jack on the top end, beside the 9 V jack.', terms: [] },
 ];
 ---
 <section id="pedal-lab" class="mt-10" aria-labelledby="pedal-title">
   <h2 id="pedal-title">Satellite pedal trainer</h2>
-  <p class="mt-2 max-w-2xl text-muted">Practice on the proposed CSC-R1 Rev B receiver: a satellite radio in a guitar-pedal box. Turn the knobs, flip BAND and stomp ENGAGE on the pedal, or use the controls. The browser simulates the waveform. You need no hardware, account or radio license to play.</p>
+  <p class="mt-2 max-w-2xl text-muted">Practice on the CSC-R1P receiver: a satellite radio built into a guitar-pedal box. Turn the knobs, flip BAND and stomp ENGAGE on the pedal, or use the controls. The browser simulates the waveform. You need no hardware, account or radio license to play.</p>
   <div class="console mt-4">
-    <header><img src={panelMark} width="44" height="44" alt="" /><strong>CSC-R1 / RECEIVER LAB</strong></header>
+    <header><img src={panelMark} width="44" height="44" alt="" /><strong>CSC-R1P / RECEIVER LAB</strong></header>
     <p id="pedal-task" aria-live="polite">1 of 3 · Tap ENGAGE to unmute the receiver.</p>
     <div class="rig">
       <figure class="pedal">
-        <svg data-pedal viewBox="-34 -50 134 180" role="img" aria-labelledby="pedal-svg-title">
-          <title id="pedal-svg-title">Top view of the CSC-R1 Rev B pedal. GAIN and LEVEL knobs at the top, the OLED display, the large TUNE knob, the SIGNAL light and BAND toggle, the status light and the ENGAGE footswitch at the bottom. The OUT jack is on the left side, the antenna input on the right, and the 9 V jack, USB-C and HaLow antenna on the top end.</title>
+        <svg data-pedal viewBox="-34 -50 134 182" role="img" aria-labelledby="pedal-svg-title">
+          <title id="pedal-svg-title">Top view of the CSC-R1P pedal. GAIN, TUNE and LEVEL knobs in a row at the top, the OLED display under them, the ENGAGE light, the BAND toggle and the ENGAGE footswitch at the bottom. The OUT jack is on the left side, the antenna input on the right, and the 9 V jack, USB-C and Wi-Fi antenna on the top end.</title>
           <defs>
             <linearGradient id="pedal-case" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f6b4f"/><stop offset="1" stop-color="#173d2c"/></linearGradient>
             <radialGradient id="pedal-knob" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#4a524e"/><stop offset="1" stop-color="#121614"/></radialGradient>
             <radialGradient id="pedal-metal" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#f2f5f3"/><stop offset="1" stop-color="#8a948f"/></radialGradient>
           </defs>
           <g class="lbl">
-            <!-- Top end: HaLow antenna on its SMA, USB-C, 9 V DC jack -->
-            <rect x="11" y="-5" width="8" height="5" rx="1" fill="#1b1f1d" stroke="#6f7a74" stroke-width=".4"/>
-            <text x="15" y="-8" text-anchor="middle">9V DC</text>
-            <rect x="28.5" y="-3" width="9" height="3" rx="1.4" fill="#cfd5d2"/>
-            <text x="33" y="-8" text-anchor="middle">USB-C</text>
-            <rect x="49" y="-5" width="6" height="5" fill="url(#pedal-metal)"/>
-            <rect x="50" y="-38" width="4" height="33" rx="2" fill="#1b1f1d" stroke="#6f7a74" stroke-width=".4"/>
-            <text x="58" y="-30">HaLow</text>
-            <text x="58" y="-25.5">antenna</text>
+            <!-- Top end, from hardware/sdr-receiver/pedal/face-template.svg: 9 V DC at 20 mm, USB-C at 36 mm, Wi-Fi RP-SMA at 50 mm -->
+            <rect x="16" y="-5" width="8" height="5" rx="1" fill="#1b1f1d" stroke="#6f7a74" stroke-width=".4"/>
+            <text x="20" y="-8" text-anchor="middle">9V DC</text>
+            <rect x="31.5" y="-3" width="9" height="3" rx="1.4" fill="#cfd5d2"/>
+            <text x="36" y="-12.5" text-anchor="middle">USB-C</text>
+            <rect x="47" y="-5" width="6" height="5" fill="url(#pedal-metal)"/>
+            <rect x="48" y="-32" width="4" height="27" rx="2" fill="#1b1f1d" stroke="#6f7a74" stroke-width=".4"/>
+            <text x="55" y="-26">Wi-Fi</text>
+            <text x="55" y="-21.5">antenna</text>
             <!-- Left side: 1/4 inch OUT. Right side: receive antenna IN by coax -->
-            <rect x="-6" y="24" width="6" height="10" fill="url(#pedal-metal)"/>
-            <text x="-8" y="27.5" text-anchor="end">OUT</text>
-            <text x="-8" y="32" text-anchor="end">¼ in</text>
-            <rect x="66" y="26" width="5" height="6" fill="url(#pedal-metal)"/>
-            <path d="M71 29 H84 V-34" fill="none" stroke="#5d6b64" stroke-width="2.2" stroke-linecap="round"/>
+            <rect x="-6" y="76" width="6" height="10" fill="url(#pedal-metal)"/>
+            <text x="-8" y="79.5" text-anchor="end">OUT</text>
+            <text x="-8" y="84" text-anchor="end">¼ in</text>
+            <rect x="65.5" y="37" width="5" height="6" fill="url(#pedal-metal)"/>
+            <path d="M70.5 40 H84 V-34" fill="none" stroke="#5d6b64" stroke-width="2.2" stroke-linecap="round"/>
             <text x="86" y="-38" text-anchor="middle">to mast</text>
             <text x="86" y="-43" text-anchor="middle">antenna</text>
-            <text x="73" y="38">ANT IN</text>
+            <text x="72" y="49">ANT IN</text>
           </g>
-          <!-- Hammond 125B-style die-cast box, about 122 × 66 mm -->
-          <rect width="66" height="122" rx="4" fill="url(#pedal-case)" stroke="#0b1c14" stroke-width=".8"/>
-          <text class="face" x="33" y="7" text-anchor="middle">CSC-R1 · SATELLITE RX</text>
+          <!-- Hammond 1590N1 (125B) die-cast box, 121.2 × 65.5 mm. Positions from the face template. -->
+          <rect width="65.5" height="121.2" rx="4" fill="url(#pedal-case)" stroke="#0b1c14" stroke-width=".8"/>
+          <text class="face" x="32.75" y="7" text-anchor="middle">CSC-R1P · SATELLITE RX</text>
           <g data-knob="gain" class="knob">
-            <circle cx="16" cy="18" r="7" fill="url(#pedal-knob)" stroke="#000" stroke-width=".4"/>
-            <line x1="16" y1="18" x2="16" y2="12" stroke="#f3fff7" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="15.8" cy="20" r="6.5" fill="url(#pedal-knob)" stroke="#000" stroke-width=".4"/>
+            <line x1="15.8" y1="20" x2="15.8" y2="14.5" stroke="#f3fff7" stroke-width="1.2" stroke-linecap="round"/>
           </g>
-          <text class="face" x="16" y="29.5" text-anchor="middle">GAIN</text>
-          <g data-knob="level" class="knob">
-            <circle cx="50" cy="18" r="7" fill="url(#pedal-knob)" stroke="#000" stroke-width=".4"/>
-            <line x1="50" y1="18" x2="50" y2="12" stroke="#f3fff7" stroke-width="1.2" stroke-linecap="round"/>
-          </g>
-          <text class="face" x="50" y="29.5" text-anchor="middle">LEVEL</text>
-          <!-- Small I²C OLED behind a window -->
-          <rect x="11" y="34" width="44" height="22" rx="1.2" fill="#020604" stroke="#0b1c14" stroke-width=".8"/>
-          <g class="oled">
-            <text data-oled-top x="13" y="38.6">2m  SIM  MUTE</text>
-            <text data-oled-freq class="big" x="13" y="46.6">145.795</text>
-            <text x="47" y="46.6" class="small">MHz</text>
-            <rect x="13" y="49.2" width="40" height="2" fill="none" stroke="#7fe6ff" stroke-width=".3"/>
-            <rect data-oled-bar x="13" y="49.2" width="0" height="2" fill="#7fe6ff"/>
-            <text data-oled-note x="13" y="54.6" class="small">input 0%</text>
-          </g>
-          <!-- SIGNAL RGB LED, TUNE encoder, BAND toggle -->
-          <circle data-signal-led cx="10" cy="72" r="2.4" fill="#5dff9a" opacity=".08"/>
-          <circle cx="10" cy="72" r="2.4" fill="none" stroke="#0b1c14" stroke-width=".5"/>
-          <text class="face" x="10" y="78.5" text-anchor="middle">SIGNAL</text>
+          <text class="face" x="15.8" y="30.5" text-anchor="middle">GAIN</text>
           <g data-knob="tune" class="knob">
-            <circle cx="33" cy="72" r="11" fill="url(#pedal-knob)" stroke="#000" stroke-width=".5"/>
-            <circle cx="33" cy="72" r="8.5" fill="none" stroke="#2b322e" stroke-width=".4"/>
-            <line x1="33" y1="72" x2="33" y2="63" stroke="#f3fff7" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="32.8" cy="20" r="6.5" fill="url(#pedal-knob)" stroke="#000" stroke-width=".4"/>
+            <circle cx="32.8" cy="20" r="4.8" fill="none" stroke="#2b322e" stroke-width=".4"/>
+            <line x1="32.8" y1="20" x2="32.8" y2="14.5" stroke="#f3fff7" stroke-width="1.2" stroke-linecap="round"/>
           </g>
-          <text class="face" x="33" y="87.5" text-anchor="middle">TUNE</text>
+          <text data-tune-label class="face" x="32.8" y="30.5" text-anchor="middle">TUNE</text>
+          <g data-knob="level" class="knob">
+            <circle cx="49.8" cy="20" r="6.5" fill="url(#pedal-knob)" stroke="#000" stroke-width=".4"/>
+            <line x1="49.8" y1="20" x2="49.8" y2="14.5" stroke="#f3fff7" stroke-width="1.2" stroke-linecap="round"/>
+          </g>
+          <text class="face" x="49.8" y="30.5" text-anchor="middle">LEVEL</text>
+          <!-- I²C OLED behind its window -->
+          <rect x="12.75" y="33.6" width="40" height="14" rx="1.2" fill="#020604" stroke="#0b1c14" stroke-width=".8"/>
+          <g class="oled">
+            <text data-oled-top x="14.5" y="37.6">2m  SIM  MUTE</text>
+            <text data-oled-freq class="big" x="14.5" y="43.4">145.795</text>
+            <text x="45.2" y="43.4" class="small">MHz</text>
+            <rect x="14.5" y="44.1" width="36.5" height="1.0" fill="none" stroke="#7fe6ff" stroke-width=".25"/>
+            <rect data-oled-bar x="14.5" y="44.1" width="0" height="1.0" fill="#7fe6ff"/>
+            <text data-oled-note x="14.5" y="47.3" class="tiny">input 0%</text>
+          </g>
+          <!-- ENGAGE light; the OLED shows signal strength -->
+          <circle data-status-led cx="32.8" cy="55.6" r="2.2" fill="#3a1412" stroke="#0b1c14" stroke-width=".5"/>
+          <text class="face" x="32.8" y="61.5" text-anchor="middle">ON</text>
           <g data-toggle class="hit">
-            <rect x="51" y="64" width="12" height="16" fill="transparent"/>
-            <circle cx="57" cy="72" r="2.6" fill="url(#pedal-metal)"/>
-            <line data-toggle-bat x1="57" y1="72" x2="57" y2="66" stroke="#dfe5e2" stroke-width="1.6" stroke-linecap="round"/>
+            <rect x="39.75" y="79.6" width="12" height="16" fill="transparent"/>
+            <circle cx="45.75" cy="87.6" r="2.6" fill="url(#pedal-metal)"/>
+            <line data-toggle-bat x1="45.75" y1="87.6" x2="45.75" y2="81.6" stroke="#dfe5e2" stroke-width="1.6" stroke-linecap="round"/>
           </g>
-          <text class="face" x="57" y="63" text-anchor="middle">2 m</text>
-          <text class="face" x="57" y="84" text-anchor="middle">70 cm</text>
-          <text class="face" x="57" y="88" text-anchor="middle">BAND</text>
-          <!-- Status LED above the soft-touch ENGAGE footswitch -->
-          <circle data-status-led cx="33" cy="94" r="2.2" fill="#3a1412" stroke="#0b1c14" stroke-width=".5"/>
+          <text class="face" x="45.75" y="78.5" text-anchor="middle">2 m</text>
+          <text class="face" x="45.75" y="99.5" text-anchor="middle">70 cm</text>
+          <text class="face" x="54.5" y="88.6" text-anchor="start">BAND</text>
           <g data-footswitch class="hit">
-            <circle cx="33" cy="108" r="8" fill="url(#pedal-metal)" stroke="#4b5550" stroke-width=".5"/>
-            <circle data-footswitch-cap cx="33" cy="108" r="5.5" fill="#c5ccc8" stroke="#6f7a74" stroke-width=".4"/>
+            <circle cx="32.75" cy="104.6" r="7.5" fill="url(#pedal-metal)" stroke="#4b5550" stroke-width=".5"/>
+            <circle data-footswitch-cap cx="32.75" cy="104.6" r="5.2" fill="#c5ccc8" stroke="#6f7a74" stroke-width=".4"/>
           </g>
-          <text class="face" x="33" y="120" text-anchor="middle">ENGAGE</text>
+          <text class="face" x="32.75" y="116.5" text-anchor="middle">ENGAGE</text>
         </svg>
-        <figcaption>Drawn to a 125B pedal box, about 122 × 66 mm. Rev B’s faceplate isn’t laid out yet, so the controls are placed the way the <a href={plan + '#pedal-conventions'}>pedal plan</a> says: knobs up top, footswitch at the bottom, signal flowing right to left. Drag a knob sideways to turn it, tap BAND or stomp ENGAGE.</figcaption>
+        <figcaption>Drawn to scale from the <a href={pedalDoc}>pedal’s drilling template</a> on a 125B box, 121 × 66 mm: knobs up top, footswitch at the bottom, signal flowing right to left. Drag a knob sideways to turn it, tap BAND or stomp ENGAGE. In pass mode, tap TUNE to switch between 5 kHz and 1 kHz steps.</figcaption>
       </figure>
       <div class="rig-controls">
         <div class="scope">
@@ -121,6 +120,14 @@ const parts = [
         </div>
         <div class="actions"><button data-engage aria-pressed="false">ENGAGE</button><button data-check>Check setting</button><button data-reset>Restart</button></div>
         <p data-feedback role="status"></p>
+        <div class="pass" data-pass-panel>
+          <h3>Pass mode: follow the Doppler shift</h3>
+          <p class="note">A satellite rises, passes 45° up and sets in about 10 minutes, shown 20 times faster. Its 145.800 MHz signal arrives about 3.4 kHz high as it comes toward you and 3.4 kHz low as it leaves. Keep it within 1.5 kHz to hear it. The same model runs in the station’s <a href={stationSim}>receiver simulator</a>.</p>
+          <div class="actions"><button data-pass-start>Start a pass</button><button data-step aria-pressed="false">TUNE step: 5 kHz</button></div>
+          <svg class="sky" viewBox="0 0 400 60" preserveAspectRatio="none" role="img" aria-label="Elevation of the simulated satellite over the pass"><path data-sky-path d="M0 60" fill="none" stroke="#3f6f56" vector-effect="non-scaling-stroke"/><circle data-sky-sat cx="-10" cy="60" r="4" fill="#ffd36b"/></svg>
+          <output data-pass-readout aria-live="off">Press Start a pass.</output>
+          <p data-pass-result role="status"></p>
+        </div>
       </div>
     </div>
   </div>
@@ -128,7 +135,7 @@ const parts = [
 
   <details class="inside mt-5" id="pedal-inside">
     <summary>Look inside the pedal</summary>
-    <p class="mt-3 max-w-2xl text-sm text-muted">This is the real receiver board, the <a class="underline" href={revA}>CSC-R1 Rev A dev kit</a>, drawn from its KiCad design. Rev B shrinks the same board to fit the pedal box and adds a small lid board for the knobs. Neither board has been built or tested yet. Tap a number to read what that part does.</p>
+    <p class="mt-3 max-w-2xl text-sm text-muted">This is the <a class="underline" href={revA}>CSC-R1 Rev A dev kit</a>, drawn from its KiCad design. The <a class="underline" href={pedalDoc}>CSC-R1P pedal</a> uses the same radio parts on a narrower board that fits the box, with a second board under the face for the knobs and display. Neither board has been built or tested yet. Tap a number to read what that part does.</p>
     <figure class="board mt-3">
       <div class="board-img">
         <Image src={board} widths={[480, 960, 1417]} sizes="(min-width: 768px) 760px, 100vw" alt="Top side of the CSC-R1 Rev A receiver board: a red circuit board, 120 × 78 mm, with the antenna jack on the left edge, the radio parts in a row across the middle and the XIAO sockets at the top right." loading="lazy" />
@@ -144,14 +151,13 @@ const parts = [
         </li>
       ))}
     </ol>
-    <h3 class="mt-5 text-base">What Rev B adds (planned, not on this board yet)</h3>
+    <h3 class="mt-5 text-base">What the pedal adds to the kit</h3>
     <ul class="mt-2 max-w-2xl list-disc space-y-1 pl-5 text-sm text-muted">
-      <li><strong>HaLow radio:</strong> a Quectel FGH100M-H module (Morse Micro MM6108) for long-range Wi-Fi at <a class="underline" href={wiki('915-mhz')}>902–928 MHz</a>, with its own antenna on the top end. It sends the stream to a <a class="underline" href={wiki('moq')}>MoQ</a> relay under <a class="underline" href={wiki('part-15')}>Part 15</a> rules.</li>
-      <li><strong>Lid board:</strong> the OLED display, TUNE encoder, GAIN and LEVEL pots, BAND toggle, ENGAGE footswitch and the two lights, on a second I/O expander.</li>
-      <li><strong>Pedal power and sound:</strong> a 9 V center-negative jack with a regulator, and a ¼ inch OUT jack fed by an audio DAC (only with the XIAO ESP32-S3 Plus).</li>
-      <li><strong>Two power monitors</strong> to compare how much energy 2.4 GHz Wi-Fi, 5 GHz Wi-Fi and HaLow use.</li>
+      <li><strong>Control board:</strong> the OLED display, TUNE encoder, GAIN and LEVEL pots, BAND toggle, ENGAGE footswitch and light, read by a second I/O expander and a small ADC.</li>
+      <li><strong>Pedal power and sound:</strong> a 9 V center-negative jack with reverse-polarity protection and a switching regulator, and a ¼ inch OUT jack fed by an audio DAC.</li>
+      <li><strong>Later (Rev B):</strong> a <a class="underline" href={wiki('915-mhz')}>902–928 MHz</a> HaLow radio and power monitors. They are left out of this first pedal so it only listens.</li>
     </ul>
-    <p class="mt-2 max-w-2xl text-sm text-muted">The receiver only listens on the <a class="underline" href={wiki('amateur-satellite-band')}>amateur satellite bands</a>, for signals from satellites like the <a class="underline" href={wiki('iss')}>ISS</a>. Details: <a class="underline" href={plan + '#controls'}>pedal controls</a> · <a class="underline" href={plan + '#electronics-added-in-rev-b'}>Rev B electronics</a>.</p>
+    <p class="mt-2 max-w-2xl text-sm text-muted">The receiver only listens on the <a class="underline" href={wiki('amateur-satellite-band')}>amateur satellite bands</a>, for signals from satellites like the <a class="underline" href={wiki('iss')}>ISS</a>. Details: <a class="underline" href={pedalDoc}>CSC-R1P pedal</a> · <a class="underline" href={plan}>Rev B plan</a>.</p>
   </details>
 
   <div class="mt-5 max-w-2xl text-sm">
@@ -162,7 +168,7 @@ const parts = [
       <li>On paper, write down the frequency in MHz and the receiver gain. Move the antenna and note whether the station sounds clearer.</li>
       <li>Compare two gain settings. Then change only the speaker volume. Write down which control affected reception and which changed how loud it sounded.</li>
     </ol>
-    <p class="mt-3 text-muted">The physical pedal is a prototype design. Its planned Wi-Fi and HaLow radios would transmit data. Use the browser or a receive-only USB SDR for this lesson. <a class="underline" href="https://www.fcc.gov/media/radio/fm-query">Find a U.S. FM station</a> · <a class="underline" href={plan + '#controls'}>Pedal control design</a></p>
+    <p class="mt-3 text-muted">The physical pedal is a prototype design. Its XIAO’s Wi-Fi transmits data, and the planned HaLow radio would too. Use the browser or a receive-only USB SDR for this lesson. <a class="underline" href="https://www.fcc.gov/media/radio/fm-query">Find a U.S. FM station</a> · <a class="underline" href={plan + '#controls'}>Pedal control design</a></p>
   </div>
 </section>
 <style>
@@ -178,16 +184,23 @@ const parts = [
   .pedal figcaption a { text-decoration:underline; }
   .lbl text { fill:#9fcbb0; font-size:3.4px; font-family:var(--font-mono); }
   .face { fill:#e8fff0; font-size:3px; font-weight:700; letter-spacing:.06em; font-family:var(--font-mono); }
-  .oled text { fill:#7fe6ff; font-size:3.4px; font-family:var(--font-mono); }
-  .oled .big { font-size:6.6px; font-weight:700; }
-  .oled .small { font-size:2.8px; }
+  .oled text { fill:#7fe6ff; font-size:2.6px; font-family:var(--font-mono); }
+  .oled .big { font-size:5px; font-weight:700; }
+  .oled .small { font-size:2.3px; }
   .knob { cursor:grab; transition:transform .15s ease-out; }
   .knob:active { cursor:grabbing; }
   .hit { cursor:pointer; }
   [data-toggle-bat] { transition:transform .12s ease-out; }
-  [data-footswitch-cap] { transition:transform .08s; transform-origin:33px 108px; }
+  [data-footswitch-cap] { transition:transform .08s; transform-origin:32.75px 104.6px; }
   .hit:active [data-footswitch-cap] { transform:scale(.9); }
-  [data-signal-led],[data-status-led] { transition:opacity .15s, fill .15s; }
+  [data-status-led] { transition:fill .15s; }
+  .oled .tiny { font-size:2.3px; }
+  .pass { margin-top:1.25rem; border-top:1px solid #37674a; padding-top:1rem; }
+  .pass h3 { color:white; font-size:1rem; }
+  .pass .note { margin:.5rem 0; font-size:.8rem; color:#9fcbb0; font-family:var(--font-sans, inherit); }
+  .pass .note a { text-decoration:underline; }
+  .sky { display:block; width:100%; height:3.5rem; margin:.75rem 0 .5rem; background:#04100b; border:1px solid #37674a; }
+  [data-pass-result]:not(:empty) { margin-top:.5rem; color:white; }
   @media (prefers-reduced-motion: reduce) { .knob,[data-toggle-bat],[data-footswitch-cap] { transition:none; } }
   .scope { background:#04100b; border:1px solid #37674a; padding:.7rem; }
   .scope svg { display:block; width:100%; height:5rem; }
@@ -209,7 +222,8 @@ const parts = [
   .num { flex:none; width:1.6rem; height:1.6rem; border-radius:999px; background:#081410; color:#fff; font:700 .8rem/1.6rem var(--font-mono); text-align:center; }
 </style>
 <script>
-  import { TASKS, check as checkStep, clampOffset, frequencyMHz, inputPercent, knobAngle, signal as computeSignal, signalLed, tuneAngle, GAIN_MAX_DB } from '../lib/pedal.mjs';
+  import { TASKS, check as checkStep, clampOffset, frequencyMHz, inputPercent, knobAngle, signal as computeSignal, tuneAngle, GAIN_MAX_DB, TUNE_DEGREES_PER_STEP as TUNE_DEGREES } from '../lib/pedal.mjs';
+  import { makePass, score, STEPS_HZ } from '../lib/pass.mjs';
 
   const panel = document.querySelector<HTMLElement>('#pedal-lab')!;
   const get = <T extends Element>(name: string) => panel.querySelector<T>(name)!;
@@ -217,30 +231,48 @@ const parts = [
   const gain = get<HTMLInputElement>('[data-gain]');
   const volume = get<HTMLInputElement>('[data-volume]');
   let engaged = false, offset = -1, stage = 0, sawClip = false;
+  // Pass mode: a simulated pass at 20 times real speed, tuned in Hz from 145.800 MHz.
+  const pass = makePass();
+  const SPEED = 20, FRAME_MS = 100;
+  let passS: number | null = null, passOffsetHz = 0, stepIndex = 0, passTimer = 0, lastLogged = -1;
+  let passLog: { inView: boolean; heard: boolean; decoded: boolean }[] = [];
+  const passState = () => passS === null ? null : pass.at(passS, { gainDb: Number(gain.value), tunedHz: band.value === '2' ? pass.nominalHz + passOffsetHz : 0 });
   // Keep the input waveform stable while learners compare settings.
   const noise = Array.from({ length: 201 }, () => Math.random() * 2 - 1);
   const signal = () => computeSignal(noise, { band: band.value, offset, gainDb: Number(gain.value) });
   const rotate = (el: Element, deg: number, cx: number, cy: number) => el.setAttribute('transform', `rotate(${deg} ${cx} ${cy})`);
 
   function renderPedal(tuned: boolean, peak: number, frequency: number) {
-    rotate(get('[data-knob="gain"]'), knobAngle(Number(gain.value), 0, GAIN_MAX_DB), 16, 18);
-    rotate(get('[data-knob="level"]'), knobAngle(Number(volume.value), 0, 100), 50, 18);
-    rotate(get('[data-knob="tune"]'), tuneAngle(offset), 33, 72);
-    rotate(get('[data-toggle-bat]'), band.value === '2' ? 0 : 180, 57, 72);
+    rotate(get('[data-knob="gain"]'), knobAngle(Number(gain.value), 0, GAIN_MAX_DB), 15.8, 20);
+    rotate(get('[data-knob="level"]'), knobAngle(Number(volume.value), 0, 100), 49.8, 20);
+    rotate(get('[data-knob="tune"]'), passS === null ? tuneAngle(offset) : (passOffsetHz / 1000) * TUNE_DEGREES, 32.8, 20);
+    rotate(get('[data-toggle-bat]'), band.value === '2' ? 0 : 180, 45.75, 87.6);
     get('[data-status-led]').setAttribute('fill', engaged ? '#ff4d3d' : '#3a1412');
-    get('[data-signal-led]').setAttribute('opacity', String(signalLed(peak)));
-    get('[data-oled-top]').textContent = (band.value === '2' ? '2m ' : '70cm') + '  SIM  ' + (engaged ? 'ON' : 'MUTE');
+    get('[data-oled-top]').textContent = (band.value === '2' ? '2m ' : '70cm') + (passS === null ? '  SIM  ' : '  PASS ') + (engaged ? 'ON' : 'MUTE');
     get('[data-oled-freq]').textContent = frequency.toFixed(3);
-    get('[data-oled-bar]').setAttribute('width', String(40 * Math.min(1, peak)));
+    get('[data-oled-bar]').setAttribute('width', String(36.5 * Math.min(1, peak)));
     get('[data-oled-note]').textContent = peak > 1 ? 'input CLIP' : 'input ' + inputPercent(peak) + '%' + (tuned && band.value === '2' ? '  ISS' : '');
   }
 
   function render() {
-    const { tuned, samples, peak } = signal();
-    if (stage === 2 && engaged && tuned && peak > 1) sawClip = true;
-    const frequency = frequencyMHz(band.value, offset);
-    get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · input ' + inputPercent(peak) + '% · ' +
-      (peak > 1 ? 'CLIPPING' : 'within range') + (engaged ? ' · output on' : ' · muted');
+    const state = passState();
+    let tuned: boolean, samples: number[], peak: number, frequency: number;
+    if (state) {
+      // Pass mode: the carrier's size follows the simulated SNR; noise stays put.
+      tuned = state.heard;
+      const carrier = state.heard ? Math.min(0.9, 0.08 * 10 ** (state.snrDb / 20)) : 0;
+      samples = noise.map((n, i) => carrier * Math.sin((i * Math.PI) / 20) + 0.08 * n);
+      peak = Math.max(0, (state.dbfs + 100) / 100);
+      frequency = (band.value === '2' ? pass.nominalHz + passOffsetHz : 435_000_000) / 1e6;
+      get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · ' + state.dbfs.toFixed(0) + ' dBFS · ' +
+        (state.heard ? 'carrier heard' : state.inView ? 'carrier outside the passband' : 'satellite below the horizon') + (engaged ? ' · output on' : ' · muted');
+    } else {
+      ({ tuned, samples, peak } = signal());
+      if (stage === 2 && engaged && tuned && peak > 1) sawClip = true;
+      frequency = frequencyMHz(band.value, offset);
+      get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · input ' + inputPercent(peak) + '% · ' +
+        (peak > 1 ? 'CLIPPING' : 'within range') + (engaged ? ' · output on' : ' · muted');
+    }
     get('[data-wave]').setAttribute('points', samples.map((raw, i) => {
       // Clip at the input, before LEVEL: turning LEVEL down shrinks a clipped wave, it can't unflatten it.
       const sample = Math.max(-1, Math.min(1, raw));
@@ -250,9 +282,81 @@ const parts = [
     get('[data-gain-label]').textContent = gain.value + ' dB';
     get('[data-level-label]').textContent = volume.value + '%';
     const task = get('#pedal-task');
-    if (task.textContent !== TASKS[stage]) task.textContent = TASKS[stage];
+    const want = passS === null ? TASKS[stage] : 'Pass · Keep the carrier within 1.5 kHz as the Doppler shift changes. Tap TUNE for 1 kHz steps.';
+    if (task.textContent !== want) task.textContent = want;
     renderPedal(tuned, peak, frequency);
+    if (state) renderPass(state);
   }
+
+  function renderPass(state: ReturnType<typeof pass.at>) {
+    const x = (s: number) => (400 * s) / pass.duration;
+    const y = (el: number) => 58 - (54 * Math.max(0, el)) / 90;
+    get('[data-sky-sat]').setAttribute('cx', String(x(state.passS)));
+    get('[data-sky-sat]').setAttribute('cy', String(y(state.elevationDeg)));
+    const off = (state.offsetHz / 1000).toFixed(1);
+    get('[data-pass-readout]').textContent = state.inView
+      ? `[desk simulation] elevation ${state.elevationDeg.toFixed(0)}° · range ${state.rangeKm.toFixed(0)} km · Doppler ${state.dopplerHz >= 0 ? '+' : ''}${(state.dopplerHz / 1000).toFixed(2)} kHz · you are ${off} kHz off · ${state.heard ? `SNR ${state.snrDb.toFixed(0)} dB` + (state.decoded ? ' · beacon decoded' : '') : 'not heard'}`
+      : state.passS < 0 ? `[desk simulation] satellite rises in ${Math.ceil(-state.passS)} s` : '[desk simulation] satellite has set';
+    get('[data-oled-note]').textContent = state.inView
+      ? `EL ${state.elevationDeg.toFixed(0)}  ${state.heard ? 'SNR ' + state.snrDb.toFixed(0) + 'dB' : 'NO CARRIER'}${state.decoded ? ' BCN' : ''}`
+      : state.passS < 0 ? 'WAITING FOR AOS' : 'LOS';
+  }
+
+  function drawSky() {
+    const pts: string[] = [];
+    for (let i = 0; i <= 80; i++) {
+      const s = (pass.duration * i) / 80;
+      const el = pass.at(s).elevationDeg;
+      pts.push(`${i === 0 ? 'M' : 'L'}${(400 * s) / pass.duration} ${58 - (54 * Math.max(0, el)) / 90}`);
+    }
+    get('[data-sky-path]').setAttribute('d', pts.join(' '));
+  }
+
+  function stopPass(finished: boolean) {
+    clearInterval(passTimer);
+    passTimer = 0;
+    get('[data-pass-start]').textContent = 'Start a pass';
+    if (finished) {
+      const { heard, decoded } = score(passLog);
+      get('[data-pass-result]').textContent = `Pass complete (desk simulation): you heard the carrier for ${heard}% of the pass and decoded the beacon for ${decoded}%. On paper, write down when you had to retune and why.`;
+    }
+    passS = null;
+    render();
+    get('[data-pass-readout]').textContent = 'Press Start a pass.';
+  }
+
+  function startPass() {
+    if (passTimer) return stopPass(false);
+    band.value = '2';
+    passOffsetHz = 0;
+    passLog = [];
+    lastLogged = -1;
+    passS = -10;
+    get('[data-pass-result]').textContent = '';
+    get('[data-pass-start]').textContent = 'Stop';
+    drawSky();
+    passTimer = window.setInterval(() => {
+      passS! += (SPEED * FRAME_MS) / 1000;
+      const whole = Math.floor(passS!);
+      if (whole > lastLogged && whole >= 0) {
+        const st = passState()!;
+        passLog.push({ inView: st.inView, heard: st.heard && engaged, decoded: st.decoded && engaged });
+        lastLogged = whole;
+      }
+      if (passS! > pass.duration + 5) return stopPass(true);
+      render();
+    }, FRAME_MS);
+    render();
+  }
+
+  const setStep = (i: number) => {
+    stepIndex = i;
+    const label = STEPS_HZ[i] / 1000 + ' kHz';
+    get('[data-step]').textContent = 'TUNE step: ' + label;
+    get('[data-step]').setAttribute('aria-pressed', String(i === 1));
+    get('[data-tune-label]').textContent = i === 1 ? 'TUNE 1k' : 'TUNE';
+  };
+
   function check() {
     const { tuned, peak } = signal();
     const result = checkStep({ stage, engaged, tuned, sawClip, peak, level: Number(volume.value) });
@@ -261,13 +365,21 @@ const parts = [
     render();
   }
   const engage = () => { engaged = !engaged; render(); if (stage === 0 && engaged) check(); };
-  const tune = (delta: number) => { offset = clampOffset(offset + delta); render(); };
+  const tune = (delta: number) => {
+    if (passS !== null) passOffsetHz = Math.max(-20_000, Math.min(20_000, passOffsetHz + delta * STEPS_HZ[stepIndex]));
+    else offset = clampOffset(offset + delta);
+    render();
+  };
+  get('[data-pass-start]').addEventListener('click', startPass);
+  get('[data-step]').addEventListener('click', () => setStep(1 - stepIndex));
   get('[data-check]').addEventListener('click', check);
   get('[data-engage]').addEventListener('click', engage);
   get('[data-down]').addEventListener('click', () => tune(-1));
   get('[data-up]').addEventListener('click', () => tune(1));
   panel.addEventListener('input', render);
   get('[data-reset]').addEventListener('click', () => {
+    if (passTimer) stopPass(false);
+    setStep(0); get('[data-pass-result]').textContent = '';
     offset = -1; stage = 0; engaged = false; sawClip = false; band.value = '2'; gain.value = '0'; volume.value = '25';
     get('[data-feedback]').textContent = ''; render();
   });
@@ -284,8 +396,10 @@ const parts = [
   };
   for (const knob of panel.querySelectorAll<SVGGElement>('[data-knob]')) {
     const name = knob.dataset.knob!;
-    let lastX = 0, lastY = 0, rest = 0;
-    knob.addEventListener('pointerdown', (e) => { lastX = e.clientX; lastY = e.clientY; rest = 0; knob.setPointerCapture(e.pointerId); });
+    let lastX = 0, lastY = 0, rest = 0, moved = false;
+    knob.addEventListener('pointerdown', (e) => { lastX = e.clientX; lastY = e.clientY; rest = 0; moved = false; knob.setPointerCapture(e.pointerId); });
+    // Pressing the TUNE encoder switches its step, like the real encoder's push switch.
+    knob.addEventListener('pointerup', () => { if (name === 'tune' && !moved && passS !== null) setStep(1 - stepIndex); });
     knob.addEventListener('pointermove', (e) => {
       if (!knob.hasPointerCapture(e.pointerId)) return;
       // Drag right or up to turn clockwise. One step per 6 px (12 px for TUNE, like detents).
@@ -293,7 +407,7 @@ const parts = [
       rest += (e.clientX - lastX) + (lastY - e.clientY); lastX = e.clientX; lastY = e.clientY;
       const size = name === 'tune' ? 12 : 6;
       const steps = Math.trunc(rest / size);
-      if (steps) { rest -= steps * size; nudge(name, steps); }
+      if (steps) { moved = true; rest -= steps * size; nudge(name, steps); }
     });
     knob.addEventListener('wheel', (e) => { e.preventDefault(); nudge(name, e.deltaY < 0 ? 1 : -1); }, { passive: false });
   }
