@@ -27,14 +27,23 @@ export type LevelId = typeof levels[number]['id'];
  * anything else stays plain text.
  */
 export function inline(text: string, base = ''): string {
-  return text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (all, label: string, href: string) => {
-      const safe = href.replace(/"/g, '%22');
-      if (href.startsWith('/')) return `<a href="${base}${safe}">${label}</a>`;
-      if (href.startsWith('#') || href.startsWith('https://')) return `<a href="${safe}">${label}</a>`;
-      return label;
-    })
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`(.+?)`/g, '<code>$1</code>');
+  const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const format = (value: string) => escape(value).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  const tokens = /`([^`]+)`|\[([^\]]+)\]\(([^)\s]+)\)/g;
+  let out = '', end = 0;
+  for (const match of text.matchAll(tokens)) {
+    const [whole, code, label, href] = match;
+    out += format(text.slice(end, match.index));
+    end = match.index + whole.length;
+    if (code !== undefined) {
+      out += `<code>${escape(code)}</code>`;
+      continue;
+    }
+    const local = /^\/(?![/\\])/.test(href) && !href.includes('\\');
+    const allowed = local || href.startsWith('#') || href.startsWith('https://');
+    const title = format(label).replace(/`(.+?)`/g, '<code>$1</code>');
+    const url = escape((local ? base : '') + href).replace(/"/g, '&quot;');
+    out += allowed ? `<a href="${url}">${title}</a>` : title;
+  }
+  return out + format(text.slice(end));
 }

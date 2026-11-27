@@ -10,11 +10,10 @@ type Game = ReturnType<typeof G.createGame>;
 type Level = (typeof G.LEVELS)[number] | typeof G.LIVE;
 type Antenna = keyof typeof G.ANTENNAS;
 
-const root = document.querySelector<HTMLElement>('[data-ctp]');
-if (root) init(root);
-
 /** The site's base path ("/cubesat-classroom" on GitHub Pages, "" on cubesatclass.org). */
 const siteBase = import.meta.env.BASE_URL.replace(/\/$/, '');
+const root = document.querySelector<HTMLElement>('[data-ctp]');
+if (root) init(root);
 
 function init(root: HTMLElement) {
   const $ = <T extends Element = HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
@@ -40,12 +39,13 @@ function init(root: HTMLElement) {
   })();
   const prefsKey = 'catch-the-pass:prefs';
   const prefs = (() => { try { const p = JSON.parse(localStorage.getItem(prefsKey) ?? '{}'); return p && typeof p === 'object' ? p : {}; } catch { return {}; } })();
-  const savePrefs = () => { try { localStorage.setItem(prefsKey, JSON.stringify({ easy: slow, level: levelIndex, antenna: antennaChoice })); } catch { /* private mode */ } };
+  const savePrefs = () => { try { localStorage.setItem(prefsKey, JSON.stringify({ easy: slow, level: savedLevel, antenna: antennaChoice })); } catch { /* private mode */ } };
   let antennaChoice = typeof prefs.antenna === 'string' && Object.hasOwn(G.ANTENNAS, prefs.antenna) ? prefs.antenna as Antenna : '';
   const receiver = { ...G.DEFAULT_RECEIVER };
 
   let mode: 'missions' | 'live' = 'missions';
-  let levelIndex = 0;
+  let levelIndex = 0, savedLevel = 0;
+  let linkedEntry = false;
   let game: Game | null = null;
   let running = false, paused = false, countdown = 0;
   let helpOpen = false;
@@ -111,7 +111,7 @@ function init(root: HTMLElement) {
   // ---- Levels and modes ----
   const levelButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-level]')];
   function unlocked(i: number) { return i === 0 || (best[G.LEVELS[i - 1].id] ?? 0) > 0; }
-  if (Number.isInteger(prefs.level) && prefs.level > 0 && prefs.level < G.LEVELS.length && unlocked(prefs.level)) levelIndex = prefs.level;
+  if (Number.isInteger(prefs.level) && prefs.level > 0 && prefs.level < G.LEVELS.length && unlocked(prefs.level)) savedLevel = levelIndex = prefs.level;
   function renderLevels() {
     levelButtons.forEach((b, i) => {
       const s = best[G.LEVELS[i].id] ?? 0;
@@ -125,7 +125,7 @@ function init(root: HTMLElement) {
     if (i === levelIndex) return;
     // A pass in flight is not thrown away by a stray tap: pause it first to switch levels.
     if (running && !paused && game && !game.done) { announce('Pause the pass first to pick another level.'); return; }
-    levelIndex = i;
+    savedLevel = levelIndex = i;
     savePrefs();
     ready();
   }));
@@ -180,7 +180,7 @@ function init(root: HTMLElement) {
     hud(); draw();
     // Shown on a first visit without moving focus: the page has only just loaded, so keyboard
     // and screen-reader users start at the top (skip link, header) like on every other page.
-    if (!seenHowto() && !helpOpen) showHowto(false);
+    if (!linkedEntry && !seenHowto() && !helpOpen) showHowto(false);
   }
 
   // ---- The first-visit "How to play" card ----
@@ -241,7 +241,7 @@ function init(root: HTMLElement) {
     canvas.inert = true;
     if (results) root.dataset.results = 'true'; else delete root.dataset.results;
     overlay.querySelector<HTMLButtonElement>('[data-go]')?.addEventListener('click', start);
-    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { levelIndex++; savePrefs(); ready(); start(); });
+    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { savedLevel = ++levelIndex; savePrefs(); ready(); start(); });
     overlay.querySelector<HTMLButtonElement>('[data-again]')?.addEventListener('click', () => { ready(); start(); });
   }
 
@@ -906,27 +906,27 @@ function init(root: HTMLElement) {
   function applyHash() {
     const params = new URLSearchParams(location.hash.slice(1));
     const want = params.get('level'), wantMode = params.get('mode');
-    if (!want && wantMode !== 'live' && wantMode !== 'levels') return false;
-    if (running && !paused && game && !game.done && mode === 'missions') setPaused(true, false);
+    const i = want ? G.LEVELS.findIndex(l => String(l.id) === want || slug(l.name) === want) : -1;
+    if (i < 0 && wantMode !== 'live' && wantMode !== 'levels') return false;
+    linkedEntry = true;
     if (wantMode === 'live') {
       if (mode !== 'live') tabs.find(t => t.dataset.mode === 'live')?.click();
       bringIntoView();
       return true;
     }
+
+    const locked = i >= 0 && !unlocked(i);
+    if (i >= 0) {
+      levelIndex = locked ? 0 : i;
+      while (locked && levelIndex < i && unlocked(levelIndex + 1)) levelIndex++;
+    }
     if (mode !== 'missions') tabs.find(t => t.dataset.mode === 'missions')?.click();
-    const i = want ? G.LEVELS.findIndex((l, n) => String(l.id) === want || slug(l.name) === want || String(n + 1) === want) : -1;
-    if (i >= 0 && unlocked(i)) {
-      levelIndex = i;
-      savePrefs();
-      ready();
-    } else if (i >= 0) {
-      // Not open yet in this browser: say why, and offer the level that opens it.
-      const open = G.LEVELS.findIndex((_, n) => !unlocked(n + 1));
-      levelIndex = Math.max(0, Math.min(open < 0 ? i : open, i - 1));
-      ready();
+    else ready();
+
+    if (locked) {
       show(`<h3>Level ${i + 1}: ${G.LEVELS[i].name} is locked</h3>
-        <p>Levels open in order: earn at least one star on <strong>${G.LEVELS[i - 1].name}</strong> to open it. Stars are kept in this browser, so a new browser or a private window starts with only level 1 open.</p>
-        <button class="go" data-go>Play level ${levelIndex + 1}: ${G.LEVELS[levelIndex].name}</button>`);
+        <p>Earn at least one star on <strong>${G.LEVELS[i - 1].name}</strong> to open it. This browser remembers your stars.</p>
+        <button type="button" class="go" data-go>Play level ${levelIndex + 1}: ${G.LEVELS[levelIndex].name}</button>`);
       announce(`${G.LEVELS[i].name} is locked. Play ${G.LEVELS[levelIndex].name} first.`);
     }
     bringIntoView();
@@ -935,8 +935,7 @@ function init(root: HTMLElement) {
   addEventListener('hashchange', () => { applyHash(); });
 
   setTab();
-  ready();
-  applyHash();
+  if (!applyHash()) ready();
   resize();
   requestAnimationFrame(frame);
 }

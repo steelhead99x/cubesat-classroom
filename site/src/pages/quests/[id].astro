@@ -41,6 +41,7 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
   <div class="shell space-y-10 py-10">
     <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)]">
       <article class="space-y-6">
+        <p class="sr-only" role="status" data-share-status></p>
         <p>On paper, write the lesson title and your level. Number your notes to match the steps. Tick each one when you finish it.</p>
         {levels.map(level => {
           const data = quest.data[level.id];
@@ -51,17 +52,19 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
                 <div class="quest-steps mt-4 text-muted"><ol>{data.steps.map((step, n) => (
                   <li id={`${level.id}-step-${n + 1}`} class="quest-step">
                     <span set:html={inline(step, base)} />
-                    <a class="step-share" href={`#${level.id}-step-${n + 1}`} data-share aria-label={`Copy link to ${level.name.toLowerCase()} step ${n + 1}`}>Link<span data-copied hidden> · copied</span></a>
+                    <a class="step-share" href={`#${level.id}-step-${n + 1}`} data-share={`${level.name} step ${n + 1}`} aria-label={`Copy link to ${level.name.toLowerCase()} step ${n + 1}`}>Copy link<span data-copied hidden> · copied</span></a>
                   </li>
                 ))}</ol></div>
               </section>
               <section id={`${level.id}-check`} class="border-l-2 border-accent bg-ground p-4" aria-labelledby={`check-${level.id}`}>
                 <h3 id={`check-${level.id}`} class="text-base text-ink">Check your work</h3>
                 <p class="mt-1 text-ink">{data.check}</p>
+                <a class="step-share" href={`#${level.id}-check`} data-share={`${level.name}: Check your work`} aria-label={`Copy link to check your work for ${level.name.toLowerCase()} crews`}>Copy link<span data-copied hidden> · copied</span></a>
               </section>
               <section id={`${level.id}-discuss`} class="border-l-2 border-line bg-ground p-4" aria-labelledby={`discuss-${level.id}`}>
                 <h3 id={`discuss-${level.id}`} class="text-base text-ink">Talk it over</h3>
                 <p class="mt-1 text-ink">{data.discuss}</p>
+                <a class="step-share" href={`#${level.id}-discuss`} data-share={`${level.name}: Talk it over`} aria-label={`Copy link to talk it over for ${level.name.toLowerCase()} crews`}>Copy link<span data-copied hidden> · copied</span></a>
               </section>
             </div>
           );
@@ -110,15 +113,20 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
 <script>
   // Copy a step's link (with the level in it, so it opens at that level for whoever follows it).
   // Without clipboard access it stays an ordinary link to the step.
+  const status = document.querySelector<HTMLElement>('[data-share-status]');
+  const timers = new WeakMap<HTMLAnchorElement, ReturnType<typeof setTimeout>>();
   for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-share]')) {
     link.addEventListener('click', async e => {
-      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || !navigator.clipboard) return;
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || !navigator.clipboard) return;
       e.preventDefault();
       const url = new URL(link.href);
+      url.searchParams.delete('level');
       try { await navigator.clipboard.writeText(url.href); } catch { location.hash = url.hash; return; }
       const note = link.querySelector<HTMLElement>('[data-copied]')!;
       note.hidden = false;
-      setTimeout(() => { note.hidden = true; }, 2000);
+      status?.replaceChildren(document.createTextNode(`Link copied for ${link.dataset.share}.`));
+      clearTimeout(timers.get(link));
+      timers.set(link, setTimeout(() => { note.hidden = true; }, 2000));
     });
   }
 </script>
@@ -126,6 +134,6 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
 <style>
   .quest-step { scroll-margin-top: 1.5rem; }
   .quest-step:target, section:target { outline: 3px solid var(--color-flag); outline-offset: 4px; border-radius: 2px; }
-  .step-share { margin-left: .4rem; font-size: .8rem; font-weight: 600; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+  .step-share { display: inline-flex; align-items: center; min-height: 2.75rem; margin-left: .4rem; font-size: .8rem; font-weight: 600; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
   .quest-step :global(a:not(.step-share)) { color: var(--color-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 </style>

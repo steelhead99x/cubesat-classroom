@@ -14,6 +14,6 @@ deck: ["build-step-by-step", "fly-without-permit", "watch-it-live"]
 
 ### Spreading factor
 
-A LoRa radio can trade speed for range with its **spreading factor** (SF), from SF7 to SF12. Each step up stretches every chirp to twice as long, so a packet takes about twice as long to send and uses about twice the energy. In return the receiver can decode a signal about 2.5 dB weaker. At SF7 it needs the signal no more than about 7.5 dB below the noise; at SF12, about 20 dB below. That is why a slow setting still works when a satellite is low and far away, and why it costs a battery more.
+A LoRa radio can trade speed for range with its **spreading factor** (SF), from SF7 to SF12. At the same bandwidth, each step up doubles the time for one symbol. Total packet airtime also depends on the payload, coding rate and packet format. Longer airtime uses more energy at the same transmit power. In return the receiver can decode a signal about 2.5 dB weaker. At SF7 it needs the signal no more than about 7.5 dB below the noise; at SF12, about 20 dB below. That is why a slow setting still works when a satellite is low and far away, and why it costs a battery more.
 
 In [Catch the Pass](../../games/catch-the-pass/#step-radio), **Fast**, **Middle** and **Far** are SF7, SF9 and SF12, with those decoding limits. The game shortens the airtimes so a pass fits in a minute.

@@ -264,6 +264,10 @@ test('lost packets are put down to a cause, and the debrief names the biggest on
   }
   assert.equal(G.debrief(low).cause, 'weak');
   assert.match(G.debrief(low).text, /Far \(SF12\)/);
+  const fastDebrief = G.debrief(low);
+  assert.match(fastDebrief.text, /too weak to decode on Fast/);
+  G.setSf(low, 12);
+  assert.deepEqual(G.debrief(low), fastDebrief, 'changing SF after the pass cannot rewrite the debrief');
 });
 
 test('the debrief trace covers the pass and resting time is counted', () => {

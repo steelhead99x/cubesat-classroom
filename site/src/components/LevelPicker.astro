@@ -38,29 +38,30 @@ const { describe = false } = Astro.props;
   }
 
   let saved = 'beginner';
-  try { saved = localStorage.getItem(KEY) ?? 'beginner'; } catch {}
-  // A shared link can carry a level: ?level=intermediate, or an anchor that names one
-  // (#intermediate-step-2, #professional-check). It shows that level for this visit without
-  // changing the visitor's own saved choice, then scrolls to the anchor once it is visible.
-  const fromLink = () => {
-    const q = new URLSearchParams(location.search).get('level');
-    if (q && valid.includes(q)) return q;
-    const h = location.hash.slice(1).split('-')[0];
-    return valid.includes(h) ? h : null;
-  };
-  const linked = fromLink();
-  apply(linked ?? (valid.includes(saved) ? saved : 'beginner'));
-  const reveal = () => {
-    const target = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
-    if (target) requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
-  };
-  if (linked) reveal();
-  addEventListener('hashchange', () => { const l = fromLink(); if (l) { apply(l); reveal(); } });
+  try {
+    const stored = localStorage.getItem(KEY);
+    if (stored && valid.includes(stored)) saved = stored;
+  } catch {}
+
+  // A step names its own level. The query supplies a level when there is no lesson step.
+  function followLink() {
+    let target: HTMLElement | null = null;
+    try { target = document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch { /* malformed fragment */ }
+    const named = target?.closest<HTMLElement>('[data-show]')?.dataset.show;
+    const query = new URLSearchParams(location.search).get('level');
+    const linked = [named, query].find(level => level && valid.includes(level));
+    apply(linked ?? saved);
+    if (linked && target) requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
+  }
+
+  followLink();
+  addEventListener('hashchange', followLink);
 
   document.addEventListener('change', event => {
     const input = event.target as HTMLInputElement;
     if (input.name !== 'level' || !valid.includes(input.value)) return;
-    try { localStorage.setItem(KEY, input.value); } catch {}
-    apply(input.value);
+    saved = input.value;
+    try { localStorage.setItem(KEY, saved); } catch {}
+    apply(saved);
   });
 </script>

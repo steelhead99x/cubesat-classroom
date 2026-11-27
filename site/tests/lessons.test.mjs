@@ -31,3 +31,12 @@ test('lesson order numbers are 1 to n with no gaps', () => {
   const orders = ids.map(id => Number(readFileSync(new URL(`${id}.md`, dir), 'utf8').match(/^order: (\d+)$/m)[1])).sort((a, b) => a - b);
   assert.deepEqual(orders, orders.map((_, i) => i + 1));
 });
+
+test('lesson inline links keep the site base and format only their labels', async () => {
+  const { inline } = await import('../src/levels.ts');
+  assert.equal(inline('[**Low pass**](/games/catch-the-pass/#level=2)', '/cubesat-classroom'),
+    '<a href="/cubesat-classroom/games/catch-the-pass/#level=2"><strong>Low pass</strong></a>');
+  assert.equal(inline('[`logic.mjs`](https://example.com/**path**?a=1&b=2)'),
+    '<a href="https://example.com/**path**?a=1&amp;b=2"><code>logic.mjs</code></a>');
+  assert.equal(inline('[relative](//example.com) and `**literal**`'), 'relative and <code>**literal**</code>');
+});
