@@ -22,13 +22,14 @@ function init(root: HTMLElement) {
   let levelIndex = 0;
   let game: Game | null = null;
   let running = false, paused = false, countdown = 0;
+  let helpOpen = false;
   let slow = true; // Easy mode is on until the player turns it off.
   const howtoKey = 'catch-the-pass:how-to-seen';
   let liveSlot = -1;
   let last = performance.now();
   const keys = new Set<string>();
   let pointer: { az: number; el: number } | null = null;
-  let pointerDown = false;
+  let pointerId: number | null = null;
   const pops: { x: number; y: number; text: string; age: number }[] = [];
   const stations = new Map<string, { state: StationState; seen: number; demo?: boolean }>();
   const feed: string[] = [];
@@ -86,26 +87,37 @@ function init(root: HTMLElement) {
       b.setAttribute('aria-label', `Level ${i + 1}, ${G.LEVELS[i].name}, ${b.disabled ? 'locked' : s + ' of 3 stars'}`);
     });
   }
-  levelButtons.forEach((b, i) => b.addEventListener('click', () => { mode = 'missions'; levelIndex = i; sky?.stop(); setTab(); ready(); }));
+  levelButtons.forEach((b, i) => b.addEventListener('click', () => {
+    if (i === levelIndex) return;
+    levelIndex = i;
+    ready();
+  }));
 
+  const helpBtn = $<HTMLButtonElement>('[data-help]');
+  const pauseBtn = $<HTMLButtonElement>('[data-pause]');
+  const easyInput = $<HTMLInputElement>('[data-slow]');
   const tabs = [...root.querySelectorAll<HTMLButtonElement>('[data-mode]')];
   function setTab() {
-    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.mode === mode)));
+    tabs.forEach(t => t.setAttribute('aria-pressed', String(t.dataset.mode === mode)));
     $('[data-missions]').hidden = mode !== 'missions';
     $('[data-live]').hidden = mode !== 'live';
-    $<HTMLInputElement>('[data-slow]').disabled = mode === 'live';
+    $('[data-live-board]').hidden = mode !== 'live';
+    easyInput.disabled = mode === 'live';
     // The live pass runs on a shared clock, so it cannot be paused or restarted.
-    $<HTMLButtonElement>('[data-pause]').disabled = mode === 'live';
+    pauseBtn.disabled = mode === 'live';
     $<HTMLButtonElement>('[data-restart]').disabled = mode === 'live';
-    $('[data-pause]').textContent = 'Start';
+    pauseBtn.textContent = 'Start';
     renderLevels();
   }
   tabs.forEach(t => t.addEventListener('click', () => {
+    if (t.dataset.mode === mode) return;
+    setHelp(false);
+    clearAim();
     mode = t.dataset.mode as 'missions' | 'live';
     setTab();
     if (mode === 'missions') { sky?.stop(); stations.clear(); ready(); } else void joinLive();
   }));
-  $<HTMLInputElement>('[data-slow]').addEventListener('change', e => { slow = (e.target as HTMLInputElement).checked; if (mode === 'missions') ready(); });
+  easyInput.addEventListener('change', e => { slow = (e.target as HTMLInputElement).checked; if (mode === 'missions') ready(); });
 
   function currentLevel(): Level {
     const level = mode === 'live' ? G.LIVE : G.LEVELS[levelIndex];
@@ -115,70 +127,108 @@ function init(root: HTMLElement) {
   function ready() {
     game = G.createGame(currentLevel(), (Math.random() * 2 ** 31) | 0);
     running = false; paused = false; countdown = 0;
-    if (mode === 'missions') $('[data-pause]').textContent = 'Start';
+    clearAim();
+    pauseBtn.textContent = 'Start';
+    easyInput.disabled = false;
     show(`<h3>${mode === 'live' ? 'Live sky' : `Level ${levelIndex + 1}: ${G.LEVELS[levelIndex].name}`}</h3>
       <p>${currentLevel().tip}</p>
       <p class="goal">Goal: ${currentLevel().goal.map((g, i) => `${'★'.repeat(i + 1)} ${g} packets`).join(' · ')}</p>
       <button type="button" class="go" data-go>▶ Start</button>`);
     hud(); draw();
-    if (!seenHowto()) showHowto();
+    if (!seenHowto() && !helpOpen) showHowto();
   }
 
   // ---- The first-visit "How to play" card ----
   function seenHowto() { try { return localStorage.getItem(howtoKey) === '1'; } catch { return false; } }
+  function setHelp(open: boolean) {
+    helpOpen = open;
+    canvas.parentElement!.dataset.panel = open ? 'howto' : '';
+  }
+
   function showHowto() {
-    if (running && mode === 'missions' && !paused) setPaused(true);
-    const stage = canvas.parentElement!;
-    stage.dataset.panel = 'howto';
+    if (helpOpen) return;
+    if (running && mode === 'missions' && !paused) setPaused(true, false);
+    clearAim();
+    setHelp(true);
     show(`<h3>How to play</h3>
       <ol class="steps">
-        <li><span class="pic" aria-hidden="true">🛰️</span><b>1. Find the satellite</b><span>It rises on the left and crosses the sky.</span></li>
-        <li><span class="pic" aria-hidden="true">📡</span><b>2. Keep the circle on it</b><span>Use the ▲ ◀ ▶ ▼ buttons, drag on the sky, or press the arrow keys.</span></li>
-        <li><span class="pic" aria-hidden="true">📦</span><b>3. Catch packets</b><span>A green signal bar means you are catching packets and earning credits. Lost it? Try 🐢 Far.</span></li>
+        <li><span class="pic" aria-hidden="true">🛰️</span><b>Find the satellite</b><span>It rises on the left and crosses the sky.</span></li>
+        <li><span class="pic" aria-hidden="true">📡</span><b>Keep the circle on it</b><span>Use the ▲ ◀ ▶ ▼ buttons, drag on the sky, or press the arrow keys.</span></li>
+        <li><span class="pic" aria-hidden="true">📦</span><b>Catch packets</b><span>A green signal bar means you are catching packets and earning credits. Lost it? Try Far.</span></li>
       </ol>
       <button type="button" class="go" data-howto>Got it!</button>`);
     const got = overlay.querySelector<HTMLButtonElement>('[data-howto]')!;
-    got.addEventListener('click', () => {
-      try { localStorage.setItem(howtoKey, '1'); } catch { /* private mode */ }
-      stage.dataset.panel = '';
-      if (mode === 'missions' && !running) ready(); else if (paused) setPaused(false); else overlay.hidden = true;
-    });
+    got.addEventListener('click', closeHowto);
     got.focus({ preventScroll: true });
   }
-  $('[data-help]').addEventListener('click', showHowto);
+  function closeHowto() {
+    try { localStorage.setItem(howtoKey, '1'); } catch { /* private mode */ }
+    setHelp(false);
+    if (mode === 'missions' && !running) {
+      ready();
+      overlay.querySelector<HTMLButtonElement>('[data-go]')?.focus({ preventScroll: true });
+    } else if (paused) setPaused(true);
+    else {
+      hideOverlay();
+      helpBtn.focus({ preventScroll: true });
+    }
+  }
+  helpBtn.addEventListener('click', showHowto);
+
+  function hideOverlay() {
+    overlay.hidden = true;
+    canvas.inert = false;
+  }
 
   function show(html: string) {
     overlay.innerHTML = html;
     overlay.hidden = false;
+    canvas.inert = true;
     overlay.querySelector<HTMLButtonElement>('[data-go]')?.addEventListener('click', start);
     overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { levelIndex++; renderLevels(); ready(); start(); });
     overlay.querySelector<HTMLButtonElement>('[data-again]')?.addEventListener('click', () => { ready(); start(); });
   }
 
   function start() {
-    if (mode === 'live') return;
+    if (mode === 'live' || helpOpen) return;
     if (!game || game.done) ready();
-    overlay.hidden = true;
+    hideOverlay();
     running = true; paused = false; countdown = 3;
-    $('[data-pause]').textContent = 'Pause';
-    $('[data-pause]').setAttribute('aria-pressed', 'false');
-    canvas.focus();
+    easyInput.disabled = true;
+    pauseBtn.textContent = 'Pause';
+    canvas.focus({ preventScroll: true });
     announce('Pass starting. Satellite rises on the left.');
   }
 
-  function setPaused(p: boolean) {
-    if (!running || mode === 'live') return;
+  function setPaused(p: boolean, focus = true) {
+    if (!running || mode === 'live' || helpOpen) return;
     paused = p;
-    $('[data-pause]').textContent = p ? 'Resume' : 'Pause';
-    $('[data-pause]').setAttribute('aria-pressed', String(p));
-    if (p) show(`<h3>Paused</h3><p>Press P or the button to keep going.</p><button type="button" class="go" data-resume>Resume</button>`);
-    else overlay.hidden = true;
-    overlay.querySelector('[data-resume]')?.addEventListener('click', () => setPaused(false));
+    clearAim();
+    pauseBtn.textContent = p ? 'Resume' : 'Pause';
+    if (p) {
+      show(`<h3>Paused</h3><p>Press P or the button to keep going.</p><button type="button" class="go" data-resume>Resume</button>`);
+      const resume = overlay.querySelector<HTMLButtonElement>('[data-resume]')!;
+      resume.addEventListener('click', () => setPaused(false));
+      if (focus) resume.focus({ preventScroll: true });
+    } else {
+      hideOverlay();
+      canvas.focus({ preventScroll: true });
+    }
     announce(p ? 'Paused.' : 'Resumed.');
   }
-  $('[data-pause]').addEventListener('click', () => (running ? setPaused(!paused) : start()));
-  $('[data-restart]').addEventListener('click', () => { if (mode === 'missions') { ready(); start(); } });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused) setPaused(true); });
+  pauseBtn.addEventListener('click', () => {
+    if (helpOpen) { closeHowto(); return; }
+    if (running) setPaused(!paused);
+    else start();
+  });
+  $('[data-restart]').addEventListener('click', () => {
+    if (mode === 'missions' && !helpOpen) { ready(); start(); }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    clearAim();
+    if (running && !paused) setPaused(true, false);
+  });
 
   // ---- SF and transmitter commands ----
   const sfButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-sf]')];
@@ -188,22 +238,28 @@ function init(root: HTMLElement) {
   // ---- Keyboard: arrows or WASD aim, 1/2/3 SF, Space transmitter, P pause, Enter start. ----
   const aimKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'];
   root.addEventListener('keydown', e => {
-    if ((e.target as HTMLElement).matches('input, select, textarea')) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || (e.target as HTMLElement).matches('input, select, textarea')) return;
+    if (helpOpen) {
+      if (e.key === 'Escape') { e.preventDefault(); closeHowto(); }
+      return;
+    }
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const inCanvas = e.target === canvas;
     if (aimKeys.includes(k) && inCanvas) { keys.add(k); pointer = null; e.preventDefault(); }
     else if (k === '1' || k === '2' || k === '3') { if (game) G.setSf(game, G.SF_ORDER[Number(k) - 1]); hud(); }
     else if (k === ' ' && inCanvas) { if (game) G.setTransmit(game, !game.transmit); hud(); e.preventDefault(); }
-    else if (k === 'p' || (k === 'Escape' && running)) setPaused(!paused);
+    else if (!e.repeat && (k === 'p' || k === 'Escape') && running && mode === 'missions') { e.preventDefault(); setPaused(!paused); }
     else if (k === 'Enter' && inCanvas && !running && mode === 'missions') { e.preventDefault(); start(); }
   });
   root.addEventListener('keyup', e => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
   canvas.addEventListener('blur', () => keys.clear());
+  window.addEventListener('blur', clearAim);
 
   // ---- The big arrow buttons: hold one to keep turning (they work like the arrow keys). ----
   for (const b of root.querySelectorAll<HTMLButtonElement>('[data-aim]')) {
     const key = b.dataset.aim!;
     const down = (e: PointerEvent) => {
+      if (e.button !== 0 || helpOpen) return;
       e.preventDefault();
       if (!running && mode === 'missions' && overlay.hidden) start();
       keys.add(key); pointer = null; b.dataset.held = 'true';
@@ -215,15 +271,35 @@ function init(root: HTMLElement) {
     // Keyboard users: Enter or Space on a focused arrow button nudges the antenna.
     b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); keys.add(key); } });
     b.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') up(); });
+    b.addEventListener('blur', up);
     b.addEventListener('contextmenu', e => e.preventDefault());
   }
 
   // ---- Pointer: drag on touch; on desktop the antenna follows the mouse over the sky. ----
   const at = (e: PointerEvent) => { const r = canvas.getBoundingClientRect(); return fromXY(e.clientX - r.left, e.clientY - r.top); };
-  canvas.addEventListener('pointerdown', e => { pointerDown = true; pointer = at(e); canvas.setPointerCapture(e.pointerId); if (!running && mode === 'missions' && overlay.hidden) start(); });
-  canvas.addEventListener('pointermove', e => { if (pointerDown || e.pointerType === 'mouse') pointer = at(e); });
-  canvas.addEventListener('pointerup', e => { pointerDown = false; if (e.pointerType !== 'mouse') pointer = null; });
-  canvas.addEventListener('pointerleave', () => { if (!pointerDown) pointer = null; });
+  canvas.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || pointerId !== null) return;
+    pointerId = e.pointerId;
+    pointer = at(e);
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (e.pointerId === pointerId || (pointerId === null && e.pointerType === 'mouse')) pointer = at(e);
+  });
+  const endPointer = (e: PointerEvent) => {
+    if (pointerId !== e.pointerId) return;
+    pointerId = null;
+    if (e.type !== 'pointerup' || e.pointerType !== 'mouse') pointer = null;
+  };
+  for (const event of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) canvas.addEventListener(event, endPointer);
+  canvas.addEventListener('pointerleave', () => { if (pointerId === null) pointer = null; });
+
+  function clearAim() {
+    keys.clear();
+    pointerId = null;
+    pointer = null;
+    for (const b of root.querySelectorAll<HTMLElement>('[data-held="true"]')) b.dataset.held = 'false';
+  }
 
   function input() {
     const r = { az: 0, el: 0 };
@@ -249,7 +325,7 @@ function init(root: HTMLElement) {
   const skyStatus = $('[data-sky-status]');
   async function joinLive() {
     stations.clear(); feed.length = 0;
-    overlay.hidden = true;
+    hideOverlay();
     liveSlot = -1;
     running = true; paused = false;
     skyStatus.textContent = 'Loading the live sky…';
@@ -318,10 +394,10 @@ function init(root: HTMLElement) {
     if (slot !== liveSlot) {
       liveSlot = slot;
       game = G.createGame(G.LIVE, seed);
-      if (elapsed > 1) { game.t = Math.min(elapsed, G.LIVE.duration); }
       pops.length = 0;
     }
-    return elapsed;
+    const skipped = G.syncLiveTime(game!, elapsed);
+    return skipped ? 0 : Math.max(0, elapsed - game!.t);
   }
 
   // ---- Main loop ----
@@ -329,8 +405,8 @@ function init(root: HTMLElement) {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (mode === 'live' && running) {
-      const elapsed = liveTick();
-      if (game && !game.done && elapsed <= G.LIVE.duration) update(dt);
+      const pending = liveTick();
+      if (game && !game.done && (pending > 0 || game.t >= G.LIVE.duration)) update(Math.min(pending, dt));
       else if (game) game.events.length = 0;
       moveDemoStations(dt);
       sky?.sendStation({ az: round(game!.ant.az), el: round(game!.ant.el), sf: game!.sf, snr: round(game!.snr), locked: game!.locked, rx: game!.rx, score: game!.score, slot: liveSlot });
@@ -377,7 +453,8 @@ function init(root: HTMLElement) {
     beep(s ? 880 : 220, 300, 'triangle');
     if (mode === 'live') { announce(`Pass over. You caught ${game.rx} packets. The next live pass starts at the top of the minute.`); return; }
     running = false;
-    $('[data-pause]').textContent = 'Start';
+    easyInput.disabled = false;
+    pauseBtn.textContent = 'Start';
     const id = G.LEVELS[levelIndex].id;
     if (s > (best[id] ?? 0)) { best[id] = s; try { localStorage.setItem(bestKey, JSON.stringify(best)); } catch { /* private mode */ } }
     renderLevels();

@@ -123,3 +123,22 @@ test('easy mode gives longer passes, a faster antenna and a wider beam, with the
     assert.equal(level.beam, G.LEVELS.find(l => l.id === level.id).beam, 'the level itself is unchanged');
   }
 });
+
+test('returning to a live pass skips unattended time without awarding packets', () => {
+  const game = G.createGame(G.LIVE, 5);
+  G.step(game, {}, 0.1);
+  assert.ok(game.packet.elapsed > 0);
+  game.streak = 3;
+  assert.equal(G.syncLiveTime(game, 0.2), false);
+  assert.equal(G.syncLiveTime(game, 18), true);
+  assert.equal(game.t, 18);
+  assert.equal(game.packet.elapsed, 0);
+  assert.equal(game.streak, 0);
+  assert.equal(game.seq, 0);
+  assert.equal(game.score, 0);
+  assert.equal(G.syncLiveTime(game, 17), false);
+  assert.equal(G.syncLiveTime(game, G.LIVE_SLOT_SECONDS), true);
+  G.step(game, {}, 0);
+  assert.equal(game.done, true);
+  assert.equal(game.seq, 0);
+});

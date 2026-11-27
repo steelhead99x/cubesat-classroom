@@ -151,6 +151,17 @@ export function createGame(level, seed = 1) {
   };
 }
 
+/** Skip time a live station missed while away, without crediting packets it never received. */
+export function syncLiveTime(game, elapsed) {
+  const target = Math.min(elapsed, game.level.duration);
+  if (game.done || target <= game.t || (target - game.t < 0.75 && target < game.level.duration)) return false;
+  game.t = target;
+  game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity };
+  game.streak = 0;
+  game.locked = false;
+  return true;
+}
+
 /** Commands the satellite to another spreading factor. The packet on air is abandoned. */
 export function setSf(game, sf) {
   if (!SF[sf] || sf === game.sf) return;

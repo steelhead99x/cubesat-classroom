@@ -69,16 +69,24 @@ function start(root: HTMLElement) {
   let announced = '';
   let menuNote = '';
   let netDetail = '';
+  let joinCode = new URLSearchParams(location.hash.slice(1)).get('room') ?? '';
   let lastTurnKey = '';
 
   function seenHowto() { try { return localStorage.getItem(HOWTO_KEY) === '1'; } catch { return false; } }
   function closeHowto() { howto = false; try { localStorage.setItem(HOWTO_KEY, '1'); } catch { /* private mode */ } render(); }
   helpBtn.addEventListener('click', () => { howto = true; render(); });
-  fullBtn.addEventListener('click', () => {
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else void root.requestFullscreen?.().catch(() => {});
+  fullBtn.hidden = !document.fullscreenEnabled || !root.requestFullscreen;
+  fullBtn.addEventListener('click', async () => {
+    try {
+      if (document.fullscreenElement === root) await document.exitFullscreen();
+      else await root.requestFullscreen();
+    } catch { say('Full screen is unavailable. You can keep playing here.'); }
   });
-  document.addEventListener('fullscreenchange', () => fullBtn.setAttribute('aria-pressed', String(!!document.fullscreenElement)));
+  document.addEventListener('fullscreenchange', () => {
+    const active = document.fullscreenElement === root;
+    fullBtn.setAttribute('aria-pressed', String(active));
+    fullBtn.title = active ? 'Exit full screen' : 'Full screen';
+  });
 
   // ---- sound (off until asked for) ----
   let audio: AudioContext | null = null;
@@ -345,16 +353,19 @@ function start(root: HTMLElement) {
     else if (mode === 'online' && !host) { kind = 'lobby'; html = lobbyHtml(); }
     else if (banner) { kind = 'banner'; html = `<h3>${esc(banner.title)}</h3><p>${esc(banner.text)}</p>${scoresHtml()}<div class="row"><button type="button" class="go big" data-act="banner">${match?.phase === 'over' ? 'Back to the start' : 'Next ▶'}</button></div>`; }
     else if (match && !anim && match.phase === 'shop') { kind = 'shop'; html = shopHtml(); }
+    const changedPanel = overlay.dataset.kind !== kind;
+    const focusWasInside = overlay.contains(document.activeElement);
     overlay.hidden = !html;
     overlay.dataset.kind = kind;
+    canvas.inert = !!html;
     if (overlay.dataset.html !== html) {
-      const focused = overlay.contains(document.activeElement) ? (document.activeElement as HTMLElement).dataset.act ?? '' : null;
+      const focused = focusWasInside ? (document.activeElement as HTMLElement).dataset.act : null;
       overlay.innerHTML = html ? `<div class="panel">${html}</div>` : '';
       overlay.dataset.html = html;
-      if (html) {
+      if (html && (focusWasInside || (changedPanel && root.contains(document.activeElement)))) {
         const target = (focused && overlay.querySelector<HTMLElement>(`[data-act="${focused}"]:not(:disabled)`)) || overlay.querySelector<HTMLElement>('input, .go:not(:disabled), button:not(:disabled)');
         target?.focus({ preventScroll: true });
-      } else if (overlay.contains(document.activeElement) || document.activeElement === document.body) canvas.focus({ preventScroll: true });
+      } else if (!html && (focusWasInside || root.contains(document.activeElement))) canvas.focus({ preventScroll: true });
     }
   }
 
@@ -377,9 +388,8 @@ function start(root: HTMLElement) {
       <p class="small">${esc(menuNote)}</p>
       <div class="row"><button type="button" data-act="back">◀ Back</button></div>`;
     if (menuStep === 'join') {
-      const code = new URLSearchParams(location.hash.slice(1)).get('room') ?? '';
       return `<h3>Join a room</h3><p>Type the 5-letter code your friend sees.</p>
-        <div class="row"><input data-code class="code-in" aria-label="Room code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="ABC12" value="${esc(code)}" /></div>
+        <div class="row"><input data-code class="code-in" aria-label="Room code" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="ABC12" value="${esc(joinCode)}" /></div>
         <div class="row"><button type="button" class="go big" data-act="join">Join ▶</button></div>
         <p class="small" role="alert">${esc(menuNote)}</p>
         <div class="row"><button type="button" data-act="back">◀ Back</button></div>`;
@@ -440,9 +450,9 @@ function start(root: HTMLElement) {
   }
 
   function joinTyped() {
-    const raw = overlay.querySelector<HTMLInputElement>('[data-code]')?.value ?? '';
+    joinCode = overlay.querySelector<HTMLInputElement>('[data-code]')?.value ?? '';
     // Easy entry: ignore spaces and dashes, any case, and the look-alikes O/0 and I/1 are never used.
-    const code = raw.toUpperCase().replace(/[\s-]/g, '');
+    const code = joinCode.toUpperCase().replace(/[\s-]/g, '');
     if (!Room.ROOM_CODE.test(code)) { menuNote = 'Room codes have 5 letters and numbers, like K7QX2.'; return renderOverlay(); }
     menuNote = '';
     void startOnline(code, false);
@@ -601,46 +611,55 @@ function start(root: HTMLElement) {
     renderHud();
   };
   canvas.addEventListener('pointerdown', e => {
-    if (!canAct() || e.button > 0) return;
+    if (!canAct() || e.button !== 0 || dragId !== -1) return;
     e.preventDefault();
     dragId = e.pointerId;
     canvas.setPointerCapture(e.pointerId);
     aimAt(e);
   });
   canvas.addEventListener('pointermove', e => { if (e.pointerId === dragId && canAct()) aimAt(e); });
-  const endDrag = (e: PointerEvent) => { if (e.pointerId !== dragId) return; dragId = -1; drag = null; say(`Aim ${shooter().angle} degrees, power ${shooter().power}.`); };
+  const endDrag = (e: PointerEvent) => {
+    if (e.pointerId !== dragId) return;
+    dragId = -1; drag = null;
+    if (canAct()) say(`Aim ${shooter().angle} degrees, power ${shooter().power}.`);
+  };
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener('lostpointercapture', endDrag);
 
   // The buttons: hold to keep turning.
   const parseAdj = (b: HTMLElement) => { const [k, d] = (b.dataset.adj ?? '').split(':'); return [k as 'angle' | 'power' | 'weapon', Number(d)] as const; };
   let hold: ReturnType<typeof setTimeout> | undefined;
-  let lastPointer = 0;
   const stopHold = () => { clearTimeout(hold); hold = undefined; };
   hud.controls.addEventListener('pointerdown', e => {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-adj]');
-    if (!btn || btn.disabled) return;
-    lastPointer = Date.now();
+    if (!btn || btn.disabled || e.button !== 0 || !e.isPrimary) return;
+    stopHold();
     const [kind, d] = parseAdj(btn);
     adjust(kind, d);
     if (kind === 'weapon') return;
     let n = 0;
-    const again = () => { adjust(kind, d * (n++ > 12 ? 2 : 1)); hold = setTimeout(again, 60); };
-    stopHold();
+    const again = () => {
+      if (!canAct()) return stopHold();
+      adjust(kind, d * (n++ > 12 ? 2 : 1));
+      hold = setTimeout(again, 60);
+    };
+    btn.setPointerCapture(e.pointerId);
     hold = setTimeout(again, 350);
   });
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) hud.controls.addEventListener(ev, stopHold);
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) hud.controls.addEventListener(ev, stopHold);
+  window.addEventListener('blur', stopHold);
   hud.controls.addEventListener('click', e => {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
     if (!btn) return;
     if (btn.dataset.fire !== undefined) return fireNow();
     // A tap or mouse click was already handled on pointerdown; this is the keyboard.
-    if (Date.now() - lastPointer < 800) return;
+    if (e.detail > 0) return;
     const [kind, d] = parseAdj(btn);
     if (kind) adjust(kind, d);
   });
 
-  document.addEventListener('keydown', e => {
+  root.addEventListener('keydown', e => {
     const t = e.target as HTMLElement;
     if (t.closest('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
     if (mode === 'menu' || howto) return;
@@ -654,10 +673,10 @@ function start(root: HTMLElement) {
       case 'q': case 'Q': adjust('weapon', -1); break;
       case 'e': case 'E': adjust('weapon', 1); break;
       case ' ': case 'Enter':
-        if (t.closest('button')) { handled = false; break; }
+        if (t !== canvas || e.repeat) { handled = false; break; }
         fireNow(); break;
-      case 'p': case 'P': case 'Escape': if (document.fullscreenElement && e.key === 'Escape') { handled = false; break; } togglePause(); break;
-      case 'm': case 'M': toggleSound(); break;
+      case 'p': case 'P': case 'Escape': if (e.repeat || document.fullscreenElement && e.key === 'Escape') { handled = false; break; } togglePause(); break;
+      case 'm': case 'M': if (!e.repeat) toggleSound(); break;
       default: handled = false;
     }
     if (handled) e.preventDefault();
