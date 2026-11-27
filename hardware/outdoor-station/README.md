@@ -26,6 +26,8 @@ The [classroom kit](../amsat-cubesatsim/README.md)'s payload, sealed in a box fo
 - **Supports:** none. The box prints on its back; the lid prints upside down, on its top. The rim's overhang has a 45° slope under it, and the deck under the battery is bridged between ribs 10 mm apart.
 - **Tripod-thread coupon:** two sockets in a block as thick as the box's boss. The plain one is the box's thread. The one with a dot is 0.15 mm looser, for printers that print holes small. Screw your tripod's screw into each. If the plain one is too tight and the dotted one is right, tell us: the box's thread is one number (`thread_clear`), and the files can be regenerated for it.
 
+**Printed so far (hardware bench, Nov 26, Bambu Lab P1S, PLA):** the outdoor test coupons. The latch coupon snaps on and holds. On the pin ladder, 1 dot still fits best. On the tripod-thread coupon, the plain socket (the box's thread) works with a tripod screw. So nothing in the design changed. The box, lid and plates will be printed in ASA; print the coupons again in ASA first and check the same three things. The box and lid haven't been printed or water-tested yet.
+
 Every part is also in [stl/](stl/), in print orientation.
 
 ## Buy
