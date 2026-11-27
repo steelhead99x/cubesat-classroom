@@ -21,10 +21,29 @@ export const levels = [
 
 export type LevelId = typeof levels[number]['id'];
 
-/** Minimal inline formatting for quest steps: **bold** and `code`. */
-export function inline(text: string): string {
-  return text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`(.+?)`/g, '<code>$1</code>');
+/**
+ * Minimal inline formatting for quest steps: **bold**, `code` and [links](/path/). A link to a
+ * site path (starting with /) gets the site's base path; # anchors and https links are kept;
+ * anything else stays plain text.
+ */
+export function inline(text: string, base = ''): string {
+  const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const format = (value: string) => escape(value).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  const tokens = /`([^`]+)`|\[([^\]]+)\]\(([^)\s]+)\)/g;
+  let out = '', end = 0;
+  for (const match of text.matchAll(tokens)) {
+    const [whole, code, label, href] = match;
+    out += format(text.slice(end, match.index));
+    end = match.index + whole.length;
+    if (code !== undefined) {
+      out += `<code>${escape(code)}</code>`;
+      continue;
+    }
+    const local = /^\/(?![/\\])/.test(href) && !href.includes('\\');
+    const allowed = local || href.startsWith('#') || href.startsWith('https://');
+    const title = format(label).replace(/`(.+?)`/g, '<code>$1</code>');
+    const url = escape((local ? base : '') + href).replace(/"/g, '&quot;');
+    out += allowed ? `<a href="${url}">${title}</a>` : title;
+  }
+  return out + format(text.slice(end));
 }

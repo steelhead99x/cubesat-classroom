@@ -143,10 +143,23 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
         <h2 id="real-title">What is real here</h2>
         <div class="real mt-3 space-y-3">
           <p set:html={`A ${wiki('ground-station', 'ground station')} must point its antenna at a ${wiki('cubesat', 'CubeSat')} in ${wiki('leo', 'low Earth orbit')} for the few minutes it is overhead. Low in the sky the satellite is up to five times farther away, so its ${wiki('downlink', 'downlink')} is weaker.`} />
-          <p set:html={`Many CubeSats send ${wiki('telemetry', 'telemetry')} with ${wiki('lora', 'LoRa')} radios at ${wiki('915-mhz', '915 MHz')}. Each spreading factor really does decode at a different ${wiki('rssi-snr', 'signal-to-noise ratio')}: SF7 needs about −7.5 dB and SF12 works down to −20 dB, but each SF12 packet takes about 30 times longer to send. The ${wiki('ism-band', 'ISM band')} is shared with other devices, which is the noise you have to avoid.`} />
+          <p set:html={`Many CubeSats send ${wiki('telemetry', 'telemetry')} with ${wiki('lora', 'LoRa')} radios at ${wiki('915-mhz', '915 MHz')}. Each spreading factor really does decode at a different ${wiki('rssi-snr', 'signal-to-noise ratio')}: SF7 needs about −7.5 dB and SF12 works down to −20 dB, and each SF12 symbol lasts 32 times as long at the same bandwidth. Packet airtime also depends on the payload and format. The ${wiki('ism-band', 'ISM band')} is shared with other devices, which is the noise you have to avoid.`} />
           <p set:html={`The live sky sends each station's antenna and packets over ${wiki('moq', 'Media over QUIC (MoQ)')}, the same relay technology the classroom plans to use to share real satellite passes between schools.`} />
           <p class="small">The game adapts the CSC-R1 pedal controls for a simulated 915 MHz LoRa receiver. The physical CSC-R1 receiver is designed for 2 m and 70 cm. Passes and packet airtimes are shortened for play.</p>
         </div>
+      </section>
+
+      <section class="mt-8" aria-labelledby="links-title">
+        <h2 id="links-title">Link straight to a level</h2>
+        <p class="mt-3">Put one of these on a slide or in a lesson to open the game at that level. A level that is not open yet in the visitor’s browser says which level to play first. The <a href={base + '/quests/catch-the-pass/'}>Catch the Pass lesson</a> uses the same links.</p>
+        <ul class="level-links mt-3">
+          {LEVELS.map((l, i) => {
+            const slug = l.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            return <li><a href={`#level=${slug}`}>Level {i + 1}: {l.name}</a> <code>#level={slug}</code></li>;
+          })}
+          <li><a href="#mode=live">Live sky</a> <code>#mode=live</code></li>
+        </ul>
+        <p class="mt-3 text-sm text-muted">Each step under How to play has its own link, such as <a class="font-semibold text-accent underline underline-offset-4" href="#step-radio"><code>#step-radio</code></a>.</p>
       </section>
     </div>
   </div>
@@ -158,6 +171,9 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
 </script>
 
 <style>
+  .level-links { display: grid; gap: .35rem; padding: 0; list-style: none; }
+  .level-links a { font-weight: 600; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
+  .level-links code { margin-left: .4rem; font-size: .8rem; color: var(--color-muted); }
   .ctp { --line: #2b3a85; --panel: #121a46; --gold: #ffd23f; background: #0b1240; color: #e8ecff; border-radius: .9rem; padding: .6rem; box-shadow: 0 10px 40px rgb(8 12 40 / .35); }
   .ctp button { min-height: 44px; padding: .45rem .85rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--panel); color: #fff; font: 700 .95rem var(--font-sans); touch-action: manipulation; }
   .ctp button:hover:not(:disabled) { filter: brightness(1.15); }
@@ -214,6 +230,20 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
   .numbers dd { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
   .meter { display: grid; gap: .25rem; font-family: var(--font-mono); }
   .meter .t-label { font-size: .7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* On a phone the two meters share a row: let their labels wrap instead of cutting off. */
+  @media (max-width: 480px) { .meter .t-label { white-space: normal; line-height: 1.25; flex-wrap: wrap; } }
+  .overlay :global(.tip) { max-width: 34rem; }
+  /* After a pass the results card stands in for the sky, at its own height. */
+  .ctp[data-results] .stage canvas { visibility: hidden; height: 0 !important; }
+  .ctp[data-results] .overlay { position: relative; inset: auto; padding: 1.25rem 1rem; }
+  .overlay :global(.debrief) { margin: 0; width: min(100%, 26rem); }
+  .overlay :global(.debrief svg) { display: block; width: 100%; height: auto; background: rgb(255 255 255 / .04); border-radius: .5rem; }
+  .overlay :global(.debrief figcaption) { margin-top: .25rem; font: .72rem/1.4 var(--font-mono); opacity: .85; }
+  .overlay :global(.debrief .k) { display: inline-block; width: .8rem; height: .25rem; margin: 0 .25rem 0 .5rem; vertical-align: middle; border-radius: 2px; }
+  .overlay :global(.debrief .k.sig) { background: #7df0a6; }
+  .overlay :global(.debrief .k.need) { background: repeating-linear-gradient(90deg, #ffd23f 0 4px, transparent 4px 7px); }
+  .overlay :global(.debrief .k.ok) { width: .25rem; height: .6rem; background: #7df0a6; }
+  .overlay :global(.debrief .k.lost) { width: .25rem; height: .6rem; background: #ef6b6c; }
   .bar { position: relative; height: .7rem; background: #1b2550; border-radius: 999px; overflow: hidden; }
   .bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #ffb13b, #ffd23f); border-radius: 999px; transition: width .15s linear; }
   .bar i[data-ok="true"] { background: linear-gradient(90deg, #3fbf7f, #7ff0a8); }

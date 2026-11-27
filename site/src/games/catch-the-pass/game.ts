@@ -10,6 +10,8 @@ type Game = ReturnType<typeof G.createGame>;
 type Level = (typeof G.LEVELS)[number] | typeof G.LIVE;
 type Antenna = keyof typeof G.ANTENNAS;
 
+/** The site's base path ("/cubesat-classroom" on GitHub Pages, "" on cubesatclass.org). */
+const siteBase = import.meta.env.BASE_URL.replace(/\/$/, '');
 const root = document.querySelector<HTMLElement>('[data-ctp]');
 if (root) init(root);
 
@@ -37,12 +39,13 @@ function init(root: HTMLElement) {
   })();
   const prefsKey = 'catch-the-pass:prefs';
   const prefs = (() => { try { const p = JSON.parse(localStorage.getItem(prefsKey) ?? '{}'); return p && typeof p === 'object' ? p : {}; } catch { return {}; } })();
-  const savePrefs = () => { try { localStorage.setItem(prefsKey, JSON.stringify({ easy: slow, level: levelIndex, antenna: antennaChoice })); } catch { /* private mode */ } };
+  const savePrefs = () => { try { localStorage.setItem(prefsKey, JSON.stringify({ easy: slow, level: savedLevel, antenna: antennaChoice })); } catch { /* private mode */ } };
   let antennaChoice = typeof prefs.antenna === 'string' && Object.hasOwn(G.ANTENNAS, prefs.antenna) ? prefs.antenna as Antenna : '';
   const receiver = { ...G.DEFAULT_RECEIVER };
 
   let mode: 'missions' | 'live' = 'missions';
-  let levelIndex = 0;
+  let levelIndex = 0, savedLevel = 0;
+  let linkedEntry = false;
   let game: Game | null = null;
   let running = false, paused = false, countdown = 0;
   let helpOpen = false;
@@ -89,21 +92,26 @@ function init(root: HTMLElement) {
     az: Math.max(-90, Math.min(90, (x - pad.l) / (W() - pad.l - pad.r) * 180 - 90)),
     el: Math.max(0, Math.min(90, (H() - pad.b - y) / (H() - pad.t - pad.b) * 90)),
   });
+  const dashEl = $<HTMLElement>('.dash'), deckEl = $<HTMLElement>('.deck');
   function resize() {
-    const w = canvas.clientWidth, h = Math.round(Math.min(w * (w < 560 ? 0.85 : 0.56), Math.max(260, innerHeight * 0.62)));
+    // Leave room for the numbers above and the controls below, so a whole pass can be played
+    // without scrolling: the signal bar, the sky and the buttons all stay on screen.
+    const chrome = dashEl.offsetHeight + ($<HTMLElement>('[data-now]').offsetHeight) + deckEl.offsetHeight + 36;
+    const w = canvas.clientWidth, h = Math.round(Math.min(w * (w < 560 ? 0.85 : 0.56), Math.max(220, innerHeight - chrome)));
     canvas.style.height = h + 'px';
     canvas.width = Math.round(w * devicePixelRatio); canvas.height = Math.round(h * devicePixelRatio);
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
     draw();
   }
   new ResizeObserver(resize).observe(canvas);
+  addEventListener('resize', resize);
 
   const stars = Array.from({ length: 70 }, (_, i) => { const r = G.rng(i + 1); return { x: r(), y: r() * 0.85, s: r() * 1.4 + 0.3, p: r() * 6 }; });
 
   // ---- Levels and modes ----
   const levelButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-level]')];
   function unlocked(i: number) { return i === 0 || (best[G.LEVELS[i - 1].id] ?? 0) > 0; }
-  if (Number.isInteger(prefs.level) && prefs.level > 0 && prefs.level < G.LEVELS.length && unlocked(prefs.level)) levelIndex = prefs.level;
+  if (Number.isInteger(prefs.level) && prefs.level > 0 && prefs.level < G.LEVELS.length && unlocked(prefs.level)) savedLevel = levelIndex = prefs.level;
   function renderLevels() {
     levelButtons.forEach((b, i) => {
       const s = best[G.LEVELS[i].id] ?? 0;
@@ -117,7 +125,7 @@ function init(root: HTMLElement) {
     if (i === levelIndex) return;
     // A pass in flight is not thrown away by a stray tap: pause it first to switch levels.
     if (running && !paused && game && !game.done) { announce('Pause the pass first to pick another level.'); return; }
-    levelIndex = i;
+    savedLevel = levelIndex = i;
     savePrefs();
     ready();
   }));
@@ -172,7 +180,7 @@ function init(root: HTMLElement) {
     hud(); draw();
     // Shown on a first visit without moving focus: the page has only just loaded, so keyboard
     // and screen-reader users start at the top (skip link, header) like on every other page.
-    if (!seenHowto() && !helpOpen) showHowto(false);
+    if (!linkedEntry && !seenHowto() && !helpOpen) showHowto(false);
   }
 
   // ---- The first-visit "How to play" card ----
@@ -222,14 +230,18 @@ function init(root: HTMLElement) {
   function hideOverlay() {
     overlay.hidden = true;
     canvas.inert = false;
+    delete root.dataset.results;
   }
 
-  function show(html: string) {
+  /** Shows a card over the sky. A results card (with its debrief) takes the sky's place instead,
+   * at its own height, so nothing in it is cut off on a short screen. */
+  function show(html: string, results = html.includes('class="debrief"')) {
     overlay.innerHTML = html;
     overlay.hidden = false;
     canvas.inert = true;
+    if (results) root.dataset.results = 'true'; else delete root.dataset.results;
     overlay.querySelector<HTMLButtonElement>('[data-go]')?.addEventListener('click', start);
-    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { levelIndex++; savePrefs(); ready(); start(); });
+    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { savedLevel = ++levelIndex; savePrefs(); ready(); start(); });
     overlay.querySelector<HTMLButtonElement>('[data-again]')?.addEventListener('click', () => { ready(); start(); });
   }
 
@@ -241,7 +253,15 @@ function init(root: HTMLElement) {
     easyInput.disabled = true;
     pauseBtn.textContent = 'Pause';
     canvas.focus({ preventScroll: true });
+    bringIntoView();
     announce('Pass starting. Satellite rises on the left.');
+  }
+
+  /** Scrolls so the numbers, the sky and the controls are on screen, if they are not already. */
+  function bringIntoView() {
+    const a = dashEl.getBoundingClientRect(), b = deckEl.getBoundingClientRect();
+    if (a.top >= 0 && b.bottom <= innerHeight) return;
+    dashEl.scrollIntoView({ block: 'start', behavior: reduced.matches ? 'auto' : 'smooth' });
   }
 
   function setPaused(p: boolean, focus = true) {
@@ -525,9 +545,12 @@ function init(root: HTMLElement) {
     for (const [id, v] of stations) if (!v.demo && now - v.seen > 6000) stations.delete(id);
     for (const p of pops) p.age += dt;
     while (pops.length && pops[0].age > 1.2) pops.shift();
-    draw();
+    // Drawing the sky is the costly part: skip it while the game is scrolled out of view.
+    if (skyVisible) draw();
     requestAnimationFrame(frame);
   }
+  let skyVisible = true;
+  new IntersectionObserver(([e]) => { skyVisible = e.isIntersecting; }).observe(canvas);
   const round = (v: number) => Math.round(v * 10) / 10;
 
   function update(dt: number) {
@@ -560,7 +583,11 @@ function init(root: HTMLElement) {
     if (!game) return;
     const s = G.stars(game);
     beep(s ? 880 : 220, 300, 'triangle');
-    if (mode === 'live') { announce(`Pass over. You caught ${game.rx} packets. The next live pass starts at the top of the minute.`); return; }
+    if (mode === 'live') {
+      const liveTip = game.seq > 0 ? G.debrief(game) : null;
+      announce(`Pass over. You caught ${game.rx} packets.${liveTip ? ' Next time: ' + liveTip.text : ''} The next live pass starts at the top of the minute.`);
+      return;
+    }
     running = false;
     easyInput.disabled = false;
     pauseBtn.textContent = 'Start';
@@ -575,13 +602,51 @@ function init(root: HTMLElement) {
       'A CubeSat lives on its solar panels. In Earth\u2019s shadow every packet spends stored energy.',
       'High-gain antennas hear farther, but only where they point.',
     ];
+    const tip = G.debrief(game);
     show(`<h3>${s ? 'Pass complete!' : 'Loss of signal'}</h3>
       <p class="stars" aria-label="${s} of 3 stars">${'★'.repeat(s)}${'☆'.repeat(3 - s)}</p>
-      <p><strong>${game.rx}</strong> packets · <strong>${game.lost}</strong> lost · best streak <strong>${game.bestStreak}</strong> · <strong>${game.score}</strong> credits${game.battery >= 20 ? ' (with +200 credits for a healthy battery)' : ''}</p>
+      <p><strong>${game.rx}</strong> packets · <strong>${game.lost}</strong> lost · best streak <strong>${game.bestStreak}</strong> · <strong>${game.score}</strong> credits${game.battery >= 20 && game.seq > 0 ? ' (with +200 credits for a healthy battery)' : ''}</p>
+      ${debriefChart(game)}
+      ${tip ? `<p class="tip"><strong>Next time:</strong> ${tip.text}</p>
+      <p class="learn"><a href="#step-${tip.step}">How: ${tip.stepTitle}</a> · <a href="${siteBase}${tip.learn}" target="_blank" rel="noopener">${tip.learnTitle}<span class="sr-only"> (opens in a new tab)</span></a></p>` : '<p class="tip"><strong>Clean pass!</strong> Every packet that was sent got through.</p>'}
       <p>${lessons[levelIndex]}</p>
       <div class="row">${s && more ? '<button type="button" class="go" data-next>Next level</button>' : ''}<button type="button" class="${s && more ? '' : 'go'}" data-again>Try again</button></div>`);
-    overlay.querySelector<HTMLButtonElement>('button')?.focus();
-    announce(`Pass complete. ${game.rx} packets, ${s} of 3 stars.`);
+    overlay.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+    overlay.scrollIntoView({ block: 'nearest', behavior: reduced.matches ? 'auto' : 'smooth' });
+    announce(`Pass complete. ${game.rx} packets, ${s} of 3 stars.${tip ? ' Next time: ' + tip.text : ''}`);
+  }
+
+  /**
+   * The pass at a glance: signal over time against the line the radio setting needs, the
+   * shadow, and a tick for every packet (green caught, red lost). Labelled as a simulation.
+   */
+  function debriefChart(g: NonNullable<typeof game>) {
+    const Wc = 320, Hc = 112, x0 = 8, x1 = Wc - 8, top = 8, bottom = 86;
+    const x = (t: number) => (x0 + (t / g.level.duration) * (x1 - x0)).toFixed(1);
+    const y = (db: number) => (top + ((10 - Math.max(-40, Math.min(10, db))) / 50) * (bottom - top)).toFixed(1);
+    const parts: string[] = [];
+    if (g.level.eclipse) {
+      const [a, b] = g.level.eclipse;
+      parts.push(`<rect x="${x(a * g.level.duration)}" y="${top}" width="${(Number(x(b * g.level.duration)) - Number(x(a * g.level.duration))).toFixed(1)}" height="${bottom - top}" fill="#000" opacity=".35"/>`);
+      parts.push(`<text x="${x(((a + b) / 2) * g.level.duration)}" y="${top + 11}" text-anchor="middle" font-size="9" fill="#b9c2ff">shadow</text>`);
+    }
+    // What the radio setting needs, as a step line (it moves when the setting changes).
+    const floor = g.trace.map((p, i) => `${i ? 'L' : 'M'}${x(p.t)} ${y(p.floor)}`).join(' ');
+    parts.push(`<path d="${floor}" fill="none" stroke="#ffd23f" stroke-width="1.5" stroke-dasharray="4 3"/>`);
+    // Signal, broken where the satellite was resting or in safe mode.
+    let d = '', pen = false;
+    for (const p of g.trace) {
+      if (!p.on || p.snr <= -39.5) { pen = false; continue; }
+      d += `${pen ? 'L' : 'M'}${x(p.t)} ${y(p.snr)}`;
+      pen = true;
+    }
+    parts.push(`<path d="${d}" fill="none" stroke="#7df0a6" stroke-width="2" stroke-linejoin="round"/>`);
+    for (const k of g.packets) parts.push(`<rect x="${(Number(x(k.t)) - 1.5).toFixed(1)}" y="${bottom + 6}" width="3" height="9" rx="1" fill="${k.ok ? '#7df0a6' : '#ef6b6c'}"/>`);
+    parts.push(`<line x1="${x0}" x2="${x1}" y1="${bottom}" y2="${bottom}" stroke="#ffffff33"/>`);
+    parts.push(`<text x="${x0}" y="${Hc - 2}" font-size="9" fill="#b9c2ff">rise</text><text x="${x1}" y="${Hc - 2}" font-size="9" fill="#b9c2ff" text-anchor="end">set</text>`);
+    const label = `Signal over the pass. ${g.rx} packets caught and ${g.lost} lost. The dashed line is the signal your radio setting needs.`;
+    return `<figure class="debrief"><svg viewBox="0 0 ${Wc} ${Hc}" role="img" aria-label="${label}"><title>${label}</title>${parts.join('')}</svg>
+      <figcaption><span class="k sig"></span>signal <span class="k need"></span>needed <span class="k ok"></span>caught <span class="k lost"></span>lost · desk simulation</figcaption></figure>`;
   }
 
   // ---- HUD (HTML, so it is readable and zoomable) ----
@@ -832,8 +897,45 @@ function init(root: HTMLElement) {
     setLabel(`Sky view. Satellite at elevation ${Math.round(sat.el)} degrees. Your antenna at elevation ${Math.round(game.ant.el)}. Signal ${game.locked ? 'locked' : 'not locked'}.`);
   }
 
+  // ---- Deep links ----
+  // A lesson or teacher can link straight to a level or the live sky:
+  //   #level=low-pass (or #level=2)   that level, if it is open in this browser
+  //   #mode=live                       the shared live pass
+  // Step links (#step-track) are ordinary anchors and are left alone.
+  const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  function applyHash() {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const want = params.get('level'), wantMode = params.get('mode');
+    const i = want ? G.LEVELS.findIndex(l => String(l.id) === want || slug(l.name) === want) : -1;
+    if (i < 0 && wantMode !== 'live' && wantMode !== 'levels') return false;
+    linkedEntry = true;
+    if (wantMode === 'live') {
+      if (mode !== 'live') tabs.find(t => t.dataset.mode === 'live')?.click();
+      bringIntoView();
+      return true;
+    }
+
+    const locked = i >= 0 && !unlocked(i);
+    if (i >= 0) {
+      levelIndex = locked ? 0 : i;
+      while (locked && levelIndex < i && unlocked(levelIndex + 1)) levelIndex++;
+    }
+    if (mode !== 'missions') tabs.find(t => t.dataset.mode === 'missions')?.click();
+    else ready();
+
+    if (locked) {
+      show(`<h3>Level ${i + 1}: ${G.LEVELS[i].name} is locked</h3>
+        <p>Earn at least one star on <strong>${G.LEVELS[i - 1].name}</strong> to open it. This browser remembers your stars.</p>
+        <button type="button" class="go" data-go>Play level ${levelIndex + 1}: ${G.LEVELS[levelIndex].name}</button>`);
+      announce(`${G.LEVELS[i].name} is locked. Play ${G.LEVELS[levelIndex].name} first.`);
+    }
+    bringIntoView();
+    return true;
+  }
+  addEventListener('hashchange', () => { applyHash(); });
+
   setTab();
-  ready();
+  if (!applyHash()) ready();
   resize();
   requestAnimationFrame(frame);
 }

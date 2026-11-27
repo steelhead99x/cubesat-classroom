@@ -42,6 +42,15 @@ test('lesson order numbers are 1 to n with no gaps', () => {
   assert.deepEqual(orders, orders.map((_, i) => i + 1));
 });
 
+test('lesson inline links keep the site base and format only their labels', async () => {
+  const { inline } = await import('../src/levels.ts');
+  assert.equal(inline('[**Low pass**](/games/catch-the-pass/#level=2)', '/cubesat-classroom'),
+    '<a href="/cubesat-classroom/games/catch-the-pass/#level=2"><strong>Low pass</strong></a>');
+  assert.equal(inline('[`logic.mjs`](https://example.com/**path**?a=1&b=2)'),
+    '<a href="https://example.com/**path**?a=1&amp;b=2"><code>logic.mjs</code></a>');
+  assert.equal(inline('[relative](//example.com) and `**literal**`'), 'relative and <code>**literal**</code>');
+});
+
 test('each patch has a print file for the patches page to link', () => {
   for (const id of ids) {
     assert.ok(existsSync(new URL(`../../hardware/patches/print/${id}.3mf`, import.meta.url)), `print file for ${id}`);

@@ -11,9 +11,9 @@ tool:
   note: A game for 2 to 4 crews on one screen or online. The wind and flight are a desk simulation, not a real rocket.
 beginner:
   steps:
-    - Open the game, press **Play on this computer** and pick 2 crews.
-    - Before each launch, look at the wind arrow at the top. Write down which way it points.
-    - Launch. Did your rocket land on the side the wind was blowing toward? Change your aim and try again.
+    - Open the game, press [**Play on this computer**](/games/rockoon-wars/#step-players) and pick 2 crews.
+    - Before each launch, look at the [wind arrow](/games/rockoon-wars/#step-wind) at the top. Write down which way it points.
+    - '[Launch](/games/rockoon-wars/#step-launch). Did your rocket land on the side the wind was blowing toward? Change your aim and try again.'
   check: You wrote down the wind for at least three launches and what you changed each time.
   discuss: The balloon carries the rocket before it launches. How does the wind move your rocket twice?
 intermediate:
@@ -25,7 +25,7 @@ intermediate:
   discuss: Real rockoon teams wait for low winds before they launch. Using your table, explain why.
 professional:
   steps:
-    - Read `balloonPosition`, `releasePoint` and `WIND_ACCEL` in `site/src/games/rockoon-wars/logic.mjs`. For a wind of 10, work out how far sideways the balloon drifts before release, in game pixels.
+    - Read `balloonPosition`, `releasePoint` and `WIND_ACCEL` in [`site/src/games/rockoon-wars/logic.mjs`](https://github.com/steelhead99x/cubesat-classroom/blob/main/site/src/games/rockoon-wars/logic.mjs). For a wind of 10, work out how far sideways the balloon drifts before release, in game pixels.
     - Compare the dashed balloon path with your calculated drift. Check a second round with a different wind. Record the wind strength and direction for each observation.
     - Record the simulated air pressure at the pad and at release. Describe how it changed as the balloon climbed.
   check: You have the drift from the code with working, two wind observations, and a sentence about the pressure difference.
