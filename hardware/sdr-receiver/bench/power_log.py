@@ -20,6 +20,7 @@ import argparse
 import csv
 import datetime as dt
 import json
+import math
 import os
 import statistics
 import sys
@@ -102,6 +103,11 @@ def delivered_map(a):
             out[name] = float(mb)
         except ValueError:
             sys.exit(f"--delivered {item}: {mb!r} is not a number")
+    # A negative or infinite volume would print a meaningless efficiency. Zero is allowed:
+    # a run that delivered nothing, which gets no mJ per MB figure.
+    for name, mb in out.items():
+        if not math.isfinite(mb) or mb < 0:
+            sys.exit(f"{name}: delivered megabytes must be zero or more, not {mb}")
     return out
 
 
