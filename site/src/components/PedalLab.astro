@@ -3,7 +3,7 @@ import panelMark from '../assets/classroom-mark-reversed.svg?url';
 ---
 <section id="pedal-lab" class="mt-10" aria-labelledby="pedal-title">
   <h2 id="pedal-title">Satellite pedal trainer</h2>
-  <p class="mt-2 max-w-2xl text-muted">Practice on the proposed CSC-R1 Rev B receiver. The signal and meters are simulated. Start with the footswitch, then tune a station and set its gain.</p>
+  <p class="mt-2 max-w-2xl text-muted">Practice on the proposed CSC-R1 Rev B receiver. The browser simulates the waveform. You need no hardware, account or radio license to play.</p>
   <div class="console mt-4">
     <header><img src={panelMark} width="44" height="44" alt="" /><strong>CSC-R1 / RECEIVER LAB</strong></header>
     <p id="pedal-task" aria-live="polite">1 of 3 · Tap ENGAGE to unmute the receiver.</p>
@@ -20,7 +20,17 @@ import panelMark from '../assets/classroom-mark-reversed.svg?url';
     <div class="actions"><button data-engage aria-pressed="false">ENGAGE</button><button data-check>Check setting</button><button data-reset>Restart</button></div>
     <p data-feedback role="status"></p>
   </div>
-  <p class="mt-3 max-w-2xl text-sm text-muted">On paper, draw the path from the antenna through GAIN to the output LEVEL. Mark where the signal clipped in your trial. <a class="underline" href="https://github.com/steelhead99x/cubesat-classroom/blob/main/hardware/sdr-receiver/rev-b-pedal-plan.md#controls">Receiver control design</a></p>
+  <p class="mt-3 max-w-2xl text-sm text-muted">On paper, sketch the path from the antenna through GAIN to the output LEVEL. Mark where the signal clipped.</p>
+  <div class="mt-5 max-w-2xl text-sm">
+    <h3>Try it at home with a USB receiver</h3>
+    <p class="mt-2 text-muted">In the U.S., you can listen to public FM broadcasts with a receive-only USB SDR and antenna without an amateur radio license. Ask an adult to help plug in the receiver and open its tuning app.</p>
+    <ol class="mt-2 list-decimal space-y-2 pl-5 text-muted">
+      <li>Choose wide FM (WFM) and tune to a local FM station. Start with the speaker volume low.</li>
+      <li>On paper, write down the frequency in MHz and the receiver gain. Move the antenna and note whether the station sounds clearer.</li>
+      <li>Compare two gain settings. Then change only the speaker volume. Write down which control affected reception and which changed how loud it sounded.</li>
+    </ol>
+    <p class="mt-3 text-muted">The physical pedal is a prototype design. Its planned Wi-Fi and HaLow radios would transmit data. Use the browser or a receive-only USB SDR for this lesson. <a class="underline" href="https://www.fcc.gov/media/radio/fm-query">Find a U.S. FM station</a> · <a class="underline" href="https://github.com/steelhead99x/cubesat-classroom/blob/main/hardware/sdr-receiver/rev-b-pedal-plan.md#controls">Pedal control design</a></p>
+  </div>
 </section>
 <style>
   .console { background:#081410; color:#bdf5ce; border:1px solid #37674a; border-radius:.65rem; padding:clamp(1rem,3vw,2rem); font-family:var(--font-mono); }
@@ -56,25 +66,29 @@ import panelMark from '../assets/classroom-mark-reversed.svg?url';
   function signal() {
     const tuned = band.value === '2' && offset === 0;
     const g = 10 ** (Number(gain.value) / 20);
-    return { tuned, g, peak: (tuned ? CARRIER : NOISE) * g };
+    const samples = noise.map((sample, i) =>
+      ((tuned ? CARRIER * Math.sin(i * Math.PI / 20) : 0) + NOISE * sample) * g
+    );
+    return { tuned, samples, peak: Math.max(...samples.map(sample => Math.abs(sample))) };
   }
-  const noise = () => Math.random() * 2 - 1;
+  // Keep the input waveform stable while learners compare settings.
+  const noise = Array.from({ length: 201 }, () => Math.random() * 2 - 1);
   function render() {
-    const {tuned, g, peak} = signal();
+    const {tuned, samples, peak} = signal();
     if (stage === 2 && engaged && tuned && peak > 1) sawClip = true;
     const frequency = ((band.value === '2' ? 145800 : 435000) + 5 * offset) / 1000;
     get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · input ' + Math.round(peak*100) + '% · ' +
       (peak > 1 ? 'CLIPPING' : 'within range') + (engaged ? ' · output on' : ' · muted');
-    get('[data-wave]').setAttribute('points', Array.from({length:201}, (_,i) => {
+    get('[data-wave]').setAttribute('points', samples.map((raw, i) => {
       // Clip at the input, before LEVEL: turning LEVEL down shrinks a clipped wave, it can't unflatten it.
-      const raw = (tuned ? CARRIER * Math.sin(i * Math.PI / 20) : 0) + NOISE * noise();
-      const sample = Math.max(-1, Math.min(1, raw * g));
+      const sample = Math.max(-1, Math.min(1, raw));
       return (2*i) + ',' + (40 - (engaged ? sample * Number(volume.value) / 100 * 37 : 0));
     }).join(' '));
     get('[data-engage]').setAttribute('aria-pressed', String(engaged));
     get('[data-gain-label]').textContent = gain.value + ' dB';
     get('[data-level-label]').textContent = volume.value + '%';
-    get('#pedal-task').textContent = tasks[stage];
+    const task = get('#pedal-task');
+    if (task.textContent !== tasks[stage]) task.textContent = tasks[stage];
   }
   function check() {
     const {tuned,peak} = signal();
