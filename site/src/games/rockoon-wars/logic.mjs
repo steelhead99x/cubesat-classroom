@@ -39,6 +39,8 @@ export const TARGET_RINGS = [
 ];
 export const FLIGHT_SAMPLES_PER_SECOND = 60;
 
+/** How far the tethered target sways from its centre, px. */
+const SWAY = 19;
 /** A tethered target drifts downwind and sways. Flight time drives both the drawing and score. */
 export function targetPosition(field, flightSeconds = 0) {
   const { target, targetTime = 0, wind } = field;
@@ -46,7 +48,7 @@ export function targetPosition(field, flightSeconds = 0) {
   const seconds = targetTime + flightSeconds;
   const wave = target.phase + seconds * 52;
   const drift = wind * Math.min(seconds, 3) * 0.8;
-  const x = target.x + drift + 19 * (sinDeg(wave) - sinDeg(target.phase));
+  const x = target.x + drift + SWAY * (sinDeg(wave) - sinDeg(target.phase));
   const y = target.y + 6 * (sinDeg(wave * 1.4) - sinDeg(target.phase * 1.4));
   const gap = TARGET_RADIUS + 6;
   return { x: Math.max(gap, Math.min(W - gap, x)), y: Math.min(H - gap, y) };
@@ -176,7 +178,7 @@ export function startRound(match) {
 
 /**
  * The sky ring, shared by every crew: above the hills, and at least RING_CLEARANCE from every
- * crew's release point (so nobody scores with a gentle launch straight up), in the middle half
+ * crew's release point wherever its sway and drift can take it during the round (so nobody scores with a gentle launch straight up), in the middle half
  * of the field when there is room there, and as even as it can be: among those spots, the ones
  * where the nearest and farthest crews are closest in sideways distance (within 8 px of the
  * best). If no spot is that clear, the one farthest from every release point. Squared
@@ -187,12 +189,24 @@ function placeRing(terrain, units, wind, r) {
   let top = 0;
   for (const p of releases) top = Math.max(top, p.y);
   const y = Math.min(H - TARGET_RADIUS - 4, Math.max(Math.max(...terrain) + LIFT + 36, top + 40));
-  const room = x => Math.min(...releases.map(p => (x - p.x) * (x - p.x) + (y - p.y) * (y - p.y)));
+  const roomAt = (x, lo, hi) => Math.min(...releases.map(p => {
+    const dx = Math.max(0, x + lo - p.x, p.x - (x + hi));
+    return dx * dx + (y - p.y) * (y - p.y);
+  }));
+  const room = x => roomAt(x, 0, 0);
+  // The target moves during the round: up to SWAY either side of where it starts, plus its
+  // drift downwind. Where the field has room, keep the clearance from every point it can
+  // reach, not just the start; otherwise fall back to the start, as before.
+  const drift = wind * 3 * 0.8;
+  const moving = x => roomAt(x, Math.min(0, drift) - 2 * SWAY, Math.max(0, drift) + 2 * SWAY);
   const spots = [];
   for (let x = 40; x <= W - 40; x++) spots.push(x);
   const far = RING_CLEARANCE * RING_CLEARANCE;
-  const middle = spots.filter(x => x >= W / 4 && x <= W * 3 / 4 && room(x) >= far);
-  const clear = middle.length ? middle : spots.filter(x => room(x) >= far);
+  const pick = test => {
+    const middle = spots.filter(x => x >= W / 4 && x <= W * 3 / 4 && test(x) >= far);
+    return middle.length ? middle : spots.filter(x => test(x) >= far);
+  };
+  const clear = pick(room);
   const spread = x => {
     let lo = Infinity, hi = 0;
     for (const p of releases) { const d = Math.abs(x - p.x); lo = Math.min(lo, d); hi = Math.max(hi, d); }
@@ -200,7 +214,11 @@ function placeRing(terrain, units, wind, r) {
   };
   let best = Infinity;
   for (const x of clear) best = Math.min(best, spread(x));
-  const even = clear.filter(x => spread(x) <= best + 8);
+  // Fairness first: among the spots about as even as the best, prefer ones the moving target
+  // never brings too close to a release point.
+  const fair = clear.filter(x => spread(x) <= best + 8);
+  const safe = fair.filter(x => moving(x) >= far);
+  const even = safe.length ? safe : fair;
   const x = even.length ? even[Math.floor(r() * even.length)] : spots.reduce((a, b) => (room(b) > room(a) ? b : a));
   return { x, y };
 }
