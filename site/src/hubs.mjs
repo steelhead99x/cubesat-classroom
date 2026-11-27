@@ -3,6 +3,8 @@
 export const repo = 'https://github.com/steelhead99x/cubesat-classroom';
 export const missionBriefing = 'https://hikd.ai/tis/';
 export const classroomHost = 'cubesatclass.org';
+// Private contact for personal and deletion requests (privacy page). Forks: use your own.
+export const privacyEmail = 'hello@cubesat.club';
 // The public site. Canonical URLs, the installer address and redirects all point here.
 export const publicOrigin = 'https://' + classroomHost;
 export const installer = publicOrigin + '/start.sh';

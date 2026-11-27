@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import { repo } from '../hubs.mjs';
+import { privacyEmail, repo } from '../hubs.mjs';
 import { siteOrigin } from '../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -24,10 +24,10 @@ const canonical = siteOrigin + '/privacy/';
     <h2 class="mt-10 text-xl">Who runs this site</h2>
     <p class="mt-3">This site is operated by the CubeSat Classroom volunteer project, an independent open-source space education project. Its public home is <a class="text-accent underline underline-offset-4" href={siteOrigin + '/'}>cubesatclass.org</a>. The source for the site and the lessons is the public GitHub repository <a class="text-accent underline underline-offset-4" href={repo}>{repo.replace('https://', '')}</a>.</p>
     <p class="mt-3">For general questions about this privacy page, open an issue on that GitHub repository. Issues are public, so never put a name, school, location or any other personal detail in one.</p>
-    <p class="mt-3">For anything about a particular person, including a request to delete information, use <a class="text-accent underline underline-offset-4" href={`${repo}/security/advisories/new`}>GitHub’s private reporting form</a> on the repository (<strong>Security &gt; Report a vulnerability</strong>). Only the project's maintainers can see those reports. The form is labelled for security problems, but it is the project's private channel for any personal request, and it is read by the same people. It needs a GitHub account; a family without one can ask the teacher, mentor or club leader who runs their activity to send it for them. Whoever sends it should include only what we need to find the information.</p>
+    <p class="mt-3">For anything about a particular person, including a request to delete information, email <a class="text-accent underline underline-offset-4" href={`mailto:${privacyEmail}`}>{privacyEmail}</a>. That mailbox is private: only the project's maintainers read it, and no account is needed. A parent, guardian or teacher should send it, and should include only what we need to find the information.</p>
 
     <h2 class="mt-10 text-xl">Who the site is for</h2>
-    <p class="mt-3">CubeSat Classroom is written for learners 13 and up, and for the teachers, guardians and mentors who guide them. This website is not directed at children under 13, and we do not knowingly collect personal information from anyone under 13. If you believe we have information from a child under 13, a parent, guardian or teacher should tell us privately through <a class="text-accent underline underline-offset-4" href={`${repo}/security/advisories/new`}>GitHub’s private reporting form</a>, not in a public issue, so we can delete it.</p>
+    <p class="mt-3">CubeSat Classroom is written for learners 13 and up, and for the teachers, guardians and mentors who guide them. This website is not directed at children under 13, and we do not knowingly collect personal information from anyone under 13. If you believe we have information from a child under 13, a parent, guardian or teacher should email <a class="text-accent underline underline-offset-4" href={`mailto:${privacyEmail}`}>{privacyEmail}</a> (not a public issue) so we can delete it.</p>
     <p class="mt-3">Younger learners may take part only alongside a teacher, guardian or mentor who stays for the whole activity. They should not create an account of their own, and the adult should never share a login with anyone under 13.</p>
 
     <h2 class="mt-10 text-xl">What stays in your browser</h2>
