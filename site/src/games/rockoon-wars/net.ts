@@ -50,7 +50,8 @@ export class RoomLink {
     this.status = status;
     if (status === 'live') { this.#ready?.(true); this.#ready = undefined; }
     if (status === 'offline' || status === 'off') { this.#ready?.(false); this.#ready = undefined; }
-    this.#events.status(status, detail);
+    // A problem drawing the page must not tear down the relay session.
+    try { this.#events.status(status, detail); } catch (error) { console.warn('room status handler failed', error); }
   }
 
   /** Resolves true once connected (the player id and call sign are then known), false if not. */
@@ -160,7 +161,7 @@ export class RoomLink {
           const msg = await state.readJson().catch(() => undefined);
           if (msg === undefined) break;
           const clean = cleanSnapshot(msg);
-          if (clean) this.#events.peer(id, clean as Snapshot);
+          if (clean) try { this.#events.peer(id, clean as Snapshot); } catch (error) { console.warn('room peer handler failed', error); }
         }
       })();
     });

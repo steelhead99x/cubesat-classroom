@@ -328,7 +328,7 @@ function start(root: HTMLElement) {
   }
 
   function lobbyHtml() {
-    if (!link || link.status !== 'live') {
+    if (!link || link.status !== 'live' || !snaps.has(me)) {
       const offline = link?.status === 'offline';
       return offline
         ? `<h3>Online play is not available</h3><p>${esc(netDetail || 'The relay could not be reached.')}</p><div class="row"><button type="button" class="go" data-act="quit">Play on this computer instead</button></div>`
