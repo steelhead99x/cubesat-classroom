@@ -1,0 +1,39 @@
+<section id="pedal" class="alt" style="flex-direction:row;gap:64px;align-items:flex-start">
+<div style="display:flex;flex-direction:column;gap:40px;width:1000px">
+<p class="eyebrow">CSC-R1P · status</p>
+<h2>Two boards in a 125B box</h2>
+<div class="grid2">
+<div class="card"><p class="tag">Main board · 54 × 104 mm</p><p>Rev A’s radio, unchanged and checked part by part, plus 9 V protection, a 2.1 MHz buck and audio out.</p></div>
+<div class="card"><p class="tag">Control board · 54 × 72 mm</p><p>OLED, TUNE encoder, GAIN and LEVEL pots, footswitch and toggle. The placer checks all 8 stacking pins.</p></div>
+<div class="card"><p class="tag">Fixed this round</p><p>Self-crossing outline at a lid-post notch, design rules lost after routing, a track through a switch pin.</p></div>
+<div class="card"><p class="tag" style="color:#FFB020">Routing: not finished</p><div class="bar"><div class="fill" style="width:85%"></div></div><p class="barlabel">Main: about 15 connections left, 99 nets</p><div class="bar"><div class="fill" style="width:94%"></div></div><p class="barlabel">Control: 1 left, 18 nets</p></div>
+</div>
+</div>
+<!-- end view, exploded: knobs 0-104, face 170, control board 290, standoffs and header 304-494, main board 494, back plate 640 -->
+<div style="position:relative;width:600px;height:824px">
+<svg aria-label="Exploded end view of the pedal: knobs above the face of the box, the control board hanging under the face, standoffs and the stacking header, the main board, and the back plate" style="position:absolute;left:0;top:0" width="600" height="824" viewBox="0 0 600 824">
+<rect x="0" y="170" width="380" height="24" rx="4" fill="#2F6B4F"/>
+<rect x="0" y="194" width="8" height="460" fill="#2F6B4F" opacity="0.5"/>
+<rect x="372" y="194" width="8" height="460" fill="#2F6B4F" opacity="0.5"/>
+<rect x="0" y="640" width="380" height="14" rx="3" fill="#5B646E"/>
+<path d="M 72 104 V 290 M 190 104 V 290 M 308 104 V 290" stroke="#3A424C" stroke-width="2" stroke-dasharray="6 8"/>
+<rect x="66" y="104" width="12" height="66" fill="#9AA3AD"/><rect x="184" y="104" width="12" height="66" fill="#9AA3AD"/><rect x="302" y="104" width="12" height="66" fill="#9AA3AD"/>
+<circle cx="72" cy="70" r="34" fill="#1B1F1D" stroke="#6F7A74" stroke-width="3"/><circle cx="190" cy="70" r="34" fill="#1B1F1D" stroke="#6F7A74" stroke-width="3"/><circle cx="308" cy="70" r="34" fill="#1B1F1D" stroke="#6F7A74" stroke-width="3"/>
+<rect x="52" y="250" width="40" height="40" fill="#3A424C"/><rect x="170" y="250" width="40" height="40" fill="#3A424C"/><rect x="288" y="250" width="40" height="40" fill="#3A424C"/>
+<rect x="20" y="290" width="340" height="14" rx="2" fill="#1F7A4A"/>
+<rect x="30" y="304" width="18" height="190" fill="#BFC7D0"/><rect x="332" y="304" width="18" height="190" fill="#BFC7D0"/>
+<rect x="230" y="304" width="36" height="190" fill="#0B0D10" stroke="#9AA3AD" stroke-width="2"/>
+<rect x="20" y="494" width="340" height="14" rx="2" fill="#1F7A4A"/>
+<rect x="70" y="482" width="50" height="12" fill="#0B0D10"/><rect x="140" y="484" width="34" height="10" fill="#0B0D10"/><rect x="290" y="482" width="30" height="12" fill="#0B0D10"/>
+
+</svg>
+<p class="lbl" style="left:410px;top:52px;width:190px">Knobs</p>
+<p class="lbl" style="left:410px;top:150px;width:190px">Face of the box</p>
+<p class="lbl" style="left:410px;top:262px;width:190px">Control board under the face</p>
+<p class="lbl" style="left:410px;top:366px;width:190px">15 mm standoffs and 2×4 header</p>
+<p class="lbl" style="left:410px;top:484px;width:190px">Main board with the XIAO</p>
+<p class="lbl" style="left:410px;top:628px;width:190px">Back plate</p>
+<p class="lbl" style="left:0;top:700px;width:600px;color:#8A94A0">End view, exploded, not to scale. Drilling template: hardware/sdr-receiver/pedal</p>
+</div>
+<aside>The drawing is an end view with the layers pulled apart. The control board hangs from the face by the pot and encoder nuts. The main board sits on three 15 mm standoffs, joined to the control board by a 2×4 header. Placement is clean: no overlaps and no design-rule errors apart from the unrouted connections. The same synthesizer nets fail on every router pass, so this is a floorplan problem, not bad luck. hardware/sdr-receiver/pedal/README.md lists the ways to finish.</aside>
+</section>
