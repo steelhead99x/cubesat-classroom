@@ -137,4 +137,4 @@ python3 check_shared.py             # pedal RF blocks against Rev A
 python3 face_template.py            # drilling template
 ```
 
-These commands regenerate placement and run the maze router. Use a separate checkout to preserve the routed copper in Git. To check the routed files, run `CSC_BOARD=csc-r1p python3 drc.py gate` and `CSC_BOARD=csc-r1p-ctl python3 drc.py gate` from the generator directory. For a review package, use the same board names with `./export.sh`.
+These commands regenerate placement and run the maze router, which would replace the routed copper. Both pedal boards are routed, so `build.sh` refuses to rebuild either one unless you set `CSC_REBUILD_ROUTED=1`, and checks that before it touches any file. Do that only in a separate checkout, to keep the routed copper in Git. To check the routed files, run `CSC_BOARD=csc-r1p python3 drc.py gate` and `CSC_BOARD=csc-r1p-ctl python3 drc.py gate` from the generator directory. For a review package, use the same board names with `./export.sh`.

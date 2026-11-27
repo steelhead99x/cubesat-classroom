@@ -29,6 +29,17 @@ print("ok    DRC gate accepts only J3 edge items with 0 unconnected")
 PY
 )
 
+# The routed pedal boards: build.sh must refuse before it changes any file. No KiCad needed.
+for board in csc-r1p csc-r1p-ctl; do
+  pcb="$src/pedal/kicad/$board.kicad_pcb"
+  before=$(sha256sum "$pcb")
+  if (cd "$src/gen" && CSC_BOARD=$board ./build.sh >/dev/null 2>&1); then
+    echo "FAIL  build.sh rebuilt the routed $board board" >&2; exit 1
+  fi
+  [[ "$(sha256sum "$pcb")" == "$before" ]] || { echo "FAIL  build.sh changed $board.kicad_pcb" >&2; exit 1; }
+done
+echo "ok    build.sh refuses to rebuild the routed pedal boards and leaves them untouched"
+
 if [[ "${1:-}" == "--report-only" ]]; then exit 0; fi
 command -v kicad-cli >/dev/null || { echo "test_gates needs kicad-cli" >&2; exit 1; }
 python3 -c 'import pcbnew'
