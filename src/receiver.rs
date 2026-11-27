@@ -193,6 +193,10 @@ pub(crate) struct Stats {
     /// Seconds since the satellite rose, or until it rises when negative.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pass_s: Option<f64>,
+    /// When the bridge read the reading, RFC 3339, if that can differ from `utc` (the capture
+    /// time): a replayed or buffered rtl_power row keeps its own age.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub received_utc: Option<String>,
 }
 
 /// Who is publishing: the station slug and this run's session id.
@@ -371,6 +375,7 @@ impl Scenario {
             offset_hz: Some(round1(received_hz - tuned_hz as f64)),
             range_km: Some(round1(geo.range_km)),
             pass_s: Some(round1(pass_s)),
+            received_utc: None,
         }
     }
 }
@@ -629,17 +634,44 @@ pub(crate) struct BridgeArgs {
     /// `received-rf` for an antenna, `hardware-bench` for a test source or load.
     #[arg(long, value_enum, default_value_t = RealLabel::ReceivedRf)]
     label: RealLabel,
+    /// Time zone of rtl_power's date and time columns (it writes local time), as an IANA
+    /// name such as "America/Denver". Leave out when rtl_power runs on this computer.
+    #[arg(long)]
+    rtl_power_tz: Option<String>,
 }
 
-/// Turn one rtl_power row into a snapshot, or `None` if the row holds no usable bins
-/// or none near the frequency.
+impl BridgeArgs {
+    fn time_zone(&self) -> Result<jiff::tz::TimeZone> {
+        Ok(match &self.rtl_power_tz {
+            Some(name) => jiff::tz::TimeZone::get(name)
+                .map_err(|e| anyhow::anyhow!("--rtl-power-tz {name:?}: {e}"))?,
+            None => jiff::tz::TimeZone::system(),
+        })
+    }
+}
+
+/// When an rtl_power row was captured, in Unix ms: its date and time columns, which rtl_power
+/// writes in local time, read in `tz`. `None` if they don't parse.
+pub(crate) fn rtl_power_time(row: &str, tz: &jiff::tz::TimeZone) -> Option<u64> {
+    let mut cols = row.split(',').map(str::trim);
+    let (date, time) = (cols.next()?, cols.next()?);
+    let civil: jiff::civil::DateTime = format!("{date}T{time}").parse().ok()?;
+    let ms = tz.to_timestamp(civil).ok()?.as_millisecond();
+    u64::try_from(ms).ok()
+}
+
+/// Turn one rtl_power row into a snapshot, or `None` if the row holds no usable bins, none
+/// near the frequency, or no readable capture time. `utc` is when rtl_power captured the row;
+/// `received_utc` is `received_unix_ms`, when the bridge read it, so a replayed or buffered
+/// row keeps its age instead of looking current.
 pub(crate) fn from_rtl_power(
     row: &str,
     args: &BridgeArgs,
     publisher: &Publisher,
     sequence: u64,
-    captured_unix_ms: u64,
+    received_unix_ms: u64,
 ) -> Option<Stats> {
+    let captured_unix_ms = rtl_power_time(row, &args.time_zone().ok()?)?;
     let tuned_hz = args.frequency_hz.unwrap_or(args.band.default_hz());
     let (bins, _) = bench_tools::sweep::parse(row);
     let near = |f: f64| (f - tuned_hz as f64).abs() <= args.passband_hz;
@@ -687,6 +719,7 @@ pub(crate) fn from_rtl_power(
         offset_hz: None,
         range_km: None,
         pass_s: None,
+        received_utc: Some(utc_string(received_unix_ms)),
     })
 }
 
@@ -699,6 +732,7 @@ pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
         args.band
     );
     ensure!(args.passband_hz > 0.0, "--passband-hz must be above 0");
+    args.time_zone()?;
     ensure!(
         !args.satellite.is_empty() && args.satellite.chars().count() <= 80,
         "--satellite must be 1–80 characters"
@@ -1061,6 +1095,54 @@ mod tests {
                 .unwrap()
                 .provenance,
             Provenance::HardwareBench
+        );
+    }
+
+    #[test]
+    fn bridge_keeps_the_capture_time_of_old_rows() {
+        // A January 2024 row replayed now: `utc` stays the capture time, read in the zone
+        // rtl_power wrote it in; `received_utc` says when the bridge read it.
+        let args = bridge_args(&["--rtl-power-tz", "America/Denver"]);
+        let row = "2024-01-15, 09:30:05, 145790000, 145810000, 2500.00, 1000, -40.1, -39.8, -40.3, -40.0, -22.5, -39.9, -40.2, -40.4";
+        let now = 1_795_804_205_120; // 2026-11-27T18:30:05.120Z
+        let st = from_rtl_power(row, &args, &publisher(), 0, now).expect("a snapshot");
+        assert_eq!(
+            st.utc, "2024-01-15T16:30:05.000Z",
+            "Denver is UTC-7 in January"
+        );
+        assert_eq!(st.received_utc.as_deref(), Some("2026-11-27T18:30:05.120Z"));
+        assert_eq!(st.contact, Contact::Acquired, "the carrier was heard, then");
+        let utc = bridge_args(&["--rtl-power-tz", "UTC"]);
+        assert_eq!(
+            from_rtl_power(row, &utc, &publisher(), 0, now).unwrap().utc,
+            "2024-01-15T09:30:05.000Z"
+        );
+        // The snapshot round-trips with the new field, and older snapshots without it parse.
+        let back = parse(&serde_json::to_vec(&st).unwrap()).unwrap();
+        assert_eq!(back, st);
+        let mut old = serde_json::to_value(&st).unwrap();
+        old.as_object_mut().unwrap().remove("received_utc");
+        assert_eq!(
+            parse(&serde_json::to_vec(&old).unwrap())
+                .unwrap()
+                .received_utc,
+            None
+        );
+    }
+
+    #[test]
+    fn bridge_skips_rows_without_a_capture_time() {
+        let args = bridge_args(&["--rtl-power-tz", "UTC"]);
+        let undated = "sometime, later, 145790000, 145810000, 2500.00, 1000, -40, -40, -22, -40";
+        assert!(from_rtl_power(undated, &args, &publisher(), 0, 0).is_none());
+        assert_eq!(
+            rtl_power_time("2026-11-27, 18:30:05, 1", &jiff::tz::TimeZone::UTC),
+            Some(1_795_804_205_000)
+        );
+        assert!(
+            bridge_args(&["--rtl-power-tz", "Mars/Olympus_Mons"])
+                .time_zone()
+                .is_err()
         );
     }
 

@@ -41,7 +41,7 @@ Use the existing Rust MoQ stack for live data and audio. Add a station publisher
 
 ### `stats` version 1
 
-The station writes this layout now, from a simulator or from a real RTL-SDR, so the app and website can be built before the pedal is on the air. Run `cargo run --locked --bin cubesat-classroom -- receiver-sim` to print one pass cycle as JSON lines, or add `--relay` and `--station <nickname>` to publish to the `live` broadcast. `read-receiver --relay ...` reads one snapshot back. Pick the receiver with `--source pedal` or `--source rtl-sdr-v4`, the band with `--band 2m` or `--band 70cm`, and add `--track-doppler` to retune during the pass. For a real receiver, pipe `rtl_power` into `receiver-bridge`, for example `rtl_power -f 145.79M:145.81M:500 -g 30 -i 1 - | cubesat-classroom receiver-bridge --gain-db 30 --relay ...`. It labels snapshots `received-rf`, or `hardware-bench` with `--label hardware-bench`; name what you are hearing with `--satellite`. The code lives in [src/receiver.rs](../src/receiver.rs); the website's pass mode uses the same orbit model in [site/src/lib/pass.mjs](../site/src/lib/pass.mjs), and a test keeps the two in step.
+The station writes this layout now, from a simulator or from a real RTL-SDR, so the app and website can be built before the pedal is on the air. Run `cargo run --locked --bin cubesat-classroom -- receiver-sim` to print one pass cycle as JSON lines, or add `--relay` and `--station <nickname>` to publish to the `live` broadcast. `read-receiver --relay ...` reads one snapshot back. Pick the receiver with `--source pedal` or `--source rtl-sdr-v4`, the band with `--band 2m` or `--band 70cm`, and add `--track-doppler` to retune during the pass. For a real receiver, pipe `rtl_power` into `receiver-bridge`, for example `rtl_power -f 145.79M:145.81M:500 -g 30 -i 1 - | cubesat-classroom receiver-bridge --gain-db 30 --relay ...`. It labels snapshots `received-rf`, or `hardware-bench` with `--label hardware-bench`; name what you are hearing with `--satellite`. Each snapshot keeps the capture time from its `rtl_power` row. `rtl_power` writes local time, so the bridge reads it in this computer's time zone; when `rtl_power` runs somewhere else, name its zone with `--rtl-power-tz America/Denver`. Rows without a readable date and time are skipped. The code lives in [src/receiver.rs](../src/receiver.rs); the website's pass mode uses the same orbit model in [site/src/lib/pass.mjs](../site/src/lib/pass.mjs), and a test keeps the two in step.
 
 The first block of fields is the contract the cubesat.app phone app reads (`StationSnapshot` in its `mobile/src/lib/snapshot.ts`). The app drops fields it doesn't know, so the receiver block can grow without breaking it. The default broadcast is `live`, the name the app subscribes to.
 
@@ -52,7 +52,7 @@ The first block of fields is the contract the cubesat.app phone app reads (`Stat
 | `station` | Station nickname such as `room-12`: lower-case letters, digits and hyphens. Never a name, school or address. |
 | `source` | What is being heard, such as `Simulated satellite` or `ISS (ZARYA)` |
 | `provenance` | `desk-simulation`, `hardware-bench` or `received-rf`. Show it beside every value. The simulator always writes `desk-simulation`. |
-| `utc` | Capture time, RFC 3339 |
+| `utc` | Capture time, RFC 3339. From `rtl_power`, the time in the row itself, so a replayed or buffered reading keeps its age. |
 | `contact` | `acquired` (carrier heard), `lost` (satellite up, carrier not heard) or `idle` |
 | `frequency_hz`, `level_dbfs` | Where the receiver is tuned, and the total level |
 | `elevation_deg` | Satellite elevation. Absent from a real receiver without a pass prediction. |
@@ -60,6 +60,7 @@ The first block of fields is the contract the cubesat.app phone app reads (`Stat
 | `receiver`, `band`, `nominal_hz` | `pedal` (CSC-R1P) or `rtl-sdr-v4`; `2m` or `70cm`; the published downlink frequency |
 | `gain_db`, `noise_dbfs`, `snr_db`, `clipping` | Gain setting, noise floor, signal-to-noise ratio (`null` with no signal) and whether the input is near full scale |
 | `doppler_hz`, `offset_hz`, `range_km`, `pass_s` | Doppler shift, received carrier minus tuned frequency, slant range, and seconds since rise (negative before it). Absent from a real receiver without a pass prediction. |
+| `received_utc` | When the bridge read the reading, RFC 3339. Written by `receiver-bridge`, where it can differ from `utc`; absent from the simulator. Show a reading's age from `utc`, and treat a large gap as a replay or a backlog. |
 
 The simulated levels are planning numbers, not measurements. From `rtl_power`, `level_dbfs` is the strongest bin near the frequency and `noise_dbfs` the median of the other bins. Both are relative dB from the dongle, not calibrated, so compare readings only from the same dongle and gain.
 
