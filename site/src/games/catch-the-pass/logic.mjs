@@ -156,12 +156,14 @@ export function readReceiver(game) {
   const { carrier, noise } = linkAt(game, game.ant.az, game.ant.el, game.t, game.antenna);
   // Match the pedal trainer's gain curve. The LoRa input scale is calibrated for gameplay.
   const tuned = offset === 0;
-  const inputDb = Math.max(tuned && game.transmit && !game.safe ? carrier : -30, noise - 18);
+  // A satellite holding its transmitter (or in safe mode) sends nothing to lock on to.
+  const sending = game.transmit && !game.safe;
+  const inputDb = Math.max(tuned && sending ? carrier : -30, noise - 18);
   const peak = 0.42 * amplitudeGain(inputDb + gainDb - DEFAULT_RECEIVER.gainDb);
   const lowGain = Math.max(0, DEFAULT_RECEIVER.gainDb - gainDb) / 3;
   const overload = peak > 1 ? 40 * Math.log10(peak) : 0;
-  const status = peak >= 1 ? 'Clipping' : !tuned ? 'Off frequency' : lowGain >= 2 ? 'Low gain' : 'Ready';
-  return { peak, snr: tuned ? carrier - noise - lowGain - overload : -99, status };
+  const status = peak >= 1 ? 'Clipping' : !tuned ? 'Off frequency' : !sending ? 'No signal' : lowGain >= 2 ? 'Low gain' : 'Ready';
+  return { peak, snr: tuned && sending ? carrier - noise - lowGain - overload : -99, status };
 }
 
 export function inEclipse(level, p) {
@@ -212,6 +214,8 @@ export function setSf(game, sf) {
 export function setTransmit(game, on) {
   if (game.transmit === !!on) return;
   game.transmit = !!on;
+  game.snr = readReceiver(game).snr;
+  game.locked = game.snr >= SF[game.sf].minSnr;
   game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity };
   game.events.push({ type: on ? 'tx-on' : 'tx-off' });
 }
@@ -247,14 +251,14 @@ export function step(game, input = {}, dt = 1 / 60) {
   // Scaled by dt so the fade behaves the same at any frame rate.
   const frames = dt * 60;
   game.fade = clamp(game.fade * 0.97 ** frames + (game.random() - 0.5) * 0.35 * Math.sqrt(frames), -1.5, 1.5);
-  game.snr = readReceiver(game).snr;
-  const sf = SF[game.sf];
-  game.locked = game.snr >= sf.minSnr;
-
   // Power: solar panels charge in sunlight. Transmitting costs energy whether or not anyone hears it.
   if (!inEclipse(level, p)) game.battery = Math.min(100, game.battery + level.charge * dt);
   if (!game.safe && game.battery < SAFE_AT) { game.safe = true; game.packet = { elapsed: 0, sum: 0, n: 0, min: Infinity }; game.events.push({ type: 'safe' }); }
   if (game.safe && game.battery >= RESUME_AT) { game.safe = false; game.events.push({ type: 'resume' }); }
+
+  game.snr = readReceiver(game).snr;
+  const sf = SF[game.sf];
+  game.locked = game.snr >= sf.minSnr;
 
   if (!game.safe && game.transmit) {
     const pk = game.packet;
