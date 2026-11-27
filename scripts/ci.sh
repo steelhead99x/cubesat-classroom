@@ -60,6 +60,7 @@ python3 -m py_compile scripts/*.py tools/*.py hardware/*.py hardware/p1s/*.py
 python3 tools/test_serial_image.py
 (cd hardware/sdr-receiver/bench && python3 test_bench.py)
 (cd hardware/solar-face/gen && python3 test_drc.py)
+python3 hardware/rideshare-flatsat/test_lab.py
 
 echo "=== Firmware builds ==="
 bash scripts/firmware.sh
