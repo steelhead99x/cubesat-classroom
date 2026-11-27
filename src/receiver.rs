@@ -55,6 +55,13 @@ impl Source {
         }
     }
 
+    fn default_passband_hz(self) -> f64 {
+        match self {
+            Self::Pedal => 1500.0,
+            Self::RtlSdrV4 => 3000.0,
+        }
+    }
+
     /// Noise floor in dBFS with the gain at 0 dB, in the analysis bandwidth.
     /// Planning numbers for the classroom, not measurements.
     fn noise_at_zero_gain_dbfs(self) -> f64 {
@@ -491,10 +498,9 @@ pub(crate) struct SimArgs {
     /// Retune for Doppler during the pass.
     #[arg(long)]
     track_doppler: bool,
-    /// The receiver hears a carrier within this many Hz of where it is tuned. The default
-    /// matches the website's pass simulator (site/src/lib/pass.mjs, PASSBAND_HZ).
-    #[arg(long, default_value_t = 1500.0)]
-    passband_hz: f64,
+    /// Receive half-bandwidth in Hz. Defaults to 1500 for the pedal and 3000 for the V4.
+    #[arg(long)]
+    passband_hz: Option<f64>,
     /// Seconds of output when printing (0 = one full cycle).
     #[arg(long, default_value_t = 0)]
     seconds: u64,
@@ -536,10 +542,12 @@ impl SimArgs {
             gain_db: self.gain_db,
             level_at_1000km_dbfs: self.level_at_1000km_dbfs,
             track_doppler: self.track_doppler,
-            passband_hz: self.passband_hz,
+            passband_hz: self
+                .passband_hz
+                .unwrap_or(self.source.default_passband_hz()),
         };
         ensure!(
-            self.passband_hz > 0.0 && self.passband_hz.is_finite(),
+            scenario.passband_hz > 0.0 && scenario.passband_hz.is_finite(),
             "--passband-hz must be above 0"
         );
         ensure!(
