@@ -223,3 +223,15 @@ test('the aim line is the start of the real shot', () => {
   assert.equal(preview.length, 25);
   assert.deepEqual(preview, R.trajectory(m, u, 70, 60).path.slice(0, 25));
 });
+
+test('drag to aim: point at where you want to shoot, farther means more power', () => {
+  const u = { x: 100, y: 50 };
+  const py = 50 + R.PIVOT_Y;
+  assert.deepEqual(R.aimFromPoint(u, 100 + R.DRAG_FULL, py), { angle: 0, power: 100 });
+  assert.deepEqual(R.aimFromPoint(u, 100, py + 80), { angle: 90, power: 50 });
+  assert.deepEqual(R.aimFromPoint(u, 100 - 400, py), { angle: 180, power: 100 }, 'power is capped');
+  assert.equal(R.aimFromPoint(u, 140, py - 30).angle, 0, 'pointing below the launcher aims flat');
+  assert.equal(R.aimFromPoint(u, 60, py - 30).angle, 180);
+  const a = R.aimFromPoint(u, 160, py + 60);
+  assert.ok(Number.isInteger(a.angle) && Number.isInteger(a.power) && a.angle === 45);
+});

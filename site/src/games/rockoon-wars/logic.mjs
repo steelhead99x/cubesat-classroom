@@ -126,6 +126,23 @@ export function startRound(match) {
 
 export const alive = match => match.field.units.filter(u => u.alive).length;
 
+/** Where shots leave the launcher from (the pivot of the launch tube). */
+export const PIVOT_Y = 22;
+/** World distance that means full power when dragging to aim. */
+export const DRAG_FULL = 160;
+
+/**
+ * Drag-to-aim: the angle and power for pointing from a rockoon's launcher at a world point.
+ * This is input only (it may use Math.atan2); the shot itself uses the whole-number result.
+ */
+export function aimFromPoint(unit, x, y) {
+  const dx = x - unit.x, dy = y - (unit.y + PIVOT_Y);
+  let angle = Math.round(Math.atan2(dy, dx) * 180 / Math.PI);
+  if (angle < 0) angle = dx >= 0 ? 0 : 180;
+  const power = Math.round(Math.min(100, Math.max(0, Math.hypot(dx, dy) / DRAG_FULL * 100)));
+  return { angle: Math.max(0, Math.min(180, angle)), power };
+}
+
 /** The first part of the current player's shot, for the aim line: a list of [x, y] points. */
 export function aimPreview(match, points = 30) {
   const u = match.field.units[match.turn];
@@ -137,7 +154,7 @@ export function trajectory(match, from, angle, power) {
   const { terrain, units, wind } = match.field;
   const a = Math.max(0, Math.min(180, Math.round(angle)));
   const v = Math.max(0, Math.min(100, Math.round(power))) * SPEED;
-  let x = from.x + cosDeg(a) * 14, y = from.y + 22 + sinDeg(a) * 14;
+  let x = from.x + cosDeg(a) * 14, y = from.y + PIVOT_Y + sinDeg(a) * 14;
   let vx = cosDeg(a) * v, vy = sinDeg(a) * v;
   const path = [[x, y]];
   for (let i = 0; i < MAX_STEPS; i++) {

@@ -49,7 +49,8 @@ function init(root: HTMLElement) {
     soundOn = !soundOn;
     if (soundOn && !audio) audio = new AudioContext();
     (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(soundOn));
-    (e.currentTarget as HTMLElement).textContent = soundOn ? '🔊 Sound on' : '🔇 Sound off';
+    (e.currentTarget as HTMLElement).textContent = soundOn ? '🔊' : '🔇';
+    (e.currentTarget as HTMLElement).setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off');
     beep(660, 80);
   });
 
@@ -63,7 +64,7 @@ function init(root: HTMLElement) {
     el: Math.max(0, Math.min(90, (H() - pad.b - y) / (H() - pad.t - pad.b) * 90)),
   });
   function resize() {
-    const w = canvas.clientWidth, h = Math.round(Math.min(w * 0.58, Math.max(260, innerHeight * 0.62)));
+    const w = canvas.clientWidth, h = Math.round(Math.min(w * (w < 560 ? 0.85 : 0.56), Math.max(260, innerHeight * 0.62)));
     canvas.style.height = h + 'px';
     canvas.width = Math.round(w * devicePixelRatio); canvas.height = Math.round(h * devicePixelRatio);
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
@@ -447,9 +448,13 @@ function init(root: HTMLElement) {
     const w = W(), h = H();
     if (!w || !h) return;
     const t = performance.now() / 1000;
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, '#00005c'); g.addColorStop(1, '#2f3fbf');
+    const gy = h - pad.b;
+    const g = ctx.createLinearGradient(0, 0, 0, gy);
+    g.addColorStop(0, '#070b2e'); g.addColorStop(0.55, '#1a2470'); g.addColorStop(0.85, '#4b3a8f'); g.addColorStop(1, '#c46a7a');
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    const glow = ctx.createRadialGradient(w / 2, gy, 0, w / 2, gy, w * 0.6);
+    glow.addColorStop(0, 'rgba(255,170,110,.35)'); glow.addColorStop(1, 'rgba(255,170,110,0)');
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, w, gy);
     for (const s of stars) {
       ctx.globalAlpha = reduced.matches ? 0.6 : 0.4 + 0.3 * Math.sin(t * 1.5 + s.p);
       ctx.fillStyle = '#fff'; ctx.fillRect(s.x * w, s.y * (h - pad.b), s.s, s.s);
@@ -457,10 +462,32 @@ function init(root: HTMLElement) {
     ctx.globalAlpha = 1;
     // Elevation grid
     ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.font = '11px "IBM Plex Mono", monospace'; ctx.lineWidth = 1;
-    for (const el of [30, 60]) { ctx.beginPath(); ctx.moveTo(pad.l, toY(el)); ctx.lineTo(w - pad.r, toY(el)); ctx.stroke(); ctx.fillText(el + '°', 4, toY(el) + 4); }
-    // Ground
-    ctx.fillStyle = '#0b1530'; ctx.fillRect(0, h - pad.b, w, pad.b);
-    ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillText('horizon', 4, h - pad.b + 14);
+    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.setLineDash([2, 6]);
+    for (const el of [30, 60]) { ctx.beginPath(); ctx.moveTo(pad.l, toY(el)); ctx.lineTo(w - pad.r, toY(el)); ctx.stroke(); ctx.fillText(el + '°', 6, toY(el) + 4); }
+    ctx.setLineDash([]);
+    // Ground: two rows of hills and a ground station dish that points where your antenna points
+    ctx.fillStyle = '#2a2158';
+    ctx.beginPath(); ctx.moveTo(0, gy);
+    for (let x = 0; x <= w; x += 8) ctx.lineTo(x, gy - 10 - 8 * Math.sin(x / 70) - 5 * Math.sin(x / 23 + 1));
+    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.fill();
+    const gg = ctx.createLinearGradient(0, gy, 0, h);
+    gg.addColorStop(0, '#141a44'); gg.addColorStop(1, '#0a0f2c');
+    ctx.fillStyle = gg;
+    ctx.beginPath(); ctx.moveTo(0, gy + 4);
+    for (let x = 0; x <= w; x += 8) ctx.lineTo(x, gy + 2 - 4 * Math.sin(x / 45 + 2));
+    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.fill();
+    {
+      const dx = w / 2, dy = gy + 6;
+      const aim = game ? Math.atan2(toY(game.ant.el) - dy, toX(game.ant.az) - dx) : -Math.PI / 2;
+      ctx.fillStyle = '#5f6aa8'; ctx.fillRect(dx - 2, dy, 4, 16); ctx.fillRect(dx - 9, dy + 14, 18, 4);
+      ctx.save(); ctx.translate(dx, dy); ctx.rotate(aim + Math.PI / 2);
+      ctx.fillStyle = '#d9def5'; ctx.beginPath(); ctx.ellipse(0, 0, 13, 6, 0, Math.PI, 0); ctx.fill();
+      ctx.strokeStyle = '#d9def5'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(0, -11); ctx.stroke();
+      ctx.fillStyle = game && game.locked ? '#7ff0a8' : '#ffd23f'; ctx.beginPath(); ctx.arc(0, -12, 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.font = '10px "IBM Plex Mono", monospace'; ctx.fillText('horizon', 6, h - 8);
+    ctx.font = '11px "IBM Plex Mono", monospace';
     if (!game) return;
     const level = game.level;
     // Interference source
@@ -494,15 +521,29 @@ function init(root: HTMLElement) {
     // Satellite
     if (!game.done && p > 0) {
       const x = toX(sat.az), y = toY(sat.el);
-      ctx.fillStyle = shade ? '#8a8fa8' : '#ffd23f';
-      ctx.fillRect(x - 5, y - 5, 10, 10);
-      ctx.fillStyle = shade ? '#59607e' : '#a4c9ff';
-      ctx.fillRect(x - 17, y - 3, 10, 6); ctx.fillRect(x + 7, y - 3, 10, 6);
       if (game.transmit && !game.safe) {
-        ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1;
-        const r = reduced.matches ? 12 : 10 + (t * 20) % 10;
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+        const halo = ctx.createRadialGradient(x, y, 0, x, y, 26);
+        halo.addColorStop(0, shade ? 'rgba(160,170,210,.35)' : 'rgba(255,220,120,.45)'); halo.addColorStop(1, 'rgba(255,220,120,0)');
+        ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5;
+        const rr = reduced.matches ? [14] : [0, 1].map(i => 10 + ((t * 18 + i * 9) % 18));
+        for (const r of rr) { ctx.globalAlpha = 1 - (r - 10) / 18; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke(); }
+        ctx.globalAlpha = 1;
       }
+      // Solar panels with cells, a gold body and a little antenna
+      for (const side of [-1, 1]) {
+        const px = side < 0 ? x - 22 : x + 8;
+        ctx.fillStyle = shade ? '#3f4668' : '#2f63c9'; ctx.fillRect(px, y - 5, 14, 10);
+        ctx.strokeStyle = shade ? '#59607e' : '#a4c9ff'; ctx.lineWidth = 1;
+        ctx.strokeRect(px + .5, y - 4.5, 13, 9);
+        ctx.beginPath(); ctx.moveTo(px + 7, y - 5); ctx.lineTo(px + 7, y + 5); ctx.moveTo(px, y); ctx.lineTo(px + 14, y); ctx.stroke();
+        ctx.fillStyle = '#9aa3c8'; ctx.fillRect(side < 0 ? x - 8 : x + 6, y - 1, 2, 2);
+      }
+      const body = ctx.createLinearGradient(x - 6, y - 6, x + 6, y + 6);
+      body.addColorStop(0, shade ? '#a0a6c0' : '#fff2b0'); body.addColorStop(1, shade ? '#6a7092' : '#e0a91c');
+      ctx.fillStyle = body; ctx.fillRect(x - 6, y - 6, 12, 12);
+      ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.strokeRect(x - 5.5, y - 5.5, 11, 11);
+      ctx.strokeStyle = '#e8ecff'; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 4, y - 13); ctx.stroke();
       if (game.safe) { ctx.fillStyle = '#ef6b6c'; ctx.fillText('SAFE MODE', x + 10, y + 18); }
     }
     // Noise burst
@@ -513,16 +554,25 @@ function init(root: HTMLElement) {
     }
     // Your antenna beam
     const ax = toX(game.ant.az), ay = toY(game.ant.el);
-    ctx.strokeStyle = game.locked ? '#6fd3a0' : '#ffd23f'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(ax, ay, level.beam / 2 * pxPerDeg, 0, Math.PI * 2); ctx.stroke();
+    const br = level.beam / 2 * pxPerDeg;
+    const col = game.locked ? '111,211,160' : '255,210,63';
+    ctx.strokeStyle = `rgba(${col},.25)`; ctx.lineWidth = 2; ctx.setLineDash([4, 6]);
+    ctx.beginPath(); ctx.moveTo(w / 2, h - pad.b + 2); ctx.lineTo(ax, ay); ctx.stroke(); ctx.setLineDash([]);
+    const fill = ctx.createRadialGradient(ax, ay, br * 0.2, ax, ay, br);
+    fill.addColorStop(0, `rgba(${col},.05)`); fill.addColorStop(1, `rgba(${col},${game.locked ? .32 : .2})`);
+    ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(ax, ay, br, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgb(${col})`; ctx.lineWidth = 3;
+    if (game.locked && !reduced.matches) { ctx.shadowColor = `rgb(${col})`; ctx.shadowBlur = 12; }
+    ctx.beginPath(); ctx.arc(ax, ay, br, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0;
     ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ax - 7, ay); ctx.lineTo(ax + 7, ay); ctx.moveTo(ax, ay - 7); ctx.lineTo(ax, ay + 7); ctx.stroke();
     // Floating points
-    ctx.font = 'bold 14px "IBM Plex Mono", monospace';
-    for (const pop of pops) { ctx.globalAlpha = 1 - pop.age / 1.2; ctx.fillStyle = '#6fd3a0'; ctx.fillText(pop.text, pop.x - 14, pop.y - pop.age * 24); }
+    ctx.font = '800 16px Inter, sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(6,10,32,.85)'; ctx.lineJoin = 'round';
+    for (const pop of pops) { ctx.globalAlpha = Math.max(0, 1 - pop.age / 1.2); ctx.fillStyle = '#7ff0a8'; const py = pop.y - pop.age * 28; ctx.strokeText(pop.text, pop.x - 14, py); ctx.fillText(pop.text, pop.x - 14, py); }
     ctx.globalAlpha = 1;
     // Countdown and live waiting
-    ctx.font = 'bold 42px Inter, sans-serif'; ctx.fillStyle = '#fff';
-    if (countdown > 0 && running) ctx.fillText(String(Math.ceil(countdown)), w / 2 - 12, h / 2);
+    ctx.font = '900 64px Inter, sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+    if (countdown > 0 && running) { const n = Math.ceil(countdown), f = countdown % 1; ctx.globalAlpha = 0.4 + 0.6 * f; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(6,10,32,.7)'; ctx.strokeText(String(n), w / 2, h / 2); ctx.fillText(String(n), w / 2, h / 2); ctx.globalAlpha = 1; }
+    ctx.textAlign = 'left';
     if (mode === 'live') {
       const { elapsed } = G.liveSlot(Date.now());
       if (elapsed > G.LIVE.duration) {
