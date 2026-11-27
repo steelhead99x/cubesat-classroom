@@ -1,0 +1,14 @@
+<section id="simulation">
+<p class="eyebrow">Simulation · runs today</p>
+<h2>One pass, simulated three ways</h2>
+<div style="display:flex;gap:56px;align-items:flex-start">
+<img src="/_blob/164467ddd16e2c0efc56d7f440c85e45" alt="The website pedal trainer in pass mode: the CSC-R1P pedal tuned to 145.803 MHz, the carrier heard, and a readout labelled desk simulation showing elevation 19 degrees and Doppler +3.04 kHz" style="width:860px;height:593px;object-fit:contain;background:#081410;border-radius:16px">
+<div style="display:flex;flex-direction:column;gap:28px;width:748px">
+<div class="fin"><p class="num">1</p><p><b>Station.</b> <span class="mono">receiver-sim</span> plays a pass as the pedal or a V4 would hear it. <span class="mono">receiver-bridge</span> publishes a real V4.</p></div>
+<div class="fin"><p class="num">2</p><p><b>Website.</b> The pedal trainer, drawn from the template, with a pass mode: retune as the Doppler shift moves.</p></div>
+<div class="fin"><p class="num">3</p><p><b>Phone app.</b> A Receiver card shows gain, SNR, Doppler and clipping from the same stats track.</p></div>
+<p class="status">Same orbit maths in Rust and JavaScript, kept in step by a test · every reading labelled desk simulation, hardware bench or received RF</p>
+</div>
+</div>
+<aside>The station's snapshots follow the layout the phone app already reads, on its live broadcast, and the app's own parser accepts them. That means a classroom can run the whole path today, and the real pedal drops in later without changing the app. A followed pass in the trainer scored 92 percent heard.</aside>
+</section>

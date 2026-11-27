@@ -2,13 +2,13 @@
 <p class="eyebrow">Next steps</p>
 <h2>From desk design to a measured radio</h2>
 <div class="grid2">
-<div class="fin"><p class="num">1</p><p><b>RF review</b> of the Rev A schematic and layout, in Flux or KiCad.</p></div>
-<div class="fin"><p class="num">2</p><p><b>Close the ten findings</b>, then order five boards. Confirm LTC5584 and ADF4351 stock.</p></div>
-<div class="fin"><p class="num">3</p><p><b>Bring-up firmware in Rust</b>: I²C scan, synthesizer, ADC start, I/Q capture.</p></div>
-<div class="fin"><p class="num">4</p><p><b>Measure</b> each block, then sensitivity at 145.8 and 437 MHz against an RTL-SDR Blog V4, with the bench quests.</p></div>
-<div class="fin"><p class="num">5</p><p><b>HaLow desense and power tests</b> with a XIAO and Seeed’s HaLow board beside a Rev A kit.</p></div>
-<div class="fin"><p class="num">6</p><p><b>Lay out Rev B</b> from what the kit teaches; certify after the prototypes work.</p></div>
+<div class="fin"><p class="num">1</p><p><b>Finish routing CSC-R1P</b> in KiCad (Freerouting or by hand) or Flux, then pours, DRC gate and Gerbers.</p></div>
+<div class="fin"><p class="num">2</p><p><b>Independent review</b> of the RF layout and the routed pedal boards, by someone who didn’t design them, before ordering.</p></div>
+<div class="fin"><p class="num">3</p><p><b>First light at home</b> with the RTL-SDR V4, then <span class="mono">rtl_power</span> into <span class="mono">receiver-bridge</span> on the live feed.</p></div>
+<div class="fin"><p class="num">4</p><p><b>Bring-up firmware in Rust</b>: I²C scan, synthesizer, ADC, I/Q capture, then the same stats track from the pedal.</p></div>
+<div class="fin"><p class="num">5</p><p><b>Measure</b> each block, then sensitivity at 145.8 and 437 MHz against the V4, with the bench quests.</p></div>
+<div class="fin"><p class="num">6</p><p><b>Rev B</b>: add HaLow and the power monitors after the desense tests; certify after prototypes work.</p></div>
 </div>
-<p class="foot">Design files: github.com/steelhead99x/cubesat-classroom · hardware/sdr-receiver</p>
-<aside>Everything up to now is desk design. Step 4 is the first point where we will have measured results to report.</aside>
+<p class="foot">Design files: github.com/steelhead99x/cubesat-classroom · hardware/sdr-receiver · docs/home-station.md</p>
+<aside>Everything up to now is desk design or desk simulation. Step 3 is the first point where we will have received RF to report, and step 5 the first measurement of our own receiver.</aside>
 </section>

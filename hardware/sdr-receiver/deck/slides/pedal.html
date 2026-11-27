@@ -1,0 +1,14 @@
+<section id="pedal" class="alt" style="flex-direction:row;gap:64px;align-items:center">
+<div style="display:flex;flex-direction:column;gap:40px;width:1100px">
+<p class="eyebrow">CSC-R1P · status</p>
+<h2>Two boards in a 125B box</h2>
+<div class="grid2">
+<div class="card"><p class="tag">Main board · 54 × 104 mm</p><p>Rev A’s radio, unchanged and checked part by part, plus 9 V protection, a 2.1 MHz buck and a PCM5102A audio out.</p></div>
+<div class="card"><p class="tag">Control board · 54 × 72 mm</p><p>OLED, TUNE encoder, GAIN and LEVEL pots, footswitch and toggle. The placer checks all 8 stacking pins.</p></div>
+<div class="card"><p class="tag">Fixed this round</p><p>Self-crossing outline at a lid-post notch, design rules lost after routing, a track through a switch pin.</p></div>
+<div class="card"><p class="tag" style="color:#FFB020">Not finished</p><p>Routing stops at about 15 connections around the ADF4351, and 1 on the control board. No Gerbers until they close.</p></div>
+</div>
+</div>
+<img src="/_blob/81515ccbcf1401f9748acc5c5ae3d712" alt="Drilling template for the CSC-R1P face: three knob holes in a row, the OLED window, the ENGAGE LED, the BAND toggle and the footswitch" style="width:480px;height:824px;object-fit:contain;background:#F4F1EA;border-radius:16px">
+<aside>The template is printed 1:1 and taped to the box for drilling. Placement is clean: no overlaps and no design-rule errors apart from the unrouted connections. The same synthesizer nets fail on every router pass, so this is a floorplan problem, not bad luck. hardware/sdr-receiver/pedal/README.md lists the ways to finish.</aside>
+</section>
