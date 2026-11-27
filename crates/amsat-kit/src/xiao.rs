@@ -245,6 +245,23 @@ pub fn xiao_plate(d: &Design, tooth_r: Option<f64>, deflect: f64) -> Manifold {
             HALOW[0] + HALOW[2],
             HALOW[1] + HALOW[3] / 2.0 + 3.0,
         ));
+    // Room for the logo with the words, where the top face is open.
+    let free = outline
+        .offset(-3.0, manifold_csg::JoinType::Miter, 2.0, 0)
+        .difference(&offset(
+            &cuts.slice_to_cross_section(d.plate_t / 2.0),
+            2.5,
+            FACETS,
+        ))
+        .difference(&offset(
+            &feats.slice_to_cross_section(d.plate_t + 0.1),
+            2.5,
+            FACETS,
+        ));
+    // (The lettering file is read again, and checked, when the logo is placed.)
+    let keep = keep.union(
+        &crate::brand::pad(d, &free).unwrap_or_else(|_| manifold_csg::CrossSection::empty()),
+    );
     let windows = isogrid_pockets(d, &outline, &keep);
     outline
         .extrude(d.plate_t)

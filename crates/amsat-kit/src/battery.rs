@@ -123,6 +123,20 @@ pub fn battery_plate(d: &Design, tooth_r: Option<f64>, deflect: f64) -> Result<M
         .union(&rect(x0 + 2.0, y0, x0 + 8.0, y0 + h))
         .union(&rect(x0 + w - 8.0, y0, x0 + w - 2.0, y0 + h))
         .union(&rect(x0, y0 + h / 2.0 - 3.0, x0 + w, y0 + h / 2.0 + 3.0));
+    // Room for the logo with the words, where the top face is open.
+    let free = outline
+        .offset(-3.0, manifold_csg::JoinType::Miter, 2.0, 0)
+        .difference(&offset(
+            &cuts.slice_to_cross_section(d.plate_t / 2.0),
+            2.5,
+            FACETS,
+        ))
+        .difference(&offset(
+            &feats.slice_to_cross_section(d.plate_t + 0.1),
+            2.5,
+            FACETS,
+        ));
+    let keep = keep.union(&crate::brand::pad(d, &free)?);
     let windows = isogrid_pockets(d, &outline, &keep);
     let slab = outline
         .extrude(d.plate_t)

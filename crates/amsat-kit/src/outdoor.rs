@@ -549,7 +549,7 @@ fn latch_fingers(o: &Outdoor) -> Manifold {
 
 /// The lid in its own frame: z = 0 is the underside that sits on the rim, the skirt hangs below
 /// it. `deflect` pushes the latch fingers inward, for the checks.
-pub fn lid(d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, String> {
+pub fn lid(_d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, String> {
     let outline = o.cavity_outline();
     let plate = o.crisp(o.lid_over).extrude(o.lid_t);
     let face = offset(&outline, -o.skirt_clear, FACETS);
@@ -587,14 +587,8 @@ pub fn lid(d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, String> {
             .translate(0.0, 0.0, g1 - 1.0),
     );
     let grooved = skirt.difference(&groove);
-    // Branding pressed into the top face, which prints on the bed.
-    let mark = branding(d)?
-        .extrude(0.6 + EPS)
-        .translate(0.0, 0.0, o.lid_t - 0.6);
-    let body = plate
-        .union(&grooved)
-        .difference(&latch_slits(o))
-        .difference(&mark);
+    // The branding is a second-colour inlay in the top face (see `lid_brand`).
+    let body = plate.union(&grooved).difference(&latch_slits(o));
     if deflect == 0.0 {
         return Ok(body);
     }
@@ -617,6 +611,15 @@ pub fn lid_in_place(d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, S
 /// The lid as it prints: top face down, skirt up.
 pub fn lid_to_print(d: &Design, o: &Outdoor) -> Result<Manifold, String> {
     Ok(lid(d, o, 0.0)?.rotate(180.0, 0.0, 0.0))
+}
+
+/// The lid's logo inlay, in print coordinates: the mark and words in the middle of the top
+/// face, which prints on the bed.
+pub fn lid_brand(d: &Design, o: &Outdoor) -> Result<Manifold, String> {
+    Ok(branding(d)?
+        .extrude(d.letter_h + 1.0)
+        .translate(0.0, 0.0, o.lid_t - d.letter_h)
+        .rotate(180.0, 0.0, 0.0))
 }
 
 /// The latch coupon: one side of the box's rim with its lug, and the matching piece of lid with

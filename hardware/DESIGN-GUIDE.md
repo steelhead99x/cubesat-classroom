@@ -31,11 +31,11 @@ No screws, inserts or nuts hold printed parts together, anywhere. (A bought cabl
 
 Every CubeSat Classroom part shares one look, borrowed from modern launch vehicles and spacecraft: clean, functional and engineered. It must never copy anyone's names, logos or trade dress.
 
-- **Monochrome.** White structure, black decks and plates inside, grey for test coupons. Print in white and black filament where you can; any colour still works.
+- **Monochrome, two filaments.** White structure and coupons, black decks and plates inside. Print with white in slot 1 and black in slot 2; any colour still works.
 - **Crisp edges.** Outer edges are chamfered with mitred corners, not rounded blobs. Inside corners that carry load keep a small fillet.
 - **Isogrid.** Lighten a plate with triangular pockets between 2.4 mm ribs at 60°, never with free-form holes. Every plate uses the same pattern from `isogrid_pockets` in [parts.rs](../crates/amsat-kit/src/parts.rs).
 - **Flush and hidden.** No visible fasteners (there are none). Latches and hooks sit inside the outline.
-- **Debossed lettering**, cut 0.6 mm into a face, on parts whose top face is seen (lids). Raised lettering only where a face is printed upward and a deboss would weaken it.
+- **The CubeSat Classroom logo on every part,** test coupons included, inlaid flush 0.6 mm deep in the other colour (black on white parts, white on black). It's a second part (volume) of the same object in the Bambu project, so the shape doesn't change and a one-colour print still works. Big faces get the mark and the words; small parts get the mark alone. The logo stays 1 mm from every edge, hole and slit, so it's never on a flex finger, has plastic behind it, and has no stroke under 0.45 mm. [brand.rs](../crates/amsat-kit/src/brand.rs) places and checks it.
 - **Function first.** The look never costs strength, fit or printability. A rule above always wins.
 
 ## Snap-fit rules
@@ -108,7 +108,7 @@ Before a new or changed part is printed beyond a coupon:
 - [ ] **Material** right for where it lives: PLA indoors, ASA or PETG outdoors.
 - [ ] **Coupon** printed for every new joint, in the real material, with the result recorded.
 - [ ] **Checks:** every rule a check, every check shown able to fail, output reproducible.
-- [ ] **Look:** crisp chamfered edges, isogrid pockets, flush faces, debossed lettering, white and black.
+- [ ] **Look:** crisp chamfered edges, isogrid pockets, flush faces, white and black, and the two-colour logo.
 - [ ] **Labels:** the README says what's been printed and tested, and what's only been design-checked.
 
 ## Where existing designs stand
