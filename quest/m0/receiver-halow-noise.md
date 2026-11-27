@@ -19,7 +19,7 @@ HaLow on 902–928 MHz is licence-free. Use only the antenna that came with the 
 2. **Link up.** Power both boards and start a continuous stream from one to the other: the project's HaLow firmware from `steelhead99x/cubesat-classroom-rust`, or any example that sends without stopping. Write down the firmware and its version.
 3. **Close.** Put the transmitting board 0.1 m from the V4's antenna. Record both bands, `--label "HaLow streaming, 0.1 m"`.
 4. **Move it.** Repeat at 0.3 m, 1 m and 3 m. Then do 0.1 m once more with the link idle (associated but not sending).
-5. **Compare** each run with the baseline: `python3 sweep.py compare off-2m.csv on-0.1m-2m.csv`, and the same for every distance and band.
+5. **Compare** each run with the baseline: `csc-sweep compare off-2m.csv on-0.1m-2m.csv`, and the same for every distance and band.
 6. **See HaLow itself.** With the transmitter at 3 m, record `--band halow --gain 0`. Write down its channel and bandwidth from the shape of the peak.
 7. Share a table of distance, band, floor change and largest single-bin rise.
 

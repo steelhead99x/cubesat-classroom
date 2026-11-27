@@ -6,7 +6,7 @@ Run a complete bench mission on a Seeed XIAO and the XIAO Expansion Board with G
 
 ## Plan
 
-**Time:** 60 minutes. **Group:** up to 4 learners per board. **Bring:** a Seeed XIAO (ESP32-S3 Sense for the photo step), the XIAO Expansion Board, a Grove I2C Hub, the Grove BME280, Digital Light Sensor and 6-Axis Accelerometer & Gyroscope, a microSD card, a CR1220 coin cell, a USB-C data cable, and a computer with the Arduino IDE and Python 3. No login is needed.
+**Time:** 60 minutes. **Group:** up to 4 learners per board. **Bring:** a Seeed XIAO (ESP32-S3 Sense for the photo step), the XIAO Expansion Board, a Grove I2C Hub, the Grove BME280, Digital Light Sensor and 6-Axis Accelerometer & Gyroscope, a microSD card, a CR1220 coin cell, a USB-C data cable, and a computer with the Arduino IDE and Rust (the station's `cargo` toolchain). No login is needed.
 
 Read the [bench CubeSat guide](/docs/bench-cubesats.md#seeed-xiao-cubesat) first, including the two fit checks. A mentor checks every connection before USB is connected. Leave any lithium battery out.
 
@@ -17,7 +17,7 @@ Read the [bench CubeSat guide](/docs/bench-cubesats.md#seeed-xiao-cubesat) first
 5. **First contact.** Send `3 PING` twice, then `STATUS` and `SENSE`. Record one `CSC1` line and say what each unit means.
 6. **Record a pass.** Send `ORBIT 30 30` and let it run for three orbits. Shade the light sensor during one gap. Send `ORBIT OFF`.
 7. **Read the recorder.** Unplug USB, move the card to a computer and open `CUBESAT.CSV`. Find the rows where `in_contact` is 0 and compare them with the `REC` lines you received.
-8. **Bring back a picture (S3 Sense only).** Send `PHOTO`, clear the Serial Monitor, send `DOWNLINK`, then save the output to `capture.txt`. Run `python3 tools/serial_image.py capture.txt photo.jpg`. Then delete a few `IMG` lines from the file and run it again.
+8. **Bring back a picture (S3 Sense only).** Send `PHOTO`, clear the Serial Monitor, send `DOWNLINK`, then save the output to `capture.txt`. Run `cargo run --locked --release -p bench-tools --bin csc-serial-image -- capture.txt photo.jpg` from the repository folder. Then delete a few `IMG` lines from the file and run it again.
 
 ### Check your work
 

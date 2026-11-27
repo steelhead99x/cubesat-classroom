@@ -61,7 +61,7 @@ cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo
 (cd mobile && npm ci && npm run typecheck && npm run lint)
 ```
 
-[Five-minute demo run sheet](docs/demo-run-sheet.md) · [Printable quick start](output/pdf/cubesat-classroom-quick-start.pdf) (rebuild with `python3 scripts/quick_start_pdf.py`)
+[Five-minute demo run sheet](docs/demo-run-sheet.md) · [Printable quick start](output/pdf/cubesat-classroom-quick-start.pdf) (rebuild with `cargo run --locked -p printouts --bin quick-start-pdf`)
 
 ## Labs and quests
 

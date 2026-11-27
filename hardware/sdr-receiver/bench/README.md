@@ -42,20 +42,20 @@ Prices are estimates. Check before you buy.
 ## Install
 
 - **RTL-SDR Blog drivers.** The V4 needs them. Most current SDR apps already include them. For `rtl_power`, `rtl_test` and `rtl_biast`, follow the maker's [V4 users guide](https://www.rtl-sdr.com/v4). On Linux, build `rtlsdrblog/rtl-sdr-blog` from GitHub and blacklist the DVB-T kernel driver as the guide explains.
-- **Python 3.** `sweep.py` needs nothing else. `power_log.py record` needs `pip install pyserial`.
-- **Self-test, no hardware needed:** `python3 test_bench.py`.
+- **The bench tools.** From the repository folder, run `cargo install --locked --path crates/bench-tools` once. That puts `csc-sweep` and `csc-power-log` on your path (in `~/.cargo/bin`). They need nothing else; `csc-power-log record` talks to the serial port directly on macOS and Linux.
+- **Self-test, no hardware needed:** `cargo test --locked -p bench-tools`. The tests run the tools on synthetic sweeps and power logs, so their results are desk simulation.
 
 ## Tools
 
 | File | Does |
 | --- | --- |
-| `sweep.py record` | Runs `rtl_power` at a fixed gain. Needs `--dc-checked` (see "Bias tee"), requests bias off and checks the utility exit status. Saves the CSV plus a `.json` label (what was connected, gain, bins, time, evidence type). |
-| `sweep.py summary` | Noise floor (median) and the strongest signal |
-| `sweep.py compare` | Noise-floor change from one sweep to another, such as HaLow off vs on. Refuses sweeps whose receiver, gain, bins or range differ, unless `--force`. |
-| `sweep.py response` | Filter response: noise through the device minus noise straight through. Same settings check. |
-| `sweep.py stub` | Quarter-wave coax stub length, or velocity factor from a measured stub |
+| `csc-sweep record` | Runs `rtl_power` at a fixed gain. Needs `--dc-checked` (see "Bias tee"), requests bias off and checks the utility exit status. Saves the CSV plus a `.json` label (what was connected, gain, bins, time, evidence type). |
+| `csc-sweep summary` | Noise floor (median) and the strongest signal |
+| `csc-sweep compare` | Noise-floor change from one sweep to another, such as HaLow off vs on. Refuses sweeps whose receiver, gain, bins or range differ, unless `--force`. |
+| `csc-sweep response` | Filter response: noise through the device minus noise straight through. Same settings check. |
+| `csc-sweep stub` | Quarter-wave coax stub length, or velocity factor from a measured stub |
 | `power-logger/power-logger.ino` | Reads an INA226 and prints raw readings over USB serial |
-| `power_log.py record` / `summary` | Logs the sketch's output, then gives average mW, energy and mJ per MB. Delivered megabytes are per file: `--megabytes` for one file, `--delivered FILE=MB` for several. Also reads Nordic PPK2 CSV exports. |
+| `csc-power-log record` / `summary` | Logs the sketch's output, then gives average mW, energy and mJ per MB. Delivered megabytes are per file: `--megabytes` for one file, `--delivered FILE=MB` for several. Also reads Nordic PPK2 CSV exports. |
 
 ## Bias tee
 
@@ -65,7 +65,7 @@ The V4 can put a few volts DC on its antenna socket to power a preamplifier. Tur
 2. Start `rtl_test` without flags and confirm it keeps reading samples. While it is running, a mentor measures DC between the SMA centre pin and shell. Continue only if the magnitude is under 0.5 V. Stop `rtl_test` with Ctrl-C before starting the sweep.
 3. If it reads several volts, don't connect anything that DC could harm. Put a DC block (an SMA inline capacitor) in front of the device, or use another dongle.
 
-`sweep.py record` refuses to run without `--dc-checked`, which says you did steps 1 and 2 with this dongle. It runs `rtl_biast -b 0` when that utility is installed and stops if it reports an error. The meter reading is the check that DC is off.
+`csc-sweep record` refuses to run without `--dc-checked`, which says you did steps 1 and 2 with this dongle. It runs `rtl_biast -b 0` when that utility is installed and stops if it reports an error. The meter reading is the check that DC is off.
 
 ## Safety
 

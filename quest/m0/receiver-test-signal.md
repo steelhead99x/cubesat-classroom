@@ -24,7 +24,7 @@ A mentor checks the setup before anything is powered.
 ### Steps
 
 1. **Build the chain.** Module → 30 dB → 30 dB → 10 dB → V4. With the module at its lowest output that's about 70 dB down, so the dongle sees a weak but clear signal. Put the module and its battery or USB power bank in the tin with the lid closed. Only the coax comes out.
-2. **Set 145.900 MHz.** Run `python3 sweep.py record --band 2m --gain 20 --label "ADF4351 145.9, -70 dB" --out sig-2m.csv --dc-checked` and `summary`. Write down the frequency of the peak and how far it is above the floor.
+2. **Set 145.900 MHz.** Run `csc-sweep record --band 2m --gain 20 --label "ADF4351 145.9, -70 dB" --out sig-2m.csv --dc-checked` and `summary`. Write down the frequency of the peak and how far it is above the floor.
 3. **Look for harmonics.** The ADF4351's output is close to a square wave, so it has strong odd harmonics. Sweep 70 cm with the same source: 3 × 145.9 = 437.7 MHz. Write down how much weaker the harmonic is.
 4. **Check the shielding.** Open the lid and sweep again. If the level rises, the module was leaking past the attenuators. That leak limits how weak a test signal you can make.
 5. **Make it weaker.** Add the 20 dB attenuator, then another 30 dB, sweeping each time. Find where the signal disappears into the floor. Write down that total attenuation.

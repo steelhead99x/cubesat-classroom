@@ -12,7 +12,7 @@ A fork of the [rideshare payload integration lab](../rideshare-flatsat/README.md
 | 1U solar face, silicon (`si`) | [hardware/solar-face](../solar-face/README.md) | Its land pattern still has to be verified before boards are ordered |
 | Solar charger board | New | Rated for at least 6.5 V input. A mentor picks it, checks it, and wires the cell |
 | Protected LiPo cell, about 1000 mAh | New | Protected cells only. A mentor checks the cell and its polarity first |
-| INA226 breakout and logger sketch | [Receiver bench kit](../sdr-receiver/bench/README.md) | In the cell's lead, wired so charging reads positive. Record with `power_log.py record` |
+| INA226 breakout and logger sketch | [Receiver bench kit](../sdr-receiver/bench/README.md) | In the cell's lead, wired so charging reads positive. Record with `csc-power-log record` |
 
 Never leave a charging LiPo where nobody can check on it. Run long tests somewhere a mentor approves, on a non-flammable surface.
 

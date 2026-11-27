@@ -405,7 +405,7 @@ void savePhoto() {
 // The photo downlink sends one IMG line per pass through loop(), so sampling, the recorder,
 // the deploy button and commands keep working while a photo goes down (about 3 s for a
 // typical QVGA photo at 115200 baud). Other lines, such as CSC1 readings, can appear between
-// the IMG lines; tools/serial_image.py ignores them.
+// the IMG lines; csc-serial-image (crates/bench-tools) ignores them.
 const size_t IMG_CHUNK = 48;
 bool downlinkActive = false;
 size_t downlinkOffset = 0;

@@ -7,7 +7,7 @@
 //
 // Output, one line about every 50 ms:  t_ms,shunt_raw,bus_raw
 //   shunt_raw is signed, 2.5 uV per count; bus_raw is 1.25 mV per count.
-// power_log.py turns these into mA, V and mW using your shunt's value
+// csc-power-log turns these into mA, V and mW using your shunt's value
 // (most breakouts use 0.1 ohm: up to about 0.8 A).
 //
 // Register values are from TI's INA226 datasheet.

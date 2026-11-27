@@ -24,14 +24,12 @@ Start with PLA, then repeat the coupon in ASA using the filament maker's profile
 
 ## Regenerate the files
 
-The Rev A and Rev B meshes come from [generate.py](generate.py), which also checks that each part is watertight, has the expected size, and that the lids and plates don't collide with their frames. [p1s/prepare.py](p1s/prepare.py) packs the Rev A parts into centered P1S 3MF plates, and [drawing.py](drawing.py) redraws the Rev B drawing.
+The Rev A and Rev B meshes come from [`archive.rs`](../crates/cubesat-cad/src/archive.rs) in the Rust CAD crate. It checks that each part is one closed solid of the expected size and that the lids and plates don't collide with their frames, then writes the STL files, packs the Rev A parts into centered P1S 3MF plates, and redraws the Rev B drawing from the meshes:
 
 ```sh
-python3 -m venv /tmp/cubesat-cad
-/tmp/cubesat-cad/bin/pip install -r hardware/requirements.txt
-/tmp/cubesat-cad/bin/python hardware/generate.py
-/tmp/cubesat-cad/bin/python hardware/p1s/prepare.py
-/tmp/cubesat-cad/bin/python hardware/drawing.py
+cargo run --locked --release -p cubesat-cad -- archive hardware
 ```
+
+The first build compiles the Manifold geometry kernel, so it takes a few minutes.
 
 The AMSAT kit is built in Rust: `cargo run --release -p amsat-kit` (see [its README](amsat-cubesatsim/README.md#regenerate)). CI runs all of them and fails if the committed files differ from the output.

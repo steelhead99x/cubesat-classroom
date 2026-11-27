@@ -7,6 +7,8 @@ members = [
     "crates/amsat-kit",
     "crates/cubesat-cad",
     "crates/cubesat-mission",
+    "crates/bench-tools",
+    "crates/printouts",
 ]
 # The CAD crate builds the Manifold C++ kernel, so it has its own CI job instead of being a default member.
 # The firmware targets the nRF52840 and is its own Cargo project.
@@ -17,6 +19,8 @@ default-members = [
     "crates/downlink",
     "crates/amsat-kit",
     "crates/cubesat-mission",
+    "crates/bench-tools",
+    "crates/printouts",
 ]
 resolver = "3"
 
