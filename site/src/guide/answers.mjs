@@ -35,9 +35,27 @@ export const general = [
       professional: 'Pausing contact closes the bridge session between the relays. In-flight groups stall and are marked incomplete; commands older than 5 s are rejected and recent request ids are deduplicated, so a delayed command cannot run twice after recovery.',
     },
   },
+  {
+    id: 'real-or-simulated',
+    question: 'How do I know if data is real or simulated?',
+    answers: {
+      beginner: 'Look for the label. Everything on this site and in the games says "desk simulation", which means a computer made it up to practise with. Real data from a radio says "received RF".',
+      intermediate: 'Every reading carries a label: desk simulation, hardware bench, received RF, or a flight type such as balloon flight. Copy the label into your crew log with the number. A simulated number written down as measured is a mistake, even if it looks right.',
+      professional: 'Provenance is a field in every snapshot (`provenance` in the `stats` track, `source` in sensor samples), and readers must show it next to the value. The station never upgrades a label: `receiver-sim` always publishes `desk-simulation`, and `receiver-bridge` publishes `received-rf` or `hardware-bench`, whichever the operator sets with `--label`.',
+    },
+  },
+  {
+    id: 'what-is-doppler',
+    question: 'Why does a satellite\'s frequency change?',
+    answers: {
+      beginner: 'When something that makes waves moves toward you, the waves bunch up, and when it moves away they spread out. You hear it when a siren goes past. A satellite\'s radio does the same, so you have to keep turning the tuning knob.',
+      intermediate: 'It is the Doppler shift. A satellite in low orbit moves at about 7.7 km/s. On 145.8 MHz that moves the signal up to about 3.4 kHz high as it comes toward you and 3.4 kHz low as it leaves. The shift is zero at the highest point of the pass.',
+      professional: 'Δf ≈ −f · (dr/dt) / c, where dr/dt is the range rate. It peaks near rise and set, crosses zero at closest approach, and scales with frequency, so 70 cm shifts about three times more than 2 m. `receiver-sim --track-doppler` retunes each second, which is what a tracking station does from the predicted orbit.',
+    },
+  },
 ];
 
-/** Two questions per example quest: a hint and why it matters. */
+/** Two questions per lesson: a hint and why it matters. */
 export const byQuest = {
   'first-contact': {
     hint: {
@@ -48,7 +66,7 @@ export const byQuest = {
     why: {
       beginner: 'A number without a unit is a mystery. 20 could be 20 degrees, 20 volts or 20 of anything. Units let the next crew understand you.',
       intermediate: 'Real missions log units, time and source with every value. Without them, data from two teams cannot be compared.',
-      professional: 'Provenance (units, capture time, source, sequence) is what makes telemetry evidence instead of anecdote. The station rejects samples with impossible timestamps for the same reason.',
+      professional: 'Units, capture time, source and sequence number let someone else check your value later. Without them nobody can tell a stale or duplicated sample from a good one. The station rejects samples with impossible timestamps for the same reason.',
     },
   },
   'bring-back-a-picture': {
@@ -84,7 +102,7 @@ export const byQuest = {
     why: {
       beginner: 'Old news can trick you. If you think a reading is new but it is old, you might make the wrong choice.',
       intermediate: 'Decisions based on stale data can be worse than no data. A clear age limit stops the crew from being fooled.',
-      professional: 'Freshness bounds make staleness explicit. A real system also needs clock-uncertainty metadata before trusting an age computed from two clocks.',
+      professional: 'A fixed age limit means the station never has to guess whether a value is current. An age worked out from two different clocks is only as good as their agreement, so a real system would also record how far apart the clocks might be.',
     },
   },
   'light-and-shadow': {
@@ -97,6 +115,78 @@ export const byQuest = {
       beginner: 'Satellites go around the Earth. Part of the time they are in the Earth\'s shadow, where it is dark.',
       intermediate: 'Eclipse matters for power and temperature. Solar panels stop charging and parts cool down in the shadow.',
       professional: 'Eclipse fraction drives the power budget, battery depth of discharge and thermal design. A real model computes it from the orbit and the sun vector.',
+    },
+  },
+  'catch-the-pass': {
+    hint: {
+      beginner: 'Keep the circle right on top of the satellite. When it is low and far away, press Far. When it is high, press Fast.',
+      intermediate: 'Run the same level twice with only one change, such as the radio setting. Otherwise you cannot tell which change made the difference.',
+      professional: 'Margin is the difference in `minSnr` between two settings. Energy per packet is `drain × airtime`. Work both out before you play, then check them in the game.',
+    },
+    why: {
+      beginner: 'Real ground stations have to point their antenna at the satellite the whole time it goes over. Miss it and the data is gone.',
+      intermediate: 'Every satellite radio trades speed against range. Slow settings reach weak signals but use more battery for each packet.',
+      professional: 'Choosing a data rate per pass is a real operations decision: low passes need margin, high passes can move more data, and a battery in eclipse limits both.',
+    },
+  },
+  'rockoon-battle': {
+    hint: {
+      beginner: 'If the wind arrow points right, your rocket will drift right. Aim a little to the left of the ring.',
+      intermediate: 'Change one thing at a time: keep the power the same and change only the angle, then compare.',
+      professional: '`releasePoint` gives the balloon\'s drift before release. Add that to the rocket\'s own drift to predict the miss.',
+    },
+    why: {
+      beginner: 'Wind pushes on balloons and rockets. Real launch teams always check the wind first.',
+      intermediate: 'A rockoon is a rocket carried up by a balloon. It drifts with the wind on the way up, so the launch point is not where it started.',
+      professional: 'Launching from altitude avoids most of the dense air, but adds drift before release. Real rockoon flights need low winds and a recovery area that allows for both.',
+    },
+  },
+  'follow-the-doppler': {
+    hint: {
+      beginner: 'When the readout says "outside the passband", turn TUNE. If you turned the wrong way, it gets worse, so turn the other way.',
+      intermediate: 'Tap the TUNE knob to change to 1 kHz steps. Near rise the signal is about 3 kHz high; near set it is about 3 kHz low.',
+      professional: 'Find where `heard` and `decoded` are set in `pass.mjs`. Decoding also needs enough SNR and no clipping, so gain matters as well as tuning.',
+    },
+    why: {
+      beginner: 'A satellite is moving very fast, so its radio signal slides up and down in frequency. You have to follow it to keep hearing it.',
+      intermediate: 'Every satellite operator corrects for Doppler shift. On some bands the shift is bigger than the receiver\'s passband, so without tuning you lose the signal.',
+      professional: 'Doppler correction is computed from the predicted orbit, so a bad orbit prediction shows up as a tuning error. The same model feeds `receiver-sim`, so you can check it against the station.',
+    },
+  },
+  'predict-a-pass': {
+    hint: {
+      beginner: 'Use a town or landmark near you, not your home. Two decimal places is enough.',
+      intermediate: 'Passes with a high highest angle last longer. Look at the duration column for the pattern.',
+      professional: 'Orbit data gets less accurate as it ages. Note its age and refresh it before comparing with the station\'s `passes` command.',
+    },
+    why: {
+      beginner: 'You can only talk to a satellite when it is above your horizon. Knowing when it comes lets you be ready.',
+      intermediate: 'Ground stations plan around passes: what to ask for, in what order, before the satellite sets.',
+      professional: 'Every contact plan starts from a pass prediction. Its error budget (orbit data age, model, station position) sets how early you start listening.',
+    },
+  },
+  'who-may-transmit': {
+    hint: {
+      beginner: 'Read the reasons under each card. They tell you exactly what would need to change.',
+      intermediate: 'Try changing one switch at a time and watch which cards change from Fits to Does not fit.',
+      professional: 'Each card cites a rule section. Open it and check the finder\'s reasoning against the text yourself.',
+    },
+    why: {
+      beginner: 'Radio waves are shared. Rules stop one radio from drowning out another one, including radios used for emergencies.',
+      intermediate: 'Students can always listen. To transmit on amateur bands, a licensed operator must be in charge, and messages must be open.',
+      professional: 'A ground station that uses several bands has to fit a different rule on each. Mixing them up is how well-meaning projects end up transmitting where they should not.',
+    },
+  },
+  'predict-a-rocket': {
+    hint: {
+      beginner: 'Look for the word "apogee". That is the highest point. Copy the number and the "m" after it.',
+      intermediate: 'Change one number at a time and write down the apogee each time, so you can see what each change does.',
+      professional: 'The workbook says what its model includes. Anything not on that list is something the real flight can do that the prediction cannot.',
+    },
+    why: {
+      beginner: 'Guessing first and then measuring shows how good your guess was. That is how engineers get better.',
+      intermediate: 'Clubs check stability and rail exit speed before they let a rocket fly. The workbook helps you bring those numbers to the safety officer.',
+      professional: 'Comparing prediction with measurement is how you find what the model gets wrong. A flight that matches a made-up motor curve has proved nothing.',
     },
   },
 };

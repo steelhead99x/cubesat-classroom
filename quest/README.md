@@ -6,6 +6,22 @@ Pass working lessons and well-documented evidence from students, teachers and ra
 
 ## Plan
 
+### Try it in the browser first
+
+Every feature below runs in a web browser with nothing to install and no account. Each lesson has beginner, intermediate and professional steps, a "check your work" line and a question to talk over. Everything in them is a desk simulation, and each page says so.
+
+| Lesson | What you use |
+| --- | --- |
+| [Make first contact](https://cubesatclass.org/quests/first-contact/), [Bring back a picture](https://cubesatclass.org/quests/bring-back-a-picture/), [Lose the signal on purpose](https://cubesatclass.org/quests/lose-the-signal/), [Fresh or historical?](https://cubesatclass.org/quests/fresh-or-historical/), [Light and shadow](https://cubesatclass.org/quests/light-and-shadow/) | The practice ground station on each lesson page |
+| [Catch the Pass](https://cubesatclass.org/quests/catch-the-pass/) | The [Catch the Pass](https://cubesatclass.org/games/catch-the-pass/) game: point an antenna, pick a LoRa setting, look after the battery |
+| [Rockoon Battle](https://cubesatclass.org/quests/rockoon-battle/) | The [Rockoon Battle](https://cubesatclass.org/games/rockoon-wars/) game: read the wind, adjust your aim, 2 to 4 crews |
+| [Follow the Doppler shift](https://cubesatclass.org/quests/follow-the-doppler/) | The [pedal trainer](https://cubesatclass.org/#pedal-lab) for the CSC-R1P receiver, including its pass mode |
+| [Predict a space station pass](https://cubesatclass.org/quests/predict-a-pass/) | [Passes](https://cubesat.app/learn/passes) on cubesat.app |
+| [Who may transmit?](https://cubesatclass.org/quests/who-may-transmit/) | [Bands](https://cubesat.app/learn/spectrum) on cubesat.app, then its [seven radio lessons](https://cubesat.app/learn/lessons) |
+| [Predict a rocket flight](https://cubesatclass.org/quests/predict-a-rocket/) | The [rocket flight workbook](https://cubesatclass.org/rockoon/workbook/), with an adult |
+
+When you are ready for the real station on your own computer, `cargo run --locked -- classroom` runs the same ground station locally, and `cargo run --locked -- receiver-sim` prints a simulated pass as the CSC-R1P pedal would report it (add `--track-doppler` to retune as it goes). Then pick a hardware quest below.
+
 ### Start with what you have
 
 Write down the equipment you have, including the board or printer model, available sensors, and computer operating system. If you have several boards, pick one for the first run. No hardware is needed to get started.
@@ -125,6 +141,16 @@ Short examples of what small satellites, radio and sustainable materials do for 
 - [Track a pet by its collar](/quest/m0/pet-collar-tracking.md)
 - [Wool, fibre and static: what should cover the kit?](/quest/m0/wool-fiber-static.md)
 
+### Parallel classroom, balloon and radio work
+
+- [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md)
+- [Compare a balloon bench log with flight data](/quest/m0/balloon-ground-log.md)
+- [Predict a satellite pass](/quest/m0/predict-a-pass.md)
+- [Review a supervised balloon flight](/quest/m1/balloon-partner-review.md)
+- [Review the hosted experiment](/quest/m1/hosted-review.md)
+- [Specify the first conducted RF test](/quest/m1/ground-station-rf.md)
+- [Review the microscope collection plate proposal](/quest/m1/micro-collection-plate.md)
+
 ### Public site and Worker
 
 Maintainer work for the live classroom site. These quests stay in the log after the pull requests land, so the next crew can re-check the same behavior.
@@ -139,13 +165,4 @@ Maintainer work for the live classroom site. These quests stay in the log after 
 - [Add the Rev C printed 1U frame and Nano 33 firmware, in Rust](/quest/m0/rev-c-printed-frame.md)
 - [Compile the firmware in every build](/quest/m0/compile-firmware-in-builds.md)
 - [Run cubesat-classroom CI on PrairieDog runners](/quest/m0/prairiedog-ci.md)
-
-### Parallel classroom, balloon and radio work
-
-- [Teach the two-relay lesson](/quest/m0/repeat-the-station-lesson.md)
-- [Compare a balloon bench log with flight data](/quest/m0/balloon-ground-log.md)
-- [Predict a satellite pass](/quest/m0/predict-a-pass.md)
-- [Review a supervised balloon flight](/quest/m1/balloon-partner-review.md)
-- [Review the hosted experiment](/quest/m1/hosted-review.md)
-- [Specify the first conducted RF test](/quest/m1/ground-station-rf.md)
-- [Review the microscope collection plate proposal](/quest/m1/micro-collection-plate.md)
+- [Turn every site feature into a lesson](/quest/m0/explore-every-feature.md)

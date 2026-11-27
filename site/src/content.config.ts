@@ -2,9 +2,11 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
-// Example quests that run against the in-browser station demo. Each quest has
-// three levels; the page shows the one the visitor picks. The full quest board
-// lives in /quest at the repository root.
+// Browser lessons. Each has three levels; the page shows the one the visitor picks.
+// A lesson without `tool` runs against the station demo on its own page. A lesson with
+// `tool` sends the visitor to a game, the pedal trainer, the rocket workbook or
+// cubesat.app; `href` starting with / is on this site. The full quest board lives in
+// /quest at the repository root.
 const level = z.object({
   steps: z.array(z.string()).min(2),
   check: z.string(),
@@ -20,6 +22,11 @@ const quests = defineCollection({
     summary: z.string(),
     minutes: z.number(),
     skill: z.string(),
+    tool: z.object({
+      name: z.string(),
+      href: z.string().regex(/^(\/|https:\/\/cubesat\.app\/)/),
+      note: z.string(),
+    }).optional(),
     beginner: level,
     intermediate: level,
     professional: level,
