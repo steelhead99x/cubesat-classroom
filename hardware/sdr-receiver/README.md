@@ -23,7 +23,7 @@ Date: 26 November 2026 (Rev A, fix round 1 and review fixes). Tool: KiCad 7.0.11
 | [`fab/drc-report.txt`](fab/drc-report.txt) | KiCad design rule check report |
 | [`deck/`](deck/README.md) | Source of the CSC-R1 slide deck (15 slides), a snapshot of the live deck |
 | [`bench/`](bench/README.md) | Bench scripts, a power-logger sketch, a shopping list and the bench quests for measuring the kit with an RTL-SDR V4 and other low-cost gear |
-| `gen/` | The Python that generates everything. `gen/build.sh` rebuilds it all; `gen/rf_checks.py` repeats the desk calculations below. |
+| `gen/` | The Python that generates everything. It drives KiCad through KiCad's own Python module (`pcbnew`), which has no Rust binding, so this folder stays Python. `gen/build.sh` rebuilds it all; `gen/rf_checks.py` repeats the desk calculations below. |
 
 ![CSC-R1 Rev A top side](kicad/csc-r1-top.png)
 

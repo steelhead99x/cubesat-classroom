@@ -1,4 +1,5 @@
 //! `cubesat-cad check` runs the checks; `cubesat-cad build <folder>` also writes the files.
+//! `cubesat-cad archive <hardware folder>` rebuilds the archived Rev A and Rev B files.
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -9,6 +10,16 @@ use cubesat_cad::export::write_all;
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.first().map(String::as_str) == Some("archive") {
+        let out = PathBuf::from(args.get(1).map_or("hardware", String::as_str));
+        return match cubesat_cad::archive::write_all(&out) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("{e}");
+                ExitCode::FAILURE
+            }
+        };
+    }
     let design = Design::default();
     let report = verify(&design);
     for c in &report.checks {
@@ -43,7 +54,9 @@ fn main() -> ExitCode {
             }
         }
         Some(other) => {
-            eprintln!("usage: cubesat-cad [check | build <folder>] (got {other})");
+            eprintln!(
+                "usage: cubesat-cad [check | build <folder> | archive <hardware folder>] (got {other})"
+            );
             ExitCode::FAILURE
         }
     }

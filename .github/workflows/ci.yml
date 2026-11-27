@@ -191,11 +191,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - run: python3 -m venv /tmp/cad && /tmp/cad/bin/pip install -r hardware/requirements.txt
-      - run: |
-          /tmp/cad/bin/python hardware/generate.py
-          /tmp/cad/bin/python hardware/p1s/prepare.py
-          /tmp/cad/bin/python hardware/drawing.py
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: Rev A and Rev B archive (Rust)
+        run: cargo run --locked --release -p cubesat-cad -- archive hardware
       - name: AMSAT kit (Rust)
         run: |
           cargo run --locked --release -p amsat-kit -- self-test
@@ -253,5 +252,3 @@ jobs:
           persist-credentials: false
       - run: bash -n docs/start.sh scripts/*.sh
       - run: shellcheck docs/start.sh scripts/*.sh
-      - run: python3 -m py_compile scripts/*.py tools/*.py hardware/*.py hardware/p1s/*.py
-      - run: python3 tools/test_serial_image.py

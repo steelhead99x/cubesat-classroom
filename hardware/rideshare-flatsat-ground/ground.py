@@ -3,7 +3,7 @@
     python3 ground.py simulate run-1                 # desk simulation of a light/dark run
     python3 ground.py report run-1/power.csv --max-gap-s 10         # charge in and out, per light and dark period
 
-power.csv is the INA226 logger's format (hardware/sdr-receiver/bench/power_log.py record):
+power.csv is the INA226 logger's format (csc-power-log record):
 t_ms,current_ma,bus_v,power_mw, with the INA226 in the cell's lead, wired so charging reads positive.
 """
 import argparse

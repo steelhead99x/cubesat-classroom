@@ -16,7 +16,7 @@ Pins, I²C addresses and expander bits are in the [receiver README](/hardware/sd
 | `DEMOD ON/OFF`, `BIAS ON/OFF` | Expander bits P2 and P1. Bias stays off at power-up. |
 | `TRIM <ch> <code>` | Sets an MCP4728 channel (DC offset and IIP2 trims) |
 | `ADC START <gain dB>` | Starts the TLV320ADC3140 at 192 kHz as clock master (MCLK on GPIO1), I/Q on I²S |
-| `STREAM USB` | Sends I/Q to the computer in a format an SDR app can open, or as raw files for `sweep.py`-style analysis |
+| `STREAM USB` | Sends I/Q to the computer in a format an SDR app can open, or as raw files for `csc-sweep`-style analysis |
 | `STATUS` | Band, LO, lock, gain, temperature, and which blocks are on |
 
 ### How to check
