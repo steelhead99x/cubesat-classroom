@@ -1,0 +1,327 @@
+{
+  "about": "Mission patch art, shared by site/src/components/Patch.astro and hardware/patches/gen/patches.py (the 3D-printable versions). Units are the 100 x 100 viewBox. Each shape is a stroke or a fill on the white or tone layer. 'gap' cuts a navy outline of that width around the shape from everything drawn before it. Labels come from each quest's 'patch' field; run the generator after changing art or a label.",
+  "frame": {
+    "R_out": 46,
+    "R_key": 43.6,
+    "R_core": 37.5,
+    "corner": 2.5,
+    "ribbon": {
+      "x0": 3,
+      "x1": 97,
+      "y0": 66,
+      "y1": 78,
+      "notch": 3.2,
+      "border": 1.3
+    },
+    "label": {
+      "cy": 72,
+      "cap": 6.8,
+      "pad": 1.6,
+      "tracking": 0.06
+    },
+    "stars": [
+      [
+        14.9,
+        44
+      ],
+      [
+        85.1,
+        44
+      ],
+      [
+        50,
+        84.5
+      ]
+    ],
+    "star": {
+      "r_out": 2.6,
+      "r_in": 1.15
+    },
+    "art_shift": [
+      0,
+      4
+    ]
+  },
+  "print": {
+    "mm_per_unit": 0.8,
+    "body_mm": 1.6,
+    "tone_mm": 0.6,
+    "white_mm": 0.6,
+    "min_feature_mm": 0.8,
+    "min_gap_mm": 0.5
+  },
+  "patches": {
+    "first-contact": {
+      "tone": "#a4c9ff",
+      "about": "A CubeSat calls down to a hand-held antenna.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "fill",
+          "d": "M55 16h10v10H55z"
+        },
+        {
+          "layer": "tone",
+          "kind": "fill",
+          "d": "M46.5 18h7v6h-7zM66.5 18h7v6h-7z"
+        },
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.4,
+          "d": "M52 31a10 10 0 0 1-7 7M56.5 34.5a16 16 0 0 1-11 10.5"
+        },
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.6,
+          "d": "M37 60V38M30 41h14M31.5 47h11M33 53h8"
+        }
+      ]
+    },
+    "bring-back-a-picture": {
+      "tone": "#ffd23f",
+      "about": "A camera with a bright lens.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.6,
+          "d": "M33 30h34v22H33zM43 30l3-5h8l3 5"
+        },
+        {
+          "layer": "tone",
+          "kind": "fill",
+          "gap": 1.3,
+          "d": "M50 48.5a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15z"
+        },
+        {
+          "layer": "white",
+          "kind": "fill",
+          "d": "M60 33.5h4v3h-4z"
+        }
+      ]
+    },
+    "lose-the-signal": {
+      "tone": "#ef6b6c",
+      "about": "Radio waves, crossed out on purpose.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.6,
+          "d": "M33 36a24 24 0 0 1 34 0M38 42a16 16 0 0 1 24 0M43.5 48a8 8 0 0 1 13 0"
+        },
+        {
+          "layer": "white",
+          "kind": "fill",
+          "d": "M50 57.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
+        },
+        {
+          "layer": "tone",
+          "kind": "stroke",
+          "width": 3.4,
+          "gap": 1.2,
+          "d": "M35 24l30 32"
+        }
+      ]
+    },
+    "fresh-or-historical": {
+      "tone": "#6fd3a0",
+      "about": "A clock with an arrow turning back through time.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.6,
+          "d": "M50 25a14 14 0 1 1-13.3 9.7"
+        },
+        {
+          "layer": "white",
+          "kind": "fill",
+          "d": "M33 28l8.5 2.5-6 6z"
+        },
+        {
+          "layer": "tone",
+          "kind": "stroke",
+          "width": 2.6,
+          "d": "M50 31v8l6 4"
+        }
+      ]
+    },
+    "light-and-shadow": {
+      "tone": "#b9a4ff",
+      "about": "Earth slides in front of the Sun: an eclipse.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "fill",
+          "d": "M57 41a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"
+        },
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.2,
+          "d": "M57 20v-2M68 33h2M64.8 25.2l1.4-1.4M64.8 40.8l1.4 1.4M49.2 25.2l-1.4-1.4"
+        },
+        {
+          "layer": "tone",
+          "kind": "fill",
+          "gap": 1.4,
+          "d": "M44 57a12 12 0 1 0 0-24 12 12 0 0 0 0 24z"
+        }
+      ]
+    },
+    "catch-the-pass": {
+      "tone": "#6fd3a0",
+      "about": "A dish catching packets from a passing satellite.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "fill",
+          "d": "M32 41a15 15 0 0 0 21 14z"
+        },
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.4,
+          "d": "M42.5 48l8-8M41 55l-4 3.5h11"
+        },
+        {
+          "layer": "tone",
+          "kind": "fill",
+          "d": "M54 33h4.5v4.5H54zM60 27h4.5v4.5H60zM66 21h4.5v4.5H66z"
+        }
+      ]
+    },
+    "rockoon-battle": {
+      "tone": "#ef6b6c",
+      "about": "A balloon lifts a rocket while the wind blows past.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "fill",
+          "d": "M54 18a10 10 0 0 0-10 10c0 5.5 4.5 10 10 11.5 5.5-1.5 10-6 10-11.5a10 10 0 0 0-10-10z"
+        },
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 1.8,
+          "d": "M54 39.5v5"
+        },
+        {
+          "layer": "white",
+          "kind": "fill",
+          "d": "M54 44.5l3.2 4v8.5h-6.4v-8.5z"
+        },
+        {
+          "layer": "tone",
+          "kind": "stroke",
+          "width": 2.4,
+          "d": "M29 31h8c2.5 0 2.5-3.5 0-3.5M27 38h10M31 45h7c2.5 0 2.5 3.5 0 3.5"
+        }
+      ]
+    },
+    "follow-the-doppler": {
+      "tone": "#ffd23f",
+      "about": "A wave bunches up as the satellite comes, then stretches as it goes.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.6,
+          "d": "M30 44c1.8-7 3.6-7 5.4 0s3.4 7 5.2 0 3-7 4.8 0 3.6 7 5.6 0 4.6-7 7 0 5.6 7 8 0"
+        },
+        {
+          "layer": "tone",
+          "kind": "fill",
+          "gap": 1.2,
+          "d": "M44 31a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z"
+        },
+        {
+          "layer": "tone",
+          "kind": "stroke",
+          "width": 2.2,
+          "d": "M51 26.5h11M59 23l3.5 3.5L59 30"
+        }
+      ]
+    },
+    "predict-a-pass": {
+      "tone": "#a4c9ff",
+      "about": "The space station arcs over the horizon.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.6,
+          "d": "M28 55h44"
+        },
+        {
+          "layer": "tone",
+          "kind": "stroke",
+          "width": 2.2,
+          "d": "M33 55a17 22 0 0 1 34 0"
+        },
+        {
+          "layer": "white",
+          "kind": "fill",
+          "gap": 1.2,
+          "d": "M47 30h6v6h-6zM38 31.5h8v3h-8zM54 31.5h8v3h-8z"
+        }
+      ]
+    },
+    "who-may-transmit": {
+      "tone": "#b9a4ff",
+      "about": "A radio mast; only a licensed operator may send.",
+      "shapes": [
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.6,
+          "d": "M44 57l6-31 6 31M46.3 45.5h7.4M45 51.5h10"
+        },
+        {
+          "layer": "white",
+          "kind": "fill",
+          "d": "M50 28a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
+        },
+        {
+          "layer": "tone",
+          "kind": "stroke",
+          "width": 2.4,
+          "d": "M41 33a12 12 0 0 1 0-14M59 19a12 12 0 0 1 0 14M35 37a20 20 0 0 1 0-22M65 15a20 20 0 0 1 0 22"
+        }
+      ]
+    },
+    "predict-a-rocket": {
+      "tone": "#ffd23f",
+      "about": "A rocket's arc, with its highest point marked.",
+      "shapes": [
+        {
+          "layer": "tone",
+          "kind": "stroke",
+          "width": 2.2,
+          "d": "M30 58C32 36 42 22 52 21"
+        },
+        {
+          "layer": "white",
+          "kind": "stroke",
+          "width": 2.2,
+          "d": "M52 21v-5M48 16h8"
+        },
+        {
+          "layer": "white",
+          "kind": "fill",
+          "gap": 1.2,
+          "d": "M63 26c5 4 7 11 5.5 19h-7c-1.5-8 .5-15 1.5-19zM61.5 45l-3 6h13l-3-6z"
+        },
+        {
+          "layer": "tone",
+          "kind": "stroke",
+          "width": 2.0,
+          "d": "M62 55v3M65 55v5M68 55v3"
+        }
+      ]
+    }
+  }
+}

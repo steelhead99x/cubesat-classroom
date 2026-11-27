@@ -12,6 +12,7 @@ export async function GET() {
     '/mission/',
     '/quests/',
     ...quests.map(quest => `/quests/${quest.id}/`),
+    '/patches/',
     '/games/',
     '/games/catch-the-pass/',
     '/games/rockoon-wars/',
