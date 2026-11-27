@@ -1,10 +1,29 @@
 <section id="board" class="alt" style="flex-direction:row;gap:64px;align-items:center">
-<div style="display:flex;flex-direction:column;gap:32px;width:560px">
+<div style="display:flex;flex-direction:column;gap:28px;width:560px">
 <p class="eyebrow">Rev A · layout</p>
 <h2>120 × 78 mm, four layers</h2>
-<p>All parts on top. Layer 2 is an unbroken ground plane. The RF path is routed by hand; the rest by a small router written for this board. Order it as 1.6 mm with 0.21 mm prepreg under the top layer.</p>
+<div class="legend">
+<p><b>1</b> Antenna in (SMA)</p>
+<p><b>2</b> Low-noise amplifier</p>
+<p><b>3</b> Band filters and switches</p>
+<p><b>4</b> I/Q demodulator</p>
+<p><b>5</b> Synthesizer and TCXO</p>
+<p><b>6</b> ADC</p>
+<p><b>7</b> XIAO sockets</p>
+<p><b>8</b> USB-C</p>
+</div>
 <p class="status">Rendered from the KiCad file, not a photo</p>
 </div>
-<img src="/_blob/efb9cfa44a963c5dd0a8d219d1d68b5e" alt="Top copper and silkscreen of the CSC-R1 Rev A board" style="width:1040px;height:700px;object-fit:contain;background:#0F1216;border-radius:16px">
-<aside>This is a render of the board file. The empty top-left area showed the radio could be smaller: the pedal build, CSC-R1P, puts the same circuit on a 54 by 104 millimetre board.</aside>
+<div style="position:relative;width:1040px;height:676px">
+<img src="/_blob/efb9cfa44a963c5dd0a8d219d1d68b5e" alt="Top copper and silkscreen of the CSC-R1 Rev A board, with numbered markers on its main blocks" style="position:absolute;left:0;top:0;width:1040px;height:676px;object-fit:contain;border-radius:16px">
+<p class="spot" style="left:0;top:429px;--i:0">1</p>
+<p class="spot" style="left:205px;top:412px;--i:1">2</p>
+<p class="spot" style="left:449px;top:429px;--i:2">3</p>
+<p class="spot" style="left:789px;top:420px;--i:3">4</p>
+<p class="spot" style="left:897px;top:400px;--i:4">5</p>
+<p class="spot" style="left:800px;top:286px;--i:5">6</p>
+<p class="spot" style="left:792px;top:75px;--i:6">7</p>
+<p class="spot" style="left:100px;top:626px;--i:7">8</p>
+</div>
+<aside>The markers follow the signal: antenna on the left edge, amplifier, filters, demodulator and synthesizer across the middle, the ADC above them, and the XIAO sockets top right. All parts are on top. Layer 2 is an unbroken ground plane. The RF path is routed by hand; the rest by a small router written for this board. Order it as 1.6 mm with 0.21 mm prepreg under the top layer. The empty top-left area showed the radio could be smaller: the pedal build, CSC-R1P, puts the same circuit on a 54 by 104 millimetre board.</aside>
 </section>

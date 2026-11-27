@@ -2,7 +2,7 @@
 <p class="eyebrow">Simulation · runs today</p>
 <h2>One pass, simulated three ways</h2>
 <div style="display:flex;gap:56px;align-items:flex-start">
-<img src="/_blob/164467ddd16e2c0efc56d7f440c85e45" alt="The website pedal trainer in pass mode: the CSC-R1P pedal tuned to 145.803 MHz, the carrier heard, and a readout labelled desk simulation showing elevation 19 degrees and Doppler +3.04 kHz" style="width:860px;height:593px;object-fit:contain;background:#081410;border-radius:16px">
+<div style="width:860px;height:593px;background:#0F1216;border-radius:16px;flex:0 0 auto"></div>
 <div style="display:flex;flex-direction:column;gap:28px;width:748px">
 <div class="fin"><p class="num">1</p><p><b>Station.</b> <span class="mono">receiver-sim</span> plays a pass as the pedal or a V4 would hear it. <span class="mono">receiver-bridge</span> publishes a real V4.</p></div>
 <div class="fin"><p class="num">2</p><p><b>Website.</b> The pedal trainer, drawn from the template, with a pass mode: retune as the Doppler shift moves.</p></div>
@@ -10,5 +10,65 @@
 <p class="status">Same orbit maths in Rust and JavaScript, kept in step by a test · every reading labelled desk simulation, hardware bench or received RF</p>
 </div>
 </div>
-<aside>The station's snapshots follow the layout the phone app already reads, on its live broadcast, and the app's own parser accepts them. That means a classroom can run the whole path today, and the real pedal drops in later without changing the app. A followed pass in the trainer scored 92 percent heard.</aside>
+<x-embed style="position:absolute;left:128px;top:321px;width:860px;height:593px"><style>
+html,body{margin:0;height:100%;background:#0F1216;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+canvas{display:block;width:100%;height:100%}
+</style>
+<canvas id="c"></canvas>
+<script>
+// Desk simulation: the same pass model as src/receiver.rs and site/src/lib/pass.mjs
+// (420 km, 45 degree pass, pedal levels). Plays at 40x.
+const R=6371,MU=398600.4418,C=299792.458,ALT=420,MAXEL=45;
+const r=R+ALT,rate=Math.sqrt(MU/r)/r,ratio=R/r,hz=Math.acos(ratio),el0=MAXEL*Math.PI/180;
+const cross=Math.acos(ratio*Math.cos(el0))-el0;
+const dur=2*Math.acos(Math.min(1,Math.cos(hz)/Math.cos(cross)))/rate;
+function geo(t){const psi=Math.acos(Math.min(1,Math.max(-1,Math.cos(rate*t)*Math.cos(cross))));
+ return{range:Math.sqrt(R*R+r*r-2*R*r*Math.cos(psi)),el:Math.atan2(r*Math.cos(psi)-R,r*Math.sin(psi))*180/Math.PI}}
+function dop(t,f){return -f*(geo(t+.5).range-geo(t-.5).range)/C}
+const F2=145.8e6,F70=437.8e6,SPEED=40,PRE=40;
+const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H;
+function size(){const d=devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*d;cv.height=H*d;g.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',size);size();
+const GREEN='#39FF9C',BLUE='#6FC3FF',AMBER='#FFB020',DIM='#2B3038',TXT='#E8ECEF',MUTED='#9AA3AD';
+function txt(s,x,y,sz,col,al,wt){g.font=(wt||400)+' '+sz+'px system-ui,sans-serif';g.fillStyle=col;g.textAlign=al||'left';g.fillText(s,x,y)}
+const t0=performance.now();
+function frame(now){
+ const cyc=dur+2*PRE,ps=((now-t0)/1000*SPEED)%cyc-PRE,t=ps-dur/2,inView=ps>=0&&ps<=dur;
+ const G=geo(t);g.clearRect(0,0,W,H);
+ // header
+ g.fillStyle='rgba(255,176,32,.15)';g.fillRect(16,12,250,40);txt('DESK SIMULATION',30,41,24,AMBER,'left',700);
+ txt(ps<0?'rises in '+Math.ceil(-ps)+' s':ps>dur?'set':'T+'+Math.round(ps)+' s',W-20,41,24,MUTED,'right');
+ // sky: elevation over the pass
+ const sx0=20,sx1=W-20,sy=268,sk=4.2,X=s=>sx0+(sx1-sx0)*s/dur;
+ g.strokeStyle=DIM;g.lineWidth=2;g.beginPath();g.moveTo(sx0,sy);g.lineTo(sx1,sy);g.stroke();
+ g.setLineDash([6,8]);g.strokeStyle='#3A424C';g.beginPath();
+ for(let i=0;i<=120;i++){const s=dur*i/120,e=geo(s-dur/2).el;i?g.lineTo(X(s),sy-e*sk):g.moveTo(X(s),sy-e*sk)}g.stroke();g.setLineDash([]);
+ if(inView){g.strokeStyle=GREEN;g.lineWidth=3;g.beginPath();
+  for(let i=0;i<=80;i++){const s=ps*i/80,e=geo(s-dur/2).el;i?g.lineTo(X(s),sy-e*sk):g.moveTo(X(s),sy-e*sk)}g.stroke();
+  const x=X(ps),y=sy-G.el*sk;
+  g.strokeStyle='rgba(57,255,156,.35)';g.setLineDash([4,8]);g.beginPath();g.moveTo(W/2,sy);g.lineTo(x,y);g.stroke();g.setLineDash([]);
+  g.fillStyle='rgba(57,255,156,.25)';g.beginPath();g.arc(x,y,16,0,7);g.fill();g.fillStyle=GREEN;g.beginPath();g.arc(x,y,8,0,7);g.fill();}
+ g.fillStyle=MUTED;g.beginPath();g.moveTo(W/2-18,sy);g.lineTo(W/2,sy-22);g.lineTo(W/2+18,sy);g.fill();
+ txt('horizon',sx0,sy+30,24,MUTED);txt('45°',sx0,sy-45*sk+8,24,MUTED);
+ // Doppler for both bands
+ const dy=410,dk=62/11000,DX=s=>sx0+60+(sx1-sx0-60)*s/dur;
+ g.strokeStyle=DIM;g.lineWidth=2;g.beginPath();g.moveTo(sx0+60,dy);g.lineTo(sx1,dy);g.stroke();
+ [[F70,BLUE],[F2,GREEN]].forEach(([f,col])=>{g.strokeStyle=col;g.globalAlpha=.35;g.lineWidth=3;g.beginPath();
+  for(let i=0;i<=120;i++){const s=dur*i/120,d=dop(s-dur/2,f);i?g.lineTo(DX(s),dy-d*dk):g.moveTo(DX(s),dy-d*dk)}g.stroke();g.globalAlpha=1;
+  if(inView){const d=dop(t,f);g.fillStyle=col;g.beginPath();g.arc(DX(ps),dy-d*dk,7,0,7);g.fill()}});
+ txt('Doppler, both bands',sx0+60,dy-82,24,MUTED);txt('0',sx0+30,dy+8,24,MUTED,'right');
+ if(inView){g.strokeStyle='rgba(232,236,239,.25)';g.beginPath();g.moveTo(DX(ps),dy-75);g.lineTo(DX(ps),dy+75);g.stroke()}
+ // readouts
+ const ry=H-64;g.fillStyle='#15181D';g.fillRect(0,ry-34,W,H-ry+34);
+ if(inView){const snr=16+20*Math.log10(1000/G.range),d2=dop(t,F2),d70=dop(t,F70),k=v=>(v>=0?'+':'')+(v/1000).toFixed(1)+' kHz';
+  txt('Elevation',20,ry,24,MUTED);txt(G.el.toFixed(0)+'°',20,ry+40,32,TXT,'left',700);
+  txt('2 m',170,ry,24,GREEN);txt(k(d2),170,ry+40,32,TXT,'left',700);
+  txt('70 cm',370,ry,24,BLUE);txt(k(d70),370,ry+40,32,TXT,'left',700);
+  txt('SNR'+(snr>=10?' · beacon':''),590,ry,24,snr>=10?GREEN:MUTED);txt(snr.toFixed(0)+' dB',590,ry+40,32,TXT,'left',700);
+ }else txt(ps<0?'Waiting for the satellite to rise':'Satellite has set: loss of signal',20,ry+24,28,MUTED);
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+</script>
+</x-embed>
+<aside>The pass on the left is live: the same orbit model as the station and website, a 45 degree pass at 420 km played 40 times faster. Watch both bands: the 70 cm signal shifts three times as far as 2 m, about plus or minus 10 kilohertz against 3.4. The beacon only decodes near the top of the pass, where the satellite is closest. The station's snapshots follow the layout the phone app already reads, so the real pedal drops in later without changing the app. In a PDF or PowerPoint export this panel is a still frame.</aside>
 </section>

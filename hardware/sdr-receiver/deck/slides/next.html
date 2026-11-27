@@ -1,14 +1,18 @@
 <section id="next" class="alt" style="padding:128px 128px 160px">
 <p class="eyebrow">Next steps</p>
 <h2>From desk design to a measured radio</h2>
-<div class="grid2">
-<div class="fin"><p class="num">1</p><p><b>Finish routing CSC-R1P</b> in KiCad (Freerouting or by hand) or Flux, then pours, DRC gate and Gerbers.</p></div>
-<div class="fin"><p class="num">2</p><p><b>Independent review</b> of the RF layout and the routed pedal boards, by someone who didn’t design them, before ordering.</p></div>
-<div class="fin"><p class="num">3</p><p><b>First light at home</b> with the RTL-SDR V4, then <span class="mono">rtl_power</span> into <span class="mono">receiver-bridge</span> on the live feed.</p></div>
-<div class="fin"><p class="num">4</p><p><b>Bring-up firmware in Rust</b>: I²C scan, synthesizer, ADC, I/Q capture, then the same stats track from the pedal.</p></div>
-<div class="fin"><p class="num">5</p><p><b>Measure</b> each block, then sensitivity at 145.8 and 437 MHz against the V4, with the bench quests.</p></div>
-<div class="fin"><p class="num">6</p><p><b>Rev B</b>: add HaLow and the power monitors after the desense tests; certify after prototypes work.</p></div>
+<div class="tl">
+<div class="rail"><div></div></div>
+<div class="cols">
+<div class="col" style="--i:0"><div class="dot" style="background:#FFB020"></div><p class="phase" style="color:#FFB020">1 · Hardware</p><h3>Finish routing</h3><p class="txt">KiCad Freerouting, by hand or Flux; then pours, DRC gate and Gerbers.</p></div>
+<div class="col" style="--i:1"><div class="dot" style="background:#FFB020"></div><p class="phase" style="color:#FFB020">2 · Hardware</p><h3>Independent review</h3><p class="txt">RF layout and the routed pedal boards, by someone who didn’t design them.</p></div>
+<div class="col" style="--i:2"><div class="dot" style="background:#39FF9C"></div><p class="phase" style="color:#39FF9C">3 · First RF</p><h3>Home station</h3><p class="txt">RTL-SDR V4 sweeps, then <span class="mono">rtl_power</span> into <span class="mono">receiver-bridge</span> on the live feed.</p></div>
+<div class="col" style="--i:3"><div class="dot" style="background:#6FC3FF"></div><p class="phase" style="color:#6FC3FF">4 · Firmware</p><h3>Bring-up in Rust</h3><p class="txt">I²C scan, synthesizer, ADC and I/Q capture, then stats from the pedal.</p></div>
+<div class="col" style="--i:4"><div class="dot" style="background:#39FF9C"></div><p class="phase" style="color:#39FF9C">5 · Measure</p><h3>Compare to the V4</h3><p class="txt">Each block, then sensitivity at 145.8 and 437 MHz, with the bench quests.</p></div>
+<div class="col" style="--i:5"><div class="dot" style="background:#9AA3AD"></div><p class="phase" style="color:#9AA3AD">6 · Rev B</p><h3>HaLow and power</h3><p class="txt">After the desense tests; certify once prototypes work.</p></div>
 </div>
+</div>
+<p class="status">Now: desk design and desk simulation · step 3 brings the first received RF, step 5 the first measurement of our own receiver</p>
 <p class="foot">Design files: github.com/steelhead99x/cubesat-classroom · hardware/sdr-receiver · docs/home-station.md</p>
-<aside>Everything up to now is desk design or desk simulation. Step 3 is the first point where we will have received RF to report, and step 5 the first measurement of our own receiver.</aside>
+<aside>Read the timeline left to right. Amber is hardware we still have to finish, green is where real signals and measurements start, blue is firmware, and grey is Rev B. Everything up to now is desk design or desk simulation.</aside>
 </section>

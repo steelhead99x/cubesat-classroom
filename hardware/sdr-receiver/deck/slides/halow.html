@@ -1,21 +1,42 @@
-<section id="halow" data-flat style="display:flex; flex-direction:column; gap:40px; padding:128px; background:#0b0d10">
-  <p style="flex:0 0 auto; font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; line-height:1.45; letter-spacing:3px; text-transform:uppercase; color:#39ff9c; opacity:1">Rev B (after CSC-R1P) · links</p>
-  <h2 style="flex:0 0 auto; font-family:'Space Grotesk', Arial, sans-serif; font-size:72px; font-weight:700; line-height:1.08; color:#e8ecef; opacity:1">HaLow is the long-range fallback</h2>
-  <table style="width:1664px; flex:0 0 auto; font-family:Inter, Arial, sans-serif; font-size:28px; line-height:1.35; color:#e8ecef; opacity:1">
-    <tr><th style="padding:18px 20px; width:8%; color:#39ff9c">Order</th><th style="padding:18px 20px; width:26%; color:#39ff9c">Link</th><th style="padding:18px 20px; width:36%; color:#39ff9c">From</th><th style="padding:18px 20px; width:30%; color:#39ff9c">Carries</th></tr>
-    <tr><td style="padding:18px 20px; color:#e8ecef">1</td><td style="padding:18px 20px; color:#e8ecef">USB</td><td style="padding:18px 20px; color:#bfc7d0">XIAO ESP32-S3</td><td style="padding:18px 20px; color:#bfc7d0">Raw I/Q to SDR++ or SatDump</td></tr>
-    <tr><td style="padding:18px 20px; color:#e8ecef">2</td><td style="padding:18px 20px; color:#e8ecef">2.4 / 5 GHz Wi-Fi</td><td style="padding:18px 20px; color:#bfc7d0">The XIAO you insert (5 GHz on the C5)</td><td style="padding:18px 20px; color:#bfc7d0">Raw I/Q, stats, audio</td></tr>
-    <tr><td style="padding:18px 20px; color:#e8ecef">3</td><td style="padding:18px 20px; color:#e8ecef">Wi-Fi HaLow, 902–928 MHz</td><td style="padding:18px 20px; color:#bfc7d0">On-board MM6108 (Quectel FGH100M-H)</td><td style="padding:18px 20px; color:#bfc7d0">Stats, Opus audio, decimated I/Q</td></tr>
-  </table>
-  <div style="display:grid; gap:32px; grid-template-columns:1fr 1fr; flex:0 0 auto; opacity:1">
-    <div style="display:flex; flex-direction:column; gap:16px; min-width:min-content; padding:36px; background:#1c2027; border:2px solid #2b3038; border-radius:16px">
-      <h3 style="flex:0 0 auto; font-family:'Space Grotesk', Arial, sans-serif; font-size:36px; font-weight:700; line-height:1.15; color:#e8ecef">One copy out, relay fans out</h3>
-      <p style="flex:0 0 auto; font-family:Inter, Arial, sans-serif; font-size:26px; line-height:1.45; color:#bfc7d0">The pedal publishes once over QUIC/MoQ. The classroom relay or moq.pro distributes to every viewer.</p>
-    </div>
-    <div style="display:flex; flex-direction:column; gap:16px; min-width:min-content; padding:36px; background:#1c2027; border:2px solid #2b3038; border-radius:16px">
-      <h3 style="flex:0 0 auto; font-family:'Space Grotesk', Arial, sans-serif; font-size:36px; font-weight:700; line-height:1.15; color:#e8ecef">Raw I/Q doesn’t fit HaLow</h3>
-      <p style="flex:0 0 auto; font-family:Inter, Arial, sans-serif; font-size:26px; line-height:1.45; color:#bfc7d0">Lab boards measured 2.7–3.3 Mbit/s at 4 MHz, centimetres apart. Raw I/Q needs about 6.1.</p>
-    </div>
-  </div>
-  <aside>CSC-R1P, the first pedal, has no HaLow; this is the Rev B plan. The MM6108 is the chip the project's Rust HaLow firmware already drives. Bluetooth LE is for setup only. HaLow carries ordinary IP, so the same MoQ publisher runs over it unchanged.</aside>
+<section id="halow">
+<p class="eyebrow">Rev B (after CSC-R1P) · links</p>
+<h2>HaLow is the long-range fallback</h2>
+<table style="font-size:26px">
+<tr><th style="width:8%">Order</th><th style="width:26%">Link</th><th style="width:36%">From</th><th style="width:30%">Carries</th></tr>
+<tr><td>1</td><td>USB</td><td class="dim">XIAO ESP32-S3</td><td class="dim">Raw I/Q to SDR++ or SatDump</td></tr>
+<tr><td>2</td><td>2.4 / 5 GHz Wi-Fi</td><td class="dim">The XIAO you insert (5 GHz on the C5)</td><td class="dim">Raw I/Q, stats, audio</td></tr>
+<tr><td>3</td><td>Wi-Fi HaLow, 902–928 MHz</td><td class="dim">On-board MM6108 (Quectel FGH100M-H)</td><td class="dim">Stats, Opus audio, decimated I/Q</td></tr>
+</table>
+<div class="chartrow">
+<div class="card"><h3>One copy out, relay fans out</h3><p>The pedal publishes once over MoQ; the classroom relay fans it out to every viewer.</p></div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:28px;color:#E8ECEF"><b>What fits in HaLow’s measured 2.7–3.3 Mbit/s</b> (blue band)</p>
+<!-- x(v) = 220 + (log10 v - 3) / 4 * 830 ; rows at 0, 52, 104, 156 -->
+<div style="position:relative;width:1072px;height:250px">
+<svg aria-label="Bit rates on a log scale: stats 4.8 kbit/s, Opus voice about 32 kbit/s and I/Q at 48 kHz 1.5 Mbit/s fit below HaLow's measured 2.7 to 3.3 Mbit/s; raw I/Q at 6.1 Mbit/s does not" style="position:absolute;left:0;top:0" width="1072" height="250" viewBox="0 0 1072 250">
+<path d="M 220 0 V 208 M 427.5 0 V 208 M 635 0 V 208 M 842.5 0 V 208 M 1050 0 V 208" stroke="#2B3038" stroke-width="2"/>
+<rect x="932" y="0" width="18" height="208" fill="#6FC3FF" opacity="0.35"/>
+<path d="M 932 0 V 208 M 950 0 V 208" stroke="#6FC3FF" stroke-width="2"/>
+<rect x="220" y="8" width="141" height="34" rx="4" fill="#39FF9C"><animate attributeName="width" from="0" to="141" dur="0.8s" begin="0s"/></rect>
+<rect x="220" y="60" width="312" height="34" rx="4" fill="#39FF9C"><animate attributeName="width" from="0" to="312" dur="0.9s" begin="0s"/></rect>
+<rect x="220" y="112" width="661" height="34" rx="4" fill="#39FF9C"><animate attributeName="width" from="0" to="661" dur="1.1s" begin="0s"/></rect>
+<rect x="220" y="164" width="786" height="34" rx="4" fill="#FFB020"><animate attributeName="width" from="0" to="786" dur="1.3s" begin="0s"/></rect>
+</svg>
+<p class="lbl" style="left:0;top:8px;width:200px;color:#E8ECEF">Stats</p>
+<p class="lbl" style="left:0;top:60px;width:200px;color:#E8ECEF">Opus voice</p>
+<p class="lbl" style="left:0;top:112px;width:200px;color:#E8ECEF">I/Q at 48 kHz</p>
+<p class="lbl" style="left:0;top:164px;width:200px;color:#E8ECEF">Raw I/Q</p>
+<p class="lbl" style="left:373px;top:8px;width:200px">4.8 kbit/s</p>
+<p class="lbl" style="left:544px;top:60px;width:200px">~32 kbit/s</p>
+<p class="lbl" style="left:721px;top:112px;width:150px;color:#0B0D10;text-align:right">1.5 Mbit/s</p>
+<p class="lbl" style="left:846px;top:164px;width:150px;color:#0B0D10;text-align:right">6.1 Mbit/s</p>
+<p class="lbl" style="left:180px;top:216px;width:80px;text-align:center">1 k</p>
+<p class="lbl" style="left:387px;top:216px;width:80px;text-align:center">10 k</p>
+<p class="lbl" style="left:595px;top:216px;width:80px;text-align:center">100 k</p>
+<p class="lbl" style="left:802px;top:216px;width:80px;text-align:center">1 M</p>
+<p class="lbl" style="left:952px;top:216px;width:120px;text-align:right">10 M bit/s</p>
+</div>
+</div>
+</div>
+<aside>CSC-R1P, the first pedal, has no HaLow; this is the Rev B plan. The chart is on a log scale. Lab boards measured 2.7–3.3 Mbit/s at 4 MHz, centimetres apart. Raw I/Q at 192 kHz, 16 bits, two channels is 6.1 Mbit/s, so it can't go over HaLow; I/Q decimated to 48 kHz, Opus voice and the stats track all fit. The Opus rate is a typical voice setting, and the stats figure is one roughly 600-byte snapshot a second. The MM6108 is the chip the project's Rust HaLow firmware already drives. Bluetooth LE is for setup only. HaLow carries ordinary IP, so the same MoQ publisher runs over it unchanged.</aside>
 </section>

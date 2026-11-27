@@ -39,3 +39,27 @@ section > *:nth-child(2){animation-delay:.1s}
 section > *:nth-child(3){animation-delay:.2s}
 section > *:nth-child(4){animation-delay:.3s}
 @keyframes rise{from{opacity:0;transform:translateY(16px)}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}}
+@keyframes grow{from{transform:translateX(-100%)}}
+.wf{display:flex;gap:10px}
+.wf div{flex:1;height:44px;border-radius:8px;animation:pop .4s ease-out both;animation-delay:calc(.3s + var(--i) * 70ms)}
+.st .cnt{font-family:'Space Grotesk',Arial,sans-serif;font-weight:700;font-size:88px;line-height:1}
+.st .item{font-size:26px;line-height:1.4;color:#E8ECEF}
+.legend{display:flex;flex-direction:column;gap:8px}
+.legend p{font-size:24px;line-height:1.4}
+.legend b{color:#39FF9C}
+.spot{position:absolute;width:44px;height:44px;border-radius:22px;background:#39FF9C;color:#0B0D10;font-family:'Space Grotesk',Arial,sans-serif;font-weight:700;font-size:24px;line-height:44px;text-align:center;box-shadow:0 0 0 6px rgba(57,255,156,.25);animation:pop .4s ease-out both;animation-delay:calc(.5s + var(--i) * 120ms)}
+.bar{height:16px;background:#2B3038;border-radius:8px;overflow:hidden}
+.bar .fill{height:16px;background:#FFB020;border-radius:8px;animation:grow 1.2s ease-out both;animation-delay:.6s}
+.card .barlabel{font-size:24px;color:#E8ECEF}
+.lbl{position:absolute;font-size:24px;line-height:1.35;color:#BFC7D0}
+.tl{position:relative;width:1664px}
+.tl .rail{position:absolute;left:0;top:12px;width:1664px;height:4px;background:#2B3038;overflow:hidden}
+.tl .rail div{width:1664px;height:4px;background:#39FF9C;animation:grow 1.4s ease-out both;animation-delay:.3s}
+.tl .cols{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:24px}
+.tl .col{display:flex;flex-direction:column;gap:14px;animation:rise .5s ease-out both;animation-delay:calc(.4s + var(--i) * 140ms)}
+.tl .dot{width:28px;height:28px;border-radius:14px;border:4px solid #15181D;box-sizing:border-box}
+.tl .phase{font-family:'JetBrains Mono',Courier New,monospace;font-size:24px;text-transform:uppercase;letter-spacing:2px}
+.tl h3{font-size:30px}
+.tl .col p.txt{font-size:24px;line-height:1.4}
+.chartrow{display:grid;grid-template-columns:560px minmax(0,1fr);gap:32px}
