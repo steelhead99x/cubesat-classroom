@@ -323,6 +323,9 @@ def flip_flat_triangles(m, decimals=4):
                 edges.setdefault(frozenset((f[k], f[(k + 1) % 3])), []).append(i)
         for i in bad:
             f = faces[i]
+            # An earlier flip in this pass may already have replaced this triangle.
+            if area(f) >= 1e-9:
+                continue
             # The middle corner is opposite the longest edge.
             k = max(range(3), key=lambda j: np.linalg.norm(v[f[(j + 1) % 3]] - v[f[(j + 2) % 3]]))
             mid, a, c = f[k], f[(k + 1) % 3], f[(k + 2) % 3]
