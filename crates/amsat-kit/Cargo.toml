@@ -13,3 +13,4 @@ manifold-csg = "0.4.2"
 serde_json.workspace = true
 flate2 = "1"
 crc32fast = "1"
+ttf-parser = "0.25"

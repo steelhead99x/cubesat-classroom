@@ -101,8 +101,17 @@ pub fn lettering(lines: &[&str]) -> Result<CrossSection, String> {
 
 /// The CubeSat Classroom mark from docs/mark.svg: a cube with an orbit ring in front of and
 /// behind it. Flat shapes in plate coordinates.
+///
+/// Drawn small, its gaps and the ring would print thinner than a 0.6 mm nozzle can manage, so
+/// they never go under `brand::MIN_GAP` and `brand::MIN_STROKE` (with a little to spare): a
+/// small mark is bolder than the drawing, a big one is exactly it.
 pub fn mark(size: f64, at: [f64; 2]) -> CrossSection {
     let s = size / 120.0;
+    // Drawing units: the gaps between the faces (3.2), around the front ring (2.45) and the
+    // back ring (2.5), and the ring's stroke (4.6).
+    let gap = (1.1 * crate::brand::MIN_GAP / s).max(2.5);
+    let stroke = (1.1 * crate::brand::MIN_STROKE / s).max(4.6);
+    let face_in = ((gap - 3.2) / 2.0).max(0.0) * s;
     let svg = |pts: &[[f64; 2]]| -> Vec<[f64; 2]> {
         pts.iter()
             .map(|[x, y]| [at[0] + (x - 60.0) * s, at[1] - (y - 60.0) * s])
@@ -129,7 +138,12 @@ pub fn mark(size: f64, at: [f64; 2]) -> CrossSection {
             [61.60, 90.23],
         ],
     ] {
-        faces = faces.union(&poly(&svg(&pts)));
+        let face = poly(&svg(&pts));
+        faces = faces.union(&if face_in > 0.0 {
+            offset(&face, -face_in, 12)
+        } else {
+            face
+        });
     }
     // The orbit ellipse (rx 53, ry 15, turned -15 degrees in the drawing) as a stroke.
     let ring = |t0: f64, t1: f64, width: f64| -> CrossSection {
@@ -163,13 +177,13 @@ pub fn mark(size: f64, at: [f64; 2]) -> CrossSection {
             [31.42, 76.50],
             [31.42, 43.50],
         ])),
-        2.5 * s,
+        gap * s,
         12,
     );
     faces
-        .difference(&ring(0.0, 180.0, 9.5))
-        .union(&ring(0.0, 180.0, 4.6))
-        .union(&ring(180.0, 360.0, 4.6).difference(&hexagon))
+        .difference(&ring(0.0, 180.0, stroke + 2.0 * gap.max(2.45)))
+        .union(&ring(0.0, 180.0, stroke))
+        .union(&ring(180.0, 360.0, stroke).difference(&hexagon))
 }
 
 /// Mark and the words CUBESAT CLASSROOM, for the plate's open middle under the Uno.

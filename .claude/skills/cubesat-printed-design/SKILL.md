@@ -40,7 +40,7 @@ No screws, inserts or nuts hold printed parts together. A seal that needs no cla
 
 ## Look (all versions)
 
-Clean and engineered, like a modern launch vehicle, without copying anyone's names or logos: white structure and black decks, crisp mitred chamfers on outer edges, triangular isogrid pockets (2.4 mm ribs at 60°) instead of free-form holes, flush faces with nothing showing, and the CubeSat Classroom logo on every part (coupons too), inlaid flush 0.6 mm in the other colour as a second volume, 1 mm clear of every edge, hole and slit, strokes at least 0.45 mm. The look never costs strength, fit or printability.
+Clean and engineered, like a modern launch vehicle, without copying anyone's names or logos: white structure and black decks, crisp mitred chamfers on outer edges, triangular isogrid pockets (2.4 mm ribs at 60°) instead of free-form holes, flush faces with nothing showing, and the CubeSat Classroom logo on every part (coupons too), inlaid 0.9 mm in the other colour as a second volume and raised 0.6 mm on upward faces where nothing mounted comes within 0.3 mm (flush on the bed face), 1 mm clear of every edge, hole and slit, strokes at least 0.65 mm and gaps at least 0.8 mm so a 0.6 mm nozzle prints it. Shared coupons also carry a label tile saying what they test. The look never costs strength, fit or printability.
 
 ## Printability
 
