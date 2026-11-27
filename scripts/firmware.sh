@@ -17,22 +17,26 @@ TARGET=thumbv7em-none-eabihf
 ESP32_URL=https://espressif.github.io/arduino-esp32/package_esp32_index.json
 RP2040_URL=https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
 SEEED_URL=https://files.seeedstudio.com/arduino/package_seeeduino_boards_index.json
+SILABS_URL=https://siliconlabs.github.io/arduino/package_arduinosilabs_index.json
 XIAO_LIBS=("Adafruit BME280 Library" "Adafruit TSL2561" "Adafruit Unified Sensor" "Adafruit BusIO" "U8g2")
 
 # One line per board: fqbn|core|board-manager URL|sketches (comma separated).
 BOARDS=(
   "arduino:mbed_nano:nano33ble|arduino:mbed_nano||firmware/arduino-cubesat"
-  "arduino:avr:uno|arduino:avr||firmware/classroom-sensors"
-  "esp32:esp32:XIAO_ESP32S3|esp32:esp32|$ESP32_URL|firmware/xiao-cubesat,firmware/classroom-sensors"
-  "esp32:esp32:XIAO_ESP32C3|esp32:esp32|$ESP32_URL|firmware/xiao-cubesat,firmware/classroom-sensors"
-  "rp2040:rp2040:seeed_xiao_rp2040|rp2040:rp2040|$RP2040_URL|firmware/xiao-cubesat,firmware/classroom-sensors"
+  "arduino:avr:uno|arduino:avr||firmware/classroom-sensors,hardware/sdr-receiver/bench/power-logger"
+  "esp32:esp32:XIAO_ESP32S3|esp32:esp32|$ESP32_URL|firmware/xiao-cubesat,firmware/classroom-sensors,hardware/rideshare-flatsat/s3_recorder,hardware/sdr-receiver/bench/power-logger"
+  "esp32:esp32:XIAO_ESP32C3|esp32:esp32|$ESP32_URL|firmware/xiao-cubesat,firmware/classroom-sensors,hardware/sdr-receiver/bench/power-logger"
+  "rp2040:rp2040:seeed_xiao_rp2040|rp2040:rp2040|$RP2040_URL|firmware/xiao-cubesat,firmware/classroom-sensors,hardware/sdr-receiver/bench/power-logger"
   "Seeeduino:samd:seeed_XIAO_m0|Seeeduino:samd|$SEEED_URL|firmware/xiao-cubesat,firmware/classroom-sensors"
+  # Rideshare FlatSat: the MG24 Sense IMU sender (its S3 recorder builds with the S3 line above).
+  "SiliconLabs:silabs:xiao_mg24|SiliconLabs:silabs|$SILABS_URL|hardware/rideshare-flatsat/mg24_sensor"
 )
 
 libs_for() {
   case "$1" in
     arduino:mbed_nano:*) printf '%s\n' Arduino_APDS9960 Arduino_BMI270_BMM150 Arduino_HS300x Arduino_LPS22HB ;;
     arduino:avr:*) ;;
+    SiliconLabs:silabs:*) printf '%s\n' "Seeed Arduino LSM6DS3" ;;
     Seeeduino:samd:*) printf '%s\n' "${XIAO_LIBS[@]}" SD ;;
     *) printf '%s\n' "${XIAO_LIBS[@]}" ;;
   esac

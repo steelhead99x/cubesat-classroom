@@ -24,13 +24,13 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
     <section class="ctp mt-5" data-ctp aria-labelledby="ctp-title">
       <h2 id="ctp-title" class="sr-only">Game</h2>
       <div class="ctp-top">
-        <div role="tablist" aria-label="Mode" class="tabs">
-          <button type="button" role="tab" data-mode="missions" aria-selected="true">⭐ Levels</button>
-          <button type="button" role="tab" data-mode="live" aria-selected="false">🌐 Play with others</button>
+        <div role="group" aria-label="Game mode" class="tabs">
+          <button type="button" data-mode="missions" aria-pressed="true">⭐ Levels</button>
+          <button type="button" data-mode="live" aria-pressed="false">🌐 Play with others</button>
         </div>
         <div class="tools">
           <label class="slow" title="Slower passes and a bigger antenna circle"><input type="checkbox" data-slow checked /> 🙂 Easy</label>
-          <button type="button" data-pause aria-pressed="false" class="start">Start</button>
+          <button type="button" data-pause class="start">Start</button>
           <button type="button" data-restart class="ico" aria-label="Start again" title="Start again">↺</button>
           <button type="button" data-sound aria-pressed="false" class="ico" aria-label="Sound off" title="Sound">🔇</button>
           <button type="button" data-help class="ico" aria-label="How to play" title="How to play">?</button>
@@ -93,7 +93,7 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
           <h3 class="t-label">Downlinked packets</h3>
           <ol data-log class="log"><li>No packets yet.</li></ol>
         </div>
-        <div data-live-board>
+        <div data-live-board hidden>
           <h3 class="t-label">Stations playing now</h3>
           <p data-total class="small">Press “Play with others” to join.</p>
           <ol data-board class="log"></ol>
@@ -145,19 +145,20 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
   .tools .ico { width: 2.75rem; padding: 0; font-size: 1.1rem; }
   .tools .start { background: linear-gradient(#ffe27a, #ffc62e); color: #0b1240; border-color: #ffc62e; min-width: 6rem; }
   .slow { display: inline-flex; gap: .35rem; align-items: center; min-height: 44px; padding: 0 .7rem; border-radius: .7rem; background: var(--panel); border: 1px solid var(--line); font-weight: 700; font-size: .9rem; cursor: pointer; }
+  .slow:has(input:disabled) { opacity: .6; cursor: default; }
   .slow input { width: 1.1rem; height: 1.1rem; accent-color: var(--gold); }
   @media (max-width: 480px) { .tabs, .tools { width: 100%; flex-wrap: nowrap; } .tabs button { flex: 1; } .tools .start { flex: 1; min-width: 0; } .slow { padding: 0 .55rem; } .tools .ico { width: 2.6rem; flex: none; } }
   /* Levels: one scrolling strip of chips instead of a block of buttons */
   .levels { display: flex; gap: .4rem; margin-top: .55rem; overflow-x: auto; scrollbar-width: thin; padding-bottom: .15rem; }
-  .levels button { white-space: nowrap; flex: none; font-size: .88rem; min-height: 40px; border-radius: 999px; }
+  .levels button { white-space: nowrap; flex: none; font-size: .88rem; min-height: 44px; border-radius: 999px; }
   .levels .n { font-family: var(--font-mono); opacity: .8; }
   .stars-mini { font-size: .78rem; letter-spacing: .05em; opacity: .9; }
   .live-note { margin-top: .55rem; }
   /* HUD strip above the sky */
   .dash { display: grid; grid-template-columns: auto 1fr 1fr; gap: .4rem 1rem; align-items: center; margin-top: .55rem; padding: .45rem .7rem; border-radius: .7rem; background: rgb(8 12 36 / .9); border: 1px solid var(--line); }
-  .numbers { display: flex; gap: .9rem; font-family: var(--font-mono); margin: 0; }
-  .numbers dt { font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; opacity: .75; white-space: nowrap; }
-  .numbers dd { font-size: 1.2rem; font-weight: 800; }
+  .numbers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .35rem .75rem; font-family: var(--font-mono); margin: 0; }
+  .numbers dt { font-size: .64rem; letter-spacing: .04em; text-transform: uppercase; opacity: .75; line-height: 1.2; }
+  .numbers dd { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
   .meter { display: grid; gap: .25rem; font-family: var(--font-mono); }
   .meter .t-label { font-size: .7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bar { position: relative; height: .7rem; background: #1b2550; border-radius: 999px; overflow: hidden; }
@@ -182,6 +183,16 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
   .pad button[data-held="true"] { background: var(--gold); color: #0b1240; }
   .pad .up { grid-column: 2; grid-row: 1; } .pad .left { grid-column: 1; grid-row: 2; } .pad .right { grid-column: 3; grid-row: 2; } .pad .down { grid-column: 2; grid-row: 3; }
   @media (max-width: 480px) { .pad { grid-template-columns: repeat(3, 2.9rem); grid-template-rows: repeat(3, 2.9rem); } .deck { gap: .45rem; padding: .5rem; } .sf button { padding: .3rem .2rem; font-size: .82rem; } .sf small { font-size: .66rem; } }
+  @media (max-width: 380px) {
+    .tools { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, 2.75rem); }
+    .tools .start { grid-row: 2; grid-column: 1 / -1; }
+    .tools .ico { width: 2.75rem; }
+    .deck { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sf" "tx" "pad"; }
+    .pad { justify-self: center; }
+    .dash { padding-inline: .45rem; }
+    .numbers dd { font-size: 1rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
   .overlay { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-content: safe center; justify-items: center; gap: .6rem; padding: 1rem; text-align: center; background: rgb(6 10 32 / .72); backdrop-filter: blur(2px); border-radius: .7rem; overflow: auto; }
   .overlay[hidden] { display: none; }
   .overlay :global(h3) { font-size: clamp(1.4rem, 3vw, 2rem); }
@@ -196,7 +207,7 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
   .overlay :global(.steps .pic) { font-size: 2.2rem; line-height: 1; }
   .stage[data-panel="howto"] canvas { visibility: hidden; }
   @media (max-width: 40rem) { .stage[data-panel="howto"] canvas { display: none; } .stage[data-panel="howto"] .overlay { position: static; } }
-  .panels { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin-top: .8rem; padding: 0 .3rem .3rem; }
+  .panels { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); margin-top: .8rem; padding: 0 .3rem .3rem; }
   .log { margin-top: .4rem; font: .82rem/1.5 var(--font-mono); color: #c9d2ff; }
   .small { font-size: .88rem; color: #c9d2ff; }
   .real :global(a) { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }

@@ -9,14 +9,18 @@ const games = [
   {
     href: base + '/games/catch-the-pass/',
     name: 'Catch the Pass',
-    text: 'Aim a ground-station antenna at a CubeSat as it crosses the sky. Pick the right LoRa spreading factor, dodge 915 MHz noise and save the satellite’s battery to download every packet you can. Five levels, plus a live sky shared with other stations over Media over QUIC.',
-    meta: 'Ages 8 and up · 1 minute a pass · keyboard, mouse or touch',
+    text: 'Follow a CubeSat across the sky, tune your radio and collect its data before it sets.',
+    mode: 'Solo levels or shared sky',
+    time: 'About 1 minute per pass',
+    theme: 'pass',
   },
   {
     href: base + '/games/rockoon-wars/',
     name: 'Rockoon Wars',
-    text: 'A turn-based artillery game for 2 to 4 players. Launch rockets from balloon platforms over rolling hills, allow for the wind, and buy bigger rockets between rounds. Play on one computer, or online with a room code.',
-    meta: '2 to 4 players · 5 to 15 minutes · keyboard, mouse or touch',
+    text: 'Take turns on the balloon battlefield. Adjust your aim for the wind and share one screen or join a room.',
+    mode: '2–4 players, local or online',
+    time: '5–15 minutes',
+    theme: 'rockoon',
   },
 ];
 ---
@@ -29,29 +33,52 @@ const games = [
     { label: 'Glossary', href: base + '/wiki/' },
   ]} />
   <div class="shell space-y-8 py-10 sm:py-14">
-    <header>
-      <p class="eyebrow t-label">Play &amp; learn</p>
-      <h1>Games</h1>
-      <p class="lede mt-3">Short games that teach how real satellite ground stations work. No account, no ads, no tracking.</p>
+    <header class="games-intro">
+      <div>
+        <h1>Classroom games</h1>
+        <p class="lede mt-3">Track a satellite on your own, or get friends together for a turn-based match.</p>
+      </div>
+      <p>Play in your browser with a keyboard, mouse or touch. No account required.</p>
     </header>
-    <ul class="grid gap-5 md:grid-cols-2">
+    <ul class="games-list">
       {games.map(game => (
-        <li class="game-card">
-          <h2><a href={game.href}>{game.name}</a></h2>
-          <p class="mt-2">{game.text}</p>
-          <p class="t-label mt-3 text-muted">{game.meta}</p>
-          <a class="button play mt-4" href={game.href}>Play {game.name} <span class="arrow" aria-hidden="true">→</span></a>
+        <li class:list={['game-card', game.theme]}>
+          <div class="game-info">
+            <h2>{game.name}</h2>
+            <p>{game.text}</p>
+          </div>
+          <ul class="game-details" aria-label="Game details"><li>{game.mode}</li><li>{game.time}</li></ul>
+          <a class="button play" href={game.href}>Play {game.name} <span class="arrow" aria-hidden="true">→</span></a>
         </li>
       ))}
     </ul>
-    <p class="text-muted">Want the classroom version? Try the <a class="text-accent underline" href={base + '/quests/'}>five lessons</a> in the ground station simulator, or look up a word in the <a class="text-accent underline" href={base + '/wiki/'}>glossary</a>.</p>
+    <section class="lesson-link" aria-labelledby="lessons-heading">
+      <div><h2 id="lessons-heading">Practice with the ground station</h2><p>Try the five guided lessons on sensors, camera frames and signal loss.</p></div>
+      <a class="button" href={base + '/quests/'}>Open the lessons <span class="arrow" aria-hidden="true">→</span></a>
+    </section>
   </div>
   <SiteFooter slot="footer" />
 </Base>
 <style>
-  .game-card { border: 1px solid var(--color-line); border-radius: .5rem; padding: 1.4rem; background: #fff; }
-  .game-card h2 a { color: var(--color-ink); text-decoration: none; }
-  .game-card h2 a:hover { color: var(--color-accent); }
-  .play { background: var(--color-night); color: #fff; }
-  .play:hover { background: var(--color-orbit); }
+  .games-intro { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1rem 2rem; }
+  .games-intro > p { max-width: 20rem; color: var(--color-muted); }
+  .games-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 1rem; list-style: none; padding: 0; }
+  .game-card {
+    display: flex; flex-direction: column; align-items: start; gap: 1rem;
+    min-width: 0; padding: clamp(1.25rem, 4vw, 2.2rem);
+    border: 1px solid #394985; border-radius: 1rem;
+    background: radial-gradient(ellipse at 100% 0%, var(--glow), transparent 66%), #101942;
+    color: #f2f4ff;
+  }
+  .pass { --glow: #23598b; --action: #a9e3ff; }
+  .rockoon { --glow: #68417e; --action: #ffd786; }
+  .game-info { display: grid; gap: .5rem; }
+  .game-info p { max-width: 35ch; color: #e0e5fc; }
+  .game-details { display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin-block-start: auto; list-style: none; color: #d7def5; font-size: .9rem; }
+  .play { background: var(--action); color: #101942; border-color: transparent; }
+  .play:hover { background: #fff; color: #101942; }
+  .game-card a:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+  .lesson-link { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem 1.5rem; border-top: 1px solid var(--color-line); padding-top: 1.2rem; }
+  .lesson-link h2 { font-size: 1.3rem; }
+  .lesson-link p { color: var(--color-muted); margin-top: .25rem; }
 </style>

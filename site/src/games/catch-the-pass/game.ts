@@ -16,19 +16,38 @@ function init(root: HTMLElement) {
   const overlay = $('[data-overlay]');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const bestKey = 'catch-the-pass:best';
-  const best: Record<string, number> = (() => { try { return JSON.parse(localStorage.getItem(bestKey) ?? '{}'); } catch { return {}; } })();
+  // Stored stars are checked, so an edited or damaged value cannot stop the game from starting.
+  const best: Record<string, number> = (() => {
+    const out: Record<string, number> = {};
+    try {
+      const raw: unknown = JSON.parse(localStorage.getItem(bestKey) ?? '{}');
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        for (const l of G.LEVELS) {
+          const v = (raw as Record<string, unknown>)[l.id];
+          if (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 3) out[l.id] = v as number;
+        }
+      }
+    } catch { /* private mode or bad JSON */ }
+    return out;
+  })();
+  const prefsKey = 'catch-the-pass:prefs';
+  const prefs = (() => { try { const p = JSON.parse(localStorage.getItem(prefsKey) ?? '{}'); return p && typeof p === 'object' ? p : {}; } catch { return {}; } })();
+  const savePrefs = () => { try { localStorage.setItem(prefsKey, JSON.stringify({ easy: slow, level: levelIndex })); } catch { /* private mode */ } };
 
   let mode: 'missions' | 'live' = 'missions';
   let levelIndex = 0;
   let game: Game | null = null;
   let running = false, paused = false, countdown = 0;
-  let slow = true; // Easy mode is on until the player turns it off.
+  let helpOpen = false;
+  let afterHelp: string | null = null; // the results card to show again when Help closes
+  let unlockedFor = 0; // seconds without a lock, for the beginner coach
+  let slow = prefs.easy !== false; // Easy mode is on until the player turns it off.
   const howtoKey = 'catch-the-pass:how-to-seen';
   let liveSlot = -1;
   let last = performance.now();
   const keys = new Set<string>();
   let pointer: { az: number; el: number } | null = null;
-  let pointerDown = false;
+  let pointerId: number | null = null;
   const pops: { x: number; y: number; text: string; age: number }[] = [];
   const stations = new Map<string, { state: StationState; seen: number; demo?: boolean }>();
   const feed: string[] = [];
@@ -77,6 +96,7 @@ function init(root: HTMLElement) {
   // ---- Levels and modes ----
   const levelButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-level]')];
   function unlocked(i: number) { return i === 0 || (best[G.LEVELS[i - 1].id] ?? 0) > 0; }
+  if (Number.isInteger(prefs.level) && prefs.level > 0 && prefs.level < G.LEVELS.length && unlocked(prefs.level)) levelIndex = prefs.level;
   function renderLevels() {
     levelButtons.forEach((b, i) => {
       const s = best[G.LEVELS[i].id] ?? 0;
@@ -86,26 +106,41 @@ function init(root: HTMLElement) {
       b.setAttribute('aria-label', `Level ${i + 1}, ${G.LEVELS[i].name}, ${b.disabled ? 'locked' : s + ' of 3 stars'}`);
     });
   }
-  levelButtons.forEach((b, i) => b.addEventListener('click', () => { mode = 'missions'; levelIndex = i; sky?.stop(); setTab(); ready(); }));
+  levelButtons.forEach((b, i) => b.addEventListener('click', () => {
+    if (i === levelIndex) return;
+    // A pass in flight is not thrown away by a stray tap: pause it first to switch levels.
+    if (running && !paused && game && !game.done) { announce('Pause the pass first to pick another level.'); return; }
+    levelIndex = i;
+    savePrefs();
+    ready();
+  }));
 
+  const helpBtn = $<HTMLButtonElement>('[data-help]');
+  const pauseBtn = $<HTMLButtonElement>('[data-pause]');
+  const easyInput = $<HTMLInputElement>('[data-slow]');
   const tabs = [...root.querySelectorAll<HTMLButtonElement>('[data-mode]')];
   function setTab() {
-    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.mode === mode)));
+    tabs.forEach(t => t.setAttribute('aria-pressed', String(t.dataset.mode === mode)));
     $('[data-missions]').hidden = mode !== 'missions';
     $('[data-live]').hidden = mode !== 'live';
-    $<HTMLInputElement>('[data-slow]').disabled = mode === 'live';
+    $('[data-live-board]').hidden = mode !== 'live';
+    easyInput.disabled = mode === 'live';
     // The live pass runs on a shared clock, so it cannot be paused or restarted.
-    $<HTMLButtonElement>('[data-pause]').disabled = mode === 'live';
+    pauseBtn.disabled = mode === 'live';
     $<HTMLButtonElement>('[data-restart]').disabled = mode === 'live';
-    $('[data-pause]').textContent = 'Start';
+    pauseBtn.textContent = 'Start';
     renderLevels();
   }
   tabs.forEach(t => t.addEventListener('click', () => {
+    if (t.dataset.mode === mode) return;
+    setHelp(false);
+    clearAim();
     mode = t.dataset.mode as 'missions' | 'live';
     setTab();
     if (mode === 'missions') { sky?.stop(); stations.clear(); ready(); } else void joinLive();
   }));
-  $<HTMLInputElement>('[data-slow]').addEventListener('change', e => { slow = (e.target as HTMLInputElement).checked; if (mode === 'missions') ready(); });
+  easyInput.checked = slow;
+  easyInput.addEventListener('change', e => { slow = (e.target as HTMLInputElement).checked; savePrefs(); if (mode === 'missions') ready(); });
 
   function currentLevel(): Level {
     const level = mode === 'live' ? G.LIVE : G.LEVELS[levelIndex];
@@ -113,72 +148,120 @@ function init(root: HTMLElement) {
   }
 
   function ready() {
+    // Choosing a level or Easy while Help is open closes Help, so Start always works.
+    if (helpOpen) setHelp(false);
+    afterHelp = null;
+    renderLevels();
     game = G.createGame(currentLevel(), (Math.random() * 2 ** 31) | 0);
     running = false; paused = false; countdown = 0;
-    if (mode === 'missions') $('[data-pause]').textContent = 'Start';
+    clearAim();
+    pauseBtn.textContent = 'Start';
+    easyInput.disabled = false;
     show(`<h3>${mode === 'live' ? 'Live sky' : `Level ${levelIndex + 1}: ${G.LEVELS[levelIndex].name}`}</h3>
       <p>${currentLevel().tip}</p>
       <p class="goal">Goal: ${currentLevel().goal.map((g, i) => `${'★'.repeat(i + 1)} ${g} packets`).join(' · ')}</p>
       <button type="button" class="go" data-go>▶ Start</button>`);
     hud(); draw();
-    if (!seenHowto()) showHowto();
+    if (!seenHowto() && !helpOpen) showHowto();
   }
 
   // ---- The first-visit "How to play" card ----
   function seenHowto() { try { return localStorage.getItem(howtoKey) === '1'; } catch { return false; } }
+  function setHelp(open: boolean) {
+    helpOpen = open;
+    canvas.parentElement!.dataset.panel = open ? 'howto' : '';
+  }
+
   function showHowto() {
-    if (running && mode === 'missions' && !paused) setPaused(true);
-    const stage = canvas.parentElement!;
-    stage.dataset.panel = 'howto';
+    if (helpOpen) return;
+    if (running && mode === 'missions' && !paused) setPaused(true, false);
+    clearAim();
+    // Opened from a results card: bring that card (and its Next level button) back afterwards.
+    afterHelp = mode === 'missions' && !running && game?.done && !overlay.hidden ? overlay.innerHTML : null;
+    setHelp(true);
     show(`<h3>How to play</h3>
       <ol class="steps">
-        <li><span class="pic" aria-hidden="true">🛰️</span><b>1. Find the satellite</b><span>It rises on the left and crosses the sky.</span></li>
-        <li><span class="pic" aria-hidden="true">📡</span><b>2. Keep the circle on it</b><span>Use the ▲ ◀ ▶ ▼ buttons, drag on the sky, or press the arrow keys.</span></li>
-        <li><span class="pic" aria-hidden="true">📦</span><b>3. Catch packets</b><span>A green signal bar means you are catching packets and earning credits. Lost it? Try 🐢 Far.</span></li>
+        <li><span class="pic" aria-hidden="true">🛰️</span><b>Find the satellite</b><span>It rises on the left and crosses the sky.</span></li>
+        <li><span class="pic" aria-hidden="true">📡</span><b>Keep the circle on it</b><span>Use the ▲ ◀ ▶ ▼ buttons, drag on the sky, or press the arrow keys.</span></li>
+        <li><span class="pic" aria-hidden="true">📦</span><b>Catch packets</b><span>A green signal bar means you are catching packets and earning credits. Lost it? Try Far.</span></li>
       </ol>
       <button type="button" class="go" data-howto>Got it!</button>`);
     const got = overlay.querySelector<HTMLButtonElement>('[data-howto]')!;
-    got.addEventListener('click', () => {
-      try { localStorage.setItem(howtoKey, '1'); } catch { /* private mode */ }
-      stage.dataset.panel = '';
-      if (mode === 'missions' && !running) ready(); else if (paused) setPaused(false); else overlay.hidden = true;
-    });
+    got.addEventListener('click', closeHowto);
     got.focus({ preventScroll: true });
   }
-  $('[data-help]').addEventListener('click', showHowto);
+  function closeHowto() {
+    try { localStorage.setItem(howtoKey, '1'); } catch { /* private mode */ }
+    setHelp(false);
+    if (afterHelp) {
+      show(afterHelp);
+      afterHelp = null;
+      overlay.querySelector<HTMLButtonElement>('.go')?.focus({ preventScroll: true });
+    } else if (mode === 'missions' && !running) {
+      ready();
+      overlay.querySelector<HTMLButtonElement>('[data-go]')?.focus({ preventScroll: true });
+    } else if (paused) setPaused(true);
+    else {
+      hideOverlay();
+      helpBtn.focus({ preventScroll: true });
+    }
+  }
+  helpBtn.addEventListener('click', showHowto);
+
+  function hideOverlay() {
+    overlay.hidden = true;
+    canvas.inert = false;
+  }
 
   function show(html: string) {
     overlay.innerHTML = html;
     overlay.hidden = false;
+    canvas.inert = true;
     overlay.querySelector<HTMLButtonElement>('[data-go]')?.addEventListener('click', start);
-    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { levelIndex++; renderLevels(); ready(); start(); });
+    overlay.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => { levelIndex++; savePrefs(); ready(); start(); });
     overlay.querySelector<HTMLButtonElement>('[data-again]')?.addEventListener('click', () => { ready(); start(); });
   }
 
   function start() {
-    if (mode === 'live') return;
+    if (mode === 'live' || helpOpen) return;
     if (!game || game.done) ready();
-    overlay.hidden = true;
+    hideOverlay();
     running = true; paused = false; countdown = 3;
-    $('[data-pause]').textContent = 'Pause';
-    $('[data-pause]').setAttribute('aria-pressed', 'false');
-    canvas.focus();
+    easyInput.disabled = true;
+    pauseBtn.textContent = 'Pause';
+    canvas.focus({ preventScroll: true });
     announce('Pass starting. Satellite rises on the left.');
   }
 
-  function setPaused(p: boolean) {
-    if (!running || mode === 'live') return;
+  function setPaused(p: boolean, focus = true) {
+    if (!running || mode === 'live' || helpOpen) return;
     paused = p;
-    $('[data-pause]').textContent = p ? 'Resume' : 'Pause';
-    $('[data-pause]').setAttribute('aria-pressed', String(p));
-    if (p) show(`<h3>Paused</h3><p>Press P or the button to keep going.</p><button type="button" class="go" data-resume>Resume</button>`);
-    else overlay.hidden = true;
-    overlay.querySelector('[data-resume]')?.addEventListener('click', () => setPaused(false));
+    clearAim();
+    pauseBtn.textContent = p ? 'Resume' : 'Pause';
+    if (p) {
+      show(`<h3>Paused</h3><p>Press P or the button to keep going.</p><button type="button" class="go" data-resume>Resume</button>`);
+      const resume = overlay.querySelector<HTMLButtonElement>('[data-resume]')!;
+      resume.addEventListener('click', () => setPaused(false));
+      if (focus) resume.focus({ preventScroll: true });
+    } else {
+      hideOverlay();
+      canvas.focus({ preventScroll: true });
+    }
     announce(p ? 'Paused.' : 'Resumed.');
   }
-  $('[data-pause]').addEventListener('click', () => (running ? setPaused(!paused) : start()));
-  $('[data-restart]').addEventListener('click', () => { if (mode === 'missions') { ready(); start(); } });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused) setPaused(true); });
+  pauseBtn.addEventListener('click', () => {
+    if (helpOpen) { closeHowto(); return; }
+    if (running) setPaused(!paused);
+    else start();
+  });
+  $('[data-restart]').addEventListener('click', () => {
+    if (mode === 'missions' && !helpOpen) { ready(); start(); }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    clearAim();
+    if (running && !paused) setPaused(true, false);
+  });
 
   // ---- SF and transmitter commands ----
   const sfButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-sf]')];
@@ -188,22 +271,33 @@ function init(root: HTMLElement) {
   // ---- Keyboard: arrows or WASD aim, 1/2/3 SF, Space transmitter, P pause, Enter start. ----
   const aimKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'];
   root.addEventListener('keydown', e => {
-    if ((e.target as HTMLElement).matches('input, select, textarea')) return;
+    const target = e.target as HTMLElement;
+    if (e.altKey || e.ctrlKey || e.metaKey || target.matches('select, textarea, input:not([type=checkbox])')) return;
+    // The Easy checkbox keeps Space for itself but still lets P and Esc pause.
+    if (target.matches('input') && e.key !== 'p' && e.key !== 'P' && e.key !== 'Escape') return;
+    if (helpOpen) {
+      if (e.key === 'Escape') { e.preventDefault(); closeHowto(); }
+      return;
+    }
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const inCanvas = e.target === canvas;
-    if (aimKeys.includes(k) && inCanvas) { keys.add(k); pointer = null; e.preventDefault(); }
+    // Arrows also steer from the game's buttons (after a tap on the pad, say), not only the sky.
+    const aimFrom = inCanvas || (target.matches('button') && !target.matches('[data-level], [data-mode]'));
+    if (aimKeys.includes(k) && aimFrom) { keys.add(k); pointer = null; e.preventDefault(); }
     else if (k === '1' || k === '2' || k === '3') { if (game) G.setSf(game, G.SF_ORDER[Number(k) - 1]); hud(); }
     else if (k === ' ' && inCanvas) { if (game) G.setTransmit(game, !game.transmit); hud(); e.preventDefault(); }
-    else if (k === 'p' || (k === 'Escape' && running)) setPaused(!paused);
+    else if (!e.repeat && (k === 'p' || k === 'Escape') && running && mode === 'missions') { e.preventDefault(); setPaused(!paused); }
     else if (k === 'Enter' && inCanvas && !running && mode === 'missions') { e.preventDefault(); start(); }
   });
   root.addEventListener('keyup', e => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
   canvas.addEventListener('blur', () => keys.clear());
+  window.addEventListener('blur', clearAim);
 
   // ---- The big arrow buttons: hold one to keep turning (they work like the arrow keys). ----
   for (const b of root.querySelectorAll<HTMLButtonElement>('[data-aim]')) {
     const key = b.dataset.aim!;
     const down = (e: PointerEvent) => {
+      if (e.button !== 0 || helpOpen) return;
       e.preventDefault();
       if (!running && mode === 'missions' && overlay.hidden) start();
       keys.add(key); pointer = null; b.dataset.held = 'true';
@@ -215,15 +309,35 @@ function init(root: HTMLElement) {
     // Keyboard users: Enter or Space on a focused arrow button nudges the antenna.
     b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); keys.add(key); } });
     b.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') up(); });
+    b.addEventListener('blur', up);
     b.addEventListener('contextmenu', e => e.preventDefault());
   }
 
   // ---- Pointer: drag on touch; on desktop the antenna follows the mouse over the sky. ----
   const at = (e: PointerEvent) => { const r = canvas.getBoundingClientRect(); return fromXY(e.clientX - r.left, e.clientY - r.top); };
-  canvas.addEventListener('pointerdown', e => { pointerDown = true; pointer = at(e); canvas.setPointerCapture(e.pointerId); if (!running && mode === 'missions' && overlay.hidden) start(); });
-  canvas.addEventListener('pointermove', e => { if (pointerDown || e.pointerType === 'mouse') pointer = at(e); });
-  canvas.addEventListener('pointerup', e => { pointerDown = false; if (e.pointerType !== 'mouse') pointer = null; });
-  canvas.addEventListener('pointerleave', () => { if (!pointerDown) pointer = null; });
+  canvas.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || pointerId !== null) return;
+    pointerId = e.pointerId;
+    pointer = at(e);
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (e.pointerId === pointerId || (pointerId === null && e.pointerType === 'mouse')) pointer = at(e);
+  });
+  const endPointer = (e: PointerEvent) => {
+    if (pointerId !== e.pointerId) return;
+    pointerId = null;
+    if (e.type !== 'pointerup' || e.pointerType !== 'mouse') pointer = null;
+  };
+  for (const event of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) canvas.addEventListener(event, endPointer);
+  canvas.addEventListener('pointerleave', () => { if (pointerId === null) pointer = null; });
+
+  function clearAim() {
+    keys.clear();
+    pointerId = null;
+    pointer = null;
+    for (const b of root.querySelectorAll<HTMLElement>('[data-held="true"]')) b.dataset.held = 'false';
+  }
 
   function input() {
     const r = { az: 0, el: 0 };
@@ -249,7 +363,7 @@ function init(root: HTMLElement) {
   const skyStatus = $('[data-sky-status]');
   async function joinLive() {
     stations.clear(); feed.length = 0;
-    overlay.hidden = true;
+    hideOverlay();
     liveSlot = -1;
     running = true; paused = false;
     skyStatus.textContent = 'Loading the live sky…';
@@ -259,6 +373,7 @@ function init(root: HTMLElement) {
     if (!LiveSky) { skyStatus.textContent = 'The live sky could not load. Flying with demo stations instead.'; root.dataset.sky = 'offline'; addDemoStations(); return; }
     sky ??= new LiveSky({
       status: (s: SkyStatus, detail?: string) => {
+        if (mode !== 'live' && s !== 'off') return; // a late answer after leaving the live sky
         const text: Record<SkyStatus, string> = {
           off: 'Not connected.',
           connecting: 'Connecting to the MoQ relay…',
@@ -267,7 +382,7 @@ function init(root: HTMLElement) {
         };
         skyStatus.textContent = text[s];
         root.dataset.sky = s;
-        if (s === 'offline') addDemoStations();
+        if (s === 'offline' && mode === 'live') addDemoStations();
         if (s === 'live') for (const [id, v] of stations) if (v.demo) stations.delete(id);
       },
       station: (id, state) => stations.set(id, { state, seen: performance.now() }),
@@ -313,15 +428,18 @@ function init(root: HTMLElement) {
     }
   }
 
+  /** The shared clock: this computer's time, corrected by the server's when online. */
+  const sharedNow = () => Date.now() + (sky?.clockOffset ?? 0);
+
   function liveTick() {
-    const { slot, elapsed, seed } = G.liveSlot(Date.now());
+    const { slot, elapsed, seed } = G.liveSlot(sharedNow());
     if (slot !== liveSlot) {
       liveSlot = slot;
       game = G.createGame(G.LIVE, seed);
-      if (elapsed > 1) { game.t = Math.min(elapsed, G.LIVE.duration); }
       pops.length = 0;
     }
-    return elapsed;
+    const skipped = G.syncLiveTime(game!, elapsed);
+    return skipped ? 0 : Math.max(0, elapsed - game!.t);
   }
 
   // ---- Main loop ----
@@ -329,9 +447,17 @@ function init(root: HTMLElement) {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (mode === 'live' && running) {
-      const elapsed = liveTick();
-      if (game && !game.done && elapsed <= G.LIVE.duration) update(dt);
-      else if (game) game.events.length = 0;
+      // Follow the shared clock: small lags (a slow frame) are caught up in short steps, so
+      // they never build up into a skip that would throw away the packet on air.
+      let pending = liveTick();
+      if (game && !game.done && (pending > 0 || game.t >= G.LIVE.duration)) {
+        for (let n = 0; n < 12 && !game.done && (pending > 0.001 || game.t >= G.LIVE.duration); n++) {
+          const stepDt = Math.min(pending, 0.05);
+          update(stepDt);
+          pending -= stepDt;
+          if (stepDt === 0) break;
+        }
+      } else if (game) game.events.length = 0;
       moveDemoStations(dt);
       sky?.sendStation({ az: round(game!.ant.az), el: round(game!.ant.el), sf: game!.sf, snr: round(game!.snr), locked: game!.locked, rx: game!.rx, score: game!.score, slot: liveSlot });
     } else if (running && !paused && game) {
@@ -367,6 +493,7 @@ function init(root: HTMLElement) {
       }
     }
     game.events.length = 0;
+    unlockedFor = game.locked ? 0 : unlockedFor + dt;
     if (game.locked !== lastLock) { lastLock = game.locked; announce(game.locked ? `Locked on, SF${game.sf}.` : 'Signal lost. Re-aim the antenna or try a higher SF.', false); }
     hud();
   }
@@ -377,7 +504,8 @@ function init(root: HTMLElement) {
     beep(s ? 880 : 220, 300, 'triangle');
     if (mode === 'live') { announce(`Pass over. You caught ${game.rx} packets. The next live pass starts at the top of the minute.`); return; }
     running = false;
-    $('[data-pause]').textContent = 'Start';
+    easyInput.disabled = false;
+    pauseBtn.textContent = 'Start';
     const id = G.LEVELS[levelIndex].id;
     if (s > (best[id] ?? 0)) { best[id] = s; try { localStorage.setItem(bestKey, JSON.stringify(best)); } catch { /* private mode */ } }
     renderLevels();
@@ -407,23 +535,26 @@ function init(root: HTMLElement) {
   };
   const pct = (snr: number) => Math.max(0, Math.min(100, (snr + 30) / 40 * 100));
   let lastBoard = 0;
+  /** Writes to the page only when a value changed: the HUD updates every frame. */
+  function put(el: HTMLElement, text: string) { if (el.textContent !== text) el.textContent = text; }
+  function css(el: HTMLElement, prop: 'width' | 'left', value: string) { if (el.style[prop] !== value) el.style[prop] = value; }
   function hud() {
     if (!game) return;
     const left = Math.max(0, game.level.duration - game.t);
-    hudEl.snr.textContent = (game.snr < -60 ? '—' : game.snr.toFixed(1) + ' dB') + (game.locked ? ' · locked' : '');
-    hudEl.bar.style.width = pct(game.snr) + '%';
+    put(hudEl.snr, (game.snr < -60 ? '—' : game.snr.toFixed(1) + ' dB') + (game.locked ? ' · locked' : ''));
+    css(hudEl.bar, 'width', pct(game.snr) + '%');
     hudEl.bar.dataset.ok = String(game.locked);
-    hudEl.floor.style.left = pct(G.SF[game.sf as 7 | 9 | 12].minSnr) + '%';
-    hudEl.battery.textContent = Math.round(game.battery) + '%' + (game.safe ? ' · SAFE MODE' : '');
-    hudEl.batteryBar.style.width = game.battery + '%';
+    css(hudEl.floor, 'left', pct(G.SF[game.sf as 7 | 9 | 12].minSnr) + '%');
+    put(hudEl.battery, Math.round(game.battery) + '%' + (game.safe ? ' · SAFE MODE' : ''));
+    css(hudEl.batteryBar, 'width', game.battery + '%');
     hudEl.batteryBar.dataset.low = String(game.battery < 25);
-    hudEl.rx.textContent = String(game.rx);
-    hudEl.score.textContent = String(game.score);
-    hudEl.streak.textContent = String(game.streak);
-    hudEl.time.textContent = left.toFixed(0) + ' s';
-    hudEl.light.textContent = G.inEclipse(game.level, game.t / game.level.duration) ? 'In Earth\u2019s shadow' : 'Sunlit';
+    put(hudEl.rx, String(game.rx));
+    put(hudEl.score, String(game.score));
+    put(hudEl.streak, String(game.streak));
+    put(hudEl.time, left.toFixed(0) + ' s');
+    put(hudEl.light, G.inEclipse(game.level, game.t / game.level.duration) ? 'In Earth\u2019s shadow' : 'Sunlit');
     hudEl.tx.setAttribute('aria-pressed', String(game.transmit));
-    hudEl.tx.textContent = game.transmit ? '📡 Sending: on' : '📡 Sending: resting';
+    put(hudEl.tx, game.transmit ? '📡 Sending: on' : '📡 Sending: resting');
     sfButtons.forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.sf) === game!.sf)));
     if (game.log[0] && hudEl.log.dataset.seq !== String(game.log[0].seq)) {
       hudEl.log.dataset.seq = String(game.log[0].seq);
@@ -444,6 +575,18 @@ function init(root: HTMLElement) {
   }
 
   // ---- Drawing ----
+  let skyLabel = '';
+  let lastHint = 0;
+  /** The coach's hint goes to the status line now and then, not every frame. */
+  function coachHint(text: string) {
+    const now = performance.now();
+    if (now - lastHint < 4000) return;
+    lastHint = now;
+    announce(text, false);
+  }
+  /** The canvas label changes only when what it says changes, not every frame. */
+  function setLabel(text: string) { if (text !== skyLabel) { skyLabel = text; canvas.setAttribute('aria-label', text); } }
+
   function draw() {
     const w = W(), h = H();
     if (!w || !h) return;
@@ -565,6 +708,27 @@ function init(root: HTMLElement) {
     if (game.locked && !reduced.matches) { ctx.shadowColor = `rgb(${col})`; ctx.shadowBlur = 12; }
     ctx.beginPath(); ctx.arc(ax, ay, br, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0;
     ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ax - 7, ay); ctx.lineTo(ax + 7, ay); ctx.moveTo(ax, ay - 7); ctx.lineTo(ax, ay + 7); ctx.stroke();
+    // Beginner coach: on the first two levels, after a few seconds without a lock, point from the
+    // antenna circle toward the satellite and say which way to turn.
+    const coach = mode === 'missions' && levelIndex <= 1 && running && !paused && countdown <= 0
+      && unlockedFor > 2.5 && sat.el > 2 && !game.safe;
+    if (coach) {
+      const sx = toX(sat.az), sy = toY(sat.el);
+      const dx = sx - ax, dy = sy - ay, dist = Math.hypot(dx, dy);
+      if (dist > br + 24) {
+        const ux = dx / dist, uy = dy / dist;
+        const pulse = reduced.matches ? 0 : Math.sin(t * 6) * 4;
+        const x0 = ax + ux * (br + 6), y0 = ay + uy * (br + 6);
+        const x1 = ax + ux * Math.min(dist - 18, br + 46 + pulse), y1 = ay + uy * Math.min(dist - 18, br + 46 + pulse);
+        ctx.strokeStyle = '#ffd23f'; ctx.fillStyle = '#ffd23f'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x1 + ux * 10, y1 + uy * 10);
+        ctx.lineTo(x1 - uy * 8, y1 + ux * 8); ctx.lineTo(x1 + uy * 8, y1 - ux * 8); ctx.closePath(); ctx.fill();
+        ctx.lineCap = 'butt';
+      }
+      const way = [sat.el > game.ant.el + 3 ? 'up' : sat.el < game.ant.el - 3 ? 'down' : '', sat.az > game.ant.az + 3 ? 'right' : sat.az < game.ant.az - 3 ? 'left' : ''].filter(Boolean).join(' and ');
+      if (way) coachHint(`Move the circle ${way} to find the satellite.`);
+    }
     // Floating points
     ctx.font = '800 16px Inter, sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(6,10,32,.85)'; ctx.lineJoin = 'round';
     for (const pop of pops) { ctx.globalAlpha = Math.max(0, 1 - pop.age / 1.2); ctx.fillStyle = '#7ff0a8'; const py = pop.y - pop.age * 28; ctx.strokeText(pop.text, pop.x - 14, py); ctx.fillText(pop.text, pop.x - 14, py); }
@@ -574,13 +738,13 @@ function init(root: HTMLElement) {
     if (countdown > 0 && running) { const n = Math.ceil(countdown), f = countdown % 1; ctx.globalAlpha = 0.4 + 0.6 * f; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(6,10,32,.7)'; ctx.strokeText(String(n), w / 2, h / 2); ctx.fillText(String(n), w / 2, h / 2); ctx.globalAlpha = 1; }
     ctx.textAlign = 'left';
     if (mode === 'live') {
-      const { elapsed } = G.liveSlot(Date.now());
+      const { elapsed } = G.liveSlot(sharedNow());
       if (elapsed > G.LIVE.duration) {
         ctx.font = 'bold 22px Inter, sans-serif';
         ctx.fillText(`Next live pass in ${Math.ceil(G.LIVE_SLOT_SECONDS - elapsed)} s`, w / 2 - 120, h / 2);
       }
     }
-    canvas.setAttribute('aria-label', `Sky view. Satellite at elevation ${Math.round(sat.el)} degrees. Your antenna at elevation ${Math.round(game.ant.el)}. Signal ${game.locked ? 'locked' : 'not locked'}.`);
+    setLabel(`Sky view. Satellite at elevation ${Math.round(sat.el)} degrees. Your antenna at elevation ${Math.round(game.ant.el)}. Signal ${game.locked ? 'locked' : 'not locked'}.`);
   }
 
   setTab();

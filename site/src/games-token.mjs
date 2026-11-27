@@ -21,9 +21,36 @@ const ROOM = 'live';
 const ROOM_CODE = /^[A-HJ-NP-Z2-9]{5}$/;
 const PLAYER_ID = /^[0-9a-f]{12}$/;
 
+/** The largest request body read. A real one ({ game, room, player, ticket }) is under 200 bytes. */
+export const MAX_BODY_BYTES = 1024;
+
 const enc = new TextEncoder();
 const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const b64urlText = text => b64url(enc.encode(text));
+
+/**
+ * Reads a JSON body of at most `max` bytes, without buffering more than that. Returns
+ * undefined when the body is too large and null when it is not valid JSON.
+ */
+async function readSmallJson(request, max) {
+  const declared = Number(request.headers.get('content-length') ?? NaN);
+  if (declared > max) return undefined;
+  if (!request.body) return null;
+  const reader = request.body.getReader();
+  const chunks = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) { await reader.cancel().catch(() => {}); return undefined; }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) { bytes.set(c, at); at += c.byteLength; }
+  try { return JSON.parse(new TextDecoder().decode(bytes)); } catch { return null; }
+}
 
 function reply(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -94,6 +121,7 @@ export async function gameToken(request, env) {
   const fetchSite = request.headers.get('sec-fetch-site');
   if (origin !== url.origin || (fetchSite && fetchSite !== 'same-origin')) return reply({ error: 'Only this site can ask for a game token.' }, 403);
   if (!(request.headers.get('content-type') ?? '').startsWith('application/json')) return reply({ error: 'Send JSON.' }, 415);
+  if (Number(request.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) return reply({ error: 'Request too large.' }, 413);
 
   const relay = String(env.MOQ_GAMES_RELAY ?? '').replace(/\/+$/, '');
   const root = String(env.MOQ_GAMES_ROOT ?? '').replace(/^\/+|\/+$/g, '');
@@ -103,7 +131,8 @@ export async function gameToken(request, env) {
   const { success } = await env.GAME_TOKEN_LIMIT.limit({ key: request.headers.get('cf-connecting-ip') ?? 'unknown' });
   if (!success) return reply({ error: 'Too many requests. Try again in a minute.' }, 429);
 
-  const body = await request.json().catch(() => null);
+  const body = await readSmallJson(request, MAX_BODY_BYTES).catch(() => null);
+  if (body === undefined) return reply({ error: 'Request too large.' }, 413);
   const game = String(body?.game ?? '');
   if (!Object.hasOwn(GAMES, game)) return reply({ error: 'Unknown game.' }, 400);
   let room = ROOM;
@@ -132,5 +161,6 @@ export async function gameToken(request, env) {
     return reply({ offline: true, error: 'The live sky is not available right now.' }, 503);
   }
   const ticket = GAMES[game].rooms ? await seatTicket(env.MOQ_GAMES_SIGNING_KEY, game, room, id) : undefined;
-  return reply({ url: `${relay}/${scope}?jwt=${jwt}`, player: id, callsign, room, expires: claims.exp, ticket });
+  // `now` lets a client line its clock up with the server's, for the shared live pass.
+  return reply({ url: `${relay}/${scope}?jwt=${jwt}`, player: id, callsign, room, expires: claims.exp, ticket, now: Date.now() });
 }

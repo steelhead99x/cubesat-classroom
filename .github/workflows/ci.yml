@@ -114,6 +114,7 @@ jobs:
             libraries: "[]"
             sketches: |
               - firmware/classroom-sensors
+              - hardware/sdr-receiver/bench/power-logger
           - board: XIAO ESP32-S3
             fqbn: esp32:esp32:XIAO_ESP32S3
             platforms: |
@@ -128,6 +129,8 @@ jobs:
             sketches: |
               - firmware/xiao-cubesat
               - firmware/classroom-sensors
+              - hardware/rideshare-flatsat/s3_recorder
+              - hardware/sdr-receiver/bench/power-logger
           - board: XIAO ESP32-C3
             fqbn: esp32:esp32:XIAO_ESP32C3
             platforms: |
@@ -142,6 +145,7 @@ jobs:
             sketches: |
               - firmware/xiao-cubesat
               - firmware/classroom-sensors
+              - hardware/sdr-receiver/bench/power-logger
           - board: XIAO RP2040
             fqbn: rp2040:rp2040:seeed_xiao_rp2040
             platforms: |
@@ -156,6 +160,7 @@ jobs:
             sketches: |
               - firmware/xiao-cubesat
               - firmware/classroom-sensors
+              - hardware/sdr-receiver/bench/power-logger
           - board: XIAO SAMD21
             fqbn: Seeeduino:samd:seeed_XIAO_m0
             platforms: |
@@ -171,6 +176,15 @@ jobs:
             sketches: |
               - firmware/xiao-cubesat
               - firmware/classroom-sensors
+          - board: XIAO MG24 Sense
+            fqbn: SiliconLabs:silabs:xiao_mg24
+            platforms: |
+              - name: SiliconLabs:silabs
+                source-url: https://siliconlabs.github.io/arduino/package_arduinosilabs_index.json
+            libraries: |
+              - name: Seeed Arduino LSM6DS3
+            sketches: |
+              - hardware/rideshare-flatsat/mg24_sensor
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:

@@ -38,6 +38,9 @@ export class RoomLink {
   #snapshot: unknown = null;
   #beat?: ReturnType<typeof setInterval>;
   #retry = 0;
+  /** Each start() is one attempt; stop() or a newer start() makes older attempts give up. */
+  #gen = 0;
+  #abort?: AbortController;
   #ready?: (ok: boolean) => void;
 
   constructor(room: string, events: LinkEvents, endpoint = '/api/games/moq-token') {
@@ -56,30 +59,35 @@ export class RoomLink {
 
   /** Resolves true once connected (the player id and call sign are then known), false if not. */
   start(): Promise<boolean> {
+    this.#ready?.(false);
     const ready = new Promise<boolean>(r => { this.#ready = r; });
     void this.#run();
     return ready;
   }
 
   async #run() {
-    this.#stop = false;
-    while (!this.#stop) {
+    const gen = this.#begin();
+    const live = () => !this.#stop && gen === this.#gen;
+    while (live()) {
       this.#set('connecting');
       let token: Token;
       try {
         token = await this.#token();
       } catch (error) {
+        if (!live()) return; // cancelled while asking for a token
         this.#set('offline', (error as Error).message);
         return;
       }
+      if (!live()) return;
       try {
         const expiresIn = token.expires * 1000 - Date.now();
-        await this.#session(token, Math.max(30_000, expiresIn - 30_000));
+        await this.#session(token, Math.max(30_000, expiresIn - 30_000), live);
+        if (!live()) return;
         this.#retry = 0;
       } catch {
+        if (!live()) return;
         this.#retry++;
         this.#cleanup();
-        if (this.#stop) return;
         if (this.#retry > 3) { this.#set('offline', 'The relay could not be reached.'); return; }
         this.#set('connecting', 'Reconnecting…');
         await new Promise(r => setTimeout(r, 1000 * this.#retry));
@@ -87,8 +95,21 @@ export class RoomLink {
     }
   }
 
+  /** Starts a new attempt and cancels any older one, including its token request. */
+  #begin() {
+    const generation = ++this.#gen;
+    this.#abort?.abort();
+    this.#cleanup();
+    this.#abort = new AbortController();
+    this.#retry = 0;
+    this.#stop = false;
+    return generation;
+  }
+
   stop() {
     this.#stop = true;
+    this.#gen++;
+    this.#abort?.abort();
     this.#cleanup();
     this.#set('off');
   }
@@ -102,6 +123,7 @@ export class RoomLink {
       body: JSON.stringify({ game: 'rockoon-wars', room: this.room, ...seat }),
       credentials: 'same-origin',
       cache: 'no-store',
+      signal: this.#abort?.signal,
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok || typeof body.url !== 'string') throw new Error(body.error ?? 'Online play is not available.');
@@ -109,18 +131,27 @@ export class RoomLink {
     return body as Token;
   }
 
-  async #session(token: Token, lifetimeMs: number) {
+  async #session(token: Token, lifetimeMs: number, live: () => boolean) {
     this.player = token.player;
     this.callsign = token.callsign;
     this.#ticket = token.ticket ?? '';
     const origin = new Moq.Origin.Producer();
-    this.#origin = origin;
     const connection = await Moq.Connection.connect({
       url: new URL(token.url), publish: origin.consume(), consume: origin, signal: AbortSignal.timeout(6_000),
-    });
+    }).catch(error => { try { origin.close(); } catch { /* already closed */ } throw error; });
+    if (!live()) {
+      // The player left (or started again) while this connection was opening: drop it.
+      try { connection.close(); } catch { /* already closed */ }
+      try { origin.close(); } catch { /* already closed */ }
+      return;
+    }
+    this.#origin = origin;
     this.#connection = connection;
     this.#closed = false;
-    void connection.closed.then(() => { this.#closed = true; }, () => { this.#closed = true; });
+    const markClosed = () => {
+      if (this.#connection === connection) this.#closed = true;
+    };
+    void connection.closed.then(markClosed, markClosed);
     const broadcast = origin.createBroadcast(Moq.Path.from(token.player));
     this.#track = broadcast.createTrack('state', { priority: 1 });
     broadcast.announce();
@@ -128,14 +159,24 @@ export class RoomLink {
     this.#write();
     this.#beat = setInterval(() => this.#write(), HEARTBEAT_MS);
     void this.#discover(origin, token.player);
-    const timer = new Promise<'renew'>(r => setTimeout(() => r('renew'), lifetimeMs));
-    const result = await Promise.race([connection.closed, timer]);
-    this.#cleanup();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const renewal = new Promise<'renew'>(resolve => {
+      timeout = setTimeout(() => resolve('renew'), lifetimeMs);
+    });
+    let result;
+    try {
+      result = await Promise.race([connection.closed, renewal]);
+    } finally {
+      clearTimeout(timeout);
+      // A stop or a newer start may have installed a different connection while we waited.
+      if (this.#connection === connection) this.#cleanup();
+    }
     if (result !== 'renew' && result) throw result;
   }
 
   async #discover(origin: Moq.Origin.Producer, self: string) {
     for await (const update of origin.announced()) {
+      if (this.#origin !== origin) return;
       const id = Moq.Path.parts(update.prefix)[0] ?? '';
       if (!/^[0-9a-f]{12}$/.test(id) || id === self) continue;
       if (update.kind === 'retracted') {
@@ -159,7 +200,7 @@ export class RoomLink {
       void (async () => {
         for (;;) {
           const msg = await state.readJson().catch(() => undefined);
-          if (msg === undefined) break;
+          if (msg === undefined || this.#origin !== origin || !subs.includes(state)) break;
           const clean = cleanSnapshot(msg);
           if (clean) try { this.#events.peer(id, clean as Snapshot); } catch (error) { console.warn('room peer handler failed', error); }
         }

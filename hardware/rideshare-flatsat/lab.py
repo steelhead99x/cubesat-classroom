@@ -1,23 +1,61 @@
 """FlatSat evidence exercises. Uses only the Python standard library."""
 import argparse
 import csv
+import io
 import math
+import re
 import socket
 import sys
 from pathlib import Path
 
 
-def rows(stream):
-    for row in csv.reader(stream):
-        if len(row) != 8 or row[0] not in {"hardware bench", "desk simulation"}:
+LABELS = {"hardware bench", "desk simulation"}
+SESSION = re.compile(r"[0-9a-f]{8}")
+DIGITS = re.compile(r"[0-9]+")
+SIGNED = re.compile(r"-?[0-9]+")
+
+
+MAX_LINE = 200  # a recorder row is under 80 bytes
+
+
+def rows(lines):
+    """Yield valid eight-field records from text lines. Each line is split on commas without the
+    csv module, so stray quotes, newlines, NUL bytes or an endless line cannot stop the tools,
+    and every field must be exactly the form the recorder writes."""
+    for line in lines:
+        if len(line) > MAX_LINE:
             continue
-        try:
-            node, seq, ms, x, y, z = map(int, [row[1], *row[3:]])
-            int(row[2], 16)
-        except ValueError:
+        row = line.rstrip("\r\n").split(",")
+        if len(row) != 8 or row[0] not in LABELS:
             continue
-        if 1 <= node <= 5 and len(row[2]) == 8 and min(seq, ms) >= 0:
+        node, session, seq, ms, *axes = row[1:]
+        if (DIGITS.fullmatch(node) and 1 <= int(node) <= 5
+                and SESSION.fullmatch(session)
+                and DIGITS.fullmatch(seq) and DIGITS.fullmatch(ms)
+                and all(SIGNED.fullmatch(a) for a in axes)):
             yield row
+
+
+def bounded_lines(stream):
+    """Lines from a text stream, reading at most MAX_LINE + 1 characters at a time, so a serial
+    port that never sends a newline cannot use up memory. Over-long lines are dropped whole."""
+    while True:
+        line = stream.readline(MAX_LINE + 1)
+        if not line:
+            return
+        if len(line) > MAX_LINE and not line.endswith("\n"):
+            while True:  # skip the rest of the over-long line
+                rest = stream.readline(MAX_LINE + 1)
+                if not rest or rest.endswith("\n"):
+                    break
+            continue
+        yield line
+
+
+def sort_key(key):
+    """Order by node and sequence as numbers, so sequence 10 comes after 9."""
+    label, node, session, seq = key
+    return label, int(node), session, int(seq)
 
 
 def simulate(nodes, directory):
@@ -27,11 +65,12 @@ def simulate(nodes, directory):
     directory.mkdir(parents=True, exist_ok=False)
     with (directory / "ground.csv").open("w", newline="") as ground, \
             (directory / "ground-recovered.csv").open("w", newline="") as complete:
-        receiver = csv.writer(ground)
-        recovered = csv.writer(complete)
+        # The recorder writes "\n" line endings; the simulation matches it.
+        receiver = csv.writer(ground, lineterminator="\n")
+        recovered = csv.writer(complete, lineterminator="\n")
         for node in range(1, nodes + 1):
             with (directory / f"node-{node}.csv").open("w", newline="") as onboard:
-                logger = csv.writer(onboard)
+                logger = csv.writer(onboard, lineterminator="\n")
                 for seq in range(10):
                     angle = math.radians(90 * (seq >= 5) + 30 * (node - 1))
                     row = ["desk simulation", node, f"{node:08x}", seq, seq * 100,
@@ -48,8 +87,8 @@ def compare(local, ground):
         result = {}
         duplicates = 0
         for path in paths:
-            with path.open(newline="") as stream:
-                for row in rows(stream):
+            with path.open(newline="", errors="replace") as stream:
+                for row in rows(bounded_lines(stream)):
                     key = tuple(row[:4])
                     if key in result:
                         if result[key] != row:
@@ -58,13 +97,14 @@ def compare(local, ground):
                     result[key] = row
         return result, duplicates
 
-    saved, _ = load(local)
+    saved, duplicate_onboard = load(local)
     received, duplicates = load([ground])
     if not saved:
         raise ValueError("no valid onboard records")
-    print(f"onboard={len(saved)} ground={len(received)} duplicate_ground={duplicates}")
+    print(f"onboard={len(saved)} ground={len(received)} "
+          f"duplicate_onboard={duplicate_onboard} duplicate_ground={duplicates}")
     problems = 0
-    for key in sorted(saved.keys() | received.keys()):
+    for key in sorted(saved.keys() | received.keys(), key=sort_key):
         if key not in received:
             print("missing at ground", *key)
         elif key not in saved:
@@ -107,20 +147,25 @@ def main():
         if args.strict and problems:
             sys.exit(1)
     else:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            if args.cmd == "forward":
-                for row in rows(sys.stdin):
-                    sock.sendto(",".join(row).encode("ascii"), (args.address, args.port))
-            else:
-                sock.bind((args.address, args.port))
-                while True:
-                    packet, _ = sock.recvfrom(65535)
-                    try:
-                        row = next(rows([packet.decode("ascii")]), None)
-                    except (UnicodeError, csv.Error):
-                        continue
-                    if row:
-                        print(",".join(row), flush=True)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                if args.cmd == "forward":
+                    # Serial ports emit stray bytes at boot; never let them stop the forwarder.
+                    serial = io.TextIOWrapper(sys.stdin.buffer, encoding="ascii",
+                                              errors="replace", newline="")
+                    for row in rows(bounded_lines(serial)):
+                        sock.sendto(",".join(row).encode("ascii"), (args.address, args.port))
+                else:
+                    sock.bind((args.address, args.port))
+                    while True:
+                        packet, _ = sock.recvfrom(65535)
+                        if len(packet) > MAX_LINE:
+                            continue
+                        text = packet.decode("ascii", errors="replace").splitlines()
+                        for row in rows(text[:1]):
+                            print(",".join(row), flush=True)
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == "__main__":

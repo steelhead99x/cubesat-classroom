@@ -17,7 +17,7 @@ python3 thermal.py bench example.csv --limit-c 10
 python3 -m unittest discover
 ```
 
-A useful first comparison has two runs starting within 1 °C of each other, with the same probe positions and sampling interval. The script estimates the first crossing between recorded samples. Report a run that ends before crossing as a lower bound on hold time.
+A useful first comparison has two runs starting within 1 °C of each other, with the same probe positions and sampling interval. The script reports the first crossing between recorded samples. It estimates a time by linear interpolation only when those two samples are at most 2 minutes apart (`--max-gap-s`). Across a longer gap it gives the interval, because the temperature could have changed at any point in it. Report a run that ends before crossing as a lower bound on hold time.
 
 ## Model the long-duration question
 

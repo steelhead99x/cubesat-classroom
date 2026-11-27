@@ -7,7 +7,7 @@ import * as Room from './room.mjs';
 import { Renderer, rocketSvg, type Scene } from './render';
 import type { RoomLink, LinkStatus, Snapshot } from './net';
 
-type Snap = { cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; skips?: number[]; shopSkips?: Record<number, string[]> };
+type Snap = { cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]> };
 type Host = { seed: number; rounds: number; order: string[]; names: Record<string, string> };
 type Match = ReturnType<typeof G.createMatch>;
 type Field = NonNullable<Match['field']>;
@@ -62,23 +62,35 @@ function start(root: HTMLElement) {
   let me = '';
   let paused = false;
   let howto = !seenHowto();
-  let anim: null | { phase: 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; after: Field; blast: { x: number; y: number; r: number; dirt: boolean } | null; events: Events } = null;
+  let anim: null | { phase: 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; after: Field; blast: { x: number; y: number; r: number; dirt: boolean } | null; events: Events; shooter: number } = null;
+  /** Each player's last shot this round, drawn faintly so they can correct for the wind. */
+  let ghosts: { round: number; paths: Record<number, number[][]> } = { round: -1, paths: {} };
   let banner: null | { title: string; text: string } = null; // round or match results, until dismissed
   let shopPick: Record<string, string[]> = {}; // rockets being bought in the shop, by player id
   let drag: { x: number; y: number } | null = null;
   let announced = '';
   let menuNote = '';
   let netDetail = '';
+  let joinCode = new URLSearchParams(location.hash.slice(1)).get('room') ?? '';
   let lastTurnKey = '';
+  let liveSince = 0; // when this screen's room connection last went live
+  let shotNote = ''; // what the last shot did, shown with the next turn
 
   function seenHowto() { try { return localStorage.getItem(HOWTO_KEY) === '1'; } catch { return false; } }
   function closeHowto() { howto = false; try { localStorage.setItem(HOWTO_KEY, '1'); } catch { /* private mode */ } render(); }
   helpBtn.addEventListener('click', () => { howto = true; render(); });
-  fullBtn.addEventListener('click', () => {
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else void root.requestFullscreen?.().catch(() => {});
+  fullBtn.hidden = !document.fullscreenEnabled || !root.requestFullscreen;
+  fullBtn.addEventListener('click', async () => {
+    try {
+      if (document.fullscreenElement === root) await document.exitFullscreen();
+      else await root.requestFullscreen();
+    } catch { say('Full screen is unavailable. You can keep playing here.'); }
   });
-  document.addEventListener('fullscreenchange', () => fullBtn.setAttribute('aria-pressed', String(!!document.fullscreenElement)));
+  document.addEventListener('fullscreenchange', () => {
+    const active = document.fullscreenElement === root;
+    fullBtn.setAttribute('aria-pressed', String(active));
+    fullBtn.title = active ? 'Exit full screen' : 'Full screen';
+  });
 
   // ---- sound (off until asked for) ----
   let audio: AudioContext | null = null;
@@ -114,15 +126,44 @@ function start(root: HTMLElement) {
   }
   pauseBtn.addEventListener('click', () => togglePause());
   function togglePause() {
-    if (mode === 'menu') return;
+    // Online, the match runs on everyone's screens, so one player cannot pause it.
+    if (mode === 'menu' || (mode === 'online' && !paused)) return;
     paused = !paused;
     pauseBtn.setAttribute('aria-pressed', String(paused));
     say(paused ? 'Paused.' : 'Playing again.');
     render();
   }
-  quitBtn.addEventListener('click', () => quit());
+  // Leaving a match in progress takes a second tap, so a stray tap beside Pause is harmless.
+  let quitArmed: ReturnType<typeof setTimeout> | undefined;
+  quitBtn.addEventListener('click', () => {
+    const inMatch = mode !== 'menu' && !!match && match.phase !== 'over';
+    if (inMatch && !quitArmed) {
+      quitBtn.dataset.armed = 'true';
+      quitBtn.setAttribute('aria-label', 'Tap again to leave the match');
+      say('Tap ⌂ again to leave this match.');
+      quitArmed = setTimeout(disarmQuit, 3000);
+      return;
+    }
+    disarmQuit();
+    quit();
+  });
+  function disarmQuit() {
+    clearTimeout(quitArmed); quitArmed = undefined;
+    delete quitBtn.dataset.armed;
+    quitBtn.setAttribute('aria-label', quitBtn.title || 'Leave');
+  }
 
-  function say(text: string) { if (text !== announced) { announced = text; status.textContent = text; } }
+  function say(text: string, repeat = false) {
+    if (text === announced) {
+      if (!repeat) return;
+      // The same words again (a second "Missed by 10 m"): clear first so screen readers repeat them.
+      status.textContent = '';
+      requestAnimationFrame(() => { status.textContent = text; });
+      return;
+    }
+    announced = text;
+    status.textContent = text;
+  }
   const esc = (s: string) => s.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
   // ---- the shared move path ----
@@ -133,7 +174,7 @@ function start(root: HTMLElement) {
   const waitingOn = (): ReturnType<typeof Room.nextAction> | null => (match && host ? Room.nextAction(match, host, snaps) : null);
   const myTurn = () => {
     const a = waitingOn();
-    return !!a && a.kind === 'wait' && match!.phase === 'play' && mine.includes(a.ids[0]);
+    return !!a && a.kind === 'wait' && !a.sent && match!.phase === 'play' && mine.includes(a.ids[0]);
   };
   const shooter = () => match!.field!.units[match!.turn];
 
@@ -141,39 +182,38 @@ function start(root: HTMLElement) {
   function step() {
     if (!match || !host || anim || paused) return render();
     for (let guard = 0; guard < 50; guard++) {
+      // The host records each turn once; everyone, the host included, then plays that record.
+      if (amHost() && Room.commit(match, host, snaps, goneIds())) publish();
       const action = Room.nextAction(match, host, snaps);
       if (action.kind === 'fire') {
         const before = structuredClone(match.field!) as Field;
         before.units[match.turn].angle = action.shot.angle;
+        const shooterIndex = match.turn;
         const result = Room.apply(match, action) as ReturnType<typeof G.fire>;
+        if (ghosts.round !== match.round) ghosts = { round: match.round, paths: {} };
+        ghosts.paths[shooterIndex] = result.path;
         // match.field is the same object until the next round starts, so keep a copy to draw.
-        anim = { phase: 'flight', t: 0, pos: 0, path: result.path, before, after: structuredClone(match.field!) as Field, blast: result.blast, events: result.events };
+        anim = { phase: 'flight', t: 0, pos: 0, path: result.path, before, after: structuredClone(match.field!) as Field, blast: result.blast, events: result.events, shooter: shooterIndex };
         drag = null;
         beep('fire');
         return render();
       }
       if (action.kind === 'shop' || action.kind === 'skip') { Room.apply(match, action); shopPick = {}; continue; }
-      if (action.kind === 'wait') hostSkips(action.ids);
       break;
     }
     render();
   }
 
-  /** Only the room's host skips players who have gone, so everyone skips the same turn. */
-  function hostSkips(ids: string[]) {
-    if (mode !== 'online' || !host || host.order[0] !== me || !match) return;
+  /** In local games this screen is the host. Online, the room creator is. */
+  const amHost = () => !!host && mine.includes(host.order[0]);
+
+  /** Players the host gives up on after 30 seconds without a snapshot. Their turns are skipped. */
+  function goneIds() {
+    if (mode !== 'online' || !host) return [];
     const now = Date.now();
-    const gone = ids.filter(id => id !== me && now - (seen.get(id) ?? 0) > 30_000);
-    if (!gone.length) return;
-    const s = snapOf(me);
-    if (match.phase === 'shop') {
-      const r = match.round + 1;
-      s.shopSkips = { ...s.shopSkips, [r]: [...new Set([...(s.shopSkips?.[r] ?? []), ...gone])] };
-    } else if (gone.includes(host.order[match.turn])) {
-      s.skips = [...(s.skips ?? []), match.log.length];
-    } else return;
-    publish();
-    step();
+    // Just (re)connected: give everyone time to be heard again before deciding anyone left.
+    if (now - liveSince < 10_000) return [];
+    return host.order.filter(id => id !== me && now - (seen.get(id) ?? 0) > 30_000);
   }
 
   const canAct = () => myTurn() && !anim && !paused && !banner && !howto;
@@ -247,12 +287,13 @@ function start(root: HTMLElement) {
       terrain: match.field.terrain, units: match.field.units, wind: match.field.wind, colors, names,
       active: match.phase === 'play' ? match.turn : -1,
       preview: act ? G.aimPreview(match, 40) : null, drag: act ? drag : null, shot: null,
+      ghost: act && ghosts.round === match.round ? ghosts.paths[match.turn] ?? null : null,
     };
   }
   const easeOut = (x: number) => 1 - (1 - x) * (1 - x);
 
   function finishShot() {
-    const events = anim!.events;
+    const { events, path, shooter: who, after } = anim!;
     anim = null;
     const names = (i: number) => match!.players[i]?.name ?? '';
     const said: string[] = [];
@@ -261,14 +302,34 @@ function start(root: HTMLElement) {
       if (e.type === 'round') {
         const over = match!.phase === 'over';
         const winner = e.winner! >= 0 ? `${names(e.winner!)} wins round ${match!.round}!` : `Round ${match!.round} is a tie.`;
+        const top = (match!.winners ?? [match!.winner!]).map(names);
+        const gameTitle = top.length > 1 ? `🏆 It's a tie! ${top.join(' and ')} share the win!` : `🏆 ${top[0]} wins the game!`;
         banner = over
-          ? { title: `🏆 ${names(match!.winner!)} wins the game!`, text: winner }
+          ? { title: gameTitle, text: winner }
           : { title: `🏆 ${winner}`, text: 'Everyone gets 100 credits. The winner gets 300 more credits and 2 points. Time to shop!' };
       }
     }
     const hits = events.filter(e => e.type === 'hit').length;
-    say(said.join(' ') || (hits ? 'Hit!' : 'Missed.'));
+    shotNote = said.join(' ') || (hits ? 'Hit!' : missNote(path, who, after));
+    say(shotNote, true);
     step();
+  }
+
+  /** A miss that teaches: how far off the shot landed, and which way the wind pushed it. */
+  function missNote(path: number[][], who: number, field: Field) {
+    const end = path[path.length - 1];
+    const wind = field.wind;
+    const windNote = Math.abs(wind) >= 1 ? ` The wind is pushing ${wind > 0 ? 'right ▶' : '◀ left'}.` : '';
+    if (!end || end[0] < 0 || end[0] >= G.W) return `Missed. The shot flew off the edge.${windNote}`;
+    const me = field.units[who];
+    const others = field.units.map((u, i) => ({ u, i })).filter(({ u, i }) => i !== who && u.alive);
+    if (!me || !others.length) return 'Missed.';
+    const near = others.reduce((a, b) => (Math.abs(b.u.x - end[0]) < Math.abs(a.u.x - end[0]) ? b : a));
+    const dx = Math.round(end[0] - near.u.x);
+    const name = match!.players[near.i]?.name ?? 'them';
+    // "Short" is toward the shooter, "long" is past the target.
+    const toward = Math.sign(me.x - near.u.x) === Math.sign(dx) ? 'short of' : 'past';
+    return `Missed by ${Math.abs(dx)} m, ${toward} ${name}.${windNote}`;
   }
 
   // ---- the HTML around the canvas (changed only when the game changes, never per frame) ----
@@ -277,6 +338,8 @@ function start(root: HTMLElement) {
     root.dataset.turns = match ? String(match.log.length) : '';
     root.dataset.fp = match && !anim ? G.fingerprint(match) : '';
     root.dataset.mode = mode;
+    pauseBtn.disabled = mode === 'online';
+    pauseBtn.title = mode === 'online' ? 'An online match cannot be paused' : 'Pause';
     renderHud();
     renderOverlay();
     turnToast();
@@ -311,6 +374,7 @@ function start(root: HTMLElement) {
       const a = waitingOn();
       if (anim) wait = '🚀 Whoosh…';
       else if (paused) wait = 'Paused';
+      else if (a?.kind === 'wait' && a.sent) wait = 'Sending the shot…';
       else if (a?.kind === 'wait' && !mine.includes(a.ids[0])) wait = `Waiting for ${p!.name}…`;
     }
     hud.controls.dataset.wait = wait ? 'true' : 'false';
@@ -326,15 +390,17 @@ function start(root: HTMLElement) {
     const p = match!.players[match!.turn];
     const mineNow = mine.includes(host!.order[match!.turn]);
     const text = mode === 'online' ? (mineNow ? `Your turn, ${p.name}!` : `${p.name}'s turn`) : `${p.name}'s turn`;
-    toast.textContent = text;
+    // The last shot's result rides along under the name, so a miss note is seen, not lost.
+    const note = shotNote; shotNote = '';
+    toast.innerHTML = esc(text) + (note ? `<small>${esc(note)}</small>` : '');
     toast.style.setProperty('--c', p.color);
-    say(mineNow ? `Your turn: ${p.name}` : `Waiting for ${p.name}`);
+    say(`${note ? note + ' ' : ''}${mineNow ? `Your turn: ${p.name}` : `Waiting for ${p.name}`}`);
     if (mineNow) beep('turn');
     toast.getAnimations().forEach(a => a.cancel());
     toast.animate(reduced
       ? [{ opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }]
       : [{ opacity: 0, transform: 'translate(-50%, -14px) scale(.9)' }, { opacity: 1, transform: 'translate(-50%, 0) scale(1)', offset: 0.12 }, { opacity: 1, transform: 'translate(-50%, 0) scale(1)', offset: 0.8 }, { opacity: 0, transform: 'translate(-50%, -8px) scale(.98)' }],
-      { duration: 1500, easing: 'ease-out', fill: 'forwards' });
+      { duration: note ? 2600 : 1500, easing: 'ease-out', fill: 'forwards' });
   }
 
   function renderOverlay() {
@@ -345,16 +411,19 @@ function start(root: HTMLElement) {
     else if (mode === 'online' && !host) { kind = 'lobby'; html = lobbyHtml(); }
     else if (banner) { kind = 'banner'; html = `<h3>${esc(banner.title)}</h3><p>${esc(banner.text)}</p>${scoresHtml()}<div class="row"><button type="button" class="go big" data-act="banner">${match?.phase === 'over' ? 'Back to the start' : 'Next ▶'}</button></div>`; }
     else if (match && !anim && match.phase === 'shop') { kind = 'shop'; html = shopHtml(); }
+    const changedPanel = overlay.dataset.kind !== kind;
+    const focusWasInside = overlay.contains(document.activeElement);
     overlay.hidden = !html;
     overlay.dataset.kind = kind;
+    canvas.inert = !!html;
     if (overlay.dataset.html !== html) {
-      const focused = overlay.contains(document.activeElement) ? (document.activeElement as HTMLElement).dataset.act ?? '' : null;
+      const focused = focusWasInside ? (document.activeElement as HTMLElement).dataset.act : null;
       overlay.innerHTML = html ? `<div class="panel">${html}</div>` : '';
       overlay.dataset.html = html;
-      if (html) {
+      if (html && (focusWasInside || (changedPanel && root.contains(document.activeElement)))) {
         const target = (focused && overlay.querySelector<HTMLElement>(`[data-act="${focused}"]:not(:disabled)`)) || overlay.querySelector<HTMLElement>('input, .go:not(:disabled), button:not(:disabled)');
         target?.focus({ preventScroll: true });
-      } else if (overlay.contains(document.activeElement) || document.activeElement === document.body) canvas.focus({ preventScroll: true });
+      } else if (!html && (focusWasInside || root.contains(document.activeElement))) canvas.focus({ preventScroll: true });
     }
   }
 
@@ -377,9 +446,8 @@ function start(root: HTMLElement) {
       <p class="small">${esc(menuNote)}</p>
       <div class="row"><button type="button" data-act="back">◀ Back</button></div>`;
     if (menuStep === 'join') {
-      const code = new URLSearchParams(location.hash.slice(1)).get('room') ?? '';
       return `<h3>Join a room</h3><p>Type the 5-letter code your friend sees.</p>
-        <div class="row"><input data-code class="code-in" aria-label="Room code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="ABC12" value="${esc(code)}" /></div>
+        <div class="row"><input data-code class="code-in" aria-label="Room code" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="ABC12" value="${esc(joinCode)}" /></div>
         <div class="row"><button type="button" class="go big" data-act="join">Join ▶</button></div>
         <p class="small" role="alert">${esc(menuNote)}</p>
         <div class="row"><button type="button" data-act="back">◀ Back</button></div>`;
@@ -423,7 +491,9 @@ function start(root: HTMLElement) {
     const a = waitingOn();
     if (a?.kind !== 'wait') return '';
     const id = a.ids.find(x => mine.includes(x));
-    if (!id) return `<h3>🛒 Shopping time</h3><p>Waiting for ${esc(a.ids.map(x => host!.names[x]).join(', '))} to finish shopping.</p>`;
+    if (!id) return a.sent || !a.ids.length
+      ? `<h3>🛒 Shopping time</h3><p>Everyone is done. Starting the round…</p>`
+      : `<h3>🛒 Shopping time</h3><p>Waiting for ${esc(a.ids.map(x => host!.names[x]).join(', '))} to finish shopping.</p>`;
     const i = host!.order.indexOf(id), p = match!.players[i];
     const picks = shopPick[id] ?? [];
     const credits = p.credits - picks.reduce((s, w) => s + G.WEAPON[w].price, 0);
@@ -440,9 +510,9 @@ function start(root: HTMLElement) {
   }
 
   function joinTyped() {
-    const raw = overlay.querySelector<HTMLInputElement>('[data-code]')?.value ?? '';
+    joinCode = overlay.querySelector<HTMLInputElement>('[data-code]')?.value ?? '';
     // Easy entry: ignore spaces and dashes, any case, and the look-alikes O/0 and I/1 are never used.
-    const code = raw.toUpperCase().replace(/[\s-]/g, '');
+    const code = joinCode.toUpperCase().replace(/[\s-]/g, '');
     if (!Room.ROOM_CODE.test(code)) { menuNote = 'Room codes have 5 letters and numbers, like K7QX2.'; return renderOverlay(); }
     menuNote = '';
     void startOnline(code, false);
@@ -504,17 +574,24 @@ function start(root: HTMLElement) {
     step();
   }
 
+  let joining = false;
   async function startOnline(code: string, creator: boolean) {
-    const { RoomLink } = await import('./net').catch(() => ({ RoomLink: null }));
+    // One room at a time: a double tap on Join must not open two connections.
+    if (joining || link) return;
+    joining = true;
+    const { RoomLink } = await import('./net').catch(() => ({ RoomLink: null })).finally(() => { joining = false; });
+    if (mode !== 'menu' || link) return; // left, or already joined, while the code loaded
     if (!RoomLink) { menuNote = 'Online play could not load. Try playing on this computer.'; return renderOverlay(); }
     snaps.clear(); seen.clear();
     host = null; match = null; banner = null; shopPick = {}; paused = false; lastTurnKey = '';
     mode = 'online';
     history.replaceState(null, '', `#room=${code}`);
-    link = new RoomLink(code, {
+    const thisLink: RoomLink = link = new RoomLink(code, {
       status(s: LinkStatus, detail?: string) {
+        if (link !== thisLink) return; // a room this screen has already left
+        if (s === 'live') liveSince = Date.now();
         netDetail = detail ?? '';
-        net.textContent = s === 'live' ? `🌐 Room ${code} · you are ${link?.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : s === 'offline' ? 'Offline' : '';
+        net.textContent = s === 'live' ? `🌐 Room ${code} · you are ${thisLink.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : s === 'offline' ? 'Offline' : '';
         render();
       },
       peer(id: string, snap: Snapshot) {
@@ -523,11 +600,13 @@ function start(root: HTMLElement) {
         adoptHost();
         step();
       },
-      leave(id: string) { seen.set(id, 0); render(); },
+      // A player's broadcast also goes away for a moment whenever a connection renews, so
+      // leaving is judged only by how long it has been since their last snapshot (goneIds).
+      leave() { render(); },
     });
     bringIntoView();
-    const ok = await link.start();
-    if (!ok || !link) return;
+    const ok = await thisLink.start();
+    if (!ok || link !== thisLink) return;
     me = link.player;
     mine = [me];
     if (!snaps.has(me)) snaps.set(me, { cs: link.callsign, joined: Date.now(), creator, turns: {}, shops: {} });
@@ -555,8 +634,8 @@ function start(root: HTMLElement) {
     const order = [me, ...people.map(([id]) => id).filter(id => id !== me)].slice(0, G.MAX_PLAYERS);
     const names = Object.fromEntries(order.map(id => [id, snapOf(id).cs]));
     snapOf(me).host = { seed: crypto.getRandomValues(new Uint32Array(1))[0], rounds: ROUNDS, order, names };
-    snapOf(me).skips = [];
-    snapOf(me).shopSkips = {};
+    snapOf(me).log = {};
+    snapOf(me).shopLog = {};
     publish();
     adoptHost();
     step();
@@ -572,7 +651,7 @@ function start(root: HTMLElement) {
     render();
   }
 
-  // Re-check the room now and then: players who have gone, and the host's skips.
+  // Re-check the room now and then: players who have gone, and the host's committed turns.
   setInterval(() => { if (mode === 'online') { if (!anim) step(); else renderOverlay(); } }, 5_000);
 
   // ---- controls ----
@@ -601,46 +680,59 @@ function start(root: HTMLElement) {
     renderHud();
   };
   canvas.addEventListener('pointerdown', e => {
-    if (!canAct() || e.button > 0) return;
+    if (!canAct() || e.button !== 0 || dragId !== -1) return;
     e.preventDefault();
     dragId = e.pointerId;
     canvas.setPointerCapture(e.pointerId);
     aimAt(e);
   });
   canvas.addEventListener('pointermove', e => { if (e.pointerId === dragId && canAct()) aimAt(e); });
-  const endDrag = (e: PointerEvent) => { if (e.pointerId !== dragId) return; dragId = -1; drag = null; say(`Aim ${shooter().angle} degrees, power ${shooter().power}.`); };
+  const endDrag = (e: PointerEvent) => {
+    if (e.pointerId !== dragId) return;
+    dragId = -1; drag = null;
+    if (canAct()) say(`Aim ${shooter().angle} degrees, power ${shooter().power}.`);
+  };
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener('lostpointercapture', endDrag);
 
   // The buttons: hold to keep turning.
   const parseAdj = (b: HTMLElement) => { const [k, d] = (b.dataset.adj ?? '').split(':'); return [k as 'angle' | 'power' | 'weapon', Number(d)] as const; };
   let hold: ReturnType<typeof setTimeout> | undefined;
-  let lastPointer = 0;
   const stopHold = () => { clearTimeout(hold); hold = undefined; };
   hud.controls.addEventListener('pointerdown', e => {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-adj]');
-    if (!btn || btn.disabled) return;
-    lastPointer = Date.now();
+    if (!btn || btn.disabled || e.button !== 0 || !e.isPrimary) return;
+    stopHold();
     const [kind, d] = parseAdj(btn);
     adjust(kind, d);
     if (kind === 'weapon') return;
     let n = 0;
-    const again = () => { adjust(kind, d * (n++ > 12 ? 2 : 1)); hold = setTimeout(again, 60); };
-    stopHold();
+    const again = () => {
+      if (!canAct()) return stopHold();
+      adjust(kind, d * (n++ > 12 ? 2 : 1));
+      hold = setTimeout(again, 60);
+    };
+    btn.setPointerCapture(e.pointerId);
     hold = setTimeout(again, 350);
   });
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) hud.controls.addEventListener(ev, stopHold);
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) hud.controls.addEventListener(ev, stopHold);
+  window.addEventListener('blur', stopHold);
   hud.controls.addEventListener('click', e => {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
     if (!btn) return;
     if (btn.dataset.fire !== undefined) return fireNow();
     // A tap or mouse click was already handled on pointerdown; this is the keyboard.
-    if (Date.now() - lastPointer < 800) return;
+    if (e.detail > 0) return;
     const [kind, d] = parseAdj(btn);
     if (kind) adjust(kind, d);
   });
 
-  document.addEventListener('keydown', e => {
+  // Keys pressed inside the game, and also those with nothing focused: Safari and Firefox on
+  // macOS do not focus a button when it is clicked, so after a tap on ◀ ▶ focus is on the page.
+  root.addEventListener('keydown', onKey);
+  document.addEventListener('keydown', e => { if (e.target === document.body && mode !== 'menu') onKey(e); });
+  function onKey(e: KeyboardEvent) {
     const t = e.target as HTMLElement;
     if (t.closest('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
     if (mode === 'menu' || howto) return;
@@ -654,14 +746,14 @@ function start(root: HTMLElement) {
       case 'q': case 'Q': adjust('weapon', -1); break;
       case 'e': case 'E': adjust('weapon', 1); break;
       case ' ': case 'Enter':
-        if (t.closest('button')) { handled = false; break; }
+        if (t !== canvas || e.repeat) { handled = false; break; }
         fireNow(); break;
-      case 'p': case 'P': case 'Escape': if (document.fullscreenElement && e.key === 'Escape') { handled = false; break; } togglePause(); break;
-      case 'm': case 'M': toggleSound(); break;
+      case 'p': case 'P': case 'Escape': if (e.repeat || document.fullscreenElement && e.key === 'Escape') { handled = false; break; } togglePause(); break;
+      case 'm': case 'M': if (!e.repeat) toggleSound(); break;
       default: handled = false;
     }
     if (handled) e.preventDefault();
-  });
+  }
 
   render();
 }

@@ -93,21 +93,22 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     display: flex; flex-direction: column; height: calc(100svh - .75rem); min-height: 440px; max-height: 960px;
     background: #0b1240; color: var(--ink); border-radius: .9rem; overflow: hidden; box-shadow: 0 10px 40px rgb(8 12 40 / .35);
   }
-  .rw:fullscreen { height: 100vh; max-height: none; border-radius: 0; }
+  .rw:fullscreen { height: 100dvh; min-height: 0; max-height: none; border-radius: 0; }
   .rw button { font: 700 1rem var(--font-sans); color: #fff; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   .rw :global(:focus-visible) { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .rw [data-quit][data-armed] { background: #ef6b6c; color: #fff; }
 
   /* Top bar: players, round and small tool buttons. It sits above the playfield, never on it. */
   .bar { display: flex; align-items: center; gap: .5rem; padding: .45rem .55rem; background: rgb(8 12 36 / .92); border-bottom: 1px solid var(--line); min-height: 3.1rem; }
-  .board { display: flex; gap: .35rem; list-style: none; margin: 0; padding: 0; overflow-x: auto; flex: 1; scrollbar-width: none; }
+  .board { min-width: 0; display: flex; gap: .35rem; list-style: none; margin: 0; padding: 0; overflow-x: auto; flex: 1; scrollbar-width: none; }
   .board :global(li) { display: flex; align-items: center; gap: .45rem; padding: .25rem .6rem .25rem .5rem; border-radius: 999px; background: var(--panel); border: 2px solid transparent; white-space: nowrap; font-size: .85rem; }
   .board :global(li::before) { content: ''; width: .7rem; height: .7rem; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px rgb(255 255 255 / .15); }
   .board :global(li.now) { border-color: var(--c); background: color-mix(in srgb, var(--c) 22%, var(--panel)); }
   .board :global(li.out) { opacity: .45; }
   .board :global(.cr), .board :global(.pt) { font: 600 .8rem var(--font-mono); opacity: .9; }
   .round { font: 700 .8rem var(--font-mono); opacity: .8; white-space: nowrap; }
-  .tools { display: flex; gap: .3rem; }
-  .tools button { width: 2.4rem; height: 2.4rem; border-radius: .6rem; background: var(--panel); border: 1px solid var(--line); font-size: 1.05rem; line-height: 1; }
+  .tools { display: flex; flex: none; gap: .3rem; }
+  .tools button { width: 2.75rem; height: 2.75rem; border-radius: .6rem; background: var(--panel); border: 1px solid var(--line); font-size: 1.05rem; line-height: 1; }
   .tools button:hover { background: #1d2b6b; }
   .tools button[aria-pressed="true"] { background: var(--gold); color: #0b1240; }
 
@@ -115,13 +116,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   .stage { position: relative; flex: 1; min-height: 0; }
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
   .toast { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); opacity: 0; pointer-events: none; padding: .6rem 1.4rem; border-radius: 999px; background: rgb(8 12 36 / .8); border: 3px solid var(--c, var(--gold)); font: 900 clamp(1.3rem, 4.5vw, 2.2rem)/1.1 var(--font-sans); white-space: nowrap; text-shadow: 0 2px 0 rgb(0 0 0 / .4); }
+  .toast :global(small) { display: block; margin-top: .3rem; max-width: min(80vw, 28rem); white-space: normal; font: 700 clamp(.8rem, 2.6vw, 1rem)/1.3 var(--font-sans); text-align: center; color: #e8ecff; }
   .net { position: absolute; left: .6rem; bottom: .4rem; margin: 0; font-size: .75rem; opacity: .75; pointer-events: none; }
   .sideways { display: none; position: absolute; top: 3.4rem; left: 50%; transform: translateX(-50%); margin: 0; font-size: .8rem; padding: .2rem .7rem; border-radius: 999px; background: rgb(8 12 36 / .55); white-space: nowrap; pointer-events: none; }
   @media (orientation: portrait) and (max-width: 600px) { .rw[data-playing="true"] .sideways { display: block; } }
   /* Portrait phones: the world is wide, so give it a sky-sized stage instead of a tall empty one while playing. */
   @media (orientation: portrait) and (max-width: 600px) {
-    .rw[data-playing="true"] { height: auto; min-height: 0; }
-    .rw[data-playing="true"] .stage { flex: none; aspect-ratio: 640 / 540; }
+    .rw[data-playing="true"]:not(:fullscreen) { height: auto; min-height: 0; }
+    .rw[data-playing="true"]:not(:fullscreen) .stage { flex: none; aspect-ratio: 640 / 540; }
   }
 
   /* Menus, the shop and results: a card over the (dimmed) playfield. */
@@ -142,10 +144,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   .overlay :global(button.go.alt) { background: linear-gradient(#8fd8ff, #4fb4f0); border-color: #4fb4f0; box-shadow: 0 4px 0 #2a6f99; }
   .overlay :global(button.go:active) { transform: translateY(2px); box-shadow: 0 2px 0 #b88a10; }
   .overlay :global(button.big) { min-height: 60px; min-width: 12rem; font-size: 1.2rem; font-weight: 800; padding-inline: 1.4rem; }
-  .overlay :global(button.num) { min-width: 5rem; font-size: 1.8rem; }
+  .overlay :global(button.num) { min-width: 3.6rem; padding-inline: .75rem; font-size: 1.65rem; }
   .overlay :global(.small) { font-size: .92rem; color: #c9d2ff; }
-  .overlay :global(.bigcode) { display: flex; gap: .4rem; justify-content: center; font: 800 clamp(2.2rem, 10vw, 3.4rem)/1 var(--font-mono); color: #0b1240; }
-  .overlay :global(.bigcode span) { background: var(--gold); border-radius: .5rem; padding: .3rem .5rem; min-width: 1.35em; box-shadow: 0 4px 0 #b88a10; }
+  .overlay :global(.bigcode) { display: flex; gap: clamp(.15rem, 1vw, .4rem); justify-content: center; font: 800 clamp(1.35rem, 6vw, 3.4rem)/1 var(--font-mono); color: #0b1240; }
+  .overlay :global(.bigcode span) { background: var(--gold); border-radius: .5rem; padding: .3rem clamp(.2rem, 1vw, .5rem); min-width: 1.35em; box-shadow: 0 4px 0 #b88a10; }
   .overlay :global(.code-in) { width: 12rem; min-height: 62px; text-align: center; border: 2px solid var(--gold); border-radius: .7rem; background: #0b1240; color: #fff; font: 800 2rem var(--font-mono); letter-spacing: .25em; text-transform: uppercase; }
   .overlay :global(.people) { font: 1rem/1.7 var(--font-mono); list-style: none; padding: 0; }
   .overlay :global(.people i), .overlay :global(.dot) { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; }
@@ -183,11 +185,21 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   .fire:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #9b2a22; }
   .controls button:disabled { opacity: .45; }
   @media (max-width: 720px) {
-    .controls { grid-template-columns: 1fr 1fr; }
-    .grp { grid-template-columns: 2.8rem 1fr 2.8rem; }
+    .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grp { grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; }
     .round { display: none; }
-    .tools button { width: 2.2rem; height: 2.2rem; }
     .board :global(.pt) { display: none; }
+  }
+  @media (max-width: 360px) {
+    .bar { gap: .3rem; padding-inline: .35rem; }
+    .tools { gap: .15rem; }
+    .controls { gap: .35rem; padding-inline: .35rem; }
+    .grp { gap: .15rem; }
+    .val small { letter-spacing: 0; }
+    .rocket { padding-inline: .35rem; gap: .25rem; }
+  }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .rw:fullscreen .controls { grid-template-columns: auto auto minmax(0, 1fr) minmax(6rem, 9rem); }
   }
   .eyebrow a { color: inherit; }
 </style>
