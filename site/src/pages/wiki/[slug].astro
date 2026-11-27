@@ -36,12 +36,7 @@ const ld = {
 ---
 <Base title={`${term} | CubeSat Classroom glossary`} description={summary} canonical={canonical}>
   <script slot="head" type="application/ld+json" is:inline set:html={ldJson(ld)} />
-  <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Mission', href: base + '/mission/' },
-    { label: 'Lessons', href: base + '/quests/' },
-    { label: 'CAD', href: base + '/hardware/' },
-    { label: 'Glossary', href: base + '/wiki/', current: true },
-  ]} />
+  <SiteHeader slot="header" home={base + '/'} current="glossary" />
   <article class="shell grid gap-10 py-10 sm:py-14 lg:grid-cols-[1fr_18rem]">
     <div class="min-w-0">
       <nav aria-label="Breadcrumb" class="t-label text-muted"><a class="text-accent" href={base + '/wiki/'}>Glossary</a> <span aria-hidden="true">/</span> {category}</nav>

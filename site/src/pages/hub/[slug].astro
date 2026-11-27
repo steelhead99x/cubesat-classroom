@@ -14,7 +14,7 @@ const homeFor = (item: typeof hubs[number]) => item.home ?? 'https://' + item.ho
 ---
 <Base title={hub.name + ' | CubeSat Classroom'} description={hub.description} canonical={homeFor(hub)}>
   <SiteHeader slot="header" home={'https://' + classroomHost + '/'} label="Project sites"
-    links={hubs.map(item => ({ label: item.name, href: homeFor(item), current: item.host === hub.host }))} />
+    links={[...hubs.map(item => ({ label: item.name, href: homeFor(item), current: item.host === hub.host })), { label: 'Games', href: 'https://' + classroomHost + '/games/' }]} />
   <PageHero>
     <h1 class="max-w-3xl">{hub.heading}</h1>
     <p class="lede mt-5">{hub.description}</p>

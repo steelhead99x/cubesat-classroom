@@ -25,13 +25,7 @@ const games = [
 ];
 ---
 <Base title="Games | CubeSat Classroom" description="Free browser games about satellites and radio, from the CubeSat Classroom project." canonical={siteOrigin + '/games/'}>
-  <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Mission', href: base + '/mission/' },
-    { label: 'Lessons', href: base + '/quests/' },
-    { label: 'Games', href: base + '/games/', current: true },
-    { label: 'CAD', href: base + '/hardware/' },
-    { label: 'Glossary', href: base + '/wiki/' },
-  ]} />
+  <SiteHeader slot="header" home={base + '/'} current="games" />
   <div class="shell space-y-8 py-10 sm:py-14">
     <header class="games-intro">
       <div>

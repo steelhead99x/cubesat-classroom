@@ -15,14 +15,7 @@ const quests = (await getCollection('quests')).sort((a, b) => a.data.order - b.d
 const total = quests.reduce((sum, quest) => sum + quest.data.minutes, 0);
 ---
 <Base title="Classroom lessons | CubeSat Classroom" description="Five browser lessons on satellite operations, each available at three levels." canonical={siteOrigin + '/quests/'}>
-  <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Mission', href: base + '/mission/' },
-    { label: 'Lessons', href: base + '/quests/', current: true },
-    { label: 'Simulator', href: base + '/#demo' },
-    { label: 'CAD', href: base + '/hardware/' },
-    { label: 'Glossary', href: base + '/wiki/' },
-    { label: 'For teachers', href: base + '/#teachers' },
-  ]} />
+  <SiteHeader slot="header" home={base + '/'} current="lessons" />
   <div class="shell space-y-9 py-10 sm:py-14">
     <header class="grid items-end gap-5 lg:grid-cols-[1fr_auto]">
       <div>

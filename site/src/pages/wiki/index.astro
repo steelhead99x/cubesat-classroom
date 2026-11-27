@@ -23,12 +23,7 @@ const ld = {
 ---
 <Base title="Glossary: CubeSat, radio and launch terms | CubeSat Classroom" description="A public dictionary and thesaurus of CubeSat, radio, launch and rules terms, in plain language for teachers and students." canonical={canonical}>
   <script slot="head" type="application/ld+json" is:inline set:html={ldJson(ld)} />
-  <SiteHeader slot="header" home={base + '/'} links={[
-    { label: 'Mission', href: base + '/mission/' },
-    { label: 'Lessons', href: base + '/quests/' },
-    { label: 'CAD', href: base + '/hardware/' },
-    { label: 'Glossary', href: base + '/wiki/', current: true },
-  ]} />
+  <SiteHeader slot="header" home={base + '/'} current="glossary" />
   <div class="shell space-y-10 py-10 sm:py-14">
     <header>
       <p class="field-label">Public wiki · Dictionary and thesaurus</p>
