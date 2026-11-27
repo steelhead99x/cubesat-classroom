@@ -176,7 +176,7 @@ function start(root: HTMLElement) {
   function publish() {
     if (mode === 'online' && link) link.publish(snapOf(me));
   }
-  const waitingOn = (): ReturnType<typeof Room.nextAction> | null => (match && host ? Room.nextAction(match, host, snaps) : null);
+  const waitingOn = (): ReturnType<typeof Room.nextAction> | null => (match && host ? Room.nextAction(match, host, snaps, goneIds()) : null);
   const myTurn = () => {
     const a = waitingOn();
     return !!a && a.kind === 'wait' && !a.sent && match!.phase === 'play' && mine.includes(a.ids[0]);
@@ -190,17 +190,23 @@ function start(root: HTMLElement) {
     const gone = goneIds();
     const committer = Room.committerFor(host, gone);
     let changed = mine.includes(committer) && Room.commit(match, host, snaps, gone, committer);
-    if (mode === 'online' && host.order.includes(me) && Room.mirror(host, snaps, me)) changed = true;
+    if (mode === 'online' && host.order.includes(me) && Room.mirror(match, host, snaps, me)) changed = true;
     if (changed) publish();
   }
 
   function step() {
     if (!match || !host) return render();
     // Two copies of the history disagreed and the earlier player's won: start again from it.
-    if (mode === 'online' && Room.diverged(match, host, snaps)) {
+    if (mode === 'online' && Room.diverged(match, host, snaps, goneIds())) {
       anim = null; banner = null; ghosts = { round: -1, paths: {} };
       clearAscent();
-      match = Room.replay(host, snaps).match;
+      match = Room.replay(host, snaps, goneIds()).match;
+      // A request made for a turn in the old timeline must not fire in the new one.
+      for (const id of mine) {
+        const turns = snapOf(id).turns;
+        for (const k of Object.keys(turns)) if (Number(k) >= match.log.length) delete turns[Number(k)];
+      }
+      publish();
       say('Caught up with the room.');
     }
     if (anim || paused) return render();
@@ -213,7 +219,7 @@ function start(root: HTMLElement) {
     for (let guard = 0; guard < 50; guard++) {
       // The committer records each turn once; everyone, the committer included, then plays that record.
       record();
-      const action = Room.nextAction(match, host, snaps);
+      const action = Room.nextAction(match, host, snaps, goneIds());
       if (action.kind === 'fire') {
         const before = structuredClone(match.field!) as Field;
         before.units[match.turn].angle = action.shot.angle;
@@ -731,11 +737,19 @@ function start(root: HTMLElement) {
   function adoptHost() {
     if (host) return;
     const carriers = [...snaps].filter(([id, s]) => s.host && s.host.order.includes(id) && s.host.names[id] === s.cs);
-    const pick = carriers.find(([id, s]) => s.creator && s.host!.order[0] === id) ?? carriers[0];
+    // The creator's settings first. Without the creator, take the settings most players carry,
+    // and only once at least two agree (or the one carrier is the only other player), so a
+    // single made-up copy can't start a different match on this screen.
+    const byCreator = carriers.find(([id, s]) => s.creator && s.host!.order[0] === id);
+    const groups = new Map<string, typeof carriers>();
+    for (const c of carriers) { const key = JSON.stringify(c[1].host); groups.set(key, [...(groups.get(key) ?? []), c]); }
+    const best = [...groups.values()].sort((a, b) => b.length - a.length)[0];
+    const others = [...snaps.keys()].filter(id => id !== me).length;
+    const pick = byCreator ?? (best && (best.length >= 2 || others === 1) ? best[0] : undefined);
     if (!pick) return;
     host = pick[1].host!;
     // Catch up without animating everything that already happened.
-    match = Room.replay(host, snaps).match;
+    match = Room.replay(host, snaps, goneIds()).match;
     say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');
   }
 

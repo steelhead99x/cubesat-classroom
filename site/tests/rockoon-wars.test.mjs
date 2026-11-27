@@ -219,29 +219,56 @@ test('only the host decides a turn, and a player\'s shot waits for it', () => {
   assert.equal(match.log.length, k + 1);
 });
 
-test('the host\'s copy of an entry beats a later player\'s, and a screen that played the other replays', () => {
+test('a later player\'s skip counts only once everyone before it has gone, and the host wins when it comes back', () => {
   const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [] } }) };
   let { match } = settle(s);
-  const k = match.log.length;
-  // The second player commits a skip (it thought the host had gone), and a screen plays it.
+  const k = match.log.length, owner = host.order[match.turn];
+  // The second player thought the host had gone and committed a skip.
   s[ids[1]].log = { ...structuredClone(s[ids[0]].log), [k]: 'skip' };
   s[ids[1]].shopLog = structuredClone(s[ids[0]].shopLog);
-  const screen = Room.replay(host, s).match;
-  assert.equal(screen.log.length, k + 1);
-  assert.equal(Room.diverged(screen, host, s), false);
-  // The host was only slow: its shot for turn k arrives, and it wins.
+  assert.equal(Room.replay(host, s).match.log.length, k, 'while the host is here, nobody else can skip');
+  const screen = Room.replay(host, s, [ids[0]]).match;
+  assert.equal(screen.log.length, k + 1, 'with the host gone, its successor\'s skip counts');
+  assert.equal(Room.diverged(screen, host, s, [ids[0]]), false);
+  // The host was only slow: it is back, and its shot for turn k arrives.
+  s[owner].turns[k] = { angle: 60, power: 50, weapon: 'baby' };
   s[ids[0]].log[k] = { angle: 60, power: 50, weapon: 'baby' };
-  assert.equal(Room.diverged(screen, host, s), true, 'the screen must replay');
+  assert.equal(Room.diverged(screen, host, s, []), true, 'the screen must replay');
   const fixed = Room.replay(host, s).match;
   assert.equal(fixed.log[k].skip, undefined);
   assert.equal(Room.diverged(fixed, host, s), false);
 });
 
+test('nobody can commit a shot, a skip or a purchase for someone else', () => {
+  const three = { ...host, order: ids, names: { ...host.names, [ids[2]]: 'GS-CC3' } };
+  const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [] } }), [ids[2]]: snap('GS-CC3', { shops: { 1: [] } }) };
+  let match;
+  for (let i = 0; i < 10; i++) {
+    match = Room.replay(three, s).match;
+    if (!Room.commit(match, three, s)) break;
+  }
+  const k = match.log.length, owner = three.order[match.turn];
+  const forger = ids.find(id => id !== owner && id !== ids[0]);
+  // A made-up shot, and a skip, for the owner's turn.
+  s[forger].log = { ...structuredClone(s[ids[0]].log), [k]: { angle: 1, power: 1, weapon: 'baby' } };
+  assert.deepEqual(Room.nextAction(match, three, s).kind, 'wait');
+  s[forger].log[k] = 'skip';
+  assert.deepEqual(Room.nextAction(match, three, s).kind, 'wait');
+  // The real committer still records the owner's own shot.
+  s[owner].turns[k] = { angle: 60, power: 50, weapon: 'baby' };
+  assert.equal(Room.commit(match, three, s), true);
+  assert.deepEqual(Room.nextAction(match, three, s).shot, { angle: 60, power: 50, weapon: 'baby' });
+  // A made-up shop result for the next round is ignored too.
+  s[forger].shopLog = { 2: [['big'], [], []] };
+  const shop = { ...match, phase: 'shop', round: 1 };
+  assert.equal(Room.nextAction(shop, three, s).kind, 'wait');
+});
+
 test('when the host leaves, the next player commits and the match keeps going', () => {
   const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [], 2: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [], 2: [] } }) };
   let { match } = settle(s);
-  // Both players keep a copy of the history; then the host's snapshot disappears.
-  Room.mirror(host, s, ids[1]);
+  // Both players keep a copy of what they have played; then the host's snapshot disappears.
+  Room.mirror(match, host, s, ids[1]);
   delete s[ids[0]];
   const gone = [ids[0]];
   assert.equal(Room.committerFor(host, gone), ids[1]);
@@ -250,23 +277,27 @@ test('when the host leaves, the next player commits and the match keeps going', 
     const owner = host.order[match.turn];
     if (match.phase === 'play' && owner === ids[1]) s[ids[1]].turns[match.log.length] = { angle: 70, power: 60, weapon: 'baby' };
     Room.commit(match, host, s, gone, ids[1]);
-    match = Room.replay(host, s).match;
+    match = Room.replay(host, s, gone).match;
+    Room.mirror(match, host, s, ids[1]);
   }
   assert.equal(match.phase, 'over', 'the host\'s turns are skipped and the match finishes');
   // A player who joins now rebuilds the same match from the second player's copy alone.
   const late = Object.fromEntries(Object.entries(s).map(([id, v]) => [id, Room.cleanSnapshot(JSON.parse(JSON.stringify(v)))]));
   assert.ok(late[ids[1]].host, 'the copy carries the match settings');
-  assert.equal(R.fingerprint(Room.replay(late[ids[1]].host, late).match), R.fingerprint(match));
+  assert.equal(R.fingerprint(Room.replay(late[ids[1]].host, late, gone).match), R.fingerprint(match));
 });
 
-test('mirroring copies only what is committed, and only into a player in the match', () => {
+test('mirroring copies only what this screen has played, and only into a player in the match', () => {
   const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [] } }), [ids[2]]: snap('GS-CC3') };
-  settle(s);
-  assert.equal(Room.mirror(host, s, ids[2]), false, 'a watcher keeps no copy');
-  assert.equal(Room.mirror(host, s, ids[1]), true);
-  assert.deepEqual(s[ids[1]].log, s[ids[0]].log);
+  const { match } = settle(s);
+  assert.equal(Room.mirror(match, host, s, ids[2]), false, 'a watcher keeps no copy');
+  assert.equal(Room.mirror(match, host, s, ids[1]), true);
   assert.deepEqual(s[ids[1]].shopLog, s[ids[0]].shopLog);
-  assert.equal(Room.mirror(host, s, ids[1]), false, 'nothing new the second time');
+  assert.equal(Room.mirror(match, host, s, ids[1]), false, 'nothing new the second time');
+  // An entry in a snapshot that no screen has played is not copied.
+  s[ids[0]].log[999] = 'skip';
+  Room.mirror(match, host, s, ids[1]);
+  assert.equal(s[ids[1]].log[999], undefined);
 });
 
 test('a skip and a late shot give every screen the same match, in either order', () => {
