@@ -122,3 +122,15 @@ test('a muted pass is explained as muted, not as tuning', () => {
   const off = Array.from({ length: 60 }, (_, i) => sec(i, { heard: i >= 20 }));
   assert.equal(passDebrief(off).part, 'rising');
 });
+
+test('debrief durations count the seconds each sample stands for', () => {
+  // The trainer samples every 2 simulated seconds: a fully muted 618 s pass is 309 rows.
+  const log = Array.from({ length: 309 }, (_, i) => ({ passS: 2 * i, dt: 2, inView: true, dopplerHz: 0, tunedOffsetHz: 0, heard: true, decoded: true, engaged: false }));
+  const tip = passDebrief(log);
+  assert.equal(tip.part, 'muted');
+  assert.match(tip.text, /for 618 s/);
+  assert.equal(tip.missedS, 618);
+  assert.equal(score(log).heard, 0);
+  log.slice(0, 103).forEach(s => { s.engaged = true; });
+  assert.equal(score(log).heard, 33);
+});

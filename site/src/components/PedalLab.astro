@@ -319,7 +319,7 @@ const parts = [
   const pass = makePass();
   const SPEED = 20, FRAME_MS = 100;
   let passS: number | null = null, passOffsetHz = 0, stepIndex = 0, passTimer = 0, lastLogged = -1;
-  let passLog: { passS: number; inView: boolean; heard: boolean; decoded: boolean; engaged: boolean; dopplerHz: number; tunedOffsetHz: number }[] = [];
+  let passLog: { passS: number; dt: number; inView: boolean; heard: boolean; decoded: boolean; engaged: boolean; dopplerHz: number; tunedOffsetHz: number }[] = [];
   const passState = () => passS === null ? null : pass.at(passS, { gainDb: Number(gain.value), tunedHz: band.value === '2' ? pass.nominalHz + passOffsetHz : 0 });
   // Keep the input waveform stable while learners compare settings.
   const noise = Array.from({ length: 201 }, () => Math.random() * 2 - 1);
@@ -553,7 +553,9 @@ const parts = [
       if (whole > lastLogged && whole >= 0) {
         const st = passState()!;
         // Tuning and ENGAGE are logged apart, so the debrief can tell a muted second from a mistuned one.
-        passLog.push({ passS: whole, inView: st.inView, heard: st.heard, decoded: st.decoded, engaged, dopplerHz: st.dopplerHz, tunedOffsetHz: band.value === '2' ? passOffsetHz : NaN });
+        // A tick can cover more than one simulated second, so each row says how many it stands for.
+        const dt = lastLogged < 0 ? 1 : whole - lastLogged;
+        passLog.push({ passS: whole, dt, inView: st.inView, heard: st.heard, decoded: st.decoded, engaged, dopplerHz: st.dopplerHz, tunedOffsetHz: band.value === '2' ? passOffsetHz : NaN });
         lastLogged = whole;
       }
       if (passS! > pass.duration + 5) return stopPass(true);
