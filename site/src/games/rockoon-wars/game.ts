@@ -11,7 +11,7 @@ import { claimSeat, loadSeat, saveSeat } from './seat.mjs';
 import { Renderer, rocketSvg, type Scene } from './render';
 import type { RoomLink, LinkStatus, Snapshot } from './net';
 
-type Snap = { p?: number; catchUp?: boolean; cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; rising?: number; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]> };
+type Snap = { p?: number; catchUp?: boolean; cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; rising?: number; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]>; standin?: Record<string, string> };
 type Host = { seed: number; rounds: number; order: string[]; names: Record<string, string> };
 type Match = ReturnType<typeof G.createMatch>;
 type Field = NonNullable<Match['field']>;

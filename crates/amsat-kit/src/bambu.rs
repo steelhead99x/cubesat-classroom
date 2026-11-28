@@ -151,7 +151,7 @@ pub const CLASSROOM: Kit = Kit {
 
 const OUTDOOR_COUPON_PARTS: [Part; 7] = [
     p("Tripod thread coupon", "coupon-tripod-thread", true, WHITE),
-    p("Latch coupon rim", "coupon-latch-rim", true, WHITE),
+    p("Latch coupon box", "coupon-latch-box", false, WHITE),
     p("Latch coupon lid", "coupon-latch-lid", true, WHITE),
     PIN_PARTS[0],
     PIN_PARTS[1],
@@ -192,7 +192,7 @@ pub const OUTDOOR: Kit = Kit {
                 &[
                     &[
                         "Tripod thread coupon",
-                        "Latch coupon rim",
+                        "Latch coupon box",
                         "Latch coupon lid",
                     ],
                     &PIN_COUPONS,
@@ -239,7 +239,7 @@ pub const OUTDOOR_XIAO: Kit = Kit {
                     &["XIAO coupon"],
                     &[
                         "Tripod thread coupon",
-                        "Latch coupon rim",
+                        "Latch coupon box",
                         "Latch coupon lid",
                     ],
                     &PIN_COUPONS,
@@ -415,6 +415,20 @@ const MODEL_HEAD: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<model uni
     xmlns=\"http://schemas.microsoft.com/3dmanufacturing/core/2015/02\" \
     xmlns:BambuStudio=\"http://schemas.bambulab.com/package/2021\" \
     xmlns:p=\"http://schemas.microsoft.com/3dmanufacturing/production/2015/06\" requiredextensions=\"p\">\n";
+
+fn export_volume(mesh: &Mesh) -> Result<(Mesh, usize), String> {
+    // Use the same rounding as the XML writer, after the volume has been positioned.
+    let mut stored = mesh.quantized(|x| fmt(x).parse().expect("formatted 3MF coordinate"));
+    let points = stored.three_mf_points();
+    let degenerate = stored.flip_flat(&points);
+    if degenerate != 0 {
+        return Err(format!("{degenerate} degenerate facets at 3MF precision"));
+    }
+    if let Some(e) = stored.defects() {
+        return Err(e);
+    }
+    Ok((stored, degenerate))
+}
 
 fn mesh_xml(mesh: &Mesh, id: usize, uuid: &str) -> String {
     let mut out = format!(
@@ -730,20 +744,25 @@ fn project(
         .collect();
     let mut files: BTreeMap<String, Vec<u8>> = BTreeMap::new();
     let mut rels = Vec::new();
+    let mut stats = BTreeMap::new();
     for (o, id) in objects.iter().zip(&ids) {
         let num = id.num;
         let path = format!("3D/Objects/object_{num}.model");
         let v = &meshes[o.part];
-        let mut res = mesh_xml(
-            &v.body,
-            id.body,
-            &format!("{:08x}-81cb-4c03-9d28-80fed5dfa1dc", num << 16),
+        let volumes = std::iter::once(("body", id.body, &v.body)).chain(
+            id.accent
+                .zip(v.accent.as_ref())
+                .map(|(i, m)| ("logo", i, m)),
         );
-        if let (Some(a), Some(aid)) = (&v.accent, id.accent) {
+        let mut res = String::new();
+        for (k, (what, mesh_id, mesh)) in volumes.enumerate() {
+            let (stored, degenerate) = export_volume(mesh)
+                .map_err(|e| format!("{}: its {what} in {title} has {e}", o.label))?;
+            stats.insert(mesh_id, (stored.tris.len(), degenerate));
             res.push_str(&mesh_xml(
-                a,
-                aid,
-                &format!("{:08x}-81cb-4c03-9d28-80fed5dfa1dc", (num << 16) + 1),
+                &stored,
+                mesh_id,
+                &format!("{:08x}-81cb-4c03-9d28-80fed5dfa1dc", (num << 16) + k),
             ));
         }
         let body = format!("{MODEL_HEAD} <resources>\n{res} </resources>\n <build/>\n</model>\n");
@@ -800,9 +819,8 @@ fn project(
 
     let mut cfg = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n");
     for (o, id) in objects.iter().zip(&ids) {
-        let v = &meshes[o.part];
         let pt = part(kit, o.part);
-        let faces = v.body.tris.len() + v.accent.as_ref().map_or(0, |a| a.tris.len());
+        let faces = stats[&id.body].0 + id.accent.map_or(0, |a| stats[&a].0);
         let label = escape(&o.label);
         let _ = writeln!(cfg, "  <object id=\"{}\">", id.obj);
         let _ = writeln!(cfg, "    <metadata key=\"name\" value=\"{label}\"/>");
@@ -818,23 +836,19 @@ fn project(
             );
         }
         let _ = writeln!(cfg, "    <metadata face_count=\"{faces}\"/>");
-        let mut volumes = vec![(id.body, label.clone(), pt.filament(), v.body.tris.len())];
-        if let (Some(a), Some(aid)) = (&v.accent, id.accent) {
-            volumes.push((
-                aid,
-                format!("{label} logo"),
-                3 - pt.filament(),
-                a.tris.len(),
-            ));
+        let mut volumes = vec![(id.body, label.clone(), pt.filament())];
+        if let Some(aid) = id.accent {
+            volumes.push((aid, format!("{label} logo"), 3 - pt.filament()));
         }
-        for (pid, name, filament, f) in volumes {
+        for (pid, name, filament) in volumes {
+            let (f, degenerate) = stats[&pid];
             let _ = write!(
                 cfg,
                 "    <part id=\"{pid}\" subtype=\"normal_part\">\n      \
                  <metadata key=\"name\" value=\"{name}\"/>\n      \
                  <metadata key=\"matrix\" value=\"1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\"/>\n      \
                  <metadata key=\"extruder\" value=\"{filament}\"/>\n      \
-                 <mesh_stat face_count=\"{f}\" edges_fixed=\"0\" degenerate_facets=\"0\" facets_removed=\"0\" \
+                 <mesh_stat face_count=\"{f}\" edges_fixed=\"0\" degenerate_facets=\"{degenerate}\" facets_removed=\"0\" \
                  facets_reversed=\"0\" backwards_edges=\"0\"/>\n    </part>\n"
             );
         }
@@ -1050,6 +1064,16 @@ pub fn write_projects(
 
 /// The model and config files from an archive written by `zip`.
 fn read_back(data: &[u8]) -> Result<(String, String), String> {
+    const MODEL: &str = "3D/3dmodel.model";
+    const CONFIG: &str = "Metadata/model_settings.config";
+    let mut found = read_project_files(data, &[MODEL, CONFIG])?;
+    match (found.remove(MODEL), found.remove(CONFIG)) {
+        (Some(m), Some(c)) => Ok((m, c)),
+        _ => Err("the project is missing its model or config".into()),
+    }
+}
+
+fn read_project_files(data: &[u8], names: &[&str]) -> Result<BTreeMap<String, String>, String> {
     let mut found = BTreeMap::new();
     let mut at = 0;
     while data.get(at..at + 4) == Some(b"PK\x03\x04") {
@@ -1060,7 +1084,7 @@ fn read_back(data: &[u8]) -> Result<(String, String), String> {
         let (packed, name_len, extra) = (u32_at(18), u16_at(26), u16_at(28));
         let name = String::from_utf8_lossy(&data[at + 30..at + 30 + name_len]).to_string();
         let start = at + 30 + name_len + extra;
-        if name == "3D/3dmodel.model" || name == "Metadata/model_settings.config" {
+        if names.contains(&name.as_str()) {
             let mut text = String::new();
             std::io::Read::read_to_string(
                 &mut flate2::read::DeflateDecoder::new(&data[start..start + packed]),
@@ -1071,11 +1095,87 @@ fn read_back(data: &[u8]) -> Result<(String, String), String> {
         }
         at = start + packed;
     }
-    match (
-        found.remove("3D/3dmodel.model"),
-        found.remove("Metadata/model_settings.config"),
-    ) {
-        (Some(m), Some(c)) => Ok((m, c)),
-        _ => Err("the project is missing its model or config".into()),
+    Ok(found)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exported_volumes_repair_collinearity_at_3mf_precision() {
+        // A closed tetrahedron with a triangle that becomes collinear when its third z is rounded.
+        // The six-decimal x and y still give a nonzero cross product in binary floating point.
+        let fixture = Mesh {
+            verts: vec![
+                [0.1, 0.1, 0.0],
+                [0.3, 0.5, 0.0],
+                [0.2, 0.3, 0.0000004],
+                [0.1, 0.8, 0.0],
+                [0.15, 0.25, 1.0],
+            ],
+            tris: vec![
+                [1, 0, 2],
+                [0, 3, 2],
+                [2, 3, 1],
+                [0, 1, 4],
+                [1, 3, 4],
+                [3, 0, 4],
+            ],
+        };
+        assert!(fixture.is_closed());
+        let rounded = fixture.quantized(|x| fmt(x).parse().unwrap());
+        assert_ne!(rounded.normal(0), [0.0; 3]);
+        assert_eq!(rounded.degenerate_facets(&rounded.three_mf_points()), 1);
+
+        const MODEL: &str = "3D/Objects/object_1.model";
+        let meshes = BTreeMap::from([(
+            "Latch coupon box",
+            Volumes {
+                body: fixture.clone(),
+                accent: Some(fixture.translated([0.0, 0.0, 2.0])),
+            },
+        )]);
+        let (archive, _) = project(
+            &OUTDOOR,
+            "Precision regression",
+            &[("Test plate", &[&["Latch coupon box"]])],
+            &meshes,
+        )
+        .unwrap();
+        let files = read_project_files(&archive, &[MODEL]).unwrap();
+        let (_, config) = read_back(&archive).unwrap();
+        let stats: Vec<_> = config
+            .lines()
+            .filter(|line| line.contains("<mesh_stat "))
+            .collect();
+        let volume_xml: Vec<_> = files[MODEL].split("<mesh>").skip(1).collect();
+        assert_eq!(volume_xml.len(), 2);
+        assert_eq!(stats.len(), volume_xml.len());
+        for (xml, stat) in volume_xml.into_iter().zip(stats) {
+            let mut mesh = Mesh {
+                verts: Vec::new(),
+                tris: Vec::new(),
+            };
+            for line in xml.lines() {
+                let mut fields = line.split('"').skip(1).step_by(2);
+                if line.contains("<vertex ") {
+                    mesh.verts.push(std::array::from_fn(|_| {
+                        fields.next().unwrap().parse().unwrap()
+                    }));
+                } else if line.contains("<triangle ") {
+                    mesh.tris.push(std::array::from_fn(|_| {
+                        fields.next().unwrap().parse().unwrap()
+                    }));
+                }
+            }
+            assert_eq!(mesh.tris.len(), fixture.tris.len());
+            assert!(mesh.is_closed());
+            assert_eq!(mesh.defects(), None);
+            let count = mesh.degenerate_facets(&mesh.three_mf_points());
+            assert_eq!(count, 0);
+            assert!(stat.contains(&format!("face_count=\"{}\"", mesh.tris.len())));
+            assert!(stat.contains(&format!("degenerate_facets=\"{count}\"")));
+        }
     }
 }

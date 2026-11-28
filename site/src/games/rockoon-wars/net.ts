@@ -1,7 +1,7 @@
 // Rockoon Battle rooms over Media over QUIC (MoQ).
 //
 // The site's Worker hands out a short-lived token (POST /api/games/moq-token) scoped to one room,
-// hikd/games/rockoon-battle-v4/<CODE>, that lets this player publish only under its own id. Each
+// hikd/games/rockoon-battle-v5/<CODE>, that lets this player publish only under its own id. Each
 // player publishes one broadcast with one track, `state`: its whole snapshot (see room.mjs),
 // rewritten every few seconds so players who join late or reconnect catch up. Everyone replays
 // the same snapshots, so nothing but angles, powers, weapons and shop lists crosses the relay.
