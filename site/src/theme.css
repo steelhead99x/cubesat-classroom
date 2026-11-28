@@ -204,15 +204,18 @@
   :root[data-level="intermediate"] [data-show]:not([data-show~="intermediate"]),
   :root[data-level="professional"] [data-show]:not([data-show~="professional"]) { display: none; }
 
-  /* Mission insignia use a muted outline until the corresponding lesson is complete. */
-  .patch { --patch: #b7c5da; color: #4f6383; }
-  .patch .band { fill: #fff; stroke: var(--patch); }
-  .patch .core { fill: var(--color-paper); }
-  .patch .icon { stroke: #6b7f9d; }
-  .patch[data-earned] { color: var(--color-night); }
-  .patch[data-earned] .band { fill: var(--tone); stroke: var(--color-night); }
-  .patch[data-earned] .core { fill: #fff; }
-  .patch[data-earned] .icon { stroke: var(--color-night); }
+  /* Mission patches stay grey until their quest is done, then take the quest's colour. The same
+     three colours (body, tone, white) are the three filaments of the printed patch (hardware/patches). */
+  .patch { --p-body: #7f8ea9; --p-tone: #dfe5ee; --p-white: #fff; }
+  .patch[data-earned] { --p-body: #01017f; --p-tone: var(--tone); }
+  .patch .p-body { fill: var(--p-body); }
+  .patch .p-tone { fill: var(--p-tone); }
+  .patch .p-white { fill: var(--p-white); }
+  .patch .s-white, .patch .s-tone, .patch .p-gap-line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .patch .s-white { stroke: var(--p-white); }
+  .patch .s-tone { stroke: var(--p-tone); }
+  .patch .p-gap { fill: var(--p-body); stroke: var(--p-body); stroke-linejoin: round; }
+  .patch .p-gap-line { stroke: var(--p-body); }
   .patch-just-earned { animation: stamp .45s cubic-bezier(.2, 1.4, .4, 1); }
 
   /* The one orchestrated motion: the satellite crosses its arc once, rise to set. */

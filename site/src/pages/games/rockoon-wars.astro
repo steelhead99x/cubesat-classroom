@@ -15,7 +15,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   <div class="shell py-5 sm:py-8">
     <nav class="crumbs" aria-label="Breadcrumb"><a href={base + '/'}>Home</a><span aria-hidden="true">›</span><a href={base + '/games/'}>Games</a><span aria-hidden="true">›</span><span aria-current="page">Rockoon Battle</span><a class="all" href={base + '/games/'}>← All games</a></nav>
     <h1 class="rw-h1">Rockoon Battle</h1>
-    <p class="lede mt-2">Launch your balloon from the hillside. Release the rocket toward the gold ring, then check where it lands. Craters can move the launch pads.</p>
+    <p class="lede mt-2">Launch your balloon from the hillside. Release the rocket toward the moving target. Aim for the 10-point bullseye, then see how the impact changes the hill.</p>
 
     <section class="rw mt-5" data-rw data-playing="false" aria-labelledby="rw-title">
       <h2 id="rw-title" class="sr-only">Game</h2>
@@ -63,7 +63,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       <section aria-labelledby="know-title">
         <h2 id="know-title">Good to know</h2>
         <ul class="mt-3 list-disc space-y-1.5 pl-5">
-          <li>Each point earns 50 credits, and everyone starts with {START_CREDITS}. A match has three rounds, or one per crew with four crews, so every crew launches once from every spot on the hill.</li>
+          <li>Target rings score 2, 4, 6 or 10 points, and a near scan scores 1. Each point earns 50 credits, and everyone starts with {START_CREDITS}. A match has three rounds, or one per crew with four crews, so every crew launches once from every spot on the hill.</li>
           <li>The barometer reads from pad to release. Altitudes are simulated metres above sea level, and pressure follows the <a href="https://www.weather.gov/index.php/ama/conversions">standard atmosphere</a>. Local weather can give a different reading.</li>
           <li><strong>Online:</strong> players get random names like GS-AB1. There is no chat.</li>
         </ul>
@@ -202,7 +202,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grp { grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; }
     .round { display: none; }
-    .board :global(.pt) { display: none; }
+    .board :global(.cr) { display: none; }
   }
   @media (max-width: 360px) {
     .bar { gap: .3rem; padding-inline: .35rem; }
