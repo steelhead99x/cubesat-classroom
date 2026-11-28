@@ -38,9 +38,9 @@ The tone and white bodies never overlap, and both stand on the navy body, so not
 
 Print flat, top face up, with no supports. PLA is fine: patches live indoors.
 
-**Multi-colour printer (for example a Bambu AMS):** open the 3MF. It holds three bodies, `body`, `tone` and `white`. Give each its filament: navy, the quest's colour (listed in `patch-art.json`), and white.
+**Multi-colour printer (for example a Bambu AMS):** open the 3MF. It opens as one object made of three parts, `body`, `tone` and `white`, so the slicer keeps them lined up. Give each part its filament: navy, the quest's colour (listed in `patch-art.json`), and white.
 
-**Single-colour printer:** load all three bodies as one object, and add two filament changes:
+**Single-colour printer:** load the object as it opens, and add two filament changes:
 
 1. Start in navy.
 2. At **1.6 mm**, change to the quest's colour.
@@ -67,8 +67,9 @@ From the [hardware design guide](../DESIGN-GUIDE.md), adapted to a flat patch:
 - **Prints on any printer, no supports, one big flat face:** every colour stands on the body. The checks fail if any colour overhangs it.
 - **Nothing too thin:** every colour region is rounded to the 0.8 mm the printer can make. The checks fail if that rounding would remove more than a sharp tip (more than 30% of any piece, or 2% of a colour), or if a stroke is drawn thinner than 0.8 mm.
 - **The name stays readable:** the cuts that form the letters are at least 0.5 mm wide, the letters are at least 3 mm tall, and the name stays on the ribbon.
-- **Clean solids:** every body is a closed, watertight mesh, and no two bodies share space.
-- **Reproducible:** the 3MF files are the same byte for byte on every run.
+- **Clean solids:** every body is a closed, watertight mesh with consistent winding and no zero-area triangles (as written, after rounding), and no two bodies share space. The three bodies are parts of one object with one build item, so a slicer can't arrange them apart.
+- **Reproducible:** with the library versions in `gen/requirements.txt`, every run writes the same 3MF contents. `check` compares what is inside each 3MF (its files, byte for byte), not the ZIP around them, because the compressed bytes depend on the zlib build. Other library versions write equally valid but different triangles, so `check` reports them as stale.
+- **The test coupon** gets the same mesh checks as the patches.
 
 ## Change a patch
 
@@ -77,7 +78,7 @@ From the [hardware design guide](../DESIGN-GUIDE.md), adapted to a flat patch:
 
    ```sh
    (cd site && npm ci)          # once: the label font comes from the site's IBM Plex Mono
-   pip install shapely trimesh mapbox_earcut svgelements fonttools brotli matplotlib
+   pip install -r hardware/patches/gen/requirements.txt
    python3 hardware/patches/gen/patches.py build
    ```
 

@@ -1,0 +1,11 @@
+# Exact versions: the 3MF files are compared byte for byte, and a different triangulator or
+# font parser writes different (equally valid) triangles. Install with
+#   pip install -r hardware/patches/gen/requirements.txt
+shapely==2.2.0
+trimesh==5.2.2
+mapbox_earcut==2.1.0
+svgelements==1.9.6
+fonttools==4.67.0
+numpy==2.5.3
+brotli==1.2.1
+matplotlib==3.11.2

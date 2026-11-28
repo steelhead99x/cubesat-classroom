@@ -10,7 +10,7 @@ one big flat face). Colours are stacked by height, so it prints either way:
   - single-colour printer: pause and swap filament at the tone and white heights.
 The label is cut through the tone layer, so it shows in the body colour.
 
-Needs: shapely, trimesh, mapbox_earcut, svgelements, fontTools, brotli, matplotlib (for previews).
+Needs the exact versions in gen/requirements.txt: the 3MFs are compared byte for byte.
 """
 import io
 import json
@@ -18,6 +18,7 @@ import math
 import re
 import sys
 import zipfile
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +39,7 @@ FONT = ROOT / 'site/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-l
 OUT = HERE.parent / 'print'
 PREVIEW = HERE.parent / 'preview'
 
+COLLINEAR_MM = 1e-4   # outline points this close to the line through their neighbours are dropped
 COLOURS = {'body': '#01017f', 'white': '#ffffff'}   # tone comes from each patch
 art = json.loads(ART.read_text())
 F = art['frame']
@@ -292,10 +294,7 @@ def check_patch(pid, L):
 # ---------------------------------------------------------------- 3D: meshes and a 3MF with three coloured bodies
 def extrude(geom, z0, z1, s):
     meshes = []
-    for p in getattr(geom, 'geoms', [geom]):
-        if p.is_empty or p.area < 1e-6:
-            continue
-        p = affinity.scale(p, s, -s, origin=(0, 0))     # svg y down -> printer y up, mm
+    for p in clean_parts(geom, s):
         m = trimesh.creation.extrude_polygon(p, z1 - z0, engine='earcut')
         m.apply_translation((0, 0, z0))
         meshes.append(m)
@@ -304,30 +303,146 @@ def extrude(geom, z0, z1, s):
     return trimesh.util.concatenate(meshes)
 
 
+def written(v):
+    """Coordinates exactly as write_3mf writes them (4 decimals), read back as numbers."""
+    v = np.asarray(v, dtype=float)
+    return np.array([float(f'{c:.4f}') for c in v.ravel()]).reshape(v.shape)
+
+
+def flip_flat_triangles(m):
+    """Where a hole touches an outline on a straight edge, earcut leaves a triangle whose three
+    corners are in a line. Flipping its longest edge with the neighbouring triangle replaces the
+    pair with two that have area, over the same outline, so the solid stays closed."""
+    faces = m.faces.copy()
+    v = written(m.vertices)
+    def area(f):
+        a, b, c = v[f]
+        return np.linalg.norm(np.cross(b - a, c - a)) / 2
+    for _ in range(4):                       # a flip can expose another; a few passes settle it
+        bad = [i for i, f in enumerate(faces) if area(f) < 1e-9]
+        if not bad:
+            break
+        edges = {}
+        for i, f in enumerate(faces):
+            for k in range(3):
+                edges.setdefault(frozenset((f[k], f[(k + 1) % 3])), []).append(i)
+        for i in bad:
+            f = faces[i]
+            # An earlier flip in this pass may already have replaced this triangle.
+            if area(f) >= 1e-9:
+                continue
+            # The middle corner is opposite the longest edge.
+            k = max(range(3), key=lambda j: np.linalg.norm(v[f[(j + 1) % 3]] - v[f[(j + 2) % 3]]))
+            mid, a, c = f[k], f[(k + 1) % 3], f[(k + 2) % 3]
+            other = [j for j in edges.get(frozenset((a, c)), []) if j != i]
+            if len(other) != 1:
+                continue
+            g = faces[other[0]]
+            d = [x for x in g if x not in (a, c)]
+            if len(d) != 1:
+                continue
+            d = d[0]
+            # Keep the winding: (mid, a, c) is f's order, so the pair becomes (mid, a, d) and (mid, d, c).
+            t1, t2 = np.array([mid, a, d]), np.array([mid, d, c])
+            if area(t1) < 1e-9 or area(t2) < 1e-9:
+                continue
+            faces[i], faces[other[0]] = t1, t2
+            edges = {}
+            for j, ff in enumerate(faces):
+                for kk in range(3):
+                    edges.setdefault(frozenset((ff[kk], ff[(kk + 1) % 3])), []).append(j)
+    m.faces = faces
+
+
+def clean_parts(geom, s):
+    """The islands of `geom` in printer mm (y up), with collinear outline points dropped.
+
+    Sampled straight edges leave points in a line, and earcut turns three in a line into a
+    zero-area cap triangle. Removing them doesn't move the outline. A point that another ring of
+    the same island also uses (a hole touching the edge) is kept, or the cap would have a vertex
+    the side wall doesn't, and the solid would no longer be closed."""
+    out = []
+    for p in getattr(geom, 'geoms', [geom]):
+        if p.is_empty or p.area < 1e-6:
+            continue
+        p = affinity.scale(p, s, -s, origin=(0, 0))     # svg y down -> printer y up, mm
+        rings = [list(p.exterior.coords)[:-1]] + [list(r.coords)[:-1] for r in p.interiors]
+        keys = [{(round(x, 6), round(y, 6)) for x, y in r} for r in rings]
+        shared = set()
+        for i, a in enumerate(keys):
+            for b in keys[i + 1:]:
+                shared |= a & b
+        rings = [drop_collinear(r, shared) for r in rings]
+        q = Polygon(rings[0], [r for r in rings[1:] if len(r) >= 3])
+        if q.is_valid and q.area >= 1e-6:
+            out.append(q)
+        else:
+            out.append(p)        # leave an island that would change shape exactly as it was
+    return out
+
+
+def drop_collinear(ring, keep, tol=COLLINEAR_MM):
+    """Removes points that lie within `tol` mm of the line through their neighbours."""
+    pts = list(ring)
+    changed = True
+    while changed and len(pts) > 3:
+        changed = False
+        i = 0
+        while i < len(pts) and len(pts) > 3:
+            a, b, c = np.array(pts[i - 1]), np.array(pts[i]), np.array(pts[(i + 1) % len(pts)])
+            ac = c - a
+            n = np.linalg.norm(ac)
+            off = abs(ac[0] * (b - a)[1] - ac[1] * (b - a)[0]) / n if n > 0 else np.linalg.norm(b - a)
+            between = n > 0 and 0 <= np.dot(b - a, ac) <= n * n
+            if off < tol and between and (round(b[0], 6), round(b[1], 6)) not in keep:
+                pts.pop(i)
+                changed = True
+            else:
+                i += 1
+    return pts
+
+
+def zero_area_faces(m):
+    """Triangles with no area in the coordinates write_3mf writes."""
+    v = written(m.vertices)
+    t = v[m.faces]
+    return int((np.linalg.norm(np.cross(t[:, 1] - t[:, 0], t[:, 2] - t[:, 0]), axis=1) < 1e-9).sum())
+
+
 def solids(L):
     s = P['mm_per_unit']
     b, t, w = P['body_mm'], P['tone_mm'], P['white_mm']
-    return {
+    parts = {
         'body': extrude(L['body'], 0, b, s),
         'tone': extrude(L['tone'], b, b + t, s),
         'white': extrude(L['white'], b, b + t + w, s),   # white starts on the body, so it never floats
     }
+    # Centre the part on the build plate here, once, so the checks and the triangle clean-up see
+    # the same coordinates write_3mf writes (it no longer moves anything).
+    allv = np.vstack([m.vertices for m in parts.values()])
+    lo, hi = allv.min(0), allv.max(0)
+    centre = ((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0)
+    for m in parts.values():
+        m.vertices = m.vertices - centre
+        flip_flat_triangles(m)
+    return parts
 
 
 def write_3mf(path, parts, colours, title):
-    """A plain 3MF: one object per colour, each with its display colour. Written deterministically."""
-    centre = None
-    allv = np.vstack([m.vertices for m in parts.values()])
-    lo, hi = allv.min(0), allv.max(0)
-    centre = ((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2)
+    """A plain 3MF: one mesh per colour, each with its display colour, grouped as the components of
+    one object with a single build item, so a slicer keeps the three colours together as one part
+    (3MF Core 3.4.3) instead of laying them out separately. Written deterministically."""
     mats = ''.join(f'<base name="{k}" displaycolor="{colours[k].upper()}FF"/>' for k in parts)
     objs, items = [], []
     for i, (k, m) in enumerate(parts.items(), start=2):
-        v = ''.join(f'<vertex x="{x - centre[0]:.4f}" y="{y - centre[1]:.4f}" z="{z:.4f}"/>' for x, y, z in m.vertices)
+        v = ''.join(f'<vertex x="{x:.4f}" y="{y:.4f}" z="{z:.4f}"/>' for x, y, z in m.vertices)   # solids() centred them
         f = ''.join(f'<triangle v1="{a}" v2="{b}" v3="{c}"/>' for a, b, c in m.faces)
         objs.append(f'<object id="{i}" name="{title} - {k}" type="model" pid="1" pindex="{i - 2}">'
                     f'<mesh><vertices>{v}</vertices><triangles>{f}</triangles></mesh></object>')
-        items.append(f'<item objectid="{i}"/>')
+        items.append(f'<component objectid="{i}"/>')
+    whole = len(parts) + 2
+    objs.append(f'<object id="{whole}" name="{title}" type="model"><components>{"".join(items)}</components></object>')
+    items = [f'<item objectid="{whole}"/>']
     model = ('<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:lang="en-US" '
              'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
              f'<metadata name="Title">{title}</metadata><resources><basematerials id="1">{mats}</basematerials>'
@@ -391,11 +506,49 @@ def coupon():
     return dict(body=body, tone=tone, white=white, text=text, cap=0, design=dict(white=white, tone=tone))
 
 
+def mesh_fails(name, parts):
+    """Every body closed, consistently wound, with volume, and no zero-area triangles as written."""
+    fails = []
+    for k, m in parts.items():
+        # Check the mesh as written, with vertices that land on the same point merged (as a slicer
+        # does): rounding to the file's 4 decimals can make two vertices one.
+        w = trimesh.Trimesh(written(m.vertices), m.faces, process=False)
+        w.merge_vertices(digits_vertex=4)
+        if not (m.is_watertight and m.is_winding_consistent and w.is_watertight and w.is_winding_consistent) or w.volume <= 0:
+            fails.append(f'{name}: the {k} body is not a closed solid')
+        if zero_area_faces(m):
+            fails.append(f'{name}: the {k} body has {zero_area_faces(m)} zero-area triangles')
+    return fails
+
+
+def same_file(path, data):
+    """Whether a committed file matches what the generator makes. A 3MF is a ZIP, and its
+    compressed bytes depend on the zlib build, so compare the entries' names and contents
+    instead; everything else byte for byte."""
+    old = path.read_bytes()
+    if path.suffix != '.3mf':
+        return old == data
+    def entries(blob):
+        with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            return [(i.filename, z.read(i)) for i in z.infolist()]
+    try:
+        return entries(old) == entries(data)
+    except (zipfile.BadZipFile, zlib.error, EOFError):
+        return False            # a damaged file is stale, not a crash
+
+
 # ---------------------------------------------------------------- build / check
+def self_test():
+    """The mesh checks must see what is written: a triangle smaller than the 4-decimal grid
+    collapses in the file, so the zero-area check has to catch it."""
+    tiny = trimesh.Trimesh([[10.00001, 5.00001, 0], [10.00004, 5.00001, 0], [10.00001, 5.00004, 0]], [[0, 1, 2]], process=False)
+    return [] if zero_area_faces(tiny) == 1 else ['self-test: the zero-area check missed a triangle that collapses when written']
+
+
 def build(write=True):
     labels = read_labels()
     missing = [q for q in labels if q not in art['patches']]
-    fails = [f'quest {q} has no patch art in patch-art.json' for q in missing]
+    fails = self_test() + [f'quest {q} has no patch art in patch-art.json' for q in missing]
     web, files = {}, {}
     for pid, spec in art['patches'].items():
         if pid not in labels:
@@ -405,21 +558,21 @@ def build(write=True):
         fails += check_patch(pid, L)
         web[pid] = {'label': labels[pid], 'd': svg_d(L['text'])}
         parts = solids(L)
-        for k, m in parts.items():
-            if not m.is_watertight or m.volume <= 0:
-                fails.append(f'{pid}: the {k} body is not a closed solid')
+        fails += mesh_fails(pid, parts)
         cols = dict(COLOURS, tone=spec['tone'])
         files[OUT / f'{pid}.3mf'] = write_3mf(None, parts, cols, f'CubeSat Classroom patch: {labels[pid]}')
         files[PREVIEW / f'{pid}.png'] = preview_png(L, spec['tone'])
     C = coupon()
-    files[OUT / 'coupon-label-and-features.3mf'] = write_3mf(None, solids(C), dict(COLOURS, tone='#ffd23f'), 'Patch test coupon')
+    coupon_parts = solids(C)
+    fails += mesh_fails('coupon', coupon_parts)     # the first thing printed gets the same checks
+    files[OUT / 'coupon-label-and-features.3mf'] = write_3mf(None, coupon_parts, dict(COLOURS, tone='#ffd23f'), 'Patch test coupon')
     files[SHAPES] = (json.dumps({'about': 'Generated by hardware/patches/gen/patches.py from patch-art.json. Do not edit.',
                                  'frame': frame_paths(), 'labels': web}, indent=1, sort_keys=True) + '\n').encode()
     stale = []
     for path, data in files.items():
         if path.suffix == '.png':
             continue                       # previews are not compared byte for byte (renderer versions differ)
-        if not path.exists() or path.read_bytes() != data:
+        if not path.exists() or not same_file(path, data):
             stale.append(path.relative_to(ROOT))
     if write:
         OUT.mkdir(exist_ok=True); PREVIEW.mkdir(exist_ok=True)
@@ -430,7 +583,7 @@ def build(write=True):
     print(f'{len(web)} patches, {len(fails)} failures' + ('' if write else f', {len(stale)} stale files'))
     if not write:
         for s in stale:
-            print('STALE', s, '(run: python3 hardware/patches/gen/patches.py build)')
+            print('STALE', s, '(run: python3 hardware/patches/gen/patches.py build, with gen/requirements.txt installed)')
     return 1 if fails or (not write and stale) else 0
 
 
