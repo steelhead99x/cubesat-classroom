@@ -35,7 +35,7 @@ Every CubeSat Classroom part shares one look, borrowed from modern launch vehicl
 - **Crisp edges.** Outer edges are chamfered with mitred corners, not rounded blobs. Inside corners that carry load keep a small fillet.
 - **Isogrid.** Lighten a plate with triangular pockets between 2.4 mm ribs at 60°, never with free-form holes. Every plate uses the same pattern from `isogrid_pockets` in [parts.rs](../crates/amsat-kit/src/parts.rs).
 - **Flush and hidden.** No visible fasteners (there are none). Latches and hooks sit inside the outline.
-- **The CubeSat Classroom logo on every part,** test coupons included, inlaid flush 0.6 mm deep in the other colour (black on white parts, white on black). It's a second part (volume) of the same object in the Bambu project, so the shape doesn't change and a one-colour print still works. Big faces get the mark and the words; small parts get the mark alone. The logo stays 1 mm from every edge, hole and slit, so it's never on a flex finger, has plastic behind it, and has no stroke under 0.45 mm. [brand.rs](../crates/amsat-kit/src/brand.rs) places and checks it.
+- **The CubeSat Classroom logo on every part,** test coupons included, inlaid 0.9 mm deep (three 0.3 mm layers) in the other colour (black on white parts, white on black). It's a second part (volume) of the same object in the Bambu project. **On an upward face it also stands 0.6 mm proud,** for crisp edges that read from across a room, unless something mounted on the part (a board, the battery) would come within 0.3 mm of it: then it stays flush. A logo on the bed face is always flush. The STL includes the raised logo, so a one-colour print still shows it. Big faces get the mark and the words; small parts get the mark alone. The logo stays 1 mm from every edge, hole and slit, so it's never on a flex finger, and has plastic behind it. **Sized for a 0.6 mm nozzle, so it prints on a 0.4 mm one too:** no stroke under 0.65 mm and no strip of plastic between colours under 0.8 mm. A small mark is drawn bolder so it keeps those widths. [brand.rs](../crates/amsat-kit/src/brand.rs) places and checks it.
 - **Function first.** The look never costs strength, fit or printability. A rule above always wins.
 
 ## Snap-fit rules
@@ -64,7 +64,7 @@ Every CubeSat Classroom part shares one look, borrowed from modern launch vehicl
 
 - **One way round:** keyed slots and asymmetric mounts, so a part can't go in wrong.
 - **A click says it's done.** Every snap gives a click.
-- **Marks instead of instructions:** dots for fits, an arrow for which way the Nano's USB goes.
+- **Marks, and a short label instead of instructions:** dots for fits, an arrow for which way the Nano's USB goes, and on each shared coupon a label tile in a few raised words (below).
 - **Few steps, no tools** for the classroom kit. Mentor steps are labelled in the README.
 - **Prints on any printer:** no supports, one big flat face per part for Bambu Studio's auto-orient, and a test coupon for every new joint.
 - **Little plastic in test prints:** coupons of a few grams before any full plate, and an open-truss fit plate.
@@ -72,6 +72,8 @@ Every CubeSat Classroom part shares one look, borrowed from modern launch vehicl
 ## Test coupons first
 
 Every new joint or board mount gets a coupon: the same geometry, made by the same code, on a few grams of plastic.
+
+**Every coupon says what it tests.** The coupons the cases share carry a label tile: a thin flag (2 mm, or flush with the coupon's base) on a side no mating part, board or insertion path reaches, with the mark and two or three raised lines: what it tests, which board or part it's for, and how to try it. For example the XIAO coupon reads BOARD MOUNTS / HALOW + XIAO MG24 / CLICK EACH BOARD IN, and the pin tabs read FIT 1 TIGHTEST, FIT 2 MIDDLE and FIT 3 LOOSEST beside their dots. Lettering is DejaVu Sans Bold at 4 mm (about 3.3 mm capitals), checked against the same stroke, gap, margin and clear-room rules as the logo. [labels.rs](../crates/amsat-kit/src/labels.rs) holds the words.
 
 - **Pin fit ladder:** three tabs (1, 2 and 3 dots, 0.1 to 0.3 mm). The best fit becomes the kit's fit.
 - **Nano coupon** and **XIAO coupon:** the plate's mounts on their own, for the real boards.
@@ -108,7 +110,8 @@ Before a new or changed part is printed beyond a coupon:
 - [ ] **Material** right for where it lives: PLA indoors, ASA or PETG outdoors.
 - [ ] **Coupon** printed for every new joint, in the real material, with the result recorded.
 - [ ] **Checks:** every rule a check, every check shown able to fail, output reproducible.
-- [ ] **Look:** crisp chamfered edges, isogrid pockets, flush faces, white and black, and the two-colour logo.
+- [ ] **Look:** crisp chamfered edges, isogrid pockets, flush faces, white and black, and the two-colour logo (raised where nothing sits over it).
+- [ ] **Coupon label:** every shared coupon says what it tests, for which board or part, and how to try it.
 - [ ] **Labels:** the README says what's been printed and tested, and what's only been design-checked.
 
 ## Where existing designs stand

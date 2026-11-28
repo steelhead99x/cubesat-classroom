@@ -189,8 +189,12 @@ pub struct Design {
     pub plug: [f64; 3],
     pub min_plug_room: f64,
 
-    // Branding: the CubeSat Classroom mark and lettering, inlaid this deep in a second colour.
+    // Branding: the CubeSat Classroom mark and lettering, inlaid this deep in a second colour
+    // (three 0.3 mm layers on a 0.6 mm nozzle, four or five 0.2 mm layers on a 0.4 mm one:
+    // the 0.6 mm inlay printed faint on the first coupons, Nov 2026).
     pub letter_h: f64,
+    /// How far a logo on an upward face also stands proud of it, where nothing sits on it.
+    pub logo_raise: f64,
     pub mark_size: f64,
     pub mark_at: [f64; 2],
 }
@@ -287,7 +291,8 @@ impl Default for Design {
             nano_hooks: vec![Edge::new(Bottom, 4.7, 1), Edge::new(Bottom, 38.7, -1)],
             plug: [28.0, 7.0, 10.5],
             min_plug_room: 20.0,
-            letter_h: 0.6,
+            letter_h: 0.9,
+            logo_raise: 0.6,
             mark_size: 17.0,
             mark_at: [0.0, -7.0],
         }
