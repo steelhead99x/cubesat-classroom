@@ -410,7 +410,7 @@ function start(root: HTMLElement) {
   function finishShot() {
     const { blast, weapon, hit } = anim!;
     const score = hit.bullseye ? `Bullseye award! +${hit.points} points.`
-      : hit.points ? `${hit.label}! +${hit.points} points.` : 'Missed the target.';
+      : hit.points ? `${hit.label}! +${hit.points} point${hit.points === 1 ? '' : 's'}.` : 'Missed the target.';
     const impact = blast?.cutDepth
       ? `${G.WEAPON[weapon].name} impact: ${G.WEAPON[weapon].impact.name.toLowerCase()}.`
       : blast ? 'Hit bedrock.' : '';
