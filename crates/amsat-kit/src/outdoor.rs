@@ -120,6 +120,8 @@ pub struct Outdoor {
     pub latch_slit: f64,
     pub latch_to_lug: f64,
     pub latch_tab: f64,
+    /// Extra reach of a broad release pad outside the latch's finger.
+    pub latch_grip: f64,
     /// The lugs on the rim: width along the side, thickness, gap to the lid's edge, and how far
     /// their catch reaches over the lid.
     pub lug_w: f64,
@@ -179,6 +181,7 @@ impl Default for Outdoor {
             latch_slit: 1.4,
             latch_to_lug: 20.0,
             latch_tab: 6.0,
+            latch_grip: 0.0,
             lug_w: 8.0,
             lug_t: 2.4,
             lug_gap: 0.3,
@@ -439,6 +442,98 @@ pub fn battery_pocket(d: &Design, o: &Outdoor) -> Manifold {
     union_all(&parts)
 }
 
+/// The current drop-in pocket with its actual floor, walls and cable exit.
+/// Trim the stand and tripod boss beneath the floor for a bench coupon.
+pub fn battery_pocket_coupon(d: &Design, o: &Outdoor) -> Manifold {
+    let pocket = battery_pocket(d, o);
+    let (lo, hi) = crate::geom::bounds(&pocket);
+    pocket.intersection(&bx(
+        lo[0] - 1.0,
+        lo[1] - 1.0,
+        o.deck_z - o.deck_t,
+        hi[0] + 1.0,
+        hi[1] + 1.0,
+        hi[2] + 1.0,
+    ))
+}
+
+fn battery_lead_xy(d: &Design) -> (f64, f64) {
+    let [x, y, w, h] = d.cell_rect();
+    (x + w / 2.0, y + h + 4.0)
+}
+
+/// A 12.6 × 5 mm round-ended pass-through above the pocket's centre exit.
+/// Keep the old edge notch available for USB and add backing around the new slot.
+pub fn battery_lead_plate(d: &Design, plate: &Manifold) -> Manifold {
+    let (x, y) = battery_lead_xy(d);
+    let opening = Manifold::batch_hull(&[
+        cyl(5.0, d.plate_t + 2.0, x - 3.8, y, -1.0),
+        cyl(5.0, d.plate_t + 2.0, x + 3.8, y, -1.0),
+    ]);
+    let backing = bx(x - 8.3, y - 4.5, 0.0, x + 8.3, y + 4.5, d.plate_t);
+    plate.union(&backing).difference(&opening)
+}
+
+/// Nominal 8 × 4 mm plug envelope from the pocket's exit to above the plate.
+pub fn battery_lead_gauge(d: &Design, o: &Outdoor) -> Manifold {
+    let (x, y) = battery_lead_xy(d);
+    bx(
+        x - 4.0,
+        y - 2.0,
+        o.deck_z + EPS,
+        x + 4.0,
+        y + 2.0,
+        o.plate_z(d) + d.plate_t + 5.0,
+    )
+}
+
+/// Two fixed lift grips in open space beyond the boards, near the two
+/// exposed snap pins. The tops flare so they can be pinched from above.
+pub fn service_plate_grips(d: &Design) -> Manifold {
+    union_all(&[(-30.0, -38.5), (14.0, 38.5)].map(|(x, y)| {
+        let z = d.plate_t;
+        Manifold::batch_hull(&[
+            bx(x - 5.0, y - 1.5, z - EPS, x + 5.0, y + 1.5, z),
+            bx(x - 7.0, y - 2.5, z + 6.0, x + 7.0, y + 2.5, z + 8.0),
+        ])
+    }))
+}
+
+/// Optional two-snap Uno/Nano plate for the stock outdoor box. The
+/// power-side pin stays in the box and passes through an oversized hole.
+pub fn service_plate(d: &Design, tooth_r: Option<f64>) -> Result<Manifold, String> {
+    let mut two = d.clone();
+    two.snap_columns.retain(|&(i, _)| i != 1);
+    let [x, y] = d.plate_holes()[1];
+    let clear = cyl(2.0 * (d.pin_head_r + 0.5), d.plate_t + 2.0, x, y, -1.0);
+    let plate = crate::parts::payload_plate(&two, tooth_r, 0.0)?
+        .difference(&clear)
+        .union(&service_plate_grips(d));
+    Ok(battery_lead_plate(d, &plate))
+}
+
+pub const SMA_FIT_DIAMETERS: [f64; 2] = [6.6, 7.0];
+pub const ALFA_FIT_DIAMETERS: [f64; 5] = [12.0, 15.0, 18.0, 21.0, 24.0];
+
+pub fn antenna_fit_positions(diameters: &[f64]) -> impl Iterator<Item = (f64, f64)> + '_ {
+    let center = (diameters.len() as f64 - 1.0) / 2.0;
+    diameters
+        .iter()
+        .copied()
+        .enumerate()
+        .map(move |(i, d)| ((i as f64 - center) * 30.0, d))
+}
+
+/// Flat fit gauge, at the thickness of the solid port wall on both cases.
+pub fn antenna_fit_plate(diameters: &[f64], wall: f64) -> Manifold {
+    let half = diameters.len() as f64 * 15.0;
+    let blank = round_corners(&rect(-half, -20.0, half, 14.0), 2.0).extrude(wall);
+    let bores = antenna_fit_positions(diameters)
+        .map(|(x, d)| cyl(d, wall + 2.0, x, 0.0, -1.0))
+        .collect::<Vec<_>>();
+    blank.difference(&union_all(&bores))
+}
+
 /// The largest cell in its pocket (body coordinates).
 pub fn cell(d: &Design, o: &Outdoor) -> Manifold {
     let [x0, y0, w, h] = d.cell_rect();
@@ -679,7 +774,7 @@ fn latch_fingers(o: &Outdoor) -> Manifold {
                 e - o.latch_w,
                 root + 0.5,
                 -EPS,
-                e + EPS,
+                e + o.latch_grip + EPS,
                 tip,
                 o.lid_t + EPS,
             )
@@ -728,8 +823,29 @@ pub fn lid(_d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, String> {
             .translate(0.0, 0.0, g1 - 1.0),
     );
     let grooved = skirt.difference(&groove);
+    let pad_start = (o.latch_to_lug + o.lug_w) / 2.0 + 1.0;
+    let pads: Vec<_> = o
+        .latch_angles()
+        .into_iter()
+        .filter(|_| o.latch_grip > 0.0)
+        .map(|angle| {
+            let e = o.lid_edge();
+            round_corners(
+                &rect(
+                    e - 1.5,
+                    pad_start,
+                    e + o.latch_grip,
+                    o.latch_to_lug / 2.0 + o.latch_tab,
+                ),
+                1.0,
+            )
+            .extrude(o.lid_t)
+            .rotate(0.0, 0.0, angle)
+        })
+        .collect();
     // The branding is a second-colour inlay in the top face (see `lid_brand`).
     let body = plate
+        .union(&union_all(&pads))
         .union(&grooved)
         .difference(&latch_slits(o))
         .difference(&lid_pockets(o));
@@ -740,7 +856,15 @@ pub fn lid(_d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, String> {
     let mut moved = Vec::new();
     for a in o.latch_angles() {
         let e = o.lid_edge();
-        let one = fingers.intersection(&on_side(a, e - 10.0, -30.0, -50.0, e + 10.0, 30.0, 50.0));
+        let one = fingers.intersection(&on_side(
+            a,
+            e - 10.0,
+            -30.0,
+            -50.0,
+            e + o.latch_grip + 10.0,
+            30.0,
+            50.0,
+        ));
         let r = a.to_radians();
         moved.push(one.translate(-deflect * r.cos(), -deflect * r.sin(), 0.0));
     }
@@ -750,6 +874,26 @@ pub fn lid(_d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, String> {
 /// The lid in place on the box.
 pub fn lid_in_place(d: &Design, o: &Outdoor, deflect: f64) -> Result<Manifold, String> {
     Ok(lid(d, o, deflect)?.translate(0.0, 0.0, o.top))
+}
+
+/// Bench prototype for a secondary plate restraint. The feet bear on the
+/// rigid rim of the XIAO plate, never on a board, connector or the cell.
+pub fn xiao_plate_stops(d: &Design, o: &Outdoor) -> [Manifold; 4] {
+    let z = o.plate_z(d) + d.plate_t + 0.35;
+    [(-8.0, -1.0), (8.0, -1.0), (-8.0, 1.0), (8.0, 1.0)].map(|(x, sign)| {
+        let y = sign * (d.plate / 2.0 - 1.6);
+        let shank_y = y - sign * 1.4;
+        let foot = bx(x - 4.0, y - 1.25, z, x + 4.0, y + 1.25, z + EPS);
+        let shank = bx(
+            x - 4.0,
+            shank_y - 3.0,
+            z + 3.0,
+            x + 4.0,
+            shank_y + 3.0,
+            o.top + o.lid_t,
+        );
+        Manifold::batch_hull(&[foot, shank])
+    })
 }
 
 /// The lid as it prints: top face down, skirt up.
@@ -814,6 +958,22 @@ pub fn latch_coupon_case(o: &Outdoor) -> Outdoor {
         floor: -1.0,
         ports: Vec::new(),
         ..o.clone()
+    }
+}
+
+/// A closed, port-free cup and two opposed release pads for a glove bench
+/// trial. The release pads and slots are outside the continuous radial seal.
+pub fn glove_seal_case() -> Outdoor {
+    let o = Outdoor::default();
+    Outdoor {
+        cavity: 58.0,
+        top: o.skirt_h + 4.0,
+        floor: o.floor,
+        lid_skin: 2.4,
+        latch_slit: 1.8,
+        latch_tab: 14.0,
+        latch_grip: 6.0,
+        ..latch_coupon_case(&o)
     }
 }
 

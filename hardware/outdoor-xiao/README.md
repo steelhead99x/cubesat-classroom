@@ -22,6 +22,8 @@ To open the full-size lid, press each latch finger inward toward the centre of t
 
 ## What to print
 
+The [outdoor fit prototypes](../outdoor-antenna-fit/README.md) cover the shared battery pocket, the snap-fit battery trial, battery cable feed-through, glove latches and both antenna sizes.
+
 | File | Plate | What's on it |
 | --- | --- | --- |
 | **[p1s/outdoor-xiao-test-coupons.3mf](p1s/outdoor-xiao-test-coupons.3mf)** (print first) | Test coupons | The XIAO coupon (both boards' mounts), the tripod-thread coupon, the latch coupon, and the snap pin with its fit ladder. Each says what it tests on a raised label (below) |
@@ -40,6 +42,14 @@ To open the full-size lid, press each latch finger inward toward the centre of t
 The labels and raised logos are new in this version and haven't been printed yet; the joints behind them are unchanged.
 
 Print in ASA or PETG, no supports. The [outdoor station's README](../outdoor-station/README.md) covers the material, the tripod-thread coupon, assembly, the water test and how the box fits.
+
+## Payload retention prototype
+
+Use the regular coupons for the first fit check. The optional restraint lid reuses the same case, plate, latches and O-ring. Four integral posts stop upward motion of the XIAO plate by bearing on its rigid rim. They have a nominal 0.35 mm gap when the plate is seated. They do not clamp the pouch cell or contact the boards.
+
+Generate the optional one-colour lid with `cargo run --release --locked -p amsat-kit -- xiao-retention <output-directory>`. Fit it to an unpowered case with representative dummy masses. Check that the lid seats without forcing, the seal and cable routes stay clear, and each post catches the plate rim before it can climb over the snap-pin heads. Check the stacked ESP32-S3's header retention separately.
+
+The posts transfer plate lift into the lid and depend on the lid remaining captive. The tripod thread and snap latches are intended for ground use. A launch installation needs a carrier fitted to the vehicle's approved interface that independently captures the case and lid. Verify the installed assembly with the mission's load, shock and vibration requirements. The classroom design guide's 20 g static check is a bench target. [NASA's GEVS](https://standards.nasa.gov/node/791) describes environmental verification.
 
 ## Buy (besides the outdoor station's list)
 

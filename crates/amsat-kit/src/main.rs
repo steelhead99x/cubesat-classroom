@@ -335,16 +335,171 @@ fn self_test() -> Result<(), String> {
     }
 }
 
+fn build_xiao_retention(d: &Design, dir: &std::path::Path) -> Result<(), String> {
+    let o = Outdoor::xiao();
+    outdoor_checks::verify_xiao(d, &o)?;
+    let lid = outdoor_checks::xiao_retention_lid(d, &o)?;
+    write_meshes(
+        dir,
+        vec![("xiao-retention-lid", lid.rotate(180.0, 0.0, 0.0))],
+    )?;
+    Ok(())
+}
+
+fn raised_test_label(
+    d: &Design,
+    solid: &Manifold,
+    name: &'static str,
+    lines: &'static [&'static str],
+) -> Result<Manifold, String> {
+    let label = labels::Label {
+        part: name,
+        lines,
+        side: labels::Side::MinusY,
+        thick: None,
+    };
+    let (body, art, z) = labels::add(d, solid, &label);
+    let b = brand::place(d, name, &body, Spot::Label(art, z), None)?;
+    Ok(body.union(&b.accent))
+}
+
+fn build_outdoor_battery_fit(d: &Design, dir: &std::path::Path) -> Result<(), String> {
+    verify(d)?;
+    let uno = Outdoor::default();
+    let xiao_case = Outdoor::xiao();
+    outdoor_checks::verify_uno_nano(d, &uno)?;
+    outdoor_checks::verify_xiao(d, &xiao_case)?;
+    outdoor_checks::verify_service_plate(d, &uno)?;
+    let station_plate = outdoor::service_plate(d, None)?;
+    let xiao_plate = outdoor::battery_lead_plate(d, &xiao::xiao_plate(d, None, 0.0));
+    let pocket = outdoor::battery_pocket_coupon(d, &uno);
+    if (outdoor::battery_pocket_coupon(d, &xiao_case).volume() - pocket.volume()).abs() > 1e-6 {
+        return Err("the outdoor cases no longer share the same battery pocket".to_owned());
+    }
+    for (name, o, plate, boards) in [
+        (
+            "outdoor Uno/Nano",
+            &uno,
+            &station_plate,
+            outdoor_checks::uno_nano(d),
+        ),
+        ("HaLow XIAO", &xiao_case, &xiao_plate, xiao::boards(d)),
+    ] {
+        outdoor_checks::verify_battery_lead(d, o, plate, &boards)
+            .map_err(|e| format!("{name}: {e}"))?;
+    }
+    let pocket = raised_test_label(
+        d,
+        &pocket,
+        "stock-pocket",
+        &["STOCK POCKET", "CHECK MOVEMENT"],
+    )?;
+    let snap = raised_test_label(
+        d,
+        &battery::battery_plate(d, None, 0.0)?,
+        "snap-fit",
+        &["BATTERY SNAP", "CHECK BOTH ENDS"],
+    )?;
+    write_meshes(
+        dir,
+        vec![
+            ("outdoor-battery-stock-pocket", pocket),
+            ("outdoor-battery-snap-fit", snap),
+            ("outdoor-station-battery-lead-plate", station_plate),
+            ("halow-xiao-battery-lead-plate", xiao_plate),
+        ],
+    )?;
+    Ok(())
+}
+
+fn build_glove_seal(d: &Design, dir: &std::path::Path) -> Result<(), String> {
+    let o = outdoor::glove_seal_case();
+    let cup = outdoor::latch_coupon_box(&o);
+    outdoor_checks::rules(&o)?;
+    outdoor_checks::lid_latches(&o, &cup, &|f| outdoor::lid_in_place(d, &o, f))?;
+    let cup = raised_test_label(
+        d,
+        &cup,
+        "glove-seal",
+        &["CUBESAT CLASSROOM", "GLOVE LATCH", "SEAL TEST"],
+    )?;
+    let (_, ring_id) = o.oring();
+    println!("coupon O-ring: 2.5 mm section, approximate ID {ring_id:.1} mm");
+    write_meshes(
+        dir,
+        vec![
+            ("outdoor-glove-seal-cup", cup),
+            ("outdoor-glove-seal-lid", outdoor::lid_to_print(d, &o)?),
+        ],
+    )?;
+    Ok(())
+}
+
+fn build_outdoor_antenna_fit(d: &Design, dir: &std::path::Path) -> Result<(), String> {
+    let wall = Outdoor::default().wall;
+    let mut parts = Vec::new();
+    for (name, lines, diameters) in [
+        (
+            "outdoor-standard-sma-fit",
+            &["SMA BULKHEAD", "HOLES IN MM"][..],
+            &outdoor::SMA_FIT_DIAMETERS[..],
+        ),
+        (
+            "outdoor-large-alfa-fit",
+            &["LARGE ANTENNA", "HOLES IN MM"][..],
+            &outdoor::ALFA_FIT_DIAMETERS[..],
+        ),
+    ] {
+        let plate = outdoor::antenna_fit_plate(diameters, wall);
+        let (body, mut art, z) = labels::add(
+            d,
+            &plate,
+            &labels::Label {
+                part: name,
+                lines,
+                side: labels::Side::MinusY,
+                thick: Some(wall),
+            },
+        );
+        for (x, dia) in outdoor::antenna_fit_positions(diameters) {
+            art = art.union(&amsat_kit::text::line(&dia.to_string(), 5.2).translate(x, -16.2));
+        }
+        let b = brand::place(d, name, &body, Spot::Label(art, z), None)?;
+        parts.push((name, body.union(&b.accent)));
+    }
+    write_meshes(dir, parts)?;
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let d = Design::default();
     let result = match std::env::args().nth(1).as_deref() {
         None | Some("build") => build_classroom(&d)
             .and_then(|()| build_outdoor(&d))
-            .and_then(|()| build_xiao(&d)),
+            .and_then(|()| build_xiao(&d))
+            .and_then(|()| {
+                build_outdoor_antenna_fit(&d, &kit_dir().with_file_name("outdoor-antenna-fit"))
+            }),
         Some("check") => check_all(&d),
         Some("self-test") => self_test(),
+        Some("xiao-retention") => match std::env::args_os().nth(2) {
+            Some(dir) => build_xiao_retention(&d, std::path::Path::new(&dir)),
+            None => Err("xiao-retention needs an output directory".to_owned()),
+        },
+        Some("outdoor-battery-fit") => match std::env::args_os().nth(2) {
+            Some(dir) => build_outdoor_battery_fit(&d, std::path::Path::new(&dir)),
+            None => Err("outdoor-battery-fit needs an output directory".to_owned()),
+        },
+        Some("outdoor-glove-seal") => match std::env::args_os().nth(2) {
+            Some(dir) => build_glove_seal(&d, std::path::Path::new(&dir)),
+            None => Err("outdoor-glove-seal needs an output directory".to_owned()),
+        },
+        Some("outdoor-antenna-fit") => match std::env::args_os().nth(2) {
+            Some(dir) => build_outdoor_antenna_fit(&d, std::path::Path::new(&dir)),
+            None => Err("outdoor-antenna-fit needs an output directory".to_owned()),
+        },
         Some(other) => Err(format!(
-            "unknown command {other}: use build, check or self-test"
+            "unknown command {other}: use build, check, self-test, xiao-retention, outdoor-battery-fit, outdoor-glove-seal or outdoor-antenna-fit"
         )),
     };
     match result {
