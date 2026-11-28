@@ -18,6 +18,7 @@ CSC-R1P is the [CSC-R1 Rev A](../README.md) receiver rebuilt to fit a guitar-ped
 
 | Path | What |
 | --- | --- |
+| [panel-bom.md](panel-bom.md) | Off-board parts and Y2 purchasing candidate |
 | [face-template.svg](face-template.svg) | 1:1 drilling template for the face and the three drilled walls. Print at 100 % and check the 10 mm scale bar. |
 | `kicad/csc-r1p.*` | Main board: schematic, board, project |
 | `kicad/csc-r1p-ctl.*` | Control board |
@@ -121,11 +122,10 @@ An independent reviewer must check both boards before ordering. See [CONTRIBUTIN
 
 - Review the copper and the generated fabrication files for both boards, including synthesizer supply paths, RF return paths and the enclosure fit.
 - Stack height: check the 15 mm standoffs, the 2×4 header and socket, and the pot bushing length against the 35 mm inside height with real parts.
-- Panel jacks and switches are not on the BOM yet: DC jack, ¼ inch jack, SMA and RP-SMA bulkheads, U.FL pigtails, USB-C panel extension, footswitch, toggle, LED bezel, knobs.
-- The TCXO land pattern is still generic, as on Rev A.
+- Verify the parts and clearances in the [panel BOM](panel-bom.md), then confirm sourcing and bench operation of the selected Y2 candidate.
 - The buck's switching frequency (about 2.1 MHz) and its harmonics need checking against the 2 m and 70 cm bands on the bench with the [desense quest](../../../quest/m1/receiver-rev-a-desense.md).
 - Reading the encoder through an I²C expander works at hand speed; confirm in firmware that fast spins don't skip.
-- Firmware for the pedal: not started. The station simulator shows what it should publish.
+- The [Rust bring-up console](../../../firmware/csc-r1p-bringup/README.md) covers safe I²C initialization and panel checks. PLL, ADC, audio, OLED and station telemetry are tracked in the [prototype quest](../../../quest/m1/receiver-pedal-prototype.md).
 
 ## Rebuilding
 

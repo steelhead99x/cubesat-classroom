@@ -29,6 +29,8 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
+      - run: cargo fmt --manifest-path firmware/csc-r1p-bringup/Cargo.toml --check
+      - run: cargo test --locked --manifest-path firmware/csc-r1p-bringup/Cargo.toml --lib
 
   advisories:
     # Runs deny.toml: security advisories, licences, banned crates and sources. A new

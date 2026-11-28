@@ -1,0 +1,26 @@
+[package]
+name = "csc-r1p-bringup"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "csc-r1p-bringup"
+path = "src/main.rs"
+test = false
+bench = false
+
+[dependencies]
+embedded-hal = "1.0"
+
+[target.'cfg(target_arch = "xtensa")'.dependencies]
+esp-hal = { version = "1.2", features = ["esp32s3", "unstable"] }
+esp-bootloader-esp-idf = { version = "0.6", features = ["esp32s3"] }
+esp-backtrace = { version = "0.20", default-features = false, features = ["esp32s3", "panic-handler", "println"] }
+esp-println = { version = "0.18", default-features = false, features = ["esp32s3", "jtag-serial"] }
+
+[profile.release]
+opt-level = "s"
+lto = "fat"
+codegen-units = 1

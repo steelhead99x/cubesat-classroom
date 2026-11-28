@@ -11,8 +11,8 @@ members = [
     "crates/printouts",
 ]
 # The CAD crate builds the Manifold C++ kernel, so it has its own CI job instead of being a default member.
-# The firmware targets the nRF52840 and is its own Cargo project.
-exclude = ["firmware/nano33-cubesat"]
+# Embedded firmware uses its own toolchains and targets.
+exclude = ["firmware/nano33-cubesat", "firmware/csc-r1p-bringup"]
 default-members = [
     ".",
     "crates/mission-budget",
