@@ -5,6 +5,7 @@ import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import exploded from '../../../hardware/amsat-cubesatsim/render-exploded.png';
 import assembled from '../../../hardware/amsat-cubesatsim/render-assembled.png';
+import outdoorRender from '../../../hardware/outdoor-station/render.png';
 import { repo } from '../hubs.mjs';
 import Patch from '../components/Patch.astro';
 import { siteOrigin } from '../origin';
@@ -15,9 +16,18 @@ const raw = repo + '/raw/refs/heads/main/hardware/';
 const kit = raw + 'amsat-cubesatsim/p1s/';
 const guide = cad + 'amsat-cubesatsim/README.md';
 const kitFiles = [
-  { name: 'Test coupons', file: 'cubesat-test-coupons.3mf', note: 'Print first. A snap pin with its flex-finger tab, and a board hook and lip with a strip of test board: a few grams of plastic to check your printer.' },
-  { name: 'Frame and payload kit', file: 'cubesat-kit.3mf', note: 'Two plates: the payload plate and the bottom piece with snap columns, then both AMSAT sides (one with the camera hole) and the unchanged AMSAT top.' },
+  { name: 'Test coupons', file: 'cubesat-test-coupons.3mf', note: 'Print first. A snap pin with a fit ladder of three tabs, the Nano 33 BLE Sense mount on its own, and the camera cradle: a few grams each to check your printer.' },
+  { name: 'Frame and payload kit', file: 'cubesat-kit.3mf', note: 'Three plates: the payload plate and the bottom with snap columns; the AMSAT side and the camera side for a XIAO ESP32-S3 Sense; the top with columns and the battery plate for a 3000 mAh cell.' },
   { name: 'Fit plate (optional)', file: 'cubesat-fit-plate.3mf', note: 'An open-truss version of the payload plate with the same board mounts, to check both boards with less plastic.' },
+];
+const outdoor = raw + 'outdoor-station/p1s/';
+const outdoorXiao = raw + 'outdoor-xiao/p1s/';
+const outdoorGuide = cad + 'outdoor-station/README.md';
+const outdoorFiles = [
+  { name: 'Outdoor test coupons', href: outdoor + 'outdoor-test-coupons.3mf', note: 'Print first. A small box and lid with two of the real latches, the tripod-thread coupon, and the snap pin fit ladder. Printed and working in PLA.' },
+  { name: 'Outdoor ground station', href: outdoor + 'outdoor-station.3mf', note: 'The isogrid box and its latching lid, with the classroom payload plate for the Uno and Nano. Not yet printed or water-tested.' },
+  { name: 'Outdoor XIAO station', href: outdoorXiao + 'outdoor-xiao.3mf', note: 'The same box and lid with two antenna ports, and a plate for a XIAO ESP32-S3 on the Wi-Fi HaLow board and a XIAO MG24 Sense.' },
+  { name: 'Outdoor XIAO test coupons', href: outdoorXiao + 'outdoor-xiao-test-coupons.3mf', note: 'The XIAO mounts on their own, with the latch, thread and pin coupons.' },
 ];
 ---
 <Base title="CAD and print files | CubeSat Classroom" description="Print a real 1U CubeSat frame: AMSAT's CubeSatSim frame with a printed Arduino payload plate modeled on the Teachers in Space Multiplate." canonical={siteOrigin + '/hardware/'}>
@@ -51,7 +61,7 @@ const kitFiles = [
       <div>
         <p class="eyebrow t-label">Current build · AMSAT frame kit</p>
         <h2 id="kit-title">Print the 1U frame and payload</h2>
-        <p class="mt-2 text-muted">Three Bambu Studio projects, each part already in print orientation. Use PLA, the 0.20mm Standard process for your nozzle, and supports off. No screws, nuts or metal standoffs.</p>
+        <p class="mt-2 text-muted">Three Bambu Studio projects, each part already in print orientation. Use PLA, the 0.20mm Standard process for your nozzle, and supports off. No screws, nuts or metal standoffs. Every part carries the CubeSat Classroom logo in a second colour: load white in AMS slot 1 and black in slot 2, or print it all in one colour.</p>
         <dl class="mt-5 divide-y divide-line border-y border-line">
           {kitFiles.map(file => (
             <div class="grid gap-2 py-4 sm:grid-cols-[13rem_1fr] sm:gap-6">
@@ -69,6 +79,29 @@ const kitFiles = [
       </figure>
     </section>
 
+    <section class="grid items-start gap-8 lg:grid-cols-[1fr_22rem] lg:gap-14" aria-labelledby="outdoor-title">
+      <div>
+        <p class="eyebrow t-label">Beta · Outdoor ground station</p>
+        <h2 id="outdoor-title">Take the station outside</h2>
+        <p class="mt-2 text-muted">A sealed, tripod-mounted case for the same payload plate and boards, with a 3000 mAh battery inside. The lid presses on over an O-ring and four snap latches hold it, with no screws. The walls are isogrid, triangular pockets between flush ribs like a launch vehicle's panels, so the box and lid use 29% less plastic than a solid case. A cable gland and a breathable vent face down, and a printed 1/4"-20 thread on the back takes any camera tripod.</p>
+        <p class="mt-3 text-muted"><strong>Beta:</strong> the design checks pass, and the outdoor test coupons (latch, tripod thread and snap pin) have printed and work in PLA. The box and lid haven't been printed or water-tested yet. Print the coupons first, then a first box in PLA to check the fit and seal indoors. Use ASA or PETG for a box that lives outside: PLA softens in summer sun. You'll also need a 2.5 mm nitrile O-ring about 102 mm inside diameter, an M12 × 1.5 cable gland and an M12 breathable vent.</p>
+        <dl class="mt-5 divide-y divide-line border-y border-line">
+          {outdoorFiles.map(file => (
+            <div class="grid gap-2 py-4 sm:grid-cols-[13rem_1fr] sm:gap-6">
+              <dt><a class="tap text-accent" href={file.href}>{file.name} (3MF)</a></dt>
+              <dd class="text-muted">{file.note}</dd>
+            </div>
+          ))}
+        </dl>
+        <a class="mt-4 inline-block font-bold text-accent underline underline-offset-4" href={outdoorGuide}>Outdoor station build guide and water test</a>
+        <a class="mt-4 ml-4 inline-block text-accent" href={repo + '/tree/main/hardware/outdoor-station/stl'}>STL files for other slicers</a>
+      </div>
+      <figure class="bench-figure hud m-0">
+        <Image src={outdoorRender} alt="The outdoor ground station: a white box with triangular isogrid pockets in its walls, two ports on the front, and a lid with the CubeSat Classroom logo held by snap latches" widths={[360, 720]} sizes="(min-width: 1024px) 22rem, 100vw" />
+        <figcaption><span>Outdoor station · beta</span><span>Render · 97 mm box · no screws</span></figcaption>
+      </figure>
+    </section>
+
     <section class="grid items-center gap-6 border-y border-line py-6 sm:grid-cols-[auto_1fr]" aria-labelledby="patches-title">
       <Patch id="first-contact" name="Make first contact" label="First contact" size={96} show />
       <div>
@@ -80,7 +113,7 @@ const kitFiles = [
     <section aria-labelledby="credit-title">
       <h2 id="credit-title">Credit</h2>
       <ul class="mt-3 max-w-3xl space-y-3 text-muted">
-        <li><strong>Frame:</strong> <a class="text-accent" href="https://cubesatsim.org">AMSAT CubeSat Simulator</a> v2.0 frame by Alan Johnston, KU2Y, from <a class="text-accent" href="https://github.com/alanbjohnston/CubeSatSim/tree/master/hardware/frame/v2.0">alanbjohnston/CubeSatSim</a> (GPL-3.0). Unchanged except for the bottom piece, which gains four snap columns.</li>
+        <li><strong>Frame:</strong> <a class="text-accent" href="https://cubesatsim.org">AMSAT CubeSat Simulator</a> v2.0 frame by Alan Johnston, KU2Y, from <a class="text-accent" href="https://github.com/alanbjohnston/CubeSatSim/tree/master/hardware/frame/v2.0">alanbjohnston/CubeSatSim</a> (GPL-3.0). Changed in two pieces: the bottom (and top) gains four snap columns, and one side gains a camera cradle in place of its camera hole. Each part carries the CubeSat Classroom logo as a second-colour inlay.</li>
         <li><strong>Payload plate:</strong> modeled on the Multiplate from the <a class="text-accent" href="https://www.tis.org/">Teachers in Space</a> (TIS) 1U frame, the frame TIS uses in its Arduino CubeSat workshops. <a class="text-accent" href={cad + 'tis/README.md'}>TIS frame links and comparison</a>.</li>
         <li>This fork is licensed GPL-3.0, like the AMSAT frame. It's an independent build, not made or endorsed by AMSAT or TIS.</li>
       </ul>
