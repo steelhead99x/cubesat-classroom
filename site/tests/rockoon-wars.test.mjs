@@ -454,11 +454,12 @@ test('the remaining committer can replay a stand-in copy after earlier players l
   const snapshots = Object.fromEntries(order.map(id => [id, snap(names[id], { shops: { 1: [] } })]));
   assert.ok(Room.commit(Room.matchFor(four), four, snapshots));
   let match = Room.replay(four, snapshots).match;
-  while (four.order[match.turn] !== c) {
+  for (let i = 0; i < order.length && four.order[match.turn] !== c; i++) {
     snapshots[four.order[match.turn]].turns[match.log.length] = { angle: 60, power: 50, weapon: 'baby' };
     assert.ok(Room.commit(match, four, snapshots));
     match = Room.replay(four, snapshots).match;
   }
+  assert.equal(four.order[match.turn], c);
   const turn = match.log.length;
   for (const id of order) Room.mirror(match, four, snapshots, id);
 
@@ -478,6 +479,9 @@ test('the remaining committer can replay a stand-in copy after earlier players l
   assert.equal(R.fingerprint(returning), R.fingerprint(remaining));
   assert.equal(returning.played[`L${turn}`].by, b);
   assert.equal(Room.replay(four, snapshots, { gone: [a], me: c, rejoined: true }).match.log.length, turn);
+  const watcher = 'eeeeeeeeeeee';
+  assert.equal(Room.nextAction(match, four, snapshots, { gone: [a, b], me: watcher }).kind, 'wait');
+  assert.equal(R.fingerprint(Room.replay(four, snapshots, { gone: [a, b, c], me: watcher }).match), R.fingerprint(remaining));
 });
 
 test('v5 snapshots carry stand-in marks, and v4 snapshots are not read', () => {
