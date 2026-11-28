@@ -17,11 +17,14 @@ VERTEX_TOL = 0.0005  # mm, known builds differ by up to 0.00032 at vertices
 # The two known builds flip a few near-coplanar faces. The largest observed
 # distance at their edge midpoints and centroids was 0.00183 mm.
 SURFACE_TOL = 0.002  # mm
-STLS = {f'hardware/{case}/stl/coupon-latch-{part}.stl'
-        for case in ('outdoor-station', 'outdoor-xiao') for part in ('box', 'lid')}
+STLS = {f'hardware/{case}/stl/{part}.stl'
+        for case in ('outdoor-station', 'outdoor-xiao')
+        for part in ('coupon-latch-box', 'coupon-latch-lid', 'outdoor-lid')}
 PROJECTS = {
     'hardware/amsat-cubesatsim/p1s/cubesat-test-coupons.3mf': (2,),
+    'hardware/outdoor-station/p1s/outdoor-station.3mf': (2,),  # lid
     'hardware/outdoor-station/p1s/outdoor-test-coupons.3mf': (2, 3, 5),
+    'hardware/outdoor-xiao/p1s/outdoor-xiao.3mf': (2,),  # lid
     'hardware/outdoor-xiao/p1s/outdoor-xiao-test-coupons.3mf': (3, 4, 6),
 }
 NS = '{http://schemas.microsoft.com/3dmanufacturing/core/2015/02}'
