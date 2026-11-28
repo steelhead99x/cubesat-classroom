@@ -119,14 +119,19 @@ export function committerFor(host, gone = []) {
  * turn owner's own `turns` request, a shop list equal to each player's own `shops` (an empty
  * list only for a player whose picks never arrived). A skip can't be checked.
  */
-function matchesRequests(host, get, field, key, entry, owner) {
+function matchesRequests(host, get, field, key, entry, owner, gone = []) {
   if (field === 'log') {
+    // A player who has left can't confirm or dispute their turn, and their request may have
+    // left with them; the copy the others carry is the only record of it.
+    if (owner && gone.includes(owner)) return entry === 'skip' || (typeof entry === 'object' && entry !== null);
     const asked = owner && get(owner)?.turns?.[key];
     return entry !== 'skip' && !!asked && asked.angle === entry.angle && asked.power === entry.power && asked.weapon === entry.weapon;
   }
   return Array.isArray(entry) && entry.length === host.order.length && entry.every((list, i) => {
+    if (!Array.isArray(list)) return false;
+    if (gone.includes(host.order[i])) return true;
     const asked = get(host.order[i])?.shops?.[key];
-    return Array.isArray(list) && (Array.isArray(asked) ? JSON.stringify(asked) === JSON.stringify(list) : list.length === 0);
+    return Array.isArray(asked) ? JSON.stringify(asked) === JSON.stringify(list) : list.length === 0;
   });
 }
 
@@ -144,7 +149,9 @@ const viewOf = view => (Array.isArray(view) ? { gone: view } : { gone: [], ...vi
  *   - its author is the creator, or the committer as this screen sees it (everyone earlier in
  *     the order has gone);
  *   - it matches what the players asked for (a shot equal to the owner's own request, a shop
- *     list equal to each player's own picks);
+ *     list equal to each player's own picks), where a player who has gone can't be asked: a
+ *     turn or shop list of theirs that someone carries is kept, so a turn committed before
+ *     they left stays replayable after;
  *   - it skips a player's turn and that player carries the same skip in its own history: the
  *     owner has accepted it;
  *   - it skips this screen's own turn while this screen has just (re)joined (`ownSkips`), so
@@ -159,7 +166,7 @@ function historyEntry(host, get, field, key, owner, view = {}) {
     const entry = get(id)?.[field]?.[key];
     if (!entry) continue;
     const committer = host.order.slice(0, i).every(p => gone.includes(p));
-    if (committer || matchesRequests(host, get, field, key, entry, owner)) return entry;
+    if (committer || matchesRequests(host, get, field, key, entry, owner, gone)) return entry;
     if (field === 'log' && entry === 'skip' && owner) {
       if (get(owner)?.log?.[key] === 'skip') return entry;
       if (ownSkips && owner === me && !get(me)?.turns?.[key]) return entry;

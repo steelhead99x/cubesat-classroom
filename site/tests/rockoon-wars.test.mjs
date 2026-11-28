@@ -309,6 +309,37 @@ test('a returning host keeps the turns played without it', () => {
   assert.equal(Room.committerFor(host, []), ids[0]);
 });
 
+test('a shot stays replayable after the player who took it leaves (three players)', () => {
+  // Review: the host goes offline, the stand-in fires and leaves, the host returns. The third
+  // player carries the shot; the host must replay it, not record a skip over it.
+  const three = { ...host, order: ids, names: { ...host.names, [ids[2]]: 'GS-CC3' } };
+  const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [], 2: [], 3: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [], 2: [], 3: [] } }), [ids[2]]: snap('GS-CC3', { shops: { 1: [], 2: [], 3: [] } }) };
+  let match;
+  for (let i = 0; i < 10; i++) { match = Room.replay(three, s).match; if (!Room.commit(match, three, s)) break; }
+  // Play until it's the stand-in's (ids[1]) turn.
+  for (let i = 0; i < 9 && three.order[match.turn] !== ids[1]; i++) {
+    s[three.order[match.turn]].turns[match.log.length] = { angle: 80, power: 40, weapon: 'baby' };
+    Room.commit(match, three, s); match = Room.replay(three, s).match;
+  }
+  const k = match.log.length;
+  // The host goes away; the stand-in commits its own shot, and the third player plays and mirrors it.
+  const hostAway = [ids[0]];
+  s[ids[1]].turns[k] = { angle: 66, power: 55, weapon: 'baby' };
+  Room.mirror(match, three, s, ids[1]);
+  assert.ok(Room.commit(match, three, s, hostAway, ids[1]));
+  const c = Room.replay(three, s, { gone: hostAway, me: ids[2] }).match;
+  assert.equal(c.log.length, k + 1);
+  Room.mirror(c, three, s, ids[2]);
+  // The stand-in leaves for good, and the host returns. It has never seen the stand-in's request.
+  delete s[ids[1]];
+  const hostView = { gone: [ids[1]], me: ids[0], ownSkips: true };
+  const h = Room.replay(three, s, hostView).match;
+  assert.equal(h.log.length, k + 1, 'the host replays the shot from the third player\'s copy');
+  assert.equal(R.fingerprint(h), R.fingerprint(c));
+  assert.equal(Room.commit(h, three, s, [ids[1]]), false, 'nothing to record over it');
+  assert.equal(Room.diverged(c, three, s, { gone: [ids[1]], me: ids[2] }), false, 'the third player keeps its match');
+});
+
 test('nobody can commit a shot, a skip or a purchase for someone else', () => {
   const three = { ...host, order: ids, names: { ...host.names, [ids[2]]: 'GS-CC3' } };
   const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [] } }), [ids[2]]: snap('GS-CC3', { shops: { 1: [] } }) };
