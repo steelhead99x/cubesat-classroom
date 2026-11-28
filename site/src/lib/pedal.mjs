@@ -140,6 +140,9 @@ function fmtKhz(k) {
   return `${v > 0 ? '+' : ''}${v} kHz`;
 }
 
+const GAIN_TRIAL_START_DB = 10;
+const GAIN_TRIAL_END_DB = GAIN_TRIAL_START_DB + 6;
+
 /**
  * Predict, then test. Each experiment asks for a prediction, then watches the learner try it.
  * `done(prev, next)` gets two readings of the trainer (before and after a change) and is true
@@ -153,11 +156,11 @@ export const EXPERIMENTS = [
     question: 'Tuned to the satellite, you turn GAIN up by 6 dB. What happens to the input meter?',
     choices: ['It about doubles', 'It goes up by 6%', 'It stays the same'],
     answer: 0,
-    task: 'Tune to 145.800 MHz on 2 m, set the input below 45%, then raise GAIN by 6 dB.',
+    task: `Set BAND to 2 m and tune to 145.800 MHz. Set GAIN to ${GAIN_TRIAL_START_DB} dB and check that the input reading below the waveform is under 45%. Then raise GAIN to ${GAIN_TRIAL_END_DB} dB and watch the input reading change.`,
     explain: 'Decibels multiply. Every 6 dB is about twice the size of the wave, and every 20 dB is ten times. That is why a small turn of GAIN can take a signal from quiet to clipping.',
-    done: (a, b) => a.tuned && b.tuned && a.peak < 0.45 && b.gainDb - a.gainDb >= 6 && b.peak <= 1,
-    // GAIN moves 1 dB at a time, so compare with where the turn started, not the last step.
-    keep: (a, b) => a.tuned && b.tuned && a.band === b.band && a.offset === b.offset && b.gainDb >= a.gainDb,
+    done: (a, b) => a.tuned && b.tuned && a.gainDb === GAIN_TRIAL_START_DB && a.peak < 0.45 && b.gainDb === GAIN_TRIAL_END_DB && b.peak <= 1,
+    // Keep the 10 dB reading while GAIN moves in 1 dB steps.
+    keep: (a, b) => a.tuned && b.tuned && a.gainDb === GAIN_TRIAL_START_DB && b.gainDb >= GAIN_TRIAL_START_DB,
   },
   {
     id: 'level-clip',
