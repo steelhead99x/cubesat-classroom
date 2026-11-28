@@ -30,14 +30,19 @@ PY
 )
 
 # The routed pedal boards: build.sh must refuse before it changes any file. No KiCad needed.
+# Runs on a throwaway copy with the override cleared, so a broken guard (or an override left
+# set in the caller's shell) can't touch the real boards.
+guard=$(mktemp -d)
+cp -R "$src/." "$guard/"
 for board in csc-r1p csc-r1p-ctl; do
-  pcb="$src/pedal/kicad/$board.kicad_pcb"
-  before=$(sha256sum "$pcb")
-  if (cd "$src/gen" && CSC_BOARD=$board ./build.sh >/dev/null 2>&1); then
-    echo "FAIL  build.sh rebuilt the routed $board board" >&2; exit 1
+  pcb="$guard/pedal/kicad/$board.kicad_pcb"
+  before=$(sha256sum < "$pcb")
+  if (cd "$guard/gen" && env -u CSC_REBUILD_ROUTED CSC_BOARD=$board ./build.sh >/dev/null 2>&1); then
+    rm -rf -- "$guard"; echo "FAIL  build.sh rebuilt the routed $board board" >&2; exit 1
   fi
-  [[ "$(sha256sum "$pcb")" == "$before" ]] || { echo "FAIL  build.sh changed $board.kicad_pcb" >&2; exit 1; }
+  [[ "$(sha256sum < "$pcb")" == "$before" ]] || { rm -rf -- "$guard"; echo "FAIL  build.sh changed $board.kicad_pcb" >&2; exit 1; }
 done
+rm -rf -- "$guard"
 echo "ok    build.sh refuses to rebuild the routed pedal boards and leaves them untouched"
 
 if [[ "${1:-}" == "--report-only" ]]; then exit 0; fi
