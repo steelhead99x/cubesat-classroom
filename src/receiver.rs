@@ -685,7 +685,7 @@ fn parse_rtl_power_tz(name: &str) -> Result<TimeZone, jiff::Error> {
 }
 
 /// Turn one rtl_power row into a snapshot, or `None` if the row holds no usable bins
-/// none near the frequency, or an invalid or ambiguous capture time.
+/// none near the frequency, or a capture time that is invalid or cannot be resolved.
 fn from_rtl_power(
     row: &str,
     args: &BridgeArgs,
@@ -694,7 +694,20 @@ fn from_rtl_power(
     time_zone: &TimeZone,
     received_unix_ms: Option<u64>,
 ) -> Option<Stats> {
-    let captured_unix_ms = sweep_unix_ms(row, time_zone)?;
+    let Some(captured_unix_ms) = sweep_unix_ms(row, time_zone, received_unix_ms) else {
+        // A data row whose time couldn't be placed: say so, rather than drop it silently.
+        if row
+            .split(',')
+            .nth(1)
+            .is_some_and(|t| t.trim().contains(':'))
+        {
+            eprintln!(
+                "skipped an rtl_power row: its local time is invalid, never happened, or falls in the repeated hour when the clocks went back and can't be placed: {}",
+                row.split(',').take(2).collect::<Vec<_>>().join(",")
+            );
+        }
+        return None;
+    };
     let tuned_hz = args.frequency_hz.unwrap_or(args.band.default_hz());
     let (bins, _) = bench_tools::sweep::parse(row);
     let near = |f: f64| (f - tuned_hz as f64).abs() <= args.passband_hz;
@@ -743,12 +756,37 @@ fn from_rtl_power(
 }
 
 /// Convert the local time at the start of an rtl_power row to Unix milliseconds.
-fn sweep_unix_ms(row: &str, time_zone: &TimeZone) -> Option<u64> {
+///
+/// When the clocks go back, an hour of local times happens twice. A live bridge reads each
+/// row seconds after rtl_power writes it, so if exactly one of the two candidates is within
+/// the hour before the read time (`received_unix_ms`), that is the one. A replayed archive is
+/// read long after both, so neither is close and the row is skipped rather than guessed.
+/// Rows without a read time, and times that never happened (clocks going forward), are
+/// skipped too.
+fn sweep_unix_ms(row: &str, time_zone: &TimeZone, received_unix_ms: Option<u64>) -> Option<u64> {
+    use jiff::tz::AmbiguousOffset;
+    /// The repeated hour is an hour long, so a window shorter than that can't hold both.
+    const LIVE_WINDOW_MS: u64 = 3_600_000;
     let mut fields = row.split(',').map(str::trim);
     let (date, time) = (fields.next()?, fields.next()?);
     let civil: jiff::civil::DateTime = format!("{date}T{time}").parse().ok()?;
-    let stamp = time_zone.to_ambiguous_timestamp(civil).unambiguous().ok()?;
-    u64::try_from(stamp.as_millisecond()).ok()
+    let ms = |offset: jiff::tz::Offset| {
+        let stamp = offset.to_timestamp(civil).ok()?;
+        u64::try_from(stamp.as_millisecond()).ok()
+    };
+    match time_zone.to_ambiguous_timestamp(civil).offset() {
+        AmbiguousOffset::Unambiguous { offset } => ms(offset),
+        AmbiguousOffset::Gap { .. } => None,
+        AmbiguousOffset::Fold { before, after } => {
+            let read = received_unix_ms?;
+            let live = |t: &u64| *t <= read && read - *t < LIVE_WINDOW_MS;
+            let mut near = [ms(before)?, ms(after)?].into_iter().filter(live);
+            match (near.next(), near.next()) {
+                (Some(t), None) => Some(t),
+                _ => None,
+            }
+        }
+    }
 }
 
 pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
@@ -1235,8 +1273,30 @@ mod tests {
             "2026-03-08, 02:30:05, ...",
             "2026-11-01, 01:30:05, ...",
         ] {
-            assert!(sweep_unix_ms(row, &zone).is_none(), "{row}");
+            assert!(sweep_unix_ms(row, &zone, None).is_none(), "{row}");
         }
+    }
+
+    #[test]
+    fn bridge_resolves_the_repeated_hour_from_the_read_time() {
+        let zone = TimeZone::get("America/Denver").unwrap();
+        let row = "2026-11-01, 01:30:05, ...";
+        // 01:30:05 MDT is 07:30:05 UTC; an hour later the clocks repeat it as 08:30:05 UTC.
+        let first = 1_793_518_205_000;
+        let second = first + 3_600_000;
+        // Read live, just after the first 01:30: it can only be the first one.
+        assert_eq!(sweep_unix_ms(row, &zone, Some(first + 900)), Some(first));
+        // Read live, just after the second 01:30: the first is over an hour old.
+        assert_eq!(sweep_unix_ms(row, &zone, Some(second + 900)), Some(second));
+        // A read time before both means the clocks disagree: skip the row.
+        assert_eq!(sweep_unix_ms(row, &zone, Some(first - 1)), None);
+        // A replay read days later can't tell them apart: skip, don't shift it by an hour.
+        assert_eq!(sweep_unix_ms(row, &zone, Some(second + 86_400_000)), None);
+        // Clocks going forward: 02:30 never happened, whatever the read time.
+        assert_eq!(
+            sweep_unix_ms("2026-03-08, 02:30:05, ...", &zone, Some(second)),
+            None
+        );
     }
 
     #[test]
