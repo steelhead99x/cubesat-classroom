@@ -326,7 +326,7 @@ const parts = [
   const signal = () => computeSignal(noise, { band: band.value, offset, gainDb: Number(gain.value) });
   const rotate = (el: Element, deg: number, cx: number, cy: number) => el.setAttribute('transform', `rotate(${deg} ${cx} ${cy})`);
 
-  function renderPedal(tuned: boolean, peak: number, frequency: number, clipping: boolean) {
+  function renderPedal(tuned: boolean, fill: number, note: string, frequency: number, clipping: boolean) {
     rotate(get('[data-knob="gain"]'), knobAngle(Number(gain.value), 0, GAIN_MAX_DB), 15.8, 20);
     rotate(get('[data-knob="level"]'), knobAngle(Number(volume.value), 0, 100), 49.8, 20);
     rotate(get('[data-knob="tune"]'), passS === null ? tuneAngle(offset) : (passOffsetHz / 1000) * TUNE_DEGREES, 32.8, 20);
@@ -334,24 +334,30 @@ const parts = [
     get('[data-status-led]').setAttribute('fill', engaged ? '#ff4d3d' : '#3a1412');
     get('[data-oled-top]').textContent = (band.value === '2' ? '2m ' : '70cm') + (passS === null ? '  SIM  ' : '  PASS ') + (engaged ? 'ON' : 'MUTE');
     get('[data-oled-freq]').textContent = frequency.toFixed(3);
-    get('[data-oled-bar]').setAttribute('width', String(36.5 * Math.min(1, peak)));
-    get('[data-oled-note]').textContent = clipping ? 'input CLIP' : 'input ' + inputPercent(peak) + '%' + (tuned && band.value === '2' ? '  ISS' : '');
+    get('[data-oled-bar]').setAttribute('width', String(36.5 * Math.max(0, Math.min(1, fill))));
+    get('[data-oled-note]').textContent = clipping ? 'input CLIP' : note + (tuned && band.value === '2' ? '  ISS' : '');
   }
 
   function render() {
     const state = passState();
-    let tuned: boolean, samples: number[], peak: number, frequency: number;
+    let tuned: boolean, samples: number[], peak: number, frequency: number, fill: number, note: string;
     if (state) {
       // Pass mode: the carrier's size follows the simulated SNR; noise stays put.
       tuned = state.heard;
       const carrier = state.heard ? Math.min(0.9, 0.08 * 10 ** (state.snrDb / 20)) : 0;
       samples = noise.map((n, i) => carrier * Math.sin((i * Math.PI) / 20) + 0.08 * n);
       peak = 10 ** (state.adcDbfs / 20);
+      // A satellite is far below full scale, so a linear bar would sit at 0–2% all pass. Draw
+      // the ADC level on a 100 dB scale instead; clipping still uses the real level.
+      fill = (state.adcDbfs + 100) / 100;
+      note = ''; // renderPass writes the pass status here
       frequency = (band.value === '2' ? pass.nominalHz + passOffsetHz : 435_000_000) / 1e6;
       get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · ' + state.dbfs.toFixed(0) + ' dBFS · ' +
         (state.heard ? 'carrier heard' : state.inView ? 'carrier outside the passband' : 'satellite below the horizon') + (engaged ? ' · output on' : ' · muted');
     } else {
       ({ tuned, samples, peak } = signal());
+      fill = peak;
+      note = 'input ' + inputPercent(peak) + '%';
       if (stage === 2 && engaged && tuned && peak > 1) sawClip = true;
       frequency = frequencyMHz(band.value, offset);
       get('[data-display]').textContent = frequency.toFixed(3) + ' MHz · input ' + (peak > 1 ? 'over 100' : inputPercent(peak)) + '% · ' +
@@ -373,9 +379,9 @@ const parts = [
     if (!state) watchExperiments({ band: band.value, offset, gainDb: Number(gain.value), level: Number(volume.value), engaged, peak, tuned });
     get('[data-level-label]').textContent = volume.value + '%';
     const task = get('#pedal-task');
-    const want = passS === null ? TASKS[stage] : 'Pass · Keep the carrier within 1.5 kHz as the Doppler shift changes. Tap TUNE for 1 kHz steps.';
+    const want = passS === null ? TASKS[stage] : 'Pass · Keep the carrier within 1.5 kHz as the Doppler shift changes. Tap TUNE for 1 kHz steps. The bar shows the input on a dB scale. If the screen says CLIP, turn GAIN down.';
     if (task.textContent !== want) task.textContent = want;
-    renderPedal(tuned, peak, frequency, state?.clipping ?? peak > 1);
+    renderPedal(tuned, fill, note, frequency, state?.clipping ?? peak > 1);
     if (state) renderPass(state);
   }
 
@@ -504,11 +510,12 @@ const parts = [
     get('[data-sky-sat]').setAttribute('cy', String(y(state.elevationDeg)));
     const off = (state.offsetHz / 1000).toFixed(1);
     get('[data-pass-readout]').textContent = state.inView
-      ? `[desk simulation] elevation ${state.elevationDeg.toFixed(0)}° · range ${state.rangeKm.toFixed(0)} km · Doppler ${state.dopplerHz >= 0 ? '+' : ''}${(state.dopplerHz / 1000).toFixed(2)} kHz · you are ${off} kHz off · ${state.heard ? `SNR ${state.snrDb.toFixed(0)} dB` + (state.decoded ? ' · beacon decoded' : '') : 'not heard'}`
-      : state.passS < 0 ? `[desk simulation] satellite rises in ${Math.ceil(-state.passS)} s` : '[desk simulation] satellite has set';
+      ? `[desk simulation] elevation ${state.elevationDeg.toFixed(0)}° · range ${state.rangeKm.toFixed(0)} km · Doppler ${state.dopplerHz >= 0 ? '+' : ''}${(state.dopplerHz / 1000).toFixed(2)} kHz · you are ${off} kHz off · ${state.heard ? `SNR ${state.snrDb.toFixed(0)} dB` + (state.decoded ? ' · beacon decoded' : '') : 'not heard'}${state.clipping ? ' · input clipping, turn GAIN down' : ''}`
+      : (state.passS < 0 ? `[desk simulation] satellite rises in ${Math.ceil(-state.passS)} s` : '[desk simulation] satellite has set') + (state.clipping ? ' · input clipping, turn GAIN down' : '');
     get('[data-oled-note]').textContent = state.inView
-      ? `EL ${state.elevationDeg.toFixed(0)}  ${state.heard ? 'SNR ' + state.snrDb.toFixed(0) + 'dB' : 'NO CARRIER'}${state.decoded ? ' BCN' : ''}`
-      : state.passS < 0 ? 'WAITING FOR AOS' : 'LOS';
+      ? (state.clipping ? `EL ${state.elevationDeg.toFixed(0)}  input CLIP` : `EL ${state.elevationDeg.toFixed(0)}  ${state.heard ? 'SNR ' + state.snrDb.toFixed(0) + 'dB' : 'NO CARRIER'}${state.decoded ? ' BCN' : ''}`)
+      // Noise alone can clip at high gain, so say so even with the satellite below the horizon.
+      : state.clipping ? 'input CLIP' : state.passS < 0 ? 'WAITING FOR AOS' : 'LOS';
   }
 
   function drawSky() {
