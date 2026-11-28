@@ -1,5 +1,5 @@
 // Cloudflare Worker settings for the site. `run_worker_first` sends every request
-// through src/worker.mjs, which the preview password and the start.sh headers rely on.
+// through src/worker-entry.mjs, which the preview password and the start.sh headers rely on.
 // Secrets (SITE_PASSWORD, PREVIEW_COOKIE_SECRET, ANTHROPIC_API_KEY) are set with
 // `npx wrangler secret put NAME`, never written here.
 //
@@ -13,7 +13,9 @@
   // is no second public copy at <name>.<account>.workers.dev.
   "workers_dev": false,
   "preview_urls": false,
-  "main": "src/worker.mjs",
+  "main": "src/worker-entry.mjs",
+  "durable_objects": { "bindings": [{ "name": "ROCKOON_ROOMS", "class_name": "RockoonRoom" }] },
+  "migrations": [{ "tag": "rockoon-room-v1", "new_sqlite_classes": ["RockoonRoom"] }],
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./dist",
@@ -41,7 +43,8 @@
   // address, so a whole classroom behind one address can join the live sky together.
   "ratelimits": [
     { "name": "UNLOCK_LIMIT", "namespace_id": "4410", "simple": { "limit": 20, "period": 60 } },
-    { "name": "GAME_TOKEN_LIMIT", "namespace_id": "4411", "simple": { "limit": 60, "period": 60 } }
+    { "name": "GAME_TOKEN_LIMIT", "namespace_id": "4411", "simple": { "limit": 60, "period": 60 } },
+    { "name": "ROCKOON_REQUEST_LIMIT", "namespace_id": "4412", "simple": { "limit": 1800, "period": 60 } }
   ],
   // The games' MoQ relay. The signing key is the secret MOQ_GAMES_SIGNING_KEY (never here), and
   // MOQ_GAMES_ROOT is the relay path the key signs under (the moq.pro project is `hikd`). Until both are set the games play offline.

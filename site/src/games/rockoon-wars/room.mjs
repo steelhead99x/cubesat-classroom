@@ -1,4 +1,5 @@
-// Rockoon Wars online: how a room's published snapshots become one shared match.
+// Shared game replay helpers and the previous MoQ room protocol. The live room now
+// gets its ordered actions from authority.mjs.
 //
 // Every player publishes one snapshot over MoQ and keeps republishing it:
 //   { p, cs, joined, creator, host?, turns: { [turnNumber]: { angle, power, weapon } },

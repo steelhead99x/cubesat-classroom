@@ -20,7 +20,14 @@ For GitHub Pages, run `npm run build:github` from `site/` and commit the generat
 
 **Deploying today:** GitHub Actions is turned off for this repository (CI runs on PrairieDog with `scripts/ci.sh`; see `.prairiedog.toml`), so the Worker is deployed by hand from `site/`: `npm ci && npm run build && npx wrangler deploy`. Run `npm run build` right before deploying; `npm run build:github` writes to `dist-github/` and never touches `dist/`.
 
-If Actions is turned back on, `.github/workflows/deploy-worker.yml` deploys the Worker after CI passes on `main`, once the repository secrets `CLOUDFLARE_API_TOKEN` (an API token from the "Edit Cloudflare Workers" template) and `CLOUDFLARE_ACCOUNT_ID` are set. If the live quest guide is on, also set the repository variable `GUIDE_LIMITS_KV_ID` to the KV namespace id: `wrangler deploy` replaces bindings with the ones in its config, so a binding made only in the dashboard would be removed. You can also start it by hand from the Actions tab. To deploy from your own computer instead, run `npm run build` from `site/`. Deploy `dist/` as [Worker Static Assets](https://developers.cloudflare.com/workers/static-assets/direct-upload/) on the `cubesat-classroom` Worker. Include `src/worker.mjs` as the Worker entry point and `src/hubs.mjs` as a module. Set the static assets binding to `ASSETS` and run the Worker first for every path (`run_worker_first` in `wrangler.jsonc`).
+If Actions is turned back on, `.github/workflows/deploy-worker.yml` deploys the Worker after CI passes on `main`, once the repository secrets `CLOUDFLARE_API_TOKEN` (an API token from the "Edit Cloudflare Workers" template) and `CLOUDFLARE_ACCOUNT_ID` are set. If the live quest guide is on, also set the repository variable `GUIDE_LIMITS_KV_ID` to the KV namespace id: `wrangler deploy` replaces bindings with the ones in its config, so a binding made only in the dashboard would be removed. You can also start it by hand from the Actions tab. To deploy from your own computer instead, run `npm run build` from `site/`. Use the checked-in Wrangler configuration to deploy `dist/` and `src/worker-entry.mjs` together. The Rockoon room binding and SQLite migration are part of that configuration.
+
+## Rockoon Battle rooms
+
+Online Rockoon Battle uses one Durable Object per five-character room code. The Worker saves the room's turn history and issues credentials that let a browser keep its seat after a reload. The room closes three hours after creation. Each shop and turn has a two-minute deadline. The earlier relay routes stay available to cached clients. Catch the Pass still uses the relay.
+
+To try the room service locally, run `npm ci && npm run build` from `site/`, then `npx wrangler@4.166.0 dev --local`. Open the local Rockoon Battle page in two separate browser profiles. Make a room in one profile, enter the code in the other, and start a match. After both players press **Done**, reload one browser and check that it returns to the same callsign and turn. You can also block one browser's connection and verify that a late shot leaves any settled turn unchanged.
+
 
 | Custom domain | Role |
 | --- | --- |

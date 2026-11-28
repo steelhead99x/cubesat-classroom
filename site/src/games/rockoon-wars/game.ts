@@ -1,7 +1,5 @@
-// Rockoon Battle: the page's game. Rules live in logic.mjs, online rooms in room.mjs and net.ts,
-// and the canvas drawing in render.ts. Hot-seat and online play share one path: every move is
-// written into a player's snapshot and room.mjs decides what happens next, so both modes run
-// the very same rules.
+// Rockoon Battle. Local and online play share the same simulation and animation.
+// The Worker orders online actions; each browser plays the committed timeline.
 import * as G from './logic.mjs';
 import { STEPS } from './steps.mjs';
 import { icon } from '../icons.mjs';
@@ -9,9 +7,9 @@ import { patch } from '../patches.mjs';
 import * as Room from './room.mjs';
 import { claimSeat, loadSeat, saveSeat } from './seat.mjs';
 import { Renderer, rocketSvg, type Scene } from './render';
-import type { RoomLink, LinkStatus, Snapshot } from './net';
+import type { RoomLink, LinkStatus, RoomState } from './net';
 
-type Snap = { p?: number; catchUp?: boolean; cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; rising?: number; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]>; standin?: Record<string, string> };
+type Snap = { cs: string; joined: number; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]> };
 type Host = { seed: number; rounds: number; order: string[]; names: Record<string, string> };
 type Match = ReturnType<typeof G.createMatch>;
 type Field = NonNullable<Match['field']>;
@@ -54,7 +52,8 @@ function start(root: HTMLElement) {
   let host: Host | null = null;
   let match: Match | null = null;
   const snaps = new Map<string, Snap>();
-  const seen = new Map<string, number>();
+  let roomState: RoomState | null = null;
+  let playedActions = 0;
   let mine: string[] = []; // the player ids this screen controls
   let link: RoomLink | null = null;
   let me = '';
@@ -81,12 +80,6 @@ function start(root: HTMLElement) {
   if (!joinCode) { try { joinCode = sessionStorage.getItem('rockoon-room') ?? ''; } catch { /* storage blocked */ } }
   if (joinCode) menuStep = 'join';
   let lastTurnKey = '';
-  let liveSince = 0; // when this screen's room connection last went live
-  let adoptedAt = 0; // when this screen picked up the match settings
-  let catchUpUntil = 0; // until then this screen is catching up (see roomView)
-  let notLiveSince: number | null = null, firstLive = true, rejoiningRoom = false;
-  let rejoinedSession = false; // this connection began after a reload or time offline
-  const metSinceLive = new Set<string>(); // players heard from since this screen went live
   let shotNote = ''; // what the last shot did, shown with the next turn
 
   function seenHowto() { try { return localStorage.getItem(HOWTO_KEY) === '1'; } catch { return false; } }
@@ -182,67 +175,32 @@ function start(root: HTMLElement) {
 
   // ---- the shared move path ----
   const snapOf = (id: string) => snaps.get(id)!;
-  function publish() {
-    if (mode === 'online' && link) { link.publish(snapOf(me)); keepSeat?.(); }
-  }
-  const waitingOn = (): ReturnType<typeof Room.nextAction> | null => (match && host ? Room.nextAction(match, host, snaps, roomView()) : null);
+  const waitingOn = (): ReturnType<typeof Room.nextAction> | null => {
+    if (!match || !host) return null;
+    if (mode !== 'online') return Room.nextAction(match, host, snaps);
+    if (!roomState) return null;
+    const committed = roomState.actions[playedActions];
+    if (committed) return committed;
+    const waiting = roomState.waiting;
+    if (waiting.kind !== 'wait') return waiting;
+    if (link?.pending('fire', playedActions)) return { ...waiting, sent: true };
+    if (link?.pending('shop', playedActions)) return { ...waiting, ids: waiting.ids.filter(id => id !== me) };
+    return waiting;
+  };
   const myTurn = () => {
     const a = waitingOn();
     return !!a && a.kind === 'wait' && !a.sent && match!.phase === 'play' && mine.includes(a.ids[0]);
   };
   const shooter = () => match!.field!.units[match!.turn];
 
-  /** Runs every action that is ready. Shots animate one at a time. */
-  /** Whether this screen is catching up: just (re)joined, just picked up a running match, or just
-   * met a player with history it missed. Its snapshot says so, for the other screens. */
-  const catchingUp = () => mode === 'online' && Date.now() < catchUpUntil;
-
-  /** Keeps this screen's catchUp flag in step with catchingUp(), publishing only on a change. */
-  function syncCatchUpFlag() {
-    if (mode === 'online' && snaps.has(me) && !!snapOf(me).catchUp !== catchingUp()) {
-      if (catchingUp()) snapOf(me).catchUp = true; else delete snapOf(me).catchUp;
-      publish();
-    }
-  }
-
-  /** Records the next turn if this screen is the committer, and keeps a copy of the history. */
-  function record() {
-    if (!match || !host) return;
-    syncCatchUpFlag();
-    const gone = goneIds();
-    const committer = Room.committerFor(host, gone);
-    let changed = mine.includes(committer) && Room.commit(match, host, snaps, gone, committer);
-    if (mode === 'online' && host.order.includes(me) && Room.mirror(match, host, snaps, me)) changed = true;
-    if (changed) publish();
-  }
-
+  /** Runs every committed action that is ready. Shots animate one at a time. */
   function step() {
-    if (!match || !host) return render();
-    // Two copies of the history disagreed and the earlier player's won: start again from it.
-    if (mode === 'online' && Room.diverged(match, host, snaps, roomView())) {
-      anim = null; banner = null; ghosts = { round: -1, paths: {} };
-      clearAscent();
-      match = Room.replay(host, snaps, roomView()).match;
-      // A request made for a turn in the old timeline must not fire in the new one.
-      for (const id of mine) {
-        const turns = snapOf(id).turns;
-        for (const k of Object.keys(turns)) if (Number(k) >= match.log.length) delete turns[Number(k)];
-      }
-      publish();
-      say('Caught up with the room.');
-    }
-    syncCatchUpFlag(); // also while paused or animating, so the flag never sticks on
-    if (anim || paused) return render();
-    // A round's result stays up until it's dismissed, but the committer keeps recording turns
-    // for everyone else while it's showing.
-    if (banner) {
-      record();
-      return render();
-    }
+    if (!match || !host || anim || paused || banner) return render();
     for (let guard = 0; guard < 50; guard++) {
-      // The committer records each turn once; everyone, the committer included, then plays that record.
-      record();
-      const action = Room.nextAction(match, host, snaps, roomView());
+      if (mode === 'local') Room.commit(match, host, snaps);
+      const action = waitingOn();
+      if (!action || action.kind === 'wait' || action.kind === 'over') break;
+      if (mode === 'online') playedActions++;
       if (action.kind === 'fire') {
         const before = structuredClone(match.field!) as Field;
         before.units[match.turn].angle = action.shot.angle;
@@ -275,30 +233,11 @@ function start(root: HTMLElement) {
     render();
   }
 
-  /** Players this screen gives up on after 30 seconds without a snapshot. Their turns are
-   * skipped, and if the committer is one of them the next player in the order takes over. */
-  /** How this screen sees the room, for room.mjs: who has gone, who it is, and whether it has
-   * just (re)joined, or just picked up a match already under way: then it accepts the turns its
-   * stand-in recorded without it. */
-  function roomView() {
-    return { gone: goneIds(), me, rejoined: catchingUp() };
-  }
+  const onlineReady = () => mode !== 'online' || link?.status === 'live';
+  const canAct = () => onlineReady() && myTurn() && !anim && !paused && !banner && !howto;
 
-  function goneIds() {
-    if (mode !== 'online' || !host) return [];
-    const now = Date.now();
-    // Just (re)connected: give everyone time to be heard again before deciding anyone left.
-    if (now - liveSince < 10_000) return [];
-    return host.order.filter(id => id !== me && now - (seen.get(id) ?? 0) > 30_000);
-  }
-
-  const canAct = () => myTurn() && !anim && !paused && !banner && !howto;
-
-  /** Ends this screen's balloon climb, and takes its "rising" flag back down. */
   function clearAscent() {
-    if (!ascent) return;
     ascent = null;
-    for (const id of mine) if (snapOf(id).rising !== undefined) { delete snapOf(id).rising; publish(); }
   }
 
   function fireNow() {
@@ -306,9 +245,7 @@ function start(root: HTMLElement) {
     const id = host!.order[match.turn];
     if (!ascent) {
       ascent = { turn: match.log.length, elapsed: 0, held: 0, nudged: false };
-      // Let the other screens show this balloon rising too (display only).
-      snapOf(id).rising = match.log.length;
-      publish();
+      link?.send({ kind: 'rise', version: playedActions });
       say('Balloon rising.', true);
       renderHud();
       return;
@@ -316,9 +253,9 @@ function start(root: HTMLElement) {
     if (ascent.elapsed < LIFT_TIME) return;
     const u = shooter();
     u.weapon = G.readyWeapon(match, match.turn);
-    snapOf(id).turns[match.log.length] = { angle: u.angle, power: u.power, weapon: u.weapon };
-    delete snapOf(id).rising;
-    publish();
+    const shot = { angle: u.angle, power: u.power, weapon: u.weapon };
+    if (mode === 'online') link?.send({ kind: 'fire', version: playedActions, shot });
+    else snapOf(id).turns[match.log.length] = shot;
     step();
   }
 
@@ -417,7 +354,7 @@ function start(root: HTMLElement) {
     if (!ascent && match.phase === 'play' && host) {
       const owner = host.order[match.turn];
       const key = `${match.round}:${match.log.length}`;
-      if (!mine.includes(owner) && snaps.get(owner)?.rising === match.log.length) {
+      if (!mine.includes(owner) && roomState?.rising === owner && roomState.actions.length === playedActions) {
         if (remoteRise?.key !== key) remoteRise = { key, since: performance.now() };
         progress = Math.min(1, (performance.now() - remoteRise.since) / (LIFT_TIME * 1000));
       } else if (remoteRise?.key === key) remoteRise = null;
@@ -514,9 +451,10 @@ function start(root: HTMLElement) {
     if (anim || (playing && !act)) {
       const a = waitingOn();
       if (anim) wait = anim.phase === 'lift' ? 'Balloon rising…' : 'Rocket released';
+      else if (!onlineReady()) wait = netDetail || 'Reconnecting…';
       else if (paused) wait = 'Paused';
       else if (a?.kind === 'wait' && a.sent) wait = 'Sending the shot…';
-      else if (a?.kind === 'wait' && !mine.includes(a.ids[0])) wait = snaps.get(a.ids[0])?.rising === match!.log.length ? `${p!.name}'s balloon is up…` : `Waiting for ${p!.name}…`;
+      else if (a?.kind === 'wait' && !mine.includes(a.ids[0])) wait = roomState?.rising === a.ids[0] ? `${p!.name}'s balloon is up…` : `Waiting for ${p!.name}…`;
     }
     hud.controls.dataset.wait = wait ? 'true' : 'false';
     hud.wait.textContent = wait;
@@ -611,26 +549,20 @@ function start(root: HTMLElement) {
       <div class="row col"><button type="button" class="go big" data-act="to-local">${icon('crew')} Play on this computer</button><button type="button" class="go big alt" data-act="to-online">${icon('globe')} Play online</button></div>`;
   }
 
-  function present() {
-    const now = Date.now();
-    return [...snaps.entries()].filter(([id]) => id === me || now - (seen.get(id) ?? 0) < 10_000)
-      .sort((a, b) => a[1].joined - b[1].joined || (a[0] < b[0] ? -1 : 1));
-  }
-
   function lobbyHtml() {
-    if (!link || link.status !== 'live' || !snaps.has(me)) {
+    if (!link || link.status !== 'live' || !roomState) {
       const offline = link?.status === 'offline';
       return offline
         ? `<h3>Online play is not working right now</h3><p>${esc(netDetail || 'We could not reach the game server.')}</p><div class="row"><button type="button" class="go big" data-act="quit">${icon('crew')} Play on this computer</button></div>`
         : `<h3>Connecting…</h3><div class="row"><button type="button" data-act="quit">Cancel</button></div>`;
     }
-    const people = present();
-    const creator = snapOf(me).creator;
-    const list = people.map(([id, s]) => `<li>${id === me ? '🙂 ' : '👤 '}${esc(s.cs)}${id === me ? ' (you)' : ''}</li>`).join('');
+    const people = roomState!.people;
+    const creator = roomState!.creator === me;
+    const list = people.map(({ player, callsign }) => `<li>${esc(callsign)}${player === me ? ' (you)' : ''}</li>`).join('');
     const canStart = creator && people.length >= 2;
     const code = esc(link.room).split('').map(c => `<span>${c}</span>`).join('');
     return `<p class="t-label">Room code</p><p class="bigcode" aria-label="Room code ${esc(link.room.split('').join(' '))}">${code}</p>
-      <p>${creator ? 'Tell your friends this code so they can join.' : 'You are in! Waiting for the room maker to press Start.'}</p>
+      <p>${creator ? 'Tell your friends this code so they can join. Each shop and turn has two minutes.' : 'You are in! Waiting for the room maker to press Start.'}</p>
       <ol class="people" aria-label="Players here">${list}</ol>
       <div class="row">${creator ? `<button type="button" class="go big" data-act="start"${canStart ? '' : ' disabled'}>${canStart ? `${icon('start')} Start` : 'Waiting for a friend…'}</button>` : ''}
       <button type="button" data-act="quit">Leave</button></div>`;
@@ -642,6 +574,7 @@ function start(root: HTMLElement) {
   }
 
   function shopHtml() {
+    if (!onlineReady()) return `<h3>Choose rockets</h3><p>${esc(netDetail || 'Reconnecting…')}</p>`;
     const a = waitingOn();
     if (a?.kind !== 'wait') return '';
     const id = a.ids.find(x => mine.includes(x));
@@ -702,8 +635,11 @@ function start(root: HTMLElement) {
       render();
     } else if (act === 'done') {
       const id = btn.dataset.id!;
-      snapOf(id).shops[match!.round + 1] = shopPick[id] ?? [];
-      publish();
+      const waiting = waitingOn();
+      if (!onlineReady() || waiting?.kind !== 'wait' || !mine.includes(id) || !waiting.ids.includes(id)) return;
+      const buys = shopPick[id] ?? [];
+      if (mode === 'online') link?.send({ kind: 'shop', version: playedActions, buys: [...buys] });
+      else snapOf(id).shops[match!.round + 1] = buys;
       step();
     }
   });
@@ -716,7 +652,7 @@ function start(root: HTMLElement) {
 
   // ---- starting and leaving ----
   function startLocal(n: number) {
-    snaps.clear(); seen.clear();
+    snaps.clear(); roomState = null; playedActions = 0;
     const order = Array.from({ length: Math.max(2, Math.min(4, n || 2)) }, (_, i) => String(i + 1).padStart(12, '0'));
     const names: Record<string, string> = {};
     order.forEach((id, i) => { names[id] = `Player ${i + 1}`; snaps.set(id, { cs: names[id], joined: i, turns: {}, shops: {} }); });
@@ -740,8 +676,6 @@ function start(root: HTMLElement) {
   let freshSeatRoom: string | null = null;
   /** Gives up this tab's claim on its seat in the room it is in (see claimSeat). */
   let releaseSeat: (() => void) | null = null;
-  /** Saves this tab's seat (player id and ticket, which a token renewal may change). */
-  let keepSeat: (() => void) | null = null;
   const seatLocks = () => (typeof navigator !== 'undefined' ? navigator.locks : undefined);
   /** `resume` is set when the page opens itself back into a room it has a saved seat for. */
   async function startOnline(code: string, creator: boolean, resume = false) {
@@ -760,7 +694,8 @@ function start(root: HTMLElement) {
     // tab opened from this one carries a copy of it, and two players under one id would clash.
     let store: Storage | undefined;
     try { store = sessionStorage; } catch { /* storage blocked: no seat to keep */ }
-    let saved = freshSeatRoom === code ? null : loadSeat(store, code);
+    let saved = creator || freshSeatRoom === code ? null : loadSeat(store, code);
+    if (saved && !/^[0-9a-f]{48}$/.test(saved.ticket)) saved = null; // old relay seat
     releaseSeat?.(); releaseSeat = null;
     if (saved) {
       joining = true;
@@ -780,67 +715,27 @@ function start(root: HTMLElement) {
         }
       }
     } else if (resume) return;
-    snaps.clear(); seen.clear();
+    snaps.clear(); roomState = null; playedActions = 0;
     host = null; match = null; banner = null; shopPick = {}; paused = false; lastTurnKey = '';
     mode = 'online';
     history.replaceState(null, '', `#room=${code}`);
-    // Was this page already in this room before a reload? (Session storage survives a reload of
-    // the same tab, nothing else.)
-    firstLive = true; notLiveSince = null;
-    try {
-      rejoiningRoom = sessionStorage.getItem('rockoon-room') === code;
-      sessionStorage.setItem('rockoon-room', code);
-    } catch { rejoiningRoom = false; }
     const thisLink: RoomLink = link = new RoomLink(code, {
       status(s: LinkStatus, detail?: string) {
-        if (link !== thisLink) return; // a room this screen has already left
-        if (s === 'live') {
-          liveSince = Date.now();
-          // Catch up only on evidence this screen may have missed turns: back after more than a
-          // few seconds offline, or this page reloaded into a room it was already in. A token
-          // renewal or the first connection to a new room isn't that.
-          const wasAway = notLiveSince !== null && liveSince - notLiveSince > 5_000;
-          rejoinedSession = wasAway || (firstLive && rejoiningRoom);
-          if (rejoinedSession) catchUpUntil = liveSince + 30_000;
-          if (wasAway || firstLive) metSinceLive.clear();
-          firstLive = false; notLiveSince = null;
-        } else notLiveSince ??= Date.now();
+        if (link !== thisLink) return;
         netDetail = detail ?? '';
-        net.textContent = s === 'live' ? `Room ${code}, you are ${thisLink.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : s === 'offline' ? 'Offline' : '';
+        net.textContent = s === 'live' ? `Room ${code}, you are ${thisLink.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : 'Offline';
         render();
       },
-      peer(id: string, snap: Snapshot) {
-        snaps.set(id, snap as Snap);
-        seen.set(id, Date.now());
-        // The first word from a player since this screen went live, carrying history this screen
-        // hasn't played: catch up from it for a while (see roomView).
-        // Only after this screen itself came back (it may have missed turns), and only for a
-        // player in this match carrying the same match settings. A screen that has been here all
-        // along has missed nothing, so history it hasn't seen is not a reason to catch up.
-        const s = snap as Snap;
-        if (rejoinedSession && host && match && host.order.includes(id) && !metSinceLive.has(id) && (!s.host || JSON.stringify(s.host) === JSON.stringify(host))) {
-          metSinceLive.add(id);
-          // Shots this screen hasn't played, or a shop it hasn't (a stand-in may have closed one
-          // without this screen's picks): either way it must catch up before sending its own.
-          const unplayedShot = Object.keys(s.log ?? {}).some(k => Number(k) >= match!.log.length);
-          const unplayedShop = Object.keys(s.shopLog ?? {}).some(r => Number(r) > match!.round && !match!.played?.[`S${Number(r)}`]);
-          if (unplayedShot || unplayedShop) catchUpUntil = Math.max(catchUpUntil, Date.now() + 30_000);
-        }
-        adoptHost();
-        step();
+      state(state) {
+        if (link === thisLink) followRoom(state);
       },
-      // A player's broadcast also goes away for a moment whenever a connection renews, so
-      // leaving is judged only by how long it has been since their last snapshot (goneIds).
-      leave() { render(); },
-    }, undefined, saved ?? undefined);
+    });
     bringIntoView();
-    const ok = await thisLink.start();
-    if (!ok || link !== thisLink) return;
-    me = link.player;
+    const state = await thisLink.start(creator, saved?.ticket);
+    if (!state || link !== thisLink) return;
+    me = thisLink.player;
     mine = [me];
-    // Back in the seat this tab held: it is still the room maker if it was, and keeps its place.
     const kept = saved?.player === me ? saved : null;
-    if (kept?.creator) creator = true;
     if (!kept) {
       // A new seat: claim it, so a tab opened from this one starts its own instead of sharing it.
       releaseSeat?.(); releaseSeat = null;
@@ -851,76 +746,47 @@ function start(root: HTMLElement) {
     }
     if (freshSeatRoom === code) freshSeatRoom = null;
     const joined = kept?.joined ?? Date.now();
-    // Requests and history this player sent before a reload are not restored: peers may have
-    // settled them differently while it was away. It catches up from the room, and re-sends a
-    // turn or shop the room is still waiting on.
-    if (!snaps.has(me)) snaps.set(me, { p: Room.ROOM_PROTOCOL, cs: link.callsign, joined, creator, turns: {}, shops: {} });
-    keepSeat = () => {
-      // A renewal that came back with a different id (its ticket no longer valid) is not this
-      // seat: keep the saved one rather than pair this seat's id with another seat's ticket.
-      if (store && link === thisLink && thisLink.player === me) saveSeat(store, code, { player: me, ticket: thisLink.ticket, creator, joined });
-    };
-    keepSeat();
-    publish();
-    render();
+    if (store) {
+      saveSeat(store, code, { player: me, ticket: thisLink.ticket, creator: state.creator === me, joined });
+      try { store.setItem('rockoon-room', code); } catch { /* storage blocked */ }
+    }
+    followRoom(state, true);
   }
 
-  /** Follows the room's match once it starts: from the creator, or, if the creator has left,
-   * from any player in the match who carries a copy. */
-  function adoptHost() {
-    if (host) return;
-    const carriers = [...snaps].filter(([id, s]) => s.host && s.host.order.includes(id) && s.host.names[id] === s.cs);
-    // The creator's settings first; without the creator, the settings most players carry. (A
-    // made-up copy can only mislead a screen that has no other copy to compare with, and it
-    // can't change anyone else's match.)
-    const byCreator = carriers.find(([id, s]) => s.creator && s.host!.order[0] === id);
-    const groups = new Map<string, typeof carriers>();
-    for (const c of carriers) { const key = JSON.stringify(c[1].host); groups.set(key, [...(groups.get(key) ?? []), c]); }
-    const best = [...groups.values()].sort((a, b) => b.length - a.length)[0];
-    const pick = byCreator ?? best?.[0];
-    if (!pick) return;
-    host = pick[1].host!;
-    adoptedAt = Date.now();
-    // Picking up a match already under way is catching up; a match that has only just started
-    // (nothing recorded yet, as when this screen starts it) is not.
-    if ([...snaps.values()].some(s => Object.keys(s.log ?? {}).length || Object.keys(s.shopLog ?? {}).length)) catchUpUntil = adoptedAt + 30_000;
-    // Catch up without animating everything that already happened.
-    match = Room.replay(host, snaps, roomView()).match;
-    say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');
+  function followRoom(state: RoomState, initial = false) {
+    roomState = state;
+    if (!host && state.host) {
+      host = state.host;
+      match = Room.matchFor(host);
+      // Reloads and spectators start at the last settled point without reanimating history.
+      if (initial) {
+        for (const action of state.actions) Room.apply(match, action);
+        playedActions = state.actions.length;
+      }
+      say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');
+      if (initial && match.phase === 'over') showRoundResult();
+    }
+    step();
   }
 
   function hostStart() {
-    const people = present().slice(0, G.MAX_PLAYERS);
-    if (people.length < 2) return;
-    const order = [me, ...people.map(([id]) => id).filter(id => id !== me)].slice(0, G.MAX_PLAYERS);
-    const names = Object.fromEntries(order.map(id => [id, snapOf(id).cs]));
-    snapOf(me).host = { seed: crypto.getRandomValues(new Uint32Array(1))[0], rounds: roundsFor(order.length), order, names };
-    snapOf(me).log = {};
-    snapOf(me).shopLog = {};
-    publish();
-    adoptHost();
-    step();
+    if (roomState?.creator === me) link?.send({ kind: 'start' });
   }
 
   function quit() {
     link?.stop(); link = null;
     joinAttempt++; joining = false;
-    releaseSeat?.(); releaseSeat = null; keepSeat = null;
+    releaseSeat?.(); releaseSeat = null;
     try { sessionStorage.removeItem('rockoon-room'); } catch { /* storage blocked */ }
     mode = 'menu'; menuStep = 'home'; host = null; match = null; anim = null; ascent = null; remoteRise = null; banner = null; paused = false; drag = null;
-    snaps.clear(); seen.clear(); mine = []; me = ''; lastTurnKey = '';
+    snaps.clear(); roomState = null; playedActions = 0; mine = []; me = ''; lastTurnKey = '';
     pauseBtn.setAttribute('aria-pressed', 'false');
     net.textContent = '';
     if (location.hash) history.replaceState(null, '', location.pathname);
     render();
   }
 
-  // Re-check the room now and then: players who have gone, and the host's committed turns.
-  setInterval(() => { if (mode === 'online') { if (!anim) step(); else renderOverlay(); } }, 5_000);
-
-  // Leaving or reloading the page: close the relay session now. Left to time out, the relay keeps
-  // it for several seconds, and a reloaded page coming back under the same player id collides
-  // with it (a duplicate announce), which makes the relay drop everyone's sessions for a while.
+  // The seat survives a reload, including a return from the back/forward cache.
   let parked = false;
   addEventListener('pagehide', e => {
     if (!link) return;

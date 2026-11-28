@@ -1,6 +1,7 @@
 import { classroomHost, hubs, redirects } from './hubs.mjs';
 import { answerFor, byQuest, questionText } from './guide/answers.mjs';
 import { gameToken } from './games-token.mjs';
+import { rockoonRoom } from './rockoon-room-api.mjs';
 
 // Hubs with their own `path` live on another host (GitHub Pages or the classroom home), not here.
 const homeByHost = new Map(hubs.filter(hub => !hub.path).map(({ host, slug }) => [host, '/hub/' + slug + '/']));
@@ -384,6 +385,7 @@ async function route(request, env) {
   {
     const url = new URL(request.url);
     if (url.pathname === '/api/games/moq-token') return gameToken(request, env);
+    if (url.pathname === '/api/games/rockoon-room') return rockoonRoom(request, env);
     if (url.pathname === '/api/guide') {
       if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
       return guide(request, env);
