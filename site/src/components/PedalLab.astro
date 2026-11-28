@@ -418,7 +418,7 @@ const parts = [
   function renderChain(blocks: ReturnType<typeof chain>) {
     const list = get('[data-chain]');
     if (!list.children.length) {
-      list.innerHTML = blocks.map(b => `<li><button type="button" data-stage="${b.id}"><span class="dot" aria-hidden="true"></span><span class="nm"></span><span class="nw"></span></button></li>`).join('');
+      list.innerHTML = blocks.map(b => `<li><button type="button" data-stage="${b.id}"><span class="dot" aria-hidden="true"></span><span class="nm"></span> <span class="nw"></span></button></li>`).join('');
       for (const btn of list.querySelectorAll<HTMLButtonElement>('[data-stage]')) {
         btn.addEventListener('click', () => { chainPick = chainPick === btn.dataset.stage ? '' : btn.dataset.stage!; render(); });
       }
@@ -430,7 +430,8 @@ const parts = [
       btn.querySelector('.nm')!.textContent = b.name;
       btn.querySelector('.nw')!.textContent = b.now;
       btn.setAttribute('aria-pressed', String(chainPick === b.id));
-      btn.setAttribute('aria-label', `${b.name}: ${b.now}${b.status === 'stop' ? '. The signal is stopped here.' : ''}`);
+      // The accessible name starts with the visible text, word for word (WCAG 2.5.3).
+      btn.setAttribute('aria-label', `${b.name} ${b.now}${b.status === 'stop' ? '. The signal is stopped here.' : ''}`);
       btn.classList.toggle('first-stop', b === firstStop);
     });
     const pick = blocks.find(b => b.id === chainPick);
