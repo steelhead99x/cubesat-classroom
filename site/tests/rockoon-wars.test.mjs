@@ -394,6 +394,19 @@ test('an owner\'s own copy of its turn stays believable after its request is gon
   assert.equal(R.fingerprint(a), R.fingerprint(m));
 });
 
+test('a stand-in never overrides what another player is asking for right now', () => {
+  const { three, s, match, k } = threeAt(ids[1]);
+  // A reloaded (catching up, no history); C would be the stand-in. B asks for a real shot.
+  s[ids[0]] = snap('GS-AA1');
+  s[ids[1]].turns[k] = { angle: 60, power: 50, weapon: 'baby' };
+  s[ids[2]].log = { ...s[ids[2]].log, [k]: 'skip' };
+  const a = Room.nextAction(match, three, s, { gone: [], me: ids[0], rejoined: true });
+  assert.notEqual(a.kind, 'skip', 'C\'s skip loses to B\'s live request');
+  // But for the screen's own turn, a request it made before seeing the record is just late.
+  const own = Room.nextAction(match, three, s, { gone: [], me: ids[1], rejoined: true });
+  assert.equal(own.kind, 'skip');
+});
+
 test('nobody can commit a shot, a skip or a purchase for someone else', () => {
   const three = { ...host, order: ids, names: { ...host.names, [ids[2]]: 'GS-CC3' } };
   const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [] } }), [ids[2]]: snap('GS-CC3', { shops: { 1: [] } }) };

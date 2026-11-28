@@ -79,6 +79,8 @@ function start(root: HTMLElement) {
   let liveSince = 0; // when this screen's room connection last went live
   let adoptedAt = 0; // when this screen picked up the match settings
   let catchUpUntil = 0; // until then this screen is catching up (see roomView)
+  let notLiveSince: number | null = null, firstLive = true, rejoiningRoom = false;
+  let rejoinedSession = false; // this connection began after a reload or time offline
   const metSinceLive = new Set<string>(); // players heard from since this screen went live
   let shotNote = ''; // what the last shot did, shown with the next turn
 
@@ -190,13 +192,18 @@ function start(root: HTMLElement) {
    * met a player with history it missed. Its snapshot says so, for the other screens. */
   const catchingUp = () => mode === 'online' && Date.now() < catchUpUntil;
 
-  /** Records the next turn if this screen is the committer, and keeps a copy of the history. */
-  function record() {
-    if (!match || !host) return;
+  /** Keeps this screen's catchUp flag in step with catchingUp(), publishing only on a change. */
+  function syncCatchUpFlag() {
     if (mode === 'online' && snaps.has(me) && !!snapOf(me).catchUp !== catchingUp()) {
       if (catchingUp()) snapOf(me).catchUp = true; else delete snapOf(me).catchUp;
       publish();
     }
+  }
+
+  /** Records the next turn if this screen is the committer, and keeps a copy of the history. */
+  function record() {
+    if (!match || !host) return;
+    syncCatchUpFlag();
     const gone = goneIds();
     const committer = Room.committerFor(host, gone);
     let changed = mine.includes(committer) && Room.commit(match, host, snaps, gone, committer);
@@ -219,6 +226,7 @@ function start(root: HTMLElement) {
       publish();
       say('Caught up with the room.');
     }
+    syncCatchUpFlag(); // also while paused or animating, so the flag never sticks on
     if (anim || paused) return render();
     // A round's result stays up until it's dismissed, but the committer keeps recording turns
     // for everyone else while it's showing.
@@ -727,10 +735,27 @@ function start(root: HTMLElement) {
     host = null; match = null; banner = null; shopPick = {}; paused = false; lastTurnKey = '';
     mode = 'online';
     history.replaceState(null, '', `#room=${code}`);
+    // Was this page already in this room before a reload? (Session storage survives a reload of
+    // the same tab, nothing else.)
+    firstLive = true; notLiveSince = null;
+    try {
+      rejoiningRoom = sessionStorage.getItem('rockoon-room') === code;
+      sessionStorage.setItem('rockoon-room', code);
+    } catch { rejoiningRoom = false; }
     const thisLink: RoomLink = link = new RoomLink(code, {
       status(s: LinkStatus, detail?: string) {
         if (link !== thisLink) return; // a room this screen has already left
-        if (s === 'live') { liveSince = Date.now(); catchUpUntil = liveSince + 30_000; metSinceLive.clear(); }
+        if (s === 'live') {
+          liveSince = Date.now();
+          // Catch up only on evidence this screen may have missed turns: back after more than a
+          // few seconds offline, or this page reloaded into a room it was already in. A token
+          // renewal or the first connection to a new room isn't that.
+          const wasAway = notLiveSince !== null && liveSince - notLiveSince > 5_000;
+          rejoinedSession = wasAway || (firstLive && rejoiningRoom);
+          if (rejoinedSession) catchUpUntil = liveSince + 30_000;
+          if (wasAway || firstLive) metSinceLive.clear();
+          firstLive = false; notLiveSince = null;
+        } else notLiveSince ??= Date.now();
         netDetail = detail ?? '';
         net.textContent = s === 'live' ? `Room ${code}, you are ${thisLink.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : s === 'offline' ? 'Offline' : '';
         render();
@@ -740,10 +765,13 @@ function start(root: HTMLElement) {
         seen.set(id, Date.now());
         // The first word from a player since this screen went live, carrying history this screen
         // hasn't played: catch up from it for a while (see roomView).
-        if (!metSinceLive.has(id)) {
+        // Only after this screen itself came back (it may have missed turns), and only for a
+        // player in this match carrying the same match settings. A screen that has been here all
+        // along has missed nothing, so history it hasn't seen is not a reason to catch up.
+        const s = snap as Snap;
+        if (rejoinedSession && host && match && host.order.includes(id) && !metSinceLive.has(id) && (!s.host || JSON.stringify(s.host) === JSON.stringify(host))) {
           metSinceLive.add(id);
-          const s = snap as Snap, played = match?.log.length ?? 0;
-          if (Object.keys(s.log ?? {}).some(k => Number(k) >= played)) catchUpUntil = Date.now() + 30_000;
+          if (Object.keys(s.log ?? {}).some(k => Number(k) >= match!.log.length)) catchUpUntil = Math.max(catchUpUntil, Date.now() + 30_000);
         }
         adoptHost();
         step();
@@ -778,7 +806,9 @@ function start(root: HTMLElement) {
     if (!pick) return;
     host = pick[1].host!;
     adoptedAt = Date.now();
-    catchUpUntil = adoptedAt + 30_000;
+    // Picking up a match already under way is catching up; a match that has only just started
+    // (nothing recorded yet, as when this screen starts it) is not.
+    if ([...snaps.values()].some(s => Object.keys(s.log ?? {}).length || Object.keys(s.shopLog ?? {}).length)) catchUpUntil = adoptedAt + 30_000;
     // Catch up without animating everything that already happened.
     match = Room.replay(host, snaps, roomView()).match;
     say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');

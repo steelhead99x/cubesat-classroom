@@ -183,17 +183,46 @@ function speaksFor(host, get, i, view, field, key) {
  * read in player order and the first believable one wins. A copy is believed when its author
  * speaks for the history (speaksFor), when it matches what the players asked for, or, for a log
  * entry, when the turn's owner carries the identical entry in its own history: an owner's word
- * on its own turn, which no one else can publish. So nobody can commit a shot, a skip or a
+ * on its own turn, which no one else can publish. A screen also believes its own snapshot, which
+ * only ever holds what it committed or already believed. So nobody can commit a shot, a skip or a
  * purchase for someone else, and an entry that was believed and copied stays believable after
  * requests are gone (a reload, or a player leaving).
  */
 function historyEntry(host, get, field, key, owner, view = {}) {
+  return findEntry(host, get, field, key, owner, view)?.entry;
+}
+
+/**
+ * Whether a live request says something different from an entry: the owner's own `turns`
+ * request for that turn, or any player's own picks for that round. A stand-in's copy never
+ * overrides what a player is asking for right now.
+ */
+function contradicted(host, get, field, key, entry, owner) {
+  if (field === 'log') {
+    const asked = owner && get(owner)?.turns?.[key];
+    return !!asked && (entry === 'skip' || asked.angle !== entry.angle || asked.power !== entry.power || asked.weapon !== entry.weapon);
+  }
+  return Array.isArray(entry) && host.order.some((id, i) => {
+    const asked = get(id)?.shops?.[key];
+    return Array.isArray(asked) && JSON.stringify(asked) !== JSON.stringify(entry[i]);
+  });
+}
+
+/** historyEntry, saying how the copy was believed: 'standin' when only by the catch-up rule. */
+function findEntry(host, get, field, key, owner, view = {}) {
   const v = viewOf(view);
   for (const [i, id] of host.order.entries()) {
     const entry = get(id)?.[field]?.[key];
     if (!entry) continue;
-    if (speaksFor(host, get, i, v, field, key) || matchesRequests(host, get, field, key, entry, owner, v.gone)) return entry;
-    if (field === 'log' && owner && JSON.stringify(get(owner)?.log?.[key]) === JSON.stringify(entry)) return entry;
+    if (host.order.slice(0, i).every(p => v.gone.includes(p))) return { entry, via: 'committer' };
+    // This screen's own copy: it only ever holds what it committed or already believed.
+    if (id === v.me) return { entry, via: 'own' };
+    if (matchesRequests(host, get, field, key, entry, owner, v.gone)) return { entry, via: 'requests' };
+    if (field === 'log' && owner && JSON.stringify(get(owner)?.log?.[key]) === JSON.stringify(entry)) return { entry, via: 'owner' };
+    // A stand-in can't override what another player is asking for right now. This screen's own
+    // turn is different: it is catching up, and a request it made before seeing the stand-in's
+    // record of that turn is just late.
+    if (speaksFor(host, get, i, v, field, key) && (owner === v.me || !contradicted(host, get, field, key, entry, owner))) return { entry, via: 'standin' };
   }
   return undefined;
 }
@@ -213,23 +242,25 @@ export function nextAction(match, host, snapshots, view = {}) {
   if (match.phase === 'over') return { kind: 'over' };
   if (match.phase === 'shop') {
     const round = match.round + 1;
-    const buys = historyEntry(host, get, 'shopLog', round, undefined, view);
-    if (buys) return { kind: 'shop', buys, ref: `S${round}` };
+    const found = findEntry(host, get, 'shopLog', round, undefined, view);
+    if (found) return { kind: 'shop', buys: found.entry, ref: `S${round}`, via: found.via };
     const missing = host.order.filter(id => !get(id)?.shops?.[round]);
     return missing.length ? { kind: 'wait', ids: missing } : { kind: 'wait', ids: [], sent: true };
   }
   const k = match.log.length;
   const owner = host.order[match.turn];
-  const entry = historyEntry(host, get, 'log', k, owner, view);
-  if (entry === 'skip') return { kind: 'skip', ref: `L${k}`, owner };
-  if (entry) return { kind: 'fire', shot: entry, ref: `L${k}`, owner };
+  const found = findEntry(host, get, 'log', k, owner, view);
+  const entry = found?.entry;
+  if (entry === 'skip') return { kind: 'skip', ref: `L${k}`, owner, via: found.via };
+  if (entry) return { kind: 'fire', shot: entry, ref: `L${k}`, owner, via: found.via };
   return get(owner)?.turns?.[k] ? { kind: 'wait', ids: [owner], sent: true } : { kind: 'wait', ids: [owner] };
 }
 
 /**
  * Copies the history this screen has played into `id`'s own snapshot, so it survives the
- * committer leaving. Only entries already checked and played are copied, so a forged entry
- * never spreads. Returns true when it added anything.
+ * committer leaving. Only entries already checked and played are copied, and an entry taken
+ * only on a stand-in's word is copied only if it is `id`'s own turn, so a forged entry can't
+ * spread on someone else's authority. Returns true when it added anything.
  */
 export function mirror(match, host, snapshots, id) {
   const get = getter(snapshots);
@@ -291,13 +322,13 @@ export function diverged(match, host, snapshots, view = {}) {
   return false;
 }
 
-/** @typedef {{kind:'shop',buys:string[][],ref?:string}|{kind:'fire',shot:{angle:number,power:number,weapon:string},ref?:string,owner?:string}|{kind:'skip',ref?:string,owner?:string}|{kind:'wait',ids:string[],sent?:boolean}|{kind:'over'}} NextAction */
+/** @typedef {{kind:'shop',buys:string[][],ref?:string,via?:string}|{kind:'fire',shot:{angle:number,power:number,weapon:string},ref?:string,owner?:string,via?:string}|{kind:'skip',ref?:string,owner?:string,via?:string}|{kind:'wait',ids:string[],sent?:boolean}|{kind:'over'}} NextAction */
 
 /** Applies one action from nextAction. Returns fire()'s result for a shot, else null. */
 export function apply(match, action) {
   if (action.ref) {
     match.played ??= {};
-    match.played[action.ref] = { entry: structuredClone(action.kind === 'shop' ? action.buys : action.kind === 'fire' ? action.shot : 'skip'), owner: action.owner };
+    match.played[action.ref] = { entry: structuredClone(action.kind === 'shop' ? action.buys : action.kind === 'fire' ? action.shot : 'skip'), owner: action.owner, via: action.via };
   }
   if (action.kind === 'shop') {
     action.buys.forEach((list, i) => { for (const w of list) buy(match, i, w); });
