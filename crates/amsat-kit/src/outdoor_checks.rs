@@ -240,6 +240,99 @@ pub fn verify_uno_nano(d: &Design, o: &Outdoor) -> Check {
     )
 }
 
+pub fn verify_battery_lead(d: &Design, o: &Outdoor, plate: &Manifold, boards: &Manifold) -> Check {
+    let z = o.plate_z(d);
+    let gauge = outdoor::battery_lead_gauge(d, o);
+    let obstacle = outdoor::body(d, o, o.thread_clear)
+        .union(&plate.translate(0.0, 0.0, z))
+        .union(&boards.translate(0.0, 0.0, z))
+        .union(&outdoor::cell(d, o));
+    require(
+        overlap(&gauge, &obstacle) < 1e-3,
+        "the battery connector path is obstructed",
+    )
+}
+
+pub fn verify_service_plate(d: &Design, o: &Outdoor) -> Check {
+    require(
+        d.snap_angle(1).is_some() && d.snap_columns.len() == 3,
+        "the service plate expects three stock snap pins",
+    )?;
+    let boards = uno_nano(d);
+    let grips = outdoor::service_plate_grips(d);
+    require(
+        overlap(&grips, &boards) < 1e-3,
+        "the grips intersect the installed Uno or Nano",
+    )?;
+    for (i, [x, y]) in d.plate_holes().into_iter().enumerate() {
+        if i != 1
+            && let Some(angle) = d.snap_angle(i)
+        {
+            let zone = finger_zone(d, x, y, angle, d.column_fit(i), 0.0, d.plate_t + 5.0);
+            require(
+                overlap(&grips, &zone) < 1e-3,
+                "a grip obstructs a snap finger",
+            )?;
+        }
+    }
+    let make = |tooth_r| outdoor::service_plate(d, tooth_r);
+    verify(
+        d,
+        o,
+        &Payload {
+            name: "two-snap Uno/Nano",
+            make: &make,
+            boards: boards.clone(),
+        },
+    )?;
+    verify_battery_lead(d, o, &make(None)?, &boards)
+}
+
+/// Return the optional restraint lid in its own frame once it clears the
+/// hardware and catches the plate rim at all four stops on upward travel.
+pub fn xiao_retention_lid(d: &Design, o: &Outdoor) -> Result<Manifold, String> {
+    let plate_z = o.plate_z(d);
+    let plate = xiao::xiao_plate(d, None, 0.0).translate(0.0, 0.0, plate_z);
+    let boards = xiao::boards(d).translate(0.0, 0.0, plate_z);
+    let body = outdoor::body(d, o, o.thread_clear);
+    let stops = outdoor::xiao_plate_stops(d, o);
+    // Check contact before the plate teeth can pass the locking pin's full-radius head.
+    let lift = 0.6_f64.min(d.pin_head_r - d.pin_r - d.pin_bite + d.pin_cap - EPS);
+    let lifted = plate.translate(0.0, 0.0, lift);
+    for (i, stop) in stops.iter().enumerate() {
+        let name = i + 1;
+        require(
+            overlap(stop, &body) < 1e-3 && overlap(stop, &boards) < 1e-3,
+            format!("restraint foot {name} hits the box or boards"),
+        )?;
+        for p in &o.ports {
+            require(
+                overlap(stop, &port_inside(o, p)) < 1e-3,
+                format!("restraint foot {name} hits a port keep-out"),
+            )?;
+        }
+        let plate_top = plate_z + d.plate_t;
+        let contact = stop
+            .slice_to_cross_section(plate_top + 0.36)
+            .intersection(&plate.slice_to_cross_section(plate_top - 0.01))
+            .area();
+        require(
+            contact >= 18.0 && overlap(stop, &plate) < 1e-3,
+            format!("restraint foot {name} needs a clear seat on the rigid plate rim"),
+        )?;
+        require(
+            lift > 0.0 && overlap(stop, &lifted) > 1.0,
+            format!("restraint foot {name} does not catch the lifted plate"),
+        )?;
+    }
+    let lid = outdoor::lid(d, o, 0.0)?.union(&union_all(&stops).translate(0.0, 0.0, -o.top));
+    require(
+        lid.decompose().len() == 1,
+        "restraint lid must be a single solid",
+    )?;
+    Ok(lid)
+}
+
 /// The XIAO plate and boards, for the XIAO case: each board goes in and is held.
 pub fn verify_xiao(d: &Design, o: &Outdoor) -> Check {
     let j = xiao::mg24_joint(d);

@@ -17,6 +17,8 @@ The [classroom kit](../amsat-cubesatsim/README.md)'s payload, sealed in a box fo
 
 ## What to print
 
+The [outdoor fit prototypes](../outdoor-antenna-fit/README.md) cover the shared battery pocket, the snap-fit battery trial, battery cable feed-through, glove latches and both antenna sizes.
+
 | File | Plate | What's on it |
 | --- | --- | --- |
 | **[p1s/outdoor-test-coupons.3mf](p1s/outdoor-test-coupons.3mf)** (print first) | Test coupons | The tripod-thread coupon, the [two-latch coupon](#two-latch-coupon), and the snap pin with its fit ladder |
