@@ -14,6 +14,10 @@ CSC-R1P is the [CSC-R1 Rev A](../README.md) receiver rebuilt to fit a guitar-ped
 | Antenna | SMA bulkhead on the right side, U.FL pigtail to the board |
 | Simulator | `cargo run --locked --bin cubesat-classroom -- receiver-sim --source pedal` publishes what this pedal would report ([contract](../../../docs/classroom-receiver.md#stats-version-1)); the website's [pedal trainer](https://cubesatclass.org/#pedal-lab) is drawn from the face template here |
 
+## Prototype budget
+
+The [five-pedal cost estimate](prototype-cost.md) covers both boards, parts, assembly, accessories, bench testing and first-run engineering. See the [cost worksheet](prototype-cost.csv) for the line items and assumptions.
+
 ## Files
 
 | Path | What |
