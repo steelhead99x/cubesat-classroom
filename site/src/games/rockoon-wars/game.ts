@@ -7,6 +7,7 @@ import { STEPS } from './steps.mjs';
 import { icon } from '../icons.mjs';
 import { patch } from '../patches.mjs';
 import * as Room from './room.mjs';
+import { loadSeat, saveSeat } from './seat.mjs';
 import { Renderer, rocketSvg, type Scene } from './render';
 import type { RoomLink, LinkStatus, Snapshot } from './net';
 
@@ -742,6 +743,11 @@ function start(root: HTMLElement) {
       rejoiningRoom = sessionStorage.getItem('rockoon-room') === code;
       sessionStorage.setItem('rockoon-room', code);
     } catch { rejoiningRoom = false; }
+    // The seat (player id and ticket) this tab held in this room before a reload, so a player in
+    // a match keeps playing instead of coming back as a watcher.
+    let store: Storage | undefined;
+    try { store = sessionStorage; } catch { /* storage blocked: no seat to keep */ }
+    const saved = loadSeat(store, code);
     const thisLink: RoomLink = link = new RoomLink(code, {
       status(s: LinkStatus, detail?: string) {
         if (link !== thisLink) return; // a room this screen has already left
@@ -779,13 +785,18 @@ function start(root: HTMLElement) {
       // A player's broadcast also goes away for a moment whenever a connection renews, so
       // leaving is judged only by how long it has been since their last snapshot (goneIds).
       leave() { render(); },
-    });
+    }, undefined, saved ?? undefined);
     bringIntoView();
     const ok = await thisLink.start();
     if (!ok || link !== thisLink) return;
     me = link.player;
     mine = [me];
-    if (!snaps.has(me)) snaps.set(me, { p: Room.ROOM_PROTOCOL, cs: link.callsign, joined: Date.now(), creator, turns: {}, shops: {} });
+    // Back in the seat this tab held: it is still the room maker if it was, and keeps its place.
+    const kept = saved?.player === me ? saved : null;
+    if (kept?.creator) creator = true;
+    const joined = kept?.joined ?? Date.now();
+    if (store) saveSeat(store, code, { player: me, ticket: link.ticket, creator, joined });
+    if (!snaps.has(me)) snaps.set(me, { p: Room.ROOM_PROTOCOL, cs: link.callsign, joined, creator, turns: {}, shops: {} });
     publish();
     render();
   }

@@ -43,11 +43,17 @@ export class RoomLink {
   #abort?: AbortController;
   #ready?: (ok: boolean) => void;
 
-  constructor(room: string, events: LinkEvents, endpoint = '/api/games/moq-token') {
+  /** `seat` is a seat this tab held in this room before a reload (see seat.mjs). The Worker keeps
+   * it only if the ticket is valid for this room; otherwise this player gets a new id. */
+  constructor(room: string, events: LinkEvents, endpoint = '/api/games/moq-token', seat?: { player: string; ticket: string }) {
     this.room = room;
     this.#events = events;
     this.#endpoint = endpoint;
+    if (seat) { this.player = seat.player; this.#ticket = seat.ticket; }
   }
+
+  /** This player's seat ticket, known once connected: with `player`, it keeps the seat. */
+  get ticket() { return this.#ticket; }
 
   #set(status: LinkStatus, detail?: string) {
     this.status = status;
@@ -115,7 +121,8 @@ export class RoomLink {
   }
 
   async #token(): Promise<Token> {
-    // After the first token, keep the same seat (player id) with the Worker's seat ticket.
+    // After the first token (or after a reload, with the saved seat), keep the same seat (player
+    // id) with the Worker's seat ticket.
     const seat = this.player && this.#ticket ? { player: this.player, ticket: this.#ticket } : {};
     const res = await fetch(this.#endpoint, {
       method: 'POST',
