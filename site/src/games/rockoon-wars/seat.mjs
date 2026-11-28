@@ -10,11 +10,21 @@ const KEY = 'rockoon-seat:';
 const PLAYER = /^[0-9a-f]{12}$/;
 const TICKET = /^[A-Za-z0-9_-]{16,128}$/;
 const ROOM = /^[A-Z0-9]{1,16}$/;
+// Peers drop a snapshot whose join time is not an integer in this range (cleanSnapshot in room.mjs).
+const JOINED_MAX = 1e14;
+const validJoined = joined => Number.isInteger(joined) && joined > 0 && joined <= JOINED_MAX;
+const validCredentials = (player, ticket) =>
+  typeof player === 'string' && PLAYER.test(player) && typeof ticket === 'string' && TICKET.test(ticket);
+/** Requests (`turns`, `shops`) kept as plain objects; room.mjs's cleanSnapshot checks their contents. */
+const plainObject = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 
 /**
  * The seat this tab held in `room`, or null. `storage` is sessionStorage (or a stand-in in tests);
  * a missing, blocked or damaged store reads as no seat.
- * @returns {{ player: string, ticket: string, creator: boolean, joined: number } | null}
+ * `turns` and `shops` are the requests this player had published and the room had not yet
+ * committed, so a reload does not take back a turn or shop already sent. They are unchecked here:
+ * run them through cleanSnapshot before use.
+ * @returns {{ player: string, ticket: string, creator: boolean, joined: number, turns: object, shops: object } | null}
  */
 export function loadSeat(storage, room) {
   if (!ROOM.test(String(room))) return null;
@@ -24,22 +34,26 @@ export function loadSeat(storage, room) {
   let seat;
   try { seat = JSON.parse(raw); } catch { return null; }
   if (!seat || typeof seat !== 'object') return null;
-  const { player, ticket, creator, joined } = seat;
-  if (!PLAYER.test(String(player)) || !TICKET.test(String(ticket))) return null;
+  const { player, ticket, creator, joined, turns, shops } = seat;
+  if (!validCredentials(player, ticket)) return null;
   return {
     player,
     ticket,
     creator: creator === true,
-    joined: Number.isFinite(joined) && joined > 0 ? joined : Date.now(),
+    joined: validJoined(joined) ? joined : Date.now(),
+    turns: plainObject(turns),
+    shops: plainObject(shops),
   };
 }
 
 /** Saves this tab's seat in `room`. Returns false if the store refused it (private mode, full). */
 export function saveSeat(storage, room, seat) {
-  if (!ROOM.test(String(room)) || !PLAYER.test(String(seat?.player)) || !TICKET.test(String(seat?.ticket))) return false;
+  if (!ROOM.test(String(room)) || !validCredentials(seat?.player, seat?.ticket)) return false;
   try {
     storage.setItem(KEY + room, JSON.stringify({
-      player: seat.player, ticket: seat.ticket, creator: seat.creator === true, joined: seat.joined,
+      player: seat.player, ticket: seat.ticket, creator: seat.creator === true,
+      joined: validJoined(seat.joined) ? seat.joined : Date.now(),
+      turns: plainObject(seat.turns), shops: plainObject(seat.shops),
     }));
     return true;
   } catch { return false; }
@@ -48,13 +62,15 @@ export function saveSeat(storage, room, seat) {
 /**
  * Claims `player`'s seat in `room` for this tab with a Web Lock, so two tabs never use one seat.
  * (Opening a link from the game, or Duplicate Tab, copies session storage, saved seat and all.)
- * Resolves to a function that gives the seat up, or null if another tab of this browser holds it,
- * or this browser has no Web Locks and so can't tell. A lock is also given up when its page
- * closes or reloads, so the reloaded page can claim it again. `locks` is navigator.locks.
- * @returns {Promise<(() => void) | null>}
+ * Resolves to a function that gives the seat up; null if another tab of this browser holds it; or
+ * 'unavailable' if this browser has no Web Locks, or the lock request failed, so it can't tell
+ * whether another tab holds it. A lock is also given up when its page closes or reloads, so the
+ * reloaded page can claim it again. `locks` is navigator.locks.
+ * @returns {Promise<(() => void) | null | 'unavailable'>}
  */
 export function claimSeat(locks, room, player) {
-  if (typeof locks?.request !== 'function' || !ROOM.test(String(room)) || !PLAYER.test(String(player))) return Promise.resolve(null);
+  if (!ROOM.test(String(room)) || typeof player !== 'string' || !PLAYER.test(player)) return Promise.resolve(null);
+  if (typeof locks?.request !== 'function') return Promise.resolve('unavailable');
   return new Promise(resolve => {
     let release = () => {};
     const held = new Promise(r => { release = r; });
@@ -64,6 +80,6 @@ export function claimSeat(locks, room, player) {
         resolve(() => release());
         return held;
       }))
-      .catch(() => resolve(null));
+      .catch(() => resolve('unavailable'));
   });
 }

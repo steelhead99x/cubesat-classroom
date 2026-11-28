@@ -21,7 +21,7 @@ const seat = { player: '0123456789ab', ticket: 'A'.repeat(43), creator: true, jo
 test('a saved seat reads back for the same room, and only that room', () => {
   const store = tabStore();
   assert.equal(saveSeat(store, 'K7QX2', seat), true);
-  assert.deepEqual(loadSeat(store, 'K7QX2'), seat);
+  assert.deepEqual(loadSeat(store, 'K7QX2'), { ...seat, turns: {}, shops: {} });
   assert.equal(loadSeat(store, 'M3RT8'), null);
 });
 
@@ -62,6 +62,34 @@ test('saving refuses a bad seat or room, and survives a full store', () => {
   assert.equal(saveSeat({ setItem() { throw new Error('QuotaExceededError'); } }, 'K7QX2', seat), false);
 });
 
+test('uncommitted turns and shops are kept with the seat', () => {
+  const store = tabStore();
+  const turns = { 3: { angle: 45, power: 60, weapon: 'standard' } }, shops = { 2: ['standard'] };
+  assert.equal(saveSeat(store, 'K7QX2', { ...seat, turns, shops }), true);
+  const back = loadSeat(store, 'K7QX2');
+  assert.deepEqual(back.turns, turns);
+  assert.deepEqual(back.shops, shops);
+  // Anything that is not a plain object reads as no requests.
+  store.setItem('rockoon-seat:K7QX2', JSON.stringify({ ...seat, turns: [1], shops: 'x' }));
+  assert.deepEqual(loadSeat(store, 'K7QX2').turns, {});
+  assert.deepEqual(loadSeat(store, 'K7QX2').shops, {});
+});
+
+test('credentials must be strings, and a join time peers would reject is replaced', () => {
+  const store = tabStore();
+  // A player object with a broken toString must read as no seat rather than throw.
+  store.setItem('rockoon-seat:K7QX2', JSON.stringify({ ...seat, player: { toString: 1 } }));
+  assert.equal(loadSeat(store, 'K7QX2'), null);
+  store.setItem('rockoon-seat:K7QX2', JSON.stringify({ ...seat, ticket: ['A'.repeat(43)] }));
+  assert.equal(loadSeat(store, 'K7QX2'), null);
+  for (const joined of [1.5, -1, 1e15, '1700000000000']) {
+    store.setItem('rockoon-seat:K7QX2', JSON.stringify({ ...seat, joined }));
+    const back = loadSeat(store, 'K7QX2');
+    assert.ok(Number.isInteger(back.joined) && back.joined > 0 && back.joined <= 1e14, String(joined));
+  }
+  assert.equal(saveSeat(store, 'K7QX2', { ...seat, player: { toString: () => seat.player } }), false);
+});
+
 /** A stand-in for navigator.locks, shared by every tab of one browser (ifAvailable only). */
 function browserLocks() {
   const held = new Set();
@@ -91,10 +119,14 @@ test('only one tab can claim a seat, and it can be claimed again once given up',
   assert.equal(typeof await claimSeat(locks, 'K7QX2', seat.player), 'function');
 });
 
-test('without Web Locks, or with bad input, no seat is claimed', async () => {
-  assert.equal(await claimSeat(undefined, 'K7QX2', seat.player), null);
-  assert.equal(await claimSeat({ request() { throw new Error('SecurityError'); } }, 'K7QX2', seat.player), null);
-  assert.equal(await claimSeat({ request: async () => { throw new Error('AbortError'); } }, 'K7QX2', seat.player), null);
+test('without Web Locks, or when the lock request fails, the seat is unavailable, not held elsewhere', async () => {
+  assert.equal(await claimSeat(undefined, 'K7QX2', seat.player), 'unavailable');
+  assert.equal(await claimSeat({ request() { throw new Error('SecurityError'); } }, 'K7QX2', seat.player), 'unavailable');
+  assert.equal(await claimSeat({ request: async () => { throw new Error('AbortError'); } }, 'K7QX2', seat.player), 'unavailable');
+});
+
+test('with bad input no seat is claimed', async () => {
+  assert.equal(await claimSeat(browserLocks(), 'K7QX2', { toString: () => seat.player }), null);
   assert.equal(await claimSeat(browserLocks(), '../x', seat.player), null);
   assert.equal(await claimSeat(browserLocks(), 'K7QX2', 'nope'), null);
 });

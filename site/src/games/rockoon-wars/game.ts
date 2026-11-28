@@ -179,7 +179,7 @@ function start(root: HTMLElement) {
   // ---- the shared move path ----
   const snapOf = (id: string) => snaps.get(id)!;
   function publish() {
-    if (mode === 'online' && link) link.publish(snapOf(me));
+    if (mode === 'online' && link) { link.publish(snapOf(me)); keepSeat?.(); }
   }
   const waitingOn = (): ReturnType<typeof Room.nextAction> | null => (match && host ? Room.nextAction(match, host, snaps, roomView()) : null);
   const myTurn = () => {
@@ -680,7 +680,7 @@ function start(root: HTMLElement) {
     else if (act === 'to-local') { menuStep = 'local'; render(); }
     else if (act === 'to-online') { menuStep = 'online'; menuNote = ''; render(); }
     else if (act === 'to-join') { menuStep = 'join'; menuNote = ''; render(); }
-    else if (act === 'back') { menuStep = menuStep === 'join' ? 'online' : 'home'; menuNote = ''; render(); }
+    else if (act === 'back') { joinAttempt++; joining = false; menuStep = menuStep === 'join' ? 'online' : 'home'; menuNote = ''; render(); }
     else if (act === 'local') startLocal(Number(btn.dataset.n));
     else if (act === 'create') void startOnline(Room.newRoomCode(cryptoRandom), true);
     else if (act === 'join') joinTyped();
@@ -725,32 +725,50 @@ function start(root: HTMLElement) {
   }
 
   let joining = false;
+  /** Bumped whenever a join in progress is abandoned (Back, leaving the room), so it stops. */
+  let joinAttempt = 0;
+  /** A room whose saved seat this tab must not take: it was told the seat is open in another tab
+   * and promised a new player. */
+  let freshSeatRoom: string | null = null;
   /** Gives up this tab's claim on its seat in the room it is in (see claimSeat). */
   let releaseSeat: (() => void) | null = null;
+  /** Saves this tab's seat, with its uncommitted requests, so a reload keeps both. */
+  let keepSeat: (() => void) | null = null;
   const seatLocks = () => (typeof navigator !== 'undefined' ? navigator.locks : undefined);
   /** `resume` is set when the page opens itself back into a room it has a saved seat for. */
   async function startOnline(code: string, creator: boolean, resume = false) {
     // One room at a time: a double tap on Join must not open two connections.
     if (joining || link) return;
     joining = true;
-    const { RoomLink } = await import('./net').catch(() => ({ RoomLink: null })).finally(() => { joining = false; });
-    if (mode !== 'menu' || link) return; // left, or already joined, while the code loaded
+    const attempt = ++joinAttempt;
+    const done = () => { if (attempt === joinAttempt) joining = false; };
+    const abandoned = () => attempt !== joinAttempt || mode !== 'menu' || !!link;
+    const { RoomLink } = await import('./net').catch(() => ({ RoomLink: null })).finally(done);
+    if (abandoned()) return; // went back, left, or already joined while the code loaded
     if (!RoomLink) { menuNote = 'Online play could not load. Try playing on this computer.'; return renderOverlay(); }
     // The seat (player id and ticket) this tab held in this room before a reload, so a player in
     // a match keeps playing instead of coming back as a watcher. Only one tab may use a seat: a
     // tab opened from this one carries a copy of it, and two players under one id would clash.
     let store: Storage | undefined;
     try { store = sessionStorage; } catch { /* storage blocked: no seat to keep */ }
-    let saved = loadSeat(store, code);
+    let saved = freshSeatRoom === code ? null : loadSeat(store, code);
     releaseSeat?.(); releaseSeat = null;
     if (saved) {
       joining = true;
-      const release = await claimSeat(seatLocks(), code, saved.player).finally(() => { joining = false; });
-      if (mode !== 'menu' || link) { release?.(); return; }
+      const claim = await claimSeat(seatLocks(), code, saved.player).finally(done);
+      const release = typeof claim === 'function' ? claim : null;
+      if (abandoned()) { release?.(); return; }
       if (release) releaseSeat = release;
       else {
         saved = null;
-        if (resume) { menuNote = 'This room is already open in another tab. Press Join to come in as a new player.'; return renderOverlay(); }
+        if (resume) {
+          // Join from here comes in as a new player, as this note says, even once the other tab closes.
+          freshSeatRoom = code;
+          menuNote = claim === 'unavailable'
+            ? 'This browser can’t check whether the room is open in another tab. Press Join to come in as a new player.'
+            : 'This room is already open in another tab. Press Join to come in as a new player.';
+          return renderOverlay();
+        }
       }
     } else if (resume) return;
     snaps.clear(); seen.clear();
@@ -813,11 +831,23 @@ function start(root: HTMLElement) {
     if (!kept) {
       // A new seat: claim it, so a tab opened from this one starts its own instead of sharing it.
       releaseSeat?.(); releaseSeat = null;
-      void claimSeat(seatLocks(), code, me).then((release: (() => void) | null) => { if (link === thisLink) releaseSeat = release; else release?.(); });
+      void claimSeat(seatLocks(), code, me).then(claim => {
+        const release = typeof claim === 'function' ? claim : null;
+        if (link === thisLink) releaseSeat = release; else release?.();
+      });
     }
+    if (freshSeatRoom === code) freshSeatRoom = null;
     const joined = kept?.joined ?? Date.now();
-    if (store) saveSeat(store, code, { player: me, ticket: link.ticket, creator, joined });
-    if (!snaps.has(me)) snaps.set(me, { p: Room.ROOM_PROTOCOL, cs: link.callsign, joined, creator, turns: {}, shops: {} });
+    // Turns and shops this player had sent before the reload and the room hadn't committed yet,
+    // checked as any snapshot is, so the round doesn't wait for them to be sent again.
+    const restored = kept ? Room.cleanSnapshot({ p: Room.ROOM_PROTOCOL, cs: link.callsign, joined, turns: kept.turns, shops: kept.shops }) : null;
+    if (!snaps.has(me)) snaps.set(me, { p: Room.ROOM_PROTOCOL, cs: link.callsign, joined, creator, turns: restored?.turns ?? {}, shops: restored?.shops ?? {} });
+    keepSeat = () => {
+      if (!store || link !== thisLink || !snaps.has(me)) return;
+      const s = snapOf(me);
+      saveSeat(store, code, { player: me, ticket: thisLink.ticket, creator, joined, turns: s.turns, shops: s.shops });
+    };
+    keepSeat();
     publish();
     render();
   }
@@ -861,7 +891,8 @@ function start(root: HTMLElement) {
 
   function quit() {
     link?.stop(); link = null;
-    releaseSeat?.(); releaseSeat = null;
+    joinAttempt++; joining = false;
+    releaseSeat?.(); releaseSeat = null; keepSeat = null;
     mode = 'menu'; menuStep = 'home'; host = null; match = null; anim = null; ascent = null; remoteRise = null; banner = null; paused = false; drag = null;
     snaps.clear(); seen.clear(); mine = []; me = ''; lastTurnKey = '';
     pauseBtn.setAttribute('aria-pressed', 'false');
