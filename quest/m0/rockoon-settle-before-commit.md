@@ -1,4 +1,4 @@
-# [L] Settle a returning creator's history before it commits
+# [XL] Settle a returning creator's history before it commits
 
 ## Goal
 
@@ -19,9 +19,10 @@ The same race exists on main for a creator whose connection drops and comes back
 
 A first attempt ([PR 123](https://github.com/steelhead99x/cubesat-classroom/pull/123), draft) gated commits on hearing every peer and tracked new history per peer. Review showed that gating on "heard from" is not enough. An older snapshot, a short reconnect the peers saw as a long gap, or two returning players can each still release a stale commit. The patch also added regressions: divergence checks and replay picked different histories, a wrong-match heartbeat blocked the committer, and catch-up reopened during normal play. Snapshot timing can't settle this. It needs an explicit handoff in the room protocol, such as a committer epoch that each snapshot carries and a returning committer must see acknowledged before it records.
 
+A second attempt on the same PR (`dafd679`, protocol v7) added a committer claim epoch and an explicit `follows` acknowledgement. Review still reproduced High findings. When each side's presence timeout calls the other gone, both write (split brain). An older relay session's snapshot can replace a newer acknowledgement. Settled history that survives only as a marked copy can't be replayed. A peer that keeps heartbeating without acknowledging blocks the match. Peer-to-peer snapshots with local timeouts can't give one agreed writer. That needs a shared authority.
+
 ## Waiting
 
-- Maintainer: how to make committer handoff safe in Rockoon Battle rooms
-  - Add a committer epoch to the room protocol (Recommended) - each snapshot names the committer and epoch it follows, and a returning committer records only after the current committer hands back; needs a protocol bump and a Worker allowlist entry
-  - Keep the timing-based approach and accept rare replays - smaller change, but a returning creator can still overwrite a settled shop now and then
-
+- Maintainer: where Rockoon Battle rooms get one agreed writer
+  - Make the room authoritative on the Worker (Recommended) - a Durable Object per room orders requests and records history, and clients only replay it, so no handoff race exists; a larger change to the Worker and the client
+  - Keep peer-to-peer rooms and accept rare replays - close PR 123; main keeps working, and a returning creator can occasionally overwrite a settled shop
