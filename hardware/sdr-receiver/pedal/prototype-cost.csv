@@ -1,0 +1,30 @@
+Group,Line item,Cost basis,Low USD,Base USD,High USD,Notes
+Boards,50 Ω main PCB and standard controls PCB,five-unit batch,69.58,69.58,69.58,PCBWay via Flux. Two five-board lines combined.
+Boards,Top-side SMT setup and placement,five-unit batch,70.20,70.20,70.20,"PCBWay standard-board estimate, carried over. Confirm setup, stencil, inspection and 50 Ω build together."
+Parts,Eight SMT IC placements,per pedal,61.88,61.88,61.88,"Distributor anchors per set. PLL, demodulator, audio ADC/DAC, trim DAC, two I/O expanders and pot ADC."
+Parts,Remaining specified SMT,per pedal,21,32,53,"Allowance per set for both oscillators, RF front end, U.FL connectors, power parts and sourcing overage."
+Parts,Blank-MPN SMT groups,per pedal,8,16,30,"Allowance per set for 191 placements across 67 source BOM groups, including RF-grade parts and cut-tape minimums."
+Parts,Thirteen through-hole board parts,per pedal,9,14,21,"Headers, encoder, two pots and LED. Hand-fit labor is below."
+Pedal,Non-Sense Seeed XIAO ESP32-S3,per pedal,7.49,7.49,7.49,113991114 single-unit retail.
+Pedal,Hammond 1590N1 enclosure,per pedal,14.21,14.21,22,Five-unit distributor tier rounded to cents. Upper scenario allows for alternate supply.
+Pedal,128×32 OLED module,per pedal,6,12.50,17,Fit and pinout pending. Retail anchor is for a comparable module.
+Pedal,"Three knobs, footswitch, toggle and LED bezel",per pedal,8,15,28,Panel BOM allowance. The board-mounted pots and encoder are covered above.
+Pedal,Chassis DC and audio jacks,per pedal,4,8,14,Separate from the through-hole wire headers.
+Pedal,"Two RF pigtails, USB-C data extender and harness leads",per pedal,12,21,38,"SMA/U.FL and XIAO antenna leads, four JST-PH leads and a USB data extension."
+Pedal,"Standoffs, screws, wire and consumables",per pedal,5,9,15,Allowance for mechanical assembly and wiring.
+Accessories,9 V regulated center-negative supply,per pedal,15,27.99,34,Retail price anchor. Finish input protection review before selecting a supply for bring-up.
+Accessories,Basic dual-band receive antenna and feed lead,per pedal,23,33,55,Antenna anchor $22.95. Match SMA polarity before ordering. Budget for a short lead or adapter.
+Accessories,"Powered line-input speaker, power and audio lead",per pedal,30,50,105,Retail class allowance. Pedal outputs line-level audio.
+Landed allowances,Domestic and international freight,per pedal,8,15,30,Allocated from a five-unit order. Confirm shipping destination and vendor terms.
+Landed allowances,"Sales tax, duty and fees",per pedal,10,22,45,Budget only. Actual amount depends on destination and fulfillment.
+Landed allowances,Spares and incremental setup reserve,per pedal,8,20,45,"Allowance for sourcing attrition, minor rework or quote extras. A fresh board spin is separate."
+Build labor,"Hand fit, enclosure work, flash and unit acceptance",per pedal,97.50,212.50,440,"1.5 h × $65, 2.5 h × $85, or 4 h × $110 per working unit."
+First-run engineering,"Remaining design, Rust firmware and prototype validation",five-unit batch,1040,2720,7040,"One-time scenario allowance. 16 h × $65, 32 h × $85, or 64 h × $110."
+
+Cost milestone,Basis,Low,Base,High
+"Hardware, supplies and PCB vendor services",five working pedals,1392.68,2035.13,3246.63
+"Hardware, supplies and PCB vendor services",allocated per working pedal,278.54,407.03,649.33
+Five assembled and bench-tested pedals after design release,five working pedals,1880.18,3097.63,5446.63
+Five assembled and bench-tested pedals after design release,allocated per working pedal,376.04,619.53,1089.33
+First run including remaining engineering,five working pedals,2920.18,5817.63,12486.63
+First run including remaining engineering,allocated per working pedal,584.04,1163.53,2497.33
