@@ -16,7 +16,3 @@ The same race exists on main for a creator whose connection drops and comes back
 - Track new history per peer rather than only the first snapshot after going live, so any snapshot carrying unplayed `log` or `shopLog` reopens catch-up without heartbeats extending it forever.
 - Treat a returning committer's own picks as provisional until every player in the order has been heard from since it went live, or has been judged gone, then commit.
 - Add room.mjs tests for both orderings.
-
-## Related
-
-- [Resume a Rockoon seat on reload without pressing Join](/quest/m0/rockoon-resume-on-reload.md) - the reload path that makes this race more common
