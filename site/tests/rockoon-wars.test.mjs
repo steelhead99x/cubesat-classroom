@@ -371,6 +371,45 @@ test('a carried shot for a player who has gone is not believed from just anyone'
   assert.equal(Room.nextAction(match, three, s, { gone: [ids[1]], me: ids[0] }).kind, 'skip');
 });
 
+test('a copy of an entry taken on a stand-in\'s word does not carry the copier\'s authority', () => {
+  // Review: mirror() copied every played entry, so the returning creator republished B's skip of
+  // C's turn as its own record, and every screen then believed it on the creator's authority.
+  const { three, s, k } = threeAt(ids[2]);
+  // A and C are away. B, the stand-in, records a skip of C's turn.
+  const bView = { gone: [ids[0], ids[2]], me: ids[1] };
+  let b = Room.replay(three, s, bView).match;
+  assert.ok(Room.commit(b, three, s, bView.gone, ids[1]));
+  b = Room.replay(three, s, bView).match;
+  assert.equal(b.log.length, k + 1);
+  Room.mirror(b, three, s, ids[1]);
+  // A comes back, catching up, and plays B's skip on the stand-in rule.
+  const aView = { gone: [ids[2]], me: ids[0], rejoined: true };
+  let a = Room.replay(three, s, aView).match;
+  assert.equal(a.log.length, k + 1);
+  assert.equal(a.played[`L${k}`].via, 'standin');
+  Room.mirror(a, three, s, ids[0]);
+  assert.equal(s[ids[0]].log[k], undefined, 'the creator does not republish the stand-in\'s skip');
+  // A screen that isn't catching up does not take the skip from anyone: B's word alone isn't enough.
+  assert.equal(Room.nextAction({ ...a, log: a.log.slice(0, k) }, three, s, []).kind, 'wait');
+  assert.equal(Room.replay(three, s, []).match.log.length, k);
+  // A plays on and records its own turn after the skip, leaving a gap at k in its history.
+  s[ids[0]].turns[k + 1] = { angle: 70, power: 50, weapon: 'baby' };
+  assert.ok(Room.commit(a, three, s, [ids[2]], ids[0]));
+  a = Room.replay(three, s, aView).match;
+  Room.mirror(a, three, s, ids[0]);
+  assert.equal(a.log.length, k + 2);
+  assert.deepEqual(s[ids[0]].log[k + 1], { angle: 70, power: 50, weapon: 'baby' });
+  // C reloads and catches up: A's gap means A never vouched for turn k, so B's record of C's own
+  // turn still stands, and C reaches the same match.
+  s[ids[2]] = snap('GS-CC3', { shops: { 1: [], 2: [], 3: [] } });
+  const c = Room.replay(three, s, { gone: [], me: ids[2], rejoined: true }).match;
+  assert.equal(R.fingerprint(c), R.fingerprint(a));
+  // C now carries the skip of its own turn, so every screen believes it, on C's word.
+  Room.mirror(c, three, s, ids[2]);
+  assert.equal(s[ids[2]].log[k], 'skip');
+  assert.equal(R.fingerprint(Room.replay(three, s, []).match), R.fingerprint(a));
+});
+
 test('nobody else can close the shop with empty picks for players still choosing', () => {
   const { three, s, match } = threeAt(ids[0]);
   const shop = { ...match, phase: 'shop', round: 1 };

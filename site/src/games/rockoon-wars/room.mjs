@@ -14,7 +14,9 @@
 // Every player in the match republishes `host` and a copy of the history it has played, so a
 // player who joins or reconnects after the creator has left can still catch up. Another
 // player's copy only counts if that player is the committer or the copy matches what the
-// players asked for, so nobody can commit a move for someone else (historyEntry). When copies
+// players asked for, so nobody can commit a move for someone else (historyEntry). An entry a
+// player believed only on a stand-in's word is not copied (mirror), so republishing a copy never
+// lends the stand-in's record the copier's authority. When copies
 // disagree, the one earlier in the order wins; a screen that already played the other replays
 // from the start (diverged).
 import { WEAPON, createMatch, buy, startRound, fire, skip } from './logic.mjs';
@@ -156,23 +158,37 @@ const viewOf = view => {
  *     who would have been the committer with this screen away, along with those gone, any
  *     player whose own snapshot says it is catching up too, and any player whose history stops
  *     short of the entry. That is how a returning host keeps
- *     the turns its stand-in recorded without it, even when other players lost theirs as well.
+ *     the turns its stand-in recorded without it, even when other players lost theirs as well;
+ *   - a stand-in earlier in the order than this screen, while it is catching up, only when every
+ *     player before the stand-in shows by a gap in its history that it, too, took the entry on
+ *     the stand-in's word. The entry keeps the stand-in's authority, never the copier's.
  */
 function speaksFor(host, get, i, view, field, key) {
   if (host.order.slice(0, i).every(p => view.gone.includes(p))) return true;
   if (!view.rejoined || !view.me) return false;
   const mine = host.order.indexOf(view.me);
-  if (mine < 0 || mine >= i) return false;
-  // Away, for this entry: gone, this screen, anyone catching up, and anyone whose history stops
-  // short of it (they lost it on a reload, or were away, so they can't have stood in for it). A
-  // player whose history runs right up to this entry is here and current, so nobody after it in
-  // the order can speak over it. If the committer later publishes a different entry, it is
-  // earlier in the order and wins (diverged).
+  if (mine < 0) return false;
+  // A player whose history has played past this entry without holding it took the entry on a
+  // stand-in's word (mirror never copies those): it was away for it, and says so by the gap.
+  const passedOver = p => {
+    const h = get(p)?.[field] ?? {};
+    const keys = Object.keys(h).map(Number);
+    return keys.length > 0 && Math.max(...keys) > Number(key) && h[key] === undefined;
+  };
+  // A stand-in later in the order than this screen: only the gaps count. Each player before it
+  // has itself taken this entry on a stand-in's word, so the author was the committer then. The
+  // entry stays the author's word: it is believed only from the author's own copy.
+  if (mine >= i) return committerFor(host, [...view.gone, view.me, ...host.order.filter((p, j) => j < i && passedOver(p))]) === host.order[i];
+  // Away, for this entry: gone, this screen, anyone catching up, anyone who passed over it, and
+  // anyone whose history stops short of it (they lost it on a reload, or were away, so they
+  // can't have stood in for it). A player whose history runs right up to this entry is here and
+  // current, so nobody after it in the order can speak over it. If the committer later publishes
+  // a different entry, it is earlier in the order and wins (diverged).
   // A player who is here records within a turn or so of the newest entry, so only one with no
   // history at all, or more than a whole round of turns behind, counts as having lost it.
   const behind = p => {
     const keys = Object.keys(get(p)?.[field] ?? {}).map(Number);
-    return !keys.length || Math.max(...keys) < Number(key) - host.order.length;
+    return !keys.length || Math.max(...keys) < Number(key) - host.order.length || passedOver(p);
   };
   const away = [...view.gone, view.me, ...host.order.filter((p, j) => j < i && (get(p)?.catchUp || behind(p)))];
   return committerFor(host, away) === host.order[i];
@@ -270,9 +286,15 @@ export function mirror(match, host, snapshots, id) {
   if (!mine.host) { mine.host = structuredClone(host); added = true; }
   mine.log ??= {};
   mine.shopLog ??= {};
-  for (const [ref, { entry }] of Object.entries(match.played ?? {})) {
+  for (const [ref, { entry, owner, via }] of Object.entries(match.played ?? {})) {
     const field = ref[0] === 'S' ? 'shopLog' : 'log';
     const key = ref.slice(1);
+    // Believed only because a stand-in recorded it while this screen was catching up. Copying it
+    // would republish it under `id`'s authority (the creator's copy is always believed), so it
+    // stays with the stand-in that wrote it. The one exception is `id`'s own turn: an owner's
+    // word on its own turn is already believable (findEntry, 'owner'). A shop entry covers
+    // everyone's picks, so it is never `id`'s alone.
+    if (via === 'standin' && !(field === 'log' && owner === id)) continue;
     if (JSON.stringify(mine[field][key]) !== JSON.stringify(entry)) {
       mine[field][key] = structuredClone(entry);
       added = true;
