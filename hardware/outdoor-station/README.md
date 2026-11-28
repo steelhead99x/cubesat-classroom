@@ -1,8 +1,10 @@
-# Outdoor ground station: Uno R3, Nano 33 BLE Sense and a 3000 mAh battery
+# Outdoor ground station (beta): Uno R3, Nano 33 BLE Sense and a 3000 mAh battery
+
+![The outdoor ground station: a white isogrid box with two ports and a lid carrying the CubeSat Classroom logo, held by snap latches](render.png)
 
 The [classroom kit](../amsat-cubesatsim/README.md)'s payload, sealed in a box for outdoors. The box has the same columns and keyed snap pins inside, so the **same payload plate** snaps in, with the Uno R3 and the bare Nano 33 BLE Sense Rev2 on it exactly as in the kit. The 3000 mAh battery lies under the plate. A **1/4"-20 camera thread** in the middle of the back takes a tripod. **No screws anywhere:** the lid presses down over an O-ring and latches on, and comes off again by hand. The rules behind it are in the [design guide](../DESIGN-GUIDE.md).
 
-**Status: design checks only.** Nothing in this folder has been printed, and nothing here is a water test. Don't trust the seal until the box has been tested: see "Test it" below.
+**Status: beta.** The design checks pass, and the outdoor test coupons have printed and work in PLA (see "Printed so far" below). The box and lid haven't been printed, and nothing here is a water test. Don't trust the seal until the box has been tested: see "Test it" below.
 
 ## How it goes together
 
@@ -17,17 +19,17 @@ The [classroom kit](../amsat-cubesatsim/README.md)'s payload, sealed in a box fo
 
 | File | Plate | What's on it |
 | --- | --- | --- |
-| **[p1s/outdoor-test-coupons.3mf](p1s/outdoor-test-coupons.3mf)** (print first) | Test coupons | The tripod-thread coupon, the latch coupon (a piece of rim with a lug, and a piece of lid with a finger), and the snap pin with its fit ladder |
-| **[p1s/outdoor-station.3mf](p1s/outdoor-station.3mf)** | 1. Box | The box (155 cm³) |
-| | 2. Lid and payload plate | The lid (48 cm³) and the kit's payload plate |
+| **[p1s/outdoor-test-coupons.3mf](p1s/outdoor-test-coupons.3mf)** (print first) | Test coupons | The tripod-thread coupon, the latch coupon (a small box and lid with the real latches), and the snap pin with its fit ladder |
+| **[p1s/outdoor-station.3mf](p1s/outdoor-station.3mf)** | 1. Box | The box (108 cm³) |
+| | 2. Lid and payload plate | The lid (36 cm³) and the kit's payload plate |
 
 - **Two colours:** load white in AMS slot 1 and black in slot 2. Every part, coupons too, carries the CubeSat Classroom logo inlaid flush in the other colour (white case parts get a black logo; the black plate gets a white one). One colour still works.
-- **Material:** ASA or PETG for the box, lid and plate. PLA softens in summer sun. The fit ladder was tuned in PLA, so print the pin coupon again in your outdoor material and check which tab fits best.
-- **Latch coupon:** press the lid piece down onto the rim piece. It should click and hold, and come off when you push the finger outward. If it's too stiff or won't catch, tell us: the latch is a few numbers (`latch_slit`, `lug_reach`).
-- **Supports:** none. The box prints on its back; the lid prints upside down, on its top. The rim's overhang has a 45° slope under it, and the deck under the battery is bridged between ribs 10 mm apart.
+- **Material:** ASA or PETG for a box that lives outside: PLA softens in summer sun. PLA is fine for a first test box, to check the fit, the latches and the seal indoors. The fit ladder was tuned in PLA, so print the pin coupon again in your outdoor material and check which tab fits best.
+- **Latch coupon:** a small box and lid, made by the same code as the real ones: the same rim, lugs, skirt, O-ring groove and latch fingers, with two latches on opposite sides instead of four. It's cut down to save plastic, about 15 cm³ (19 g of PLA) for both: the box is a 59 mm open ring only as tall as the skirt, its flange is only where the lugs stand, and the lid is a frame whose middle is a thin 1.2 mm web carrying the CubeSat Classroom logo and words (the box carries the mark). The lid prints upside down. Line the lid's fingers up with the box's lugs and press it straight down until both click. It should hold when you pull up on it, and come off when you push both fingers inward with your thumbs and lift. If it's too stiff or won't catch, tell us: the latch is a few numbers (`latch_slit`, `lug_reach`). An O-ring is optional (2.5 mm cord, about 43 mm inside diameter); without one the lid feels a little looser in the box.
+- **Supports:** none. The box prints on its back; the lid prints upside down, on its top. The rim's overhang under each lug has a 45° slope under it, the isogrid pockets in the upright walls have 45° sides (printed as 0.2 mm steps), and the deck under the battery is bridged between ribs up to 16 mm apart.
 - **Tripod-thread coupon:** two sockets in a block as thick as the box's boss. The plain one is the box's thread. The one with a dot is 0.15 mm looser, for printers that print holes small. Screw your tripod's screw into each. If the plain one is too tight and the dotted one is right, tell us: the box's thread is one number (`thread_clear`), and the files can be regenerated for it.
 
-**Printed so far (hardware bench, Nov 26, Bambu Lab P1S, PLA):** the outdoor test coupons. The latch coupon snaps on and holds. On the pin ladder, 1 dot still fits best. On the tripod-thread coupon, the plain socket (the box's thread) works with a tripod screw. So nothing in the design changed. The box, lid and plates will be printed in ASA; print the coupons again in ASA first and check the same three things. The box and lid haven't been printed or water-tested yet.
+**Printed so far (hardware bench, Nov 26, Bambu Lab P1S, PLA):** the outdoor test coupons. The first latch coupon was a chunk of rim and a chunk of lid, and it didn't work as a test: with nothing holding the lid chunk square, the lug just pushed it aside instead of bending the finger. It was replaced by the small box and lid above (Nov 27), which printed well in PLA and work: the lid presses on, clicks and holds. Since that print, the lid's open middle has become a thin web carrying the logo; nothing else changed. On the pin ladder, 1 dot still fits best. On the tripod-thread coupon, the plain socket (the box's thread) works with a tripod screw. So nothing in the design changed. Next: a first box and lid in PLA, to check the fit and do the water test indoors, then ASA for the box that lives outside (print the coupons again in ASA first and check the same things). The box carries the CubeSat Classroom mark and words on its back, and the lid on its top. The box and lid haven't been printed or water-tested yet.
 
 Every part is also in [stl/](stl/), in print orientation.
 
@@ -59,7 +61,8 @@ Before it goes outside, test the box empty: close it with a dry paper towel insi
 
 | Check | Value |
 | --- | --- |
-| Box | 112 × 112 mm across the rim, 98 mm across the walls, 80 mm tall with the lid. Walls and back 3 mm, with crisp mitred chamfers outside. Inside, a 92 mm square with 10 mm corner chamfers and 5 mm rounds: the plate has at least 1 mm all round. |
+| Box | 96.8 mm across the walls (110.8 mm at the lugs), 80 mm tall with the lid. Walls and back 2.4 mm, with crisp mitred chamfers outside. Inside, a 92 mm square with 10 mm corner chamfers and 5 mm rounds: the plate has at least 1 mm all round. |
+| Isogrid | Each wall's outside face has triangular pockets 0.8 mm deep on 30 mm triangles, between flush 2 mm ribs, leaving a 1.6 mm skin (four 0.4 mm perimeters). The top 12 mm (where the skirt and O-ring press), the bottom 4 mm, and a flat pad round each port's outside body stay solid. The rim's flange is only under the four lugs. The lid has the same isogrid in its underside, inside the skirt, under a 1.6 mm top skin. Together the box and lid are 144 cm³ (about 180 g of PLA), 29% less than the solid case (203 cm³). |
 | Plate | On the columns 27 mm above the back: the deck (12.5 mm), the largest cell (14 mm) and 0.5 mm clearance |
 | Seal | 2.5 mm O-ring, 1.9 mm gland (0.3 mm skirt clearance), 5 mm groove: squeezed 24%, 73% full |
 | Latches | Four, one on each edge: 2.4 mm fingers, 20 mm from root to lug, 1.4 mm slit, 1.0 mm catch on the lug |
@@ -73,10 +76,11 @@ The checks in [crates/amsat-kit/src/outdoor_checks.rs](../../crates/amsat-kit/sr
 - the plate doesn't fit the box with 1 mm all round, or doesn't snap onto its columns the same way as in the kit
 - the battery doesn't fit its pocket, can slide about, or isn't held down by the plate
 - the boards or their parts hit the box or stand too tall for the lid
+- the isogrid skin is under 1.6 mm, its ribs under 2 mm, its pockets reach up where the O-ring presses, the lid's skin is under 1.6 mm, or a pocket sits under a port's seal
 - a port runs onto a corner or the slope under the rim, its nut hits anything inside, or two ports are too close
 - the tripod thread breaks into the box, or is too short to hold
 
-The self-test (`cargo run --release -p amsat-kit -- self-test`) breaks the outdoor cases nineteen ways and checks that each one is caught. These are design checks, not measurements.
+The self-test (`cargo run --release -p amsat-kit -- self-test`) breaks the outdoor cases twenty-four ways and the latch coupon two ways, and checks that each one is caught. These are design checks, not measurements.
 
 ## Regenerate
 

@@ -164,12 +164,12 @@ fn build_classroom(d: &Design) -> Result<(), String> {
 
 /// The parts both outdoor cases share: box, lid, and the tripod-thread and latch coupons.
 fn outdoor_parts(d: &Design, o: &Outdoor) -> Result<Vec<(&'static str, Manifold)>, String> {
-    let (rim, lid_piece) = outdoor::latch_coupon(d, o)?;
+    let (latch_box, lid_piece) = outdoor::latch_coupon(d, o)?;
     Ok(vec![
         ("outdoor-box", outdoor::body(d, o, o.thread_clear)),
         ("outdoor-lid", outdoor::lid_to_print(d, o)?),
         ("coupon-tripod-thread", outdoor::thread_coupon(o)),
-        ("coupon-latch-rim", rim),
+        ("coupon-latch-box", latch_box),
         ("coupon-latch-lid", lid_piece),
     ])
 }
@@ -194,6 +194,13 @@ fn report_outdoor(d: &Design, o: &Outdoor) {
         length,
         id,
         o.latch_strain() * 100.0
+    );
+    let c = outdoor::latch_coupon_case(o);
+    let (_, coupon_id) = c.oring();
+    println!(
+        "latch coupon: a {:.0} mm box with two latches; optional O-ring about {:.0} mm inside diameter",
+        c.cavity + 2.0 * (c.wall + c.flange),
+        coupon_id
     );
 }
 
@@ -235,6 +242,7 @@ fn check_all(d: &Design) -> Result<(), String> {
     camera::verify(d, &Camera::default())?;
     report(d);
     outdoor_checks::verify_uno_nano(d, &Outdoor::default())?;
+    outdoor_checks::verify_latch_coupon(d, &Outdoor::default())?;
     outdoor_checks::verify_xiao(d, &Outdoor::xiao())?;
     println!("outdoor cases: checks passed");
     Ok(())
@@ -262,6 +270,12 @@ fn self_test() -> Result<(), String> {
     }
     for (label, c) in camera::broken_designs() {
         match camera::verify(&d0, &c) {
+            Ok(()) => missed.push(label),
+            Err(e) => println!("rejected {label}: {e}"),
+        }
+    }
+    for (label, o) in outdoor_checks::broken_latch_coupons() {
+        match outdoor_checks::verify_latch_coupon(&d0, &o) {
             Ok(()) => missed.push(label),
             Err(e) => println!("rejected {label}: {e}"),
         }

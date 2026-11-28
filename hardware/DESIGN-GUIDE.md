@@ -76,7 +76,7 @@ Every new joint or board mount gets a coupon: the same geometry, made by the sam
 - **Pin fit ladder:** three tabs (1, 2 and 3 dots, 0.1 to 0.3 mm). The best fit becomes the kit's fit.
 - **Nano coupon** and **XIAO coupon:** the plate's mounts on their own, for the real boards.
 - **Tripod-thread coupon:** the box's thread and one 0.15 mm looser.
-- **Latch coupon:** a piece of the outdoor box's rim with one lug, and a piece of lid with one latch finger.
+- **Latch coupon:** a small outdoor box and lid with two of the real latches, cut down to about 15 cm³: an open ring of box, flange only under the lugs, and a frame of lid with a thin branded web in its middle. A coupon for a joint must hold its parts the way the real part does: a lone chunk of lid with nothing to keep it square just slides away from the lug, so it tests nothing.
 - **Camera coupon:** the camera side's cradle, guides and hooks on their own, for the real XIAO ESP32-S3 Sense.
 
 Print each coupon in the material of the real part. Record what you find, and change the one number that controls it.
@@ -87,6 +87,7 @@ Print each coupon in the material of the real part. Record what you find, and ch
 - **Ports face down; antennas point up.** Use glands and bulkheads with their own O-rings, on flat parts of the wall.
 - **A breathable vent**, so condensation and pressure changes can't pump water past the seal.
 - **Tripod mount:** a 1/4"-20 UNC thread in a sealed boss in the middle of the back. Printed, no metal, and tested with the thread coupon.
+- **Isogrid walls, light and stiff:** triangular pockets in the outside faces between flush 2 mm ribs, with 45° sides so they print upright, leaving a skin of at least 1.6 mm (four perimeters) so it holds water. Keep solid wall where the O-ring presses and round every port's seal. A flange only where something stands on it.
 - **Same plates inside:** an outdoor case uses the kit's columns and keyed pins, so the plates (and the coupons that proved them) carry over.
 
 ## Batteries
