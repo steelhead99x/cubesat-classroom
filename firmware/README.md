@@ -1,6 +1,8 @@
 # Firmware
 
-Arduino sketches for the classroom hardware. Each one prints `CSC1` lines over USB, which the station's `sensor-bridge` reads. None of them turns on a radio.
+The [CSC-R1P Rust firmware](csc-r1p-bringup/README.md) checks the receiver pedal's power-up state and controls on a XIAO ESP32-S3.
+
+The Arduino sketches below cover the classroom sensors. Each one prints `CSC1` lines over USB, which the station's `sensor-bridge` reads. None of them turns on a radio.
 
 | Sketch | Hardware | What it does | Guide |
 | --- | --- | --- | --- |

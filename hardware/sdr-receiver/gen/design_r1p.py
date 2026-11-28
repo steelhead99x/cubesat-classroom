@@ -55,8 +55,8 @@ add('Q', 'Transistor_FET', 'AO3401A', 'AO3401A', 'Package_TO_SOT_SMD:SOT-23', {1
 R('10k', 'VDC_G', 'GND', B)
 add('D', 'Diode', 'BZT52Bxx', 'BZT52C10', 'Diode_SMD:D_SOD-123', {1: 'VDC', 2: 'VDC_G'}, B,
     mpn='BZT52C10 (10 V zener)', note='clamps the FET gate to 10 V (AO3401A gate limit is 12 V)')
-add('D', 'Device', 'D_Zener', 'SMAJ15A', 'Diode_SMD:D_SMA', {1: 'VDC', 2: 'GND'}, B,
-    mpn='SMAJ15A (15 V stand-off, unidirectional)', note='input surge clamp; cathode (band, pad 1) to VDC. Use a 9-12 V supply, not 18 V')
+add('D', 'Device', 'D_Zener', 'SMAJ15A', 'Diode_SMD:D_SMA', {1: 'VBUCK_IN_F', 2: 'GND'}, B,
+    mpn='SMAJ15A (15 V stand-off, unidirectional)', note='Input surge clamp after F1. Use a qualified 9 V center-negative supply.')
 add('F', 'Device', 'Polyfuse_Small', '1A hold', 'Fuse:Fuse_1812_4532Metric', {1: 'VDC', 2: 'VBUCK_IN_F'}, B, mpn='PTC resettable 1 A hold, >= 16 V, 1812')
 FB('VBUCK_IN_F', 'VBUCK_IN', B)
 C('10u', 'VBUCK_IN', 'GND', B, fp=FP_C12, note='25 V X7R'); C('10u', 'VBUCK_IN', 'GND', B, fp=FP_C12, note='25 V X7R'); C('100n', 'VBUCK_IN', 'GND', B, fp=FP_C6, note='25 V')
@@ -89,7 +89,8 @@ add('Q', 'Transistor_FET', 'AO3401A', 'AO3401A', 'Package_TO_SOT_SMD:SOT-23', {1
 add('Q', 'Transistor_FET', '2N7002', '2N7002', 'Package_TO_SOT_SMD:SOT-23', {1: 'BIAS_EN', 2: 'GND', 3: 'BT_GATE'}, B, mpn='2N7002')
 R('100k', 'BT_FUSED', 'BT_GATE', B); R('100k', 'BIAS_EN', 'GND', B)
 R('10R', 'BT_SW', 'BT_FILT', B); C('100n', 'BT_FILT', 'GND', B); C('1n', 'BT_FILT', 'GND', B)
-L('470nH', 'BT_FILT', 'ANT', B, fp=FP_L6, mpn='0603 wirewound, SRF > 600 MHz')
+L('470nH', 'BT_FILT', 'ANT', B, fp=FP_L6, mpn='0603 wirewound, SRF > 600 MHz',
+  dnp=True, note='Leave open for the passive receive prototype. Fitting L2 requires separate backfeed qualification.')
 R('1k', 'BT_SW', 'LED_BT_A', B); LED('BIAS-T amber', 'LED_BT_A', 'GND', B)
 C('1n', 'ANT', 'RF_A', B, note='DC block, C0G')
 L('470nH', 'RF_A', 'GND', B, fp=FP_L6, note='static bleed')
@@ -184,7 +185,7 @@ R('10k', 'PLL_CE', '3V3_DIG', B); R('10k', 'PLL_PDBRF', '3V3_DIG', B)
 C('3n9', 'PLL_CP', 'GND', B, note='loop C1, C0G'); R('120R', 'PLL_CP', 'PLL_LF2', B); C('180n', 'PLL_LF2', 'GND', B, fp=FP_C6, note='loop C2, X7R or film')
 R('560R', 'PLL_CP', 'PLL_VTUNE', B); C('680p', 'PLL_VTUNE', 'GND', B, note='loop C3, C0G'); TP('VTUNE', 'PLL_VTUNE', B)
 add('Y', 'Oscillator', 'TG2520SMN-xx.xxxxxxMhz-xxxxNM', '25MHz TCXO', 'Oscillator:Oscillator_SMD_SeikoEpson_TG2520SMN-xxx-xxxxxx-4Pin_2.5x2.0mm',
-    {1: NC, 2: 'GND', 3: 'TCXO_OUT', 4: '3V3_TCXO'}, B, mpn='25 MHz TCXO 2.5x2.0 mm, 3.3 V, <= 2 ppm (Epson TG2520SMN family or equiv.)')
+    {1: NC, 2: 'GND', 3: 'TCXO_OUT', 4: '3V3_TCXO'}, B, mpn='Epson X1G005421031327 (prototype candidate; confirm availability)')
 FB('3V3_PLL', '3V3_TCXO', B); bypass('3V3_TCXO', B, ('100n',)); C('1n', 'TCXO_OUT', 'PLL_REFIN', B)
 R('51R', '3V3_VCO', 'LOA_P', B, note='or 27 nH choke for more LO power'); R('51R', '3V3_VCO', 'LOA_N', B, note='or 27 nH choke for more LO power')
 C('10n', 'LOA_P', 'LO_N', B, note='polarity swapped on purpose: no crossing'); C('10n', 'LOA_N', 'LO_P', B)

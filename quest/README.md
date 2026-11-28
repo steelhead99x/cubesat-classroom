@@ -116,6 +116,8 @@ Measure the [CSC-R1 receiver](/hardware/sdr-receiver/README.md) and its Rev B ra
 10. [Measure the CSC-R1 band filters](/quest/m1/receiver-rev-a-filters.md)
 11. [Measure HaLow desense on the CSC-R1](/quest/m1/receiver-rev-a-desense.md)
 12. [Compare the CSC-R1 with the RTL-SDR V4 on a real pass](/quest/m1/receiver-rev-a-vs-v4.md)
+13. [CSC-R1P pedal prototype quests](/quest/m1/receiver-pedal/README.md)
+14. [Complete the CSC-R1P prototype evidence record](/quest/m1/receiver-pedal-prototype.md)
 
 ### Solar power
 

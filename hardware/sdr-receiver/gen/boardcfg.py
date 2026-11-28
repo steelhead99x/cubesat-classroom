@@ -45,7 +45,7 @@ EDGE_MAX = CFG['edge_max']
 PCB = f'{KICAD}/{PROJ}.kicad_pcb'
 SCH = f'{KICAD}/{PROJ}.kicad_sch'
 BASE = f'{KICAD}/base.kicad_pcb' if NAME == 'csc-r1' else f'{KICAD}/{PROJ}-base.kicad_pcb'
-NET = f'{KICAD}/{PROJ}-rt.net' if NAME != 'csc-r1' else f'{KICAD}/rt.net'
+NET = os.environ.get('CSC_NETLIST', f'{KICAD}/{PROJ}-rt.net' if NAME != 'csc-r1' else f'{KICAD}/rt.net')
 
 
 def design():

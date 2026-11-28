@@ -90,13 +90,34 @@ for spec in csc-r1p:main csc-r1p-ctl:controls; do
   board=${spec%:*}
   fab=${spec#*:}
   d=$(fresh)
+  for ext in kicad_pcb kicad_sch kicad_pro; do
+    sha256sum "$d/pedal/kicad/$board.$ext"
+  done >"$d/source.sha256"
   if ! (cd "$d/gen" && CSC_BOARD="$board" ./export.sh >"$d/export.log" 2>&1); then
     cat "$d/export.log" >&2
     echo "FAIL  $board export" >&2
     exit 1
   fi
-  test -s "$d/pedal/fab/$fab/gerbers/$board-F_Cu.gtl"
-  echo "ok    $board export"
+  sha256sum --check --status "$d/source.sha256"
+  package="$d/pedal/fab/$fab"
+  review="$d/reviewed-cam.json"
+  cp "$package/kicad-cam.json" "$review"
+  python3 "$d/gen/pedal_cam.py" verify "$package" "$review"
+  for plot in "$board-F_Cu.gtl" "$board-B_Paste.gbp" "$board.drl"; do
+    file="$package/gerbers/$plot"
+    cp "$file" "$d/original"
+    printf '\nchanged export data\n' >> "$file"
+    if out=$(python3 "$d/gen/pedal_cam.py" verify "$package" "$review" 2>&1); then
+      echo "FAIL  manifest accepted changed $plot" >&2
+      exit 1
+    fi
+    if ! grep -Fq "files differ from the reviewed KiCad export: gerbers/$plot" <<<"$out"; then
+      echo "FAIL  changed $plot refused for the wrong reason: $out" >&2
+      exit 1
+    fi
+    mv "$d/original" "$file"
+  done
+  echo "ok    $board export preserves sources and rejects modified copper, paste and drill files"
 done
 # 1. A failing netlist checker.
 d=$(fresh); printf 'import sys\nprint("mismatches: 1")\nsys.exit(1)\n' > "$d/gen/check_net.py"

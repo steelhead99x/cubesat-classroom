@@ -22,6 +22,7 @@ The [five-pedal cost estimate](prototype-cost.md) covers both boards, parts, ass
 
 | Path | What |
 | --- | --- |
+| [panel-bom.md](panel-bom.md) | Off-board parts and Y2 purchasing candidate |
 | [face-template.svg](face-template.svg) | 1:1 drilling template for the face and the three drilled walls. Print at 100 % and check the 10 mm scale bar. |
 | `kicad/csc-r1p.*` | Main board: schematic, board, project |
 | `kicad/csc-r1p-ctl.*` | Control board |
@@ -37,9 +38,11 @@ The radio is the same circuit: bias tee, PGA-103+ LNA, the two switched band fil
 - The antenna input is a U.FL for a pigtail to the wall-mounted SMA, not an edge SMA. The BP1 test break is gone.
 - The dev-kit extras are gone: current-measurement jumpers, CTRL and AUX headers, the baseband test header, the MCLK jumper, the user LED, the lock LED and the LD and PDBRF test points. The synthesizer's lock output still reaches the XIAO on PLL_MUXOUT.
 
+**Passive prototype:** leave L2 unpopulated. The RF input stays AC-coupled and the antenna connector supplies no bias power.
+
 Added for the pedal:
 
-- **9 V input**: JST-PH to the panel jack, AO3401A reverse-polarity FET with a 10 V gate zener, SMAJ15A clamp, 1 A PTC fuse and ferrite, then a TPS62933F buck at about 2.1 MHz (forced PWM, so its switching tone stays at one frequency) making 5.09 V. Five LP5907 3.3 V regulators feed the VCO, synthesizer, ADC, digital and audio rails.
+- **9 V input**: JST-PH to the panel jack, AO3401A reverse-polarity FET with a 10 V gate zener, 1 A PTC fuse followed by the SMAJ15A clamp and ferrite, then a TPS62933F buck at about 2.1 MHz (forced PWM, so its switching tone stays at one frequency) making 5.09 V. Five LP5907 3.3 V regulators feed the VCO, synthesizer, ADC, digital and audio rails.
 - **Audio**: PCM5102A on the same I²S clocks as the ADC, its own 3.3 V rail, 470 Ω / 2.2 nF output filter, to the OUT jack on a JST-PH. It starts muted (XSMT pulled low) until the firmware unmutes it.
 - **Control board**: SSD1306 OLED, EC11E encoder for TUNE (push to change step), Alpha 9 mm pots for GAIN and LEVEL read by an ADS1015, a second TCA9534 for the encoder, footswitch, BAND toggle and ENGAGE LED.
 
@@ -121,15 +124,24 @@ The project’s schematic and PCB checks agree on the pad connections for both b
 
 An independent reviewer must check both boards before ordering. See [CONTRIBUTING.md](../../../CONTRIBUTING.md).
 
+## Flux import review
+
+See the [export comparison and prototype fabrication checks](fabrication-checks.md) for matched layers, drill changes and stencil evidence. The Flux imports of `bd4be2a` match the KiCad board envelopes and counts of copper layers, footprints, traces and vias. KiCad is the fabrication source. Check these differences before using a Flux export:
+
+- Flux flags a main-board ground airwire between L5 pad 2 and U7, plus a sliver at a bottom-layer 3V3_PLL via. The archived KiCad check for the same routed file reports zero unconnected items and zero violations. Compare copper and drill output at both locations.
+- The main KiCad board contains 17 paste-only apertures at U10, U12 and U13. The aligned top-paste exports confirm that Flux replaces those apertures with one opening per device. Use the KiCad stencil and confirm it with the assembler.
+- Flux reports a 1.30 mm stackup. The KiCad files specify 1.6 mm nominal thickness. Confirm the actual build with the fabricator, including the top-layer dielectric spacing for the RF traces.
+- D2 clamps `VBUCK_IN_F` downstream of F1. Verify the exact fuse trip curve and the adapter's fault behavior against the clamp's limits during the power review.
+- Y1 feeds the receiver ADC MCLK through R37. The board calls for the ADC to drive BCLK and FSYNC to the XIAO and DAC. Verify those signals on the bench before enabling audio.
+
 ## Open items
 
 - Review the copper and the generated fabrication files for both boards, including synthesizer supply paths, RF return paths and the enclosure fit.
 - Stack height: check the 15 mm standoffs, the 2×4 header and socket, and the pot bushing length against the 35 mm inside height with real parts.
-- Panel jacks and switches are not on the BOM yet: DC jack, ¼ inch jack, SMA and RP-SMA bulkheads, U.FL pigtails, USB-C panel extension, footswitch, toggle, LED bezel, knobs.
-- The TCXO land pattern is still generic, as on Rev A.
+- Verify the parts and clearances in the [panel BOM](panel-bom.md), then confirm sourcing and bench operation of the selected Y2 candidate.
 - The buck's switching frequency (about 2.1 MHz) and its harmonics need checking against the 2 m and 70 cm bands on the bench with the [desense quest](../../../quest/m1/receiver-rev-a-desense.md).
 - Reading the encoder through an I²C expander works at hand speed; confirm in firmware that fast spins don't skip.
-- Firmware for the pedal: not started. The station simulator shows what it should publish.
+- The [Rust bring-up console](../../../firmware/csc-r1p-bringup/README.md) covers safe I²C initialization and panel checks. PLL, ADC, audio, OLED and station telemetry are tracked in the [prototype quests](../../../quest/m1/receiver-pedal/README.md).
 
 ## Rebuilding
 
