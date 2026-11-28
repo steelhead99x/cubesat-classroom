@@ -63,3 +63,9 @@ Run `AUDIO BUS TEST` after the clock test. The ADC supplies both clocks. The XIA
 1. Set the logic analyzer to trigger on data at the DAC DIN input before sending the command. Decode Philips I²S with two 32-bit slots per frame. Check for left word `0x40000000` and right word `0xc0000000`.
 2. Check that the console reports an RX block and successful TX completion. Compare the first two reported RX words with ADC SDOUT. Verify slot order and the one-bit shift.
 3. Confirm `shutdown=Ok(())` and confirm XSMT stayed low. A missing frame-sync edge, timeout, or DMA error fails the test. Continuous audio, fault mute and RF sensitivity still need their own tests.
+
+### Check continuous narrow FM on the bench
+
+Use `FM STREAM TEST` with a known differential I/Q fixture, or `FM RF TEST 2M` and `FM RF TEST 70CM` with a shielded RF source and the normal antenna input. The RF variants tune the same presets as `PLL TEST`, acquire lock, then select the filter and enable the ADC and demodulator. Bias and DAC unmute stay low.
+
+Use a 1 kHz FM test tone. At DAC DIN, decode the two identical 32-bit slots and verify the recovered tone. The two-second diagnostic reports completed frame count and peak digital magnitude. It rejects a frame count below 95% of the nominal 384,000 frames, and stops on a reported PLL unlock, DMA stall, or transmit underrun. Repeat the command and verify the first frames are silent before the recovered audio arrives. Keep a scope record of the RX and TX words. This is a digital path test with muted analog output. Verify the listening path, timing margin, panel behavior and RF sensitivity separately on the first article.

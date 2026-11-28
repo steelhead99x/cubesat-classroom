@@ -185,7 +185,7 @@ R('10k', 'PLL_CE', '3V3_DIG', B); R('10k', 'PLL_PDBRF', '3V3_DIG', B)
 C('3n9', 'PLL_CP', 'GND', B, note='loop C1, C0G'); R('120R', 'PLL_CP', 'PLL_LF2', B); C('180n', 'PLL_LF2', 'GND', B, fp=FP_C6, note='loop C2, X7R or film')
 R('560R', 'PLL_CP', 'PLL_VTUNE', B); C('680p', 'PLL_VTUNE', 'GND', B, note='loop C3, C0G'); TP('VTUNE', 'PLL_VTUNE', B)
 add('Y', 'Oscillator', 'TG2520SMN-xx.xxxxxxMhz-xxxxNM', '25MHz TCXO', 'Oscillator:Oscillator_SMD_SeikoEpson_TG2520SMN-xxx-xxxxxx-4Pin_2.5x2.0mm',
-    {1: NC, 2: 'GND', 3: 'TCXO_OUT', 4: '3V3_TCXO'}, B, mpn='25 MHz TCXO 2.5x2.0 mm, 3.3 V, <= 2 ppm (Epson TG2520SMN family or equiv.)')
+    {1: NC, 2: 'GND', 3: 'TCXO_OUT', 4: '3V3_TCXO'}, B, mpn='Epson X1G005421031327 (prototype candidate; confirm availability)')
 FB('3V3_PLL', '3V3_TCXO', B); bypass('3V3_TCXO', B, ('100n',)); C('1n', 'TCXO_OUT', 'PLL_REFIN', B)
 R('51R', '3V3_VCO', 'LOA_P', B, note='or 27 nH choke for more LO power'); R('51R', '3V3_VCO', 'LOA_N', B, note='or 27 nH choke for more LO power')
 C('10n', 'LOA_P', 'LO_N', B, note='polarity swapped on purpose: no crossing'); C('10n', 'LOA_N', 'LO_P', B)

@@ -29,3 +29,7 @@ The revised main and control boards report zero enabled DRC violations and zero 
 ## Y2 sourcing
 
 The [panel BOM](panel-bom.md) records Epson X1G005421031327. Farnell lists the matching X1G0054210313 family under order code 3597149. Confirm the full suffix, stock and shipment terms with the assembler. Measure loaded PLL REFIN swing and lock before accepting a substitution. [Farnell listing](https://es.farnell.com/epson/x1g0054210313/tcxo-25mhz-0-5ppm-2-5mm-x-2mm/dp/3597149)
+
+## Assembly sourcing
+
+The generated pedal BOMs contain a named part or minimum spec for every fitted SMT placement. The assembler must return exact vendor MPNs for specification rows and confirm cut-tape minimums and lead times. Compare proposed substitutions for the RF ladder against the named 2% wirewound inductors and 0402 C0G capacitors. Verify effective MLCC capacitance at the installed rail voltages before accepting bulk capacitor choices. Confirm the mating stack connectors in the actual 1590N1 enclosure. [Coilcraft 0402DC](https://www.coilcraft.com/getmedia/b3553702-9a56-4386-b513-fcddf8709240/0402dc.pdf) · [Coilcraft 0603DC](https://www.coilcraft.com/getmedia/f3d98f97-cbe2-41fa-b3a9-518f674e881e/0603dc.pdf) · [TPS62933F data sheet](https://www.ti.com/product/TPS62933F)

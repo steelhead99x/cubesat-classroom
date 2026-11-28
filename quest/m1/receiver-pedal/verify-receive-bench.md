@@ -6,7 +6,7 @@ Verify end-to-end reception, line output and station status on both bands with r
 
 ## Plan
 
-Use a shielded test signal. Record BCLK, FSYNC and sample alignment before unmuting the DAC. Check tuning, decoded audio, clipping, level controls and telemetry on both bands. Measure the buck switching frequency and compare noise or desense with USB and display activity. Record the setup, board and firmware revisions, scope captures and raw logs.
+Use a shielded test signal. Run the muted FM RF diagnostic on both bands. Record BCLK, FSYNC, slot order, audio tone and underrun behavior before enabling analog listening. Check tuning, decoded audio, clipping, level controls and telemetry on both bands. Measure the buck switching frequency and compare noise or desense with USB and display activity. Record the setup, board and firmware revisions, scope captures and raw logs.
 
 ## Required
 

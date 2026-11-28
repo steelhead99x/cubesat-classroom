@@ -1,5 +1,6 @@
 #![no_std]
 
+pub mod fm;
 pub mod pll;
 
 use embedded_hal::i2c::I2c;
@@ -14,6 +15,8 @@ const INPUT: u8 = 0;
 const OUTPUT: u8 = 1;
 const DIRECTION: u8 = 3;
 const STATUS_LED: u8 = 1 << 5;
+const BAND_70CM: u8 = 1 << 0;
+const DEMOD_EN: u8 = 1 << 2;
 const PLL_CE: u8 = 1 << 6;
 const ADC_SHDNZ: u8 = 1 << 5;
 
@@ -86,6 +89,14 @@ impl<Bus: I2c> Pedal<Bus> {
     pub fn adc_release_shutdown(&mut self, released: bool) -> Result<(), Bus::Error> {
         self.0
             .write(RF, &[OUTPUT, if released { ADC_SHDNZ } else { 0 }])
+    }
+
+    /// Enable the selected passive receive path after the bench PLL test
+    /// has acquired lock. Keep antenna bias, trims and DAC unmute low.
+    pub fn enable_muted_receiver(&mut self, seventy_cm: bool) -> Result<(), Bus::Error> {
+        let band = if seventy_cm { BAND_70CM } else { 0 };
+        self.0
+            .write(RF, &[OUTPUT, PLL_CE | DEMOD_EN | ADC_SHDNZ | band])
     }
 
     /// Read TLV320ADC3140 DEV_STS0/1 on the default page after hardware reset.
@@ -334,6 +345,19 @@ mod tests {
             Step::Write(0x4c, &[0x13, 0x87], true),
         ]));
         assert_eq!(pedal.adc_start_clocks(), Err(ErrorKind::Other));
+        assert!(pedal.0.0.is_empty());
+    }
+
+    #[test]
+    fn muted_receive_selects_the_band_and_disables_bias_and_audio() {
+        let mut pedal = Pedal(Mock(&[
+            Step::Write(0x20, &[1, 0x64], false),
+            Step::Write(0x20, &[1, 0x65], false),
+            Step::Write(0x20, &[1, 0], false),
+        ]));
+        pedal.enable_muted_receiver(false).unwrap();
+        pedal.enable_muted_receiver(true).unwrap();
+        pedal.pll_enable(false).unwrap();
         assert!(pedal.0.0.is_empty());
     }
 

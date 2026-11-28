@@ -68,7 +68,7 @@ fn main() -> ! {
                     match &line[..len] {
                         b"HELP" => {
                             println!(
-                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | ADC CHECK | ADC CLOCK TEST | AUDIO BUS TEST | PLL TEST 2M | PLL TEST 70CM | PLL TEST <kHz> | HELP"
+                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | ADC CHECK | ADC CLOCK TEST | AUDIO BUS TEST | FM STREAM TEST | FM RF TEST <band> | PLL TEST 2M | PLL TEST 70CM | PLL TEST <kHz> | HELP"
                             );
                         }
                         b"SAFE" => controls_ready = setup(&mut pedal),
@@ -103,17 +103,30 @@ fn main() -> ! {
                         b"ADC CLOCK TEST" => {
                             check_adc(&mut pedal, &delay, Some(|| delay.delay_millis(5_000)))
                         }
-                        b"AUDIO BUS TEST" => check_adc(
+                        b"AUDIO BUS TEST" | b"FM STREAM TEST" => check_adc(
                             &mut pedal,
                             &delay,
                             Some(|| {
                                 if let Some(bus) = audio_bus.take() {
-                                    audio_bus = Some(bus.probe());
+                                    audio_bus = Some(if &line[..len] == b"FM STREAM TEST" {
+                                        bus.fm_stream_test(|| true)
+                                    } else {
+                                        bus.probe()
+                                    });
                                 }
                             }),
                         ),
-                        command if command.starts_with(b"PLL TEST ") => {
-                            let channel = match &command[b"PLL TEST ".len()..] {
+                        command
+                            if command.starts_with(b"PLL TEST ")
+                                || command.starts_with(b"FM RF TEST ") =>
+                        {
+                            let rf_audio = command.starts_with(b"FM RF TEST ");
+                            let argument = if rf_audio {
+                                &command[b"FM RF TEST ".len()..]
+                            } else {
+                                &command[b"PLL TEST ".len()..]
+                            };
+                            let channel = match argument {
                                 b"2M" => Some(BenchBand::TwoMeters.channel()),
                                 b"70CM" => Some(BenchBand::SeventyCentimeters.channel()),
                                 raw => core::str::from_utf8(raw)
@@ -123,7 +136,13 @@ fn main() -> ! {
                             };
                             if let Some(channel) = channel {
                                 run_pll_test(
-                                    &mut pedal, &mut spi, &mut latch, &lock, &delay, channel,
+                                    &mut pedal,
+                                    &mut spi,
+                                    &mut latch,
+                                    &lock,
+                                    &delay,
+                                    channel,
+                                    if rf_audio { Some(&mut audio_bus) } else { None },
                                 );
                             } else {
                                 println!("PLL: use 144000–146000 or 435000–438000 kHz");
@@ -169,18 +188,23 @@ fn check_adc<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay, with_clocks: Optio
     let status = pedal.adc_release_shutdown(true).and_then(|()| {
         delay.delay_millis(2);
         if let Some(test) = with_clocks {
-            pedal.adc_wake_for_clocks()?;
-            delay.delay_millis(2);
-            pedal.adc_start_clocks()?;
-            delay.delay_millis(20);
-            let status = pedal.adc_clock_status()?;
-            println!("ADC ASI status=0x{status:02x}");
+            prepare_adc_clocks(pedal, delay)?;
             test();
         }
         pedal.adc_status()
     });
     let shutdown = pedal.adc_release_shutdown(false);
     println!("ADC status={status:02x?} shutdown={shutdown:?}");
+}
+
+fn prepare_adc_clocks<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay) -> Result<(), Bus::Error> {
+    pedal.adc_wake_for_clocks()?;
+    delay.delay_millis(2);
+    pedal.adc_start_clocks()?;
+    delay.delay_millis(20);
+    let status = pedal.adc_clock_status()?;
+    println!("ADC ASI status=0x{status:02x}");
+    Ok(())
 }
 
 fn run_pll_test<Bus: I2c, Serial: SpiBus>(
@@ -190,10 +214,16 @@ fn run_pll_test<Bus: I2c, Serial: SpiBus>(
     lock: &Input<'_>,
     delay: &Delay,
     channel: ReceiveChannel,
+    audio_bus: Option<&mut Option<AudioBus>>,
 ) {
     if let Err(error) = pedal.enter_safe() {
         println!("PLL: safe setup failed: {error:?}");
         return;
+    }
+    if audio_bus.is_some() {
+        // A previous audio test may have shut down the ADC immediately before
+        // this command. Give it the same reset interval as ADC CHECK.
+        delay.delay_millis(100);
     }
     if lock.is_high() {
         println!("PLL: MUXOUT is high with CE low; check the lock wiring");
@@ -218,11 +248,28 @@ fn run_pll_test<Bus: I2c, Serial: SpiBus>(
                             "PLL {} Hz: locked, measure LO MON now",
                             channel.frequency_hz()
                         );
-                        for _ in 0..5_000 {
-                            delay.delay_millis(1);
-                            if !lock.is_high() {
-                                println!("PLL: lock lost, powering down");
-                                break;
+                        if let Some(audio_bus) = audio_bus {
+                            let status = pedal
+                                .enable_muted_receiver(channel.frequency_hz() >= 435_000_000)
+                                .and_then(|()| {
+                                    delay.delay_millis(2);
+                                    prepare_adc_clocks(pedal, delay)
+                                });
+                            match status {
+                                Ok(()) => {
+                                    if let Some(bus) = audio_bus.take() {
+                                        *audio_bus = Some(bus.fm_stream_test(|| lock.is_high()));
+                                    }
+                                }
+                                Err(error) => println!("FM RF setup: {error:?}"),
+                            }
+                        } else {
+                            for _ in 0..5_000 {
+                                delay.delay_millis(1);
+                                if !lock.is_high() {
+                                    println!("PLL: lock lost, powering down");
+                                    break;
+                                }
                             }
                         }
                     } else {

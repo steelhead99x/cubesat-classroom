@@ -1,13 +1,13 @@
+use csc_r1p_bringup::fm::{NarrowFm, SAMPLE_RATE};
 use esp_hal::{
     Blocking,
-    dma::{DmaRxStreamBuf, DmaTxBuf},
+    dma::{DmaRxStreamBuf, DmaTxBuf, DmaTxStreamBuf},
     gpio::{Input, InputConfig, InputSignal},
     i2s::master::{DataFormat, I2s, I2sRx, I2sTx, TdmConfig},
     peripherals::{DMA_CH0, GPIO1, GPIO2, GPIO3, GPIO44, I2S0},
     time::{Instant, Rate},
 };
 
-const SAMPLE_RATE: u32 = 192_000;
 const BLOCK_BYTES: usize = 256;
 
 pub struct AudioBus {
@@ -16,6 +16,7 @@ pub struct AudioBus {
     tx: I2sTx<'static, Blocking>,
     capture: DmaRxStreamBuf,
     pattern: DmaTxBuf,
+    audio: DmaTxStreamBuf,
 }
 
 impl AudioBus {
@@ -70,19 +71,26 @@ impl AudioBus {
             tx,
             capture,
             pattern,
+            audio: esp_hal::dma_tx_stream_buffer!(2048, BLOCK_BYTES),
         }
     }
 
-    pub fn probe(mut self) -> Self {
+    fn has_frame_sync(&self) -> bool {
         let first_level = self.frame_sync.is_high();
         let start = Instant::now();
         while self.frame_sync.is_high() == first_level {
             if start.elapsed().as_millis() >= 2 {
-                esp_println::println!("AUDIO BUS: no frame-sync edge");
-                return self;
+                return false;
             }
         }
+        true
+    }
 
+    pub fn probe(mut self) -> Self {
+        if !self.has_frame_sync() {
+            esp_println::println!("AUDIO BUS: no frame-sync edge");
+            return self;
+        }
         let mut receive = match self.rx.read(self.capture) {
             Ok(transfer) => transfer,
             Err((error, rx, capture)) => {
@@ -132,6 +140,90 @@ impl AudioBus {
         } else {
             esp_println::println!("AUDIO BUS RX timed out");
         }
+        self
+    }
+
+    /// Exercise continuous receive and transmit DMA with the DAC kept muted.
+    pub fn fm_stream_test(mut self, rf_ready: impl Fn() -> bool) -> Self {
+        if !self.has_frame_sync() {
+            esp_println::println!("FM STREAM: no frame-sync edge");
+            return self;
+        }
+        // Each run starts with four silent descriptors. Re-create the view
+        // so a retried command cannot transmit data left by the previous run.
+        let (desc, data) = self.audio.split();
+        let mut audio = DmaTxStreamBuf::new(desc, data).unwrap();
+        assert_eq!(audio.push(&[0; 4 * BLOCK_BYTES]), 4 * BLOCK_BYTES);
+
+        let mut receive = match self.rx.read(self.capture) {
+            Ok(transfer) => transfer,
+            Err((error, rx, capture)) => {
+                esp_println::println!("FM STREAM RX start: {error:?}");
+                self.rx = rx;
+                self.capture = capture;
+                self.audio = audio;
+                return self;
+            }
+        };
+        let mut transmit = match self.tx.write(audio) {
+            Ok(transfer) => transfer,
+            Err((error, tx, audio)) => {
+                esp_println::println!("FM STREAM TX start: {error:?}");
+                (self.rx, self.capture) = receive.stop();
+                self.tx = tx;
+                self.audio = audio;
+                return self;
+            }
+        };
+
+        let start = Instant::now();
+        let mut progress = start;
+        let mut fm = NarrowFm::default();
+        let mut frames = 0;
+        let mut peak = 0;
+        let mut block = [0; BLOCK_BYTES];
+        const DURATION_MS: u64 = 2_000;
+        const MIN_FRAMES: usize = SAMPLE_RATE as usize * 2 * 95 / 100;
+        let status = loop {
+            if !rf_ready() {
+                break "PLL lost lock";
+            }
+            if start.elapsed().as_millis() >= DURATION_MS {
+                if frames < MIN_FRAMES {
+                    break "frame rate low";
+                }
+                break "complete";
+            }
+            if progress.elapsed().as_millis() >= 3 {
+                break "DMA stalled or clocks lost";
+            }
+            if start.elapsed().as_millis() > 1 && transmit.is_done() {
+                break "TX underrun";
+            }
+            if receive.available_bytes() < BLOCK_BYTES || transmit.available_bytes() < BLOCK_BYTES {
+                continue;
+            }
+            if receive.pop(&mut block) != BLOCK_BYTES {
+                break "partial RX block";
+            }
+            for word in block.chunks_exact_mut(8) {
+                let i = i32::from_le_bytes(word[..4].try_into().unwrap());
+                let q = i32::from_le_bytes(word[4..].try_into().unwrap());
+                let audio = fm.process(i, q);
+                peak = peak.max(audio.unsigned_abs());
+                word[..4].copy_from_slice(&audio.to_le_bytes());
+                word[4..].copy_from_slice(&audio.to_le_bytes());
+            }
+            if transmit.push(&block) != BLOCK_BYTES {
+                break "partial TX block";
+            }
+            frames += BLOCK_BYTES / 8;
+            progress = Instant::now();
+        };
+
+        (self.tx, self.audio) = transmit.stop();
+        (self.rx, self.capture) = receive.stop();
+        esp_println::println!("FM STREAM {status}; frames={frames} peak={peak} (DAC muted)");
         self
     }
 }

@@ -27706,7 +27706,7 @@
         (justify left) hide
       )
     )
-    (property "MPN" "25 MHz TCXO 2.5x2.0 mm, 3.3 V, <= 2 ppm (Epson TG2520SMN family or equiv.)"
+    (property "MPN" "Epson X1G005421031327 (prototype candidate; confirm availability)"
       (at 609.6 361.95 0)
       (effects
         (font
