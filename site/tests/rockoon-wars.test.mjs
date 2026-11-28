@@ -484,10 +484,197 @@ test('the remaining committer can replay a stand-in copy after earlier players l
   assert.equal(R.fingerprint(Room.replay(four, snapshots, { gone: [a, b, c], me: watcher }).match), R.fingerprint(remaining));
 });
 
-test('v6 rooms (a broadcast per session, stand-in marks) ignore v5 and v4 snapshots', () => {
-  assert.equal(Room.ROOM_PROTOCOL, 6);
-  assert.equal(Room.cleanSnapshot({ p: 5, cs: 'GS-AA1', joined: 1, turns: {}, shops: {} }), null);
-  assert.equal(Room.cleanSnapshot({ p: 4, cs: 'GS-AA1', joined: 1, turns: {}, shops: {} }), null);
+test('v7 rooms use their own namespace and check the handoff fields', () => {
+  const [a, b, c] = ids;
+  assert.equal(Room.ROOM_NAMESPACE, 'rockoon-battle-v7');
+  const base = snap(host.names[a], { host });
+  for (const p of [4, 5, 6]) assert.equal(Room.cleanSnapshot({ ...base, p }), null);
+  const valid = Room.cleanSnapshot({ ...base, claim: 5, follows: { id: b, epoch: 6 } });
+  assert.equal(valid.claim, 5);
+  assert.deepEqual(valid.follows, { id: b, epoch: 6 });
+  for (const epoch of [-1, 1.5, '5', Number.MAX_SAFE_INTEGER + 1]) {
+    const clean = Room.cleanSnapshot({ ...base, claim: epoch, follows: { id: b, epoch } });
+    assert.equal(clean.claim, undefined);
+    assert.equal(clean.follows, undefined);
+  }
+  assert.equal(Room.cleanSnapshot({ ...base, follows: { id: c, epoch: 2 } }).follows, undefined);
+  assert.equal(Room.cleanSnapshot({ ...base, host: undefined, claim: 1 }).claim, undefined);
+});
+
+function handoffRoom(count = 2) {
+  const order = [...ids, 'dddddddddddd'].slice(0, count);
+  const settings = { ...host, order, names: { ...host.names, [ids[2]]: 'GS-CC3', dddddddddddd: 'GS-DD4' } };
+  const snapshots = Object.fromEntries(order.map(id => [id, snap(settings.names[id], { shops: { 1: [] } })]));
+  const screens = Object.fromEntries(order.map(id => [id, { epoch: 0, committing: false }]));
+  const sync = (id, gone = [], s = snapshots) => Room.syncCommitter(settings, s, gone, id, screens[id]);
+  const view = (id, gone = []) => ({ me: id, gone, committing: screens[id].committing });
+  const replay = (id, gone = [], s = snapshots) => Room.replay(settings, s, view(id, gone)).match;
+  const commit = (id, match, gone = [], s = snapshots) => Room.commit(match, settings, s, view(id, gone), id);
+  return { settings, snapshots, screens, sync, view, replay, commit };
+}
+
+test('a fresh match commits as soon as every peer adopts the host and acknowledges', () => {
+  for (const count of [2, 3, 4]) {
+    const { settings, snapshots: s, sync, commit } = handoffRoom(count);
+    const [a, ...peers] = settings.order;
+    const match = Room.matchFor(settings);
+    assert.ok(sync(a));
+    assert.equal(s[a].claim, 1);
+    for (const peer of peers) {
+      assert.equal(commit(a, match), false);
+      assert.ok(sync(peer));
+      assert.deepEqual(s[peer].follows, { id: a, epoch: 1 });
+    }
+    const last = peers.at(-1);
+    const ack = s[last];
+    s[last] = { ...ack, host: { ...settings, seed: settings.seed + 1 }, claim: 99 };
+    assert.equal(commit(a, match), false, 'a different match cannot acknowledge');
+    assert.equal(sync(a), false, 'a different match cannot advance the epoch');
+    s[last] = ack;
+    assert.ok(commit(a, match));
+  }
+});
+
+test('a stale snapshot from the stand-in cannot release a returning creator', () => {
+  const [a, b] = ids;
+  const { settings, snapshots: s, screens, sync, commit } = handoffRoom();
+  sync(a); sync(b);
+  const stale = structuredClone(s[b]);
+  screens[a].committing = false;
+  sync(b, [a]);
+  const returned = { ...s, [a]: snap(settings.names[a], { shops: { 1: ['rocket'] } }), [b]: stale };
+  // The tab reloaded and has its saved epoch but has only heard an old heartbeat so far.
+  sync(a, [], returned);
+  assert.ok(returned[a].claim > stale.follows.epoch);
+  assert.equal(commit(a, Room.matchFor(settings), [], returned), false);
+  assert.equal(returned[a].shopLog, undefined);
+});
+
+test('the returning creator plays a shop settled by the stand-in before writing again', () => {
+  const [a, b] = ids;
+  const { settings, snapshots: s, screens, sync, replay, commit } = handoffRoom();
+  sync(a); sync(b);
+  screens[a].committing = false;
+  delete s[a];
+  s[b].shops[1] = ['dirt'];
+  sync(b, [a]);
+  assert.ok(commit(b, Room.matchFor(settings), [a]));
+  s[a] = snap(settings.names[a], { shops: { 1: ['rocket'] } });
+  sync(a);
+  const before = Room.matchFor(settings);
+  assert.equal(commit(a, before), false, 'the stand-in is still following its own claim');
+  sync(b);
+  assert.equal(screens[b].committing, false);
+  s[b] = Room.cleanSnapshot(s[b]);
+  assert.deepEqual(s[b].follows, { id: a, epoch: s[a].claim });
+  assert.deepEqual(s[b].shopLog[1], [[], ['dirt']], 'the acknowledgement carries the settled shop');
+  assert.equal(commit(a, before), false, 'the creator must play the settled shop first');
+  const caughtUp = replay(a);
+  assert.equal(caughtUp.phase, 'play');
+  assert.deepEqual(caughtUp.played.S1.entry, [[], ['dirt']]);
+  Room.mirror(caughtUp, settings, s, a);
+  assert.equal(s[a].standin.S1, b);
+  assert.deepEqual(s[a].shopLog[1], s[b].shopLog[1]);
+  const owner = settings.order[caughtUp.turn];
+  s[owner].turns[0] = { angle: 70, power: 40, weapon: 'baby' };
+  assert.ok(commit(a, caughtUp));
+  assert.deepEqual(s[a].shopLog[1], [[], ['dirt']]);
+});
+
+test('a short local reconnect still needs an acknowledgement after a long peer-side gap', () => {
+  const [a, b] = ids;
+  const { settings, snapshots: s, screens, sync, replay, commit } = handoffRoom();
+  sync(a); sync(b);
+  assert.ok(commit(a, replay(a)));
+  let before = replay(a);
+  Room.mirror(before, settings, s, b);
+  while (settings.order[before.turn] !== a) {
+    s[b].turns[before.log.length] = { angle: 60, power: 45, weapon: 'baby' };
+    assert.ok(commit(a, before));
+    before = replay(a);
+  }
+  const turn = before.log.length;
+  const stale = structuredClone(s[b]);
+  // A keeps its in-memory match. B has already given up on A and skipped its turn.
+  screens[a].committing = false;
+  sync(b, [a]);
+  assert.ok(commit(b, replay(b, [a]), [a]));
+  s[a].turns[turn] = { angle: 80, power: 30, weapon: 'baby' };
+  const local = { ...s, [b]: stale };
+  sync(a, [], local);
+  assert.equal(commit(a, before, [], local), false);
+  sync(b);
+  local[b] = s[b];
+  assert.equal(commit(a, before, [], local), false);
+  assert.equal(replay(a, [], local).log[turn].skip, true);
+});
+
+test('two returning players acknowledge the creator and keep what B settled while they were away', () => {
+  const [a, b, c] = ids;
+  const { settings, snapshots: s, screens, sync, replay, commit } = handoffRoom(3);
+  sync(a); sync(b); sync(c);
+  const oldB = structuredClone(s[b]);
+  screens[a].committing = false;
+  delete s[a]; delete s[c];
+  s[b].shops[1] = ['dirt'];
+  sync(b, [a, c]);
+  assert.ok(commit(b, replay(b, [a, c]), [a, c]));
+  s[a] = snap(settings.names[a], { shops: { 1: ['rocket'] } });
+  s[c] = snap(settings.names[c], { shops: { 1: ['big'] } });
+  // C sees neither A nor B yet and bids too. A initially sees an older snapshot of C.
+  const cView = { [c]: s[c] };
+  screens[c].epoch = s[b].claim;
+  sync(c, [a, b], cView);
+  const aView = { ...s, [b]: oldB, [c]: snap(settings.names[c]) };
+  sync(a, [], aView);
+  assert.equal(commit(a, Room.matchFor(settings), [], aView), false);
+  sync(a);
+  assert.ok(s[a].claim > s[c].claim);
+  sync(c);
+  assert.equal(screens[c].committing, false);
+  assert.equal(commit(a, Room.matchFor(settings)), false, 'B has not acknowledged yet');
+  sync(b);
+  assert.deepEqual(s[c].follows, s[b].follows);
+  const caughtUp = replay(a);
+  assert.deepEqual(caughtUp.played.S1.entry, [[], ['dirt'], []]);
+  assert.equal(R.fingerprint(replay(c)), R.fingerprint(caughtUp));
+  const owner = settings.order[caughtUp.turn];
+  s[owner].turns[0] = { angle: 75, power: 40, weapon: 'baby' };
+  assert.ok(commit(a, caughtUp));
+});
+
+test('the next player claims a mid-match takeover and waits for the remaining peer', () => {
+  const [a, b, c] = ids;
+  const { settings, snapshots: s, sync, replay, commit } = handoffRoom(3);
+  sync(a); sync(b); sync(c);
+  assert.ok(commit(a, replay(a)));
+  const before = replay(b);
+  const owner = settings.order[before.turn];
+  s[owner].turns[0] = { angle: 75, power: 45, weapon: 'baby' };
+  sync(b, [a]);
+  assert.ok(s[b].claim > s[a].claim);
+  assert.equal(commit(b, before, [a]), false);
+  sync(c, [a]);
+  assert.ok(commit(b, before, [a]));
+  assert.equal(replay(b, [a]).log.length, 1);
+});
+
+test('one replay resolves a history conflict after a handoff', () => {
+  const [a, b] = ids;
+  const { settings, snapshots: s, screens, sync, view, replay, commit } = handoffRoom();
+  sync(a); sync(b);
+  screens[a].committing = false;
+  s[a].shops = {};
+  sync(b, [a]);
+  assert.ok(commit(b, replay(b, [a]), [a]));
+  const standIn = replay(b, [a]);
+  sync(a);
+  sync(b);
+  s[a].shopLog = { 1: [['rocket'], []] };
+  assert.ok(Room.diverged(standIn, settings, s, view(b)));
+  const caughtUp = replay(b);
+  assert.deepEqual(caughtUp.played.S1.entry, [['rocket'], []]);
+  assert.equal(Room.diverged(caughtUp, settings, s, view(b)), false);
 });
 
 test('a stand-in mark never makes a forged copy believable', () => {

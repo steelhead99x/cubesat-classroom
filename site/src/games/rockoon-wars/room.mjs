@@ -2,7 +2,8 @@
 //
 // Every player publishes one snapshot over MoQ and keeps republishing it:
 //   { p, cs, joined, creator, host?, turns: { [turnNumber]: { angle, power, weapon } },
-//     shops: { [round]: [weaponId, ...] }, log?: {...}, shopLog?: {...} }
+//     shops: { [round]: [weaponId, ...] }, log?: {...}, shopLog?: {...},
+//     claim?: epoch, follows: { id, epoch } (in a match) }
 // The room creator adds `host` when the match starts: the seed, the player order and the rounds.
 //
 // Players' `turns` and `shops` are requests. One player at a time decides what each turn was:
@@ -10,6 +11,12 @@
 // player who left) into `log`, and each round's purchases into `shopLog`, once, and never
 // changes an entry. If the committer leaves, the next player in the order who is still here
 // takes over (committerFor), so the match keeps going.
+//
+// A new or returning committer bids with a fresh claim, higher than any epoch it has seen.
+// Screens follow the first present bidder in the order whose epoch is at least the one they
+// already follow. A committer stops writing before it follows someone else, so that snapshot
+// hands over its last records. A bidder waits for every present player to acknowledge its
+// claim and plays their committed history before writing anything itself.
 //
 // Every player in the match republishes `host` and a copy of the history it has played, so a
 // player who joins or reconnects after the creator has left can still catch up. Another
@@ -29,15 +36,16 @@ import { WEAPON, createMatch, buy, startRound, fire, skip } from './logic.mjs';
  * copies of a stand-in's word (`standin`); a v4 client would ignore the mark and take such a copy
  * on the copier's authority, so the two never share a match either. v6 publishes each relay
  * session under <player>/<session> instead of <player> (see net.ts), which a v5 client can't
- * follow.
+ * follow. v7 waits for acknowledgements of a fresh committer claim before writing history.
  */
-export const ROOM_PROTOCOL = 6;
+export const ROOM_PROTOCOL = 7;
 export const ROOM_NAMESPACE = `rockoon-battle-v${ROOM_PROTOCOL}`;
 
 const ID = /^[0-9a-f]{12}$/;
 const CS = /^GS-[A-Z]{2}\d$/;
 export const ROOM_CODE = /^[A-HJ-NP-Z2-9]{5}$/;
 const int = (v, lo, hi) => (Number.isInteger(v) && v >= lo && v <= hi ? v : null);
+const MAX_EPOCH = Number.MAX_SAFE_INTEGER;
 
 export function newRoomCode(random = Math.random) {
   const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -80,8 +88,8 @@ export function cleanSnapshot(raw) {
   // so other screens can show it rising. It never changes the match.
   const rising = int(raw.rising, 0, 9999);
   if (rising !== null) out.rising = rising;
-  // This player is catching up (it has just rejoined, or just met a player with history it
-  // missed). Other screens then count it as away when working out who stood in for whom.
+  // This player is catching up after joining an ongoing match. Other screens count it as
+  // away when working out who stood in for whom.
   if (raw.catchUp === true) out.catchUp = true;
   if (raw.host && typeof raw.host === 'object') {
     const h = raw.host;
@@ -91,6 +99,10 @@ export function cleanSnapshot(raw) {
     for (const id of order) if (h.names && typeof h.names[id] === 'string' && CS.test(h.names[id])) names[id] = h.names[id];
     if (seed !== null && rounds !== null && order.length >= 2 && order.length <= 4 && new Set(order).size === order.length && Object.keys(names).length === order.length) {
       out.host = { seed, rounds, order, names };
+      const claim = int(raw.claim, 1, MAX_EPOCH);
+      if (claim !== null) out.claim = claim;
+      const epoch = int(raw.follows?.epoch, 0, MAX_EPOCH);
+      if (epoch !== null && order.includes(raw.follows?.id)) out.follows = { id: raw.follows.id, epoch };
       out.log = {};
       if (raw.log && typeof raw.log === 'object') {
         for (const [k, t] of Object.entries(raw.log).slice(0, 2000)) {
@@ -147,6 +159,71 @@ export function committerFor(host, gone = []) {
   return host.order.find(id => !gone.includes(id)) ?? host.order[0];
 }
 
+/** Match settings can arrive in different snapshots with their names in a different key order. */
+export function sameHost(a, b) {
+  return !!a && !!b && a.seed === b.seed && a.rounds === b.rounds && a.order.length === b.order.length &&
+    a.order.every((id, i) => id === b.order[i] && a.names[id] === b.names[id]);
+}
+
+const inMatch = (get, host) => id => {
+  const s = get(id);
+  // Hot-seat snapshots have no host. On the relay, history requires match settings.
+  return !s?.host || sameHost(host, s.host) ? s : undefined;
+};
+
+const follows = (snap, id, epoch) => snap?.follows?.id === id && snap.follows.epoch === epoch;
+
+/**
+ * Updates this player's bid and acknowledgement. The screen keeps its highest seen epoch
+ * even when newer snapshots replace the ones that carried it. Losing the connection clears
+ * `committing` in the screen, so coming back always takes a new bid.
+ */
+export function syncCommitter(host, snapshots, gone, id, state) {
+  const get = getter(snapshots);
+  const mine = get(id);
+  if (!mine || !host.order.includes(id)) return false;
+  let changed = false;
+  if (!mine.host) { mine.host = structuredClone(host); changed = true; }
+  for (const player of host.order) {
+    const s = get(player);
+    if (sameHost(host, s?.host)) state.epoch = Math.max(state.epoch, s.claim ?? 0, s.follows?.epoch ?? 0);
+  }
+  if (committerFor(host, gone) !== id) state.committing = false;
+  else if (!state.committing || mine.claim < state.epoch) {
+    // A later player may have bid with an epoch we hadn't heard yet. Bid again so screens
+    // following that player can move forward to our claim.
+    if (state.epoch < MAX_EPOCH) {
+      mine.claim = ++state.epoch;
+      state.committing = true;
+      changed = true;
+    } else state.committing = false;
+  }
+  const target = host.order.find(player => {
+    const s = get(player);
+    return !gone.includes(player) && sameHost(host, s?.host) && s.claim >= (mine.follows?.epoch ?? 0);
+  });
+  const next = target ? { id: target, epoch: get(target).claim } : mine.follows ?? { id: host.order[0], epoch: 0 };
+  if (next.id !== id || next.epoch !== mine.claim) state.committing = false;
+  if (!follows(mine, next.id, next.epoch)) {
+    mine.follows = next;
+    changed = true;
+  }
+  return changed;
+}
+
+/** A bid can write only after every player still here has acknowledged that exact bid. */
+export function canCommit(host, snapshots, { gone = [], me, committing }) {
+  if (!committing || committerFor(host, gone) !== me) return false;
+  const get = getter(snapshots);
+  const mine = get(me);
+  if (!sameHost(host, mine?.host) || !mine.claim || !follows(mine, me, mine.claim)) return false;
+  return host.order.every(id => {
+    if (id === me || gone.includes(id)) return true;
+    const s = get(id);
+    return sameHost(host, s?.host) && follows(s, me, mine.claim);
+  });
+}
+
 /**
  * Whether a copy of a history entry matches what the players asked for: a shot equal to the
  * turn owner's own `turns` request, or a shop list equal to each player's own `shops`. An empty
@@ -170,7 +247,7 @@ function matchesRequests(host, get, field, key, entry, owner, gone = []) {
  * How this screen sees the room: `gone` lists players it has given up on (never itself), `me`
  * is its own player id, and `rejoined` is true for a short while after it (re)joined, when it
  * may have missed turns. A plain array is read as `gone`.
- * @typedef {{gone?: string[], me?: string, rejoined?: boolean, ownSkips?: boolean} | string[]} RoomView
+ * @typedef {{gone?: string[], me?: string, rejoined?: boolean, ownSkips?: boolean, committing?: boolean} | string[]} RoomView
  */
 const viewOf = view => {
   const v = Array.isArray(view) ? { gone: view } : { gone: [], ...view };
@@ -277,7 +354,16 @@ function relayed(host, get, field, key, entry, by, carrier, v) {
   return committerFor(host, away) === carrier;
 }
 
-/** historyEntry, saying how the copy was believed: 'standin' (with `by`, whose word it is) when only by the catch-up rule. */
+/** A stand-in that acknowledged an earlier player carries the records it stopped writing. */
+function handedOff(host, get, id, i) {
+  const s = get(id);
+  const next = s.follows;
+  const bidder = next && get(next.id);
+  return s.claim && next?.epoch >= s.claim && host.order.slice(0, i).includes(next.id) &&
+    sameHost(host, s.host) && sameHost(host, bidder?.host) && bidder.claim >= next.epoch;
+}
+
+/** historyEntry, saying how the copy was believed, including whose word a stand-in's record is. */
 function findEntry(host, get, field, key, owner, view = {}) {
   const v = viewOf(view);
   const ref = refOf(field, key);
@@ -290,6 +376,8 @@ function findEntry(host, get, field, key, owner, view = {}) {
     // This screen's own copy: it only ever holds what it committed or already believed.
     // A copy of a stand-in's word stays one, so mirroring it again keeps the mark.
     if (id === v.me) return by ? { entry, via: 'standin', by } : { entry, via: 'own' };
+    // A request made before hearing about the handoff can be late, even if it is here now.
+    if (!by && handedOff(host, get, id, i)) return { entry, via: 'standin', by: id };
     if (matchesRequests(host, get, field, key, entry, owner, v.gone)) return { entry, via: 'requests' };
     if (field === 'log' && owner && JSON.stringify(get(owner)?.log?.[key]) === JSON.stringify(entry) && !get(owner)?.standin?.[ref]) return { entry, via: 'owner' };
     const live = owner === v.me || !contradicted(host, get, field, key, entry, owner);
@@ -316,7 +404,7 @@ function findEntry(host, get, field, key, owner, view = {}) {
  * @returns {NextAction}
  */
 export function nextAction(match, host, snapshots, view = {}) {
-  const get = getter(snapshots);
+  const get = inMatch(getter(snapshots), host);
   if (match.phase === 'over') return { kind: 'over' };
   if (match.phase === 'shop') {
     const round = match.round + 1;
@@ -376,19 +464,22 @@ function unmark(snap, ref) {
 }
 
 /**
- * The committer's side: records what the current turn or shop was, once. `gone` lists players
- * this screen has given up on. `id` is the committer (committerFor). Writes into that player's
- * own snapshot and returns true when it added an entry.
+ * Records what the current turn or shop was, once. Online, the view names this screen's
+ * player and whether it has a live claim. Hot-seat play controls every player on one screen
+ * and needs no handoff. Returns true when it adds an entry to the committer's snapshot.
  */
-export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
-  const get = getter(snapshots);
+export function commit(match, host, snapshots, view = [], id = host.order[0]) {
+  const { gone, me } = viewOf(view);
+  if (me && (id !== me || !canCommit(host, snapshots, view) || diverged(match, host, snapshots, view))) return false;
+  // Use the same history as replay. If there is already a record, play it before writing.
+  if (nextAction(match, host, snapshots, view).kind !== 'wait') return false;
+  const get = inMatch(getter(snapshots), host);
   const mine = get(id);
   if (!mine || match.phase === 'over') return false;
   mine.log ??= {};
   mine.shopLog ??= {};
   if (match.phase === 'shop') {
     const round = match.round + 1;
-    if (historyEntry(host, get, 'shopLog', round, undefined, gone)) return false;
     if (host.order.some(p => !get(p)?.shops?.[round] && !gone.includes(p))) return false;
     mine.shopLog[round] = host.order.map(p => [...(get(p)?.shops?.[round] ?? [])]);
     unmark(mine, `S${round}`);
@@ -396,7 +487,6 @@ export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
   }
   const k = match.log.length;
   const owner = host.order[match.turn];
-  if (historyEntry(host, get, 'log', k, owner, gone)) return false;
   const shot = get(owner)?.turns?.[k];
   if (shot) mine.log[k] = { angle: shot.angle, power: shot.power, weapon: shot.weapon };
   else if (gone.includes(owner)) mine.log[k] = 'skip';
@@ -407,7 +497,7 @@ export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
 
 /** True when a believable copy of an entry this match has already played says something else. */
 export function diverged(match, host, snapshots, view = {}) {
-  const get = getter(snapshots);
+  const get = inMatch(getter(snapshots), host);
   for (const [ref, played] of Object.entries(match.played ?? {})) {
     const entry = historyEntry(host, get, ref[0] === 'S' ? 'shopLog' : 'log', Number(ref.slice(1)), played.owner, view);
     // Only a believable copy that says something different counts. An entry nobody now
