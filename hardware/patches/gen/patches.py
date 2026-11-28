@@ -299,17 +299,20 @@ def extrude(geom, z0, z1, s):
         meshes.append(m)
     # Each island is its own closed shell. Islands that touch at a point keep separate vertices,
     # so no edge is ever shared by more than two faces.
-    m = trimesh.util.concatenate(meshes)
-    flip_flat_triangles(m)
-    return m
+    return trimesh.util.concatenate(meshes)
 
 
-def flip_flat_triangles(m, decimals=4):
+def written(v):
+    """Coordinates exactly as write_3mf writes them (4 decimals), read back as numbers."""
+    return np.vectorize(lambda c: float(f'{c:.4f}'), otypes=[float])(np.asarray(v, dtype=float))
+
+
+def flip_flat_triangles(m):
     """Where a hole touches an outline on a straight edge, earcut leaves a triangle whose three
     corners are in a line. Flipping its longest edge with the neighbouring triangle replaces the
     pair with two that have area, over the same outline, so the solid stays closed."""
     faces = m.faces.copy()
-    v = np.round(m.vertices, decimals)
+    v = written(m.vertices)
     def area(f):
         a, b, c = v[f]
         return np.linalg.norm(np.cross(b - a, c - a)) / 2
@@ -397,9 +400,9 @@ def drop_collinear(ring, keep, tol=COLLINEAR_MM):
     return pts
 
 
-def zero_area_faces(m, decimals=4):
-    """Triangles with no area once vertices are rounded as write_3mf writes them."""
-    v = np.round(m.vertices, decimals)
+def zero_area_faces(m):
+    """Triangles with no area in the coordinates write_3mf writes."""
+    v = written(m.vertices)
     t = v[m.faces]
     return int((np.linalg.norm(np.cross(t[:, 1] - t[:, 0], t[:, 2] - t[:, 0]), axis=1) < 1e-9).sum())
 
@@ -407,25 +410,30 @@ def zero_area_faces(m, decimals=4):
 def solids(L):
     s = P['mm_per_unit']
     b, t, w = P['body_mm'], P['tone_mm'], P['white_mm']
-    return {
+    parts = {
         'body': extrude(L['body'], 0, b, s),
         'tone': extrude(L['tone'], b, b + t, s),
         'white': extrude(L['white'], b, b + t + w, s),   # white starts on the body, so it never floats
     }
+    # Centre the part on the build plate here, once, so the checks and the triangle clean-up see
+    # the same coordinates write_3mf writes (it no longer moves anything).
+    allv = np.vstack([m.vertices for m in parts.values()])
+    lo, hi = allv.min(0), allv.max(0)
+    centre = ((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0)
+    for m in parts.values():
+        m.vertices = m.vertices - centre
+        flip_flat_triangles(m)
+    return parts
 
 
 def write_3mf(path, parts, colours, title):
     """A plain 3MF: one mesh per colour, each with its display colour, grouped as the components of
     one object with a single build item, so a slicer keeps the three colours together as one part
     (3MF Core 3.4.3) instead of laying them out separately. Written deterministically."""
-    centre = None
-    allv = np.vstack([m.vertices for m in parts.values()])
-    lo, hi = allv.min(0), allv.max(0)
-    centre = ((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2)
     mats = ''.join(f'<base name="{k}" displaycolor="{colours[k].upper()}FF"/>' for k in parts)
     objs, items = [], []
     for i, (k, m) in enumerate(parts.items(), start=2):
-        v = ''.join(f'<vertex x="{x - centre[0]:.4f}" y="{y - centre[1]:.4f}" z="{z:.4f}"/>' for x, y, z in m.vertices)
+        v = ''.join(f'<vertex x="{x:.4f}" y="{y:.4f}" z="{z:.4f}"/>' for x, y, z in m.vertices)   # solids() centred them
         f = ''.join(f'<triangle v1="{a}" v2="{b}" v3="{c}"/>' for a, b, c in m.faces)
         objs.append(f'<object id="{i}" name="{title} - {k}" type="model" pid="1" pindex="{i - 2}">'
                     f'<mesh><vertices>{v}</vertices><triangles>{f}</triangles></mesh></object>')
@@ -500,7 +508,9 @@ def mesh_fails(name, parts):
     """Every body closed, consistently wound, with volume, and no zero-area triangles as written."""
     fails = []
     for k, m in parts.items():
-        if not (m.is_watertight and m.is_winding_consistent) or m.volume <= 0:
+        # Check the mesh as written: rounding can merge nearby vertices.
+        w = trimesh.Trimesh(written(m.vertices), m.faces, process=False)
+        if not (m.is_watertight and m.is_winding_consistent and w.is_watertight and w.is_winding_consistent) or w.volume <= 0:
             fails.append(f'{name}: the {k} body is not a closed solid')
         if zero_area_faces(m):
             fails.append(f'{name}: the {k} body has {zero_area_faces(m)} zero-area triangles')
@@ -524,10 +534,17 @@ def same_file(path, data):
 
 
 # ---------------------------------------------------------------- build / check
+def self_test():
+    """The mesh checks must see what is written: a triangle smaller than the 4-decimal grid
+    collapses in the file, so the zero-area check has to catch it."""
+    tiny = trimesh.Trimesh([[10.00001, 5.00001, 0], [10.00004, 5.00001, 0], [10.00001, 5.00004, 0]], [[0, 1, 2]], process=False)
+    return [] if zero_area_faces(tiny) == 1 else ['self-test: the zero-area check missed a triangle that collapses when written']
+
+
 def build(write=True):
     labels = read_labels()
     missing = [q for q in labels if q not in art['patches']]
-    fails = [f'quest {q} has no patch art in patch-art.json' for q in missing]
+    fails = self_test() + [f'quest {q} has no patch art in patch-art.json' for q in missing]
     web, files = {}, {}
     for pid, spec in art['patches'].items():
         if pid not in labels:
