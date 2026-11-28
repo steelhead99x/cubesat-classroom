@@ -27,9 +27,11 @@ import { WEAPON, createMatch, buy, startRound, fire, skip } from './logic.mjs';
  * carries it as `p`. A snapshot from another version is ignored, so a client that follows only
  * the creator (v3 and older) and one that hands the room on (v4) never share a match. v5 marks
  * copies of a stand-in's word (`standin`); a v4 client would ignore the mark and take such a copy
- * on the copier's authority, so the two never share a match either.
+ * on the copier's authority, so the two never share a match either. v6 publishes each relay
+ * session under <player>/<session> instead of <player> (see net.ts), which a v5 client can't
+ * follow.
  */
-export const ROOM_PROTOCOL = 5;
+export const ROOM_PROTOCOL = 6;
 export const ROOM_NAMESPACE = `rockoon-battle-v${ROOM_PROTOCOL}`;
 
 const ID = /^[0-9a-f]{12}$/;

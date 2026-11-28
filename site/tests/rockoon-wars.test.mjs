@@ -484,8 +484,9 @@ test('the remaining committer can replay a stand-in copy after earlier players l
   assert.equal(R.fingerprint(Room.replay(four, snapshots, { gone: [a, b, c], me: watcher }).match), R.fingerprint(remaining));
 });
 
-test('v5 snapshots carry stand-in marks, and v4 snapshots are not read', () => {
-  assert.equal(Room.ROOM_PROTOCOL, 5);
+test('v6 rooms (a broadcast per session, stand-in marks) ignore v5 and v4 snapshots', () => {
+  assert.equal(Room.ROOM_PROTOCOL, 6);
+  assert.equal(Room.cleanSnapshot({ p: 5, cs: 'GS-AA1', joined: 1, turns: {}, shops: {} }), null);
   assert.equal(Room.cleanSnapshot({ p: 4, cs: 'GS-AA1', joined: 1, turns: {}, shops: {} }), null);
 });
 

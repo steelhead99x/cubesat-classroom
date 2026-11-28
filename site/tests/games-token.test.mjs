@@ -124,6 +124,10 @@ test('the terrain rules use a separate room namespace from old clients', async (
   // v5 (stand-in marks) has its own rooms too, so v4 clients never share a match with it.
   const v5 = await (await ask(configured, { body: { game: 'rockoon-battle-v5', room } })).json();
   assert.equal(new URL(v5.url).pathname, `/proj/games/rockoon-battle-v5/${room}`);
+  // v6 (a broadcast per relay session) likewise.
+  const v6 = await (await ask(configured, { body: { game: 'rockoon-battle-v6', room } })).json();
+  assert.equal(new URL(v6.url).pathname, `/proj/games/rockoon-battle-v6/${room}`);
+  assert.deepEqual(part(new URL(v6.url).searchParams.get('jwt'), 1).put, [v6.player]);
 });
 
 test('a seat ticket keeps the same player id in the same room, and only there', async () => {
