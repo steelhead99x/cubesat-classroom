@@ -132,7 +132,7 @@ The checks in [crates/amsat-kit/src/checks.rs](../../crates/amsat-kit/src/checks
 - anything hits a part in Arduino's layout for either board, a column's pin head comes up under the Uno's solder joints, or anything blocks the Nano's USB plug or leaves less than 20 mm from it to the plate edge
 - any of the three fit tabs doesn't go on, press, and sit at its own clearance on the flats, or the bare Nano doesn't go into its coupon and stay held the same way as on the plate
 
-`cargo run --release -p amsat-kit -- self-test` (and `cargo test -p amsat-kit`) breaks the classroom kit twenty-six ways, the camera side five ways, the logo placement seven ways, the outdoor cases nineteen ways and the latch coupon two ways, and checks that each one is caught, and that hook fingers exactly at the strain limit still pass.
+`cargo run --release -p amsat-kit -- self-test` (and `cargo test -p amsat-kit`) breaks the classroom kit twenty-six ways, the camera side five ways, the logo placement seven ways, the outdoor cases twenty-four ways and the latch coupon two ways, and checks that each one is caught, and that hook fingers exactly at the strain limit still pass.
 
 **Verification status: nearly verified.** The design checks above pass in CI, the full v1 cube frame printed and went together fine, and the keyed-pin fit ladder and the Nano coupon have printed well (see above). The battery plate, the fit plate, the camera side and the camera coupon in this version haven't been printed yet. The checks are design checks, not measurements, and the strain and force figures are hand calculations for PLA (straight-beam estimates), not test results. Print the coupons first and share what you find through the [contribution guide](../../CONTRIBUTING.md).
 

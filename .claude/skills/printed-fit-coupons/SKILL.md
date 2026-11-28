@@ -11,7 +11,7 @@ A coupon is the joint on its own, a few grams of plastic, made by **the same fun
 
 - **Same code, same geometry.** Cut it from the real part (the real part intersected with a box, plus a solid rim), or build it from the same joint functions. Never redraw it by hand.
 - **The smallest base that holds the joint.** Pocket out everything else. Aim for 1–5 g per joint.
-- **Hold the parts the way the real part does.** A joint that relies on its part being held square (a lid latch held by the lid's skirt and the far latch) needs that holding in the coupon too, or the joint just pushes the piece aside and the test means nothing. A small working version beats a chunk cut out: the outdoor latch coupon is a small open box and frame lid with two real latches, about 14 cm³.
+- **Hold the parts the way the real part does.** A joint that relies on its part being held square (a lid latch held by the lid's skirt and the far latch) needs that holding in the coupon too, or the joint just pushes the piece aside and the test means nothing. A small working version beats a chunk cut out: the outdoor latch coupon is a small open box and frame lid with two real latches, about 15 cm³.
 - **Real hardware where it matters:**
   - A board mount takes the actual board: the Nano coupon is the plate's Nano mount, sized for the bare board.
   - A thread coupon takes the real screw.

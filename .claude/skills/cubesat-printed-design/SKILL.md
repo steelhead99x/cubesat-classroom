@@ -35,6 +35,7 @@ No screws, inserts or nuts hold printed parts together. A seal that needs no cla
 - **Batteries:** hold every cell size the listing allows, and check the smallest as well as the largest (a holder sized for the largest lets a smaller cell lift out). Never clamp a pouch cell: any push on it stays light and comes from something that gives, such as a sprung hook. The default cell is the MakerFocus 3.7 V 3000 mAh flat LiPo, 67 × 36 × 12 mm ±2, JST PH 2.0.
 - **Outdoor:**
   - **Seal:** a radial O-ring in a groove round a skirt under the lid, squeezed 18–30% against the box wall, groove ≤ 85% full.
+  - **Light walls:** isogrid pockets in outside faces (2 mm ribs, 45° sides, skin ≥ 1.6 mm), solid where the O-ring presses and round port seals; flange only under lugs.
   - **Ports:** glands face down, antennas point up, and a breathable vent stops condensation.
   - **Tripod:** a 1/4"-20 UNC socket in a sealed boss, so water can't get in through it. A printed thread is fine if tested with a coupon.
 
