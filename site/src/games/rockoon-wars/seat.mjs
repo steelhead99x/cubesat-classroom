@@ -44,3 +44,26 @@ export function saveSeat(storage, room, seat) {
     return true;
   } catch { return false; }
 }
+
+/**
+ * Claims `player`'s seat in `room` for this tab with a Web Lock, so two tabs never use one seat.
+ * (Opening a link from the game, or Duplicate Tab, copies session storage, saved seat and all.)
+ * Resolves to a function that gives the seat up, or null if another tab of this browser holds it,
+ * or this browser has no Web Locks and so can't tell. A lock is also given up when its page
+ * closes or reloads, so the reloaded page can claim it again. `locks` is navigator.locks.
+ * @returns {Promise<(() => void) | null>}
+ */
+export function claimSeat(locks, room, player) {
+  if (typeof locks?.request !== 'function' || !ROOM.test(String(room)) || !PLAYER.test(String(player))) return Promise.resolve(null);
+  return new Promise(resolve => {
+    let release = () => {};
+    const held = new Promise(r => { release = r; });
+    Promise.resolve()
+      .then(() => locks.request(`${KEY}${room}:${player}`, { ifAvailable: true }, lock => {
+        if (!lock) { resolve(null); return; }
+        resolve(() => release());
+        return held;
+      }))
+      .catch(() => resolve(null));
+  });
+}

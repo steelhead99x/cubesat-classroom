@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../src/worker.mjs';
-import { loadSeat, saveSeat } from '../src/games/rockoon-wars/seat.mjs';
+import { claimSeat, loadSeat, saveSeat } from '../src/games/rockoon-wars/seat.mjs';
 import { ROOM_NAMESPACE } from '../src/games/rockoon-wars/room.mjs';
 
 /** A stand-in for sessionStorage: one tab's store, which a reload keeps. */
@@ -60,6 +60,43 @@ test('saving refuses a bad seat or room, and survives a full store', () => {
   assert.equal(saveSeat(store, '../x', seat), false);
   assert.equal(store.map.size, 0);
   assert.equal(saveSeat({ setItem() { throw new Error('QuotaExceededError'); } }, 'K7QX2', seat), false);
+});
+
+/** A stand-in for navigator.locks, shared by every tab of one browser (ifAvailable only). */
+function browserLocks() {
+  const held = new Set();
+  return {
+    held,
+    async request(name, options, callback) {
+      assert.equal(options.ifAvailable, true);
+      if (held.has(name)) return callback(null);
+      held.add(name);
+      try { return await callback({ name }); } finally { held.delete(name); }
+    },
+  };
+}
+
+test('only one tab can claim a seat, and it can be claimed again once given up', async () => {
+  const locks = browserLocks();
+  const first = await claimSeat(locks, 'K7QX2', seat.player);
+  assert.equal(typeof first, 'function');
+  // A tab opened from the first carries a copy of the saved seat; it must not use it.
+  assert.equal(await claimSeat(locks, 'K7QX2', seat.player), null);
+  // Other seats and other rooms are separate.
+  const other = await claimSeat(locks, 'K7QX2', 'ba9876543210');
+  const elsewhere = await claimSeat(locks, 'M3RT8', seat.player);
+  assert.ok(other && elsewhere);
+  first();
+  await new Promise(r => setTimeout(r, 0));
+  assert.equal(typeof await claimSeat(locks, 'K7QX2', seat.player), 'function');
+});
+
+test('without Web Locks, or with bad input, no seat is claimed', async () => {
+  assert.equal(await claimSeat(undefined, 'K7QX2', seat.player), null);
+  assert.equal(await claimSeat({ request() { throw new Error('SecurityError'); } }, 'K7QX2', seat.player), null);
+  assert.equal(await claimSeat({ request: async () => { throw new Error('AbortError'); } }, 'K7QX2', seat.player), null);
+  assert.equal(await claimSeat(browserLocks(), '../x', seat.player), null);
+  assert.equal(await claimSeat(browserLocks(), 'K7QX2', 'nope'), null);
 });
 
 // Through the Worker, as the page does: join, save the seat, reload, ask again with the saved seat.
