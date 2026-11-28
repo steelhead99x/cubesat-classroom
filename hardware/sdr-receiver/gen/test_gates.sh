@@ -37,8 +37,12 @@ cp -R "$src/." "$guard/"
 for board in csc-r1p csc-r1p-ctl; do
   pcb="$guard/pedal/kicad/$board.kicad_pcb"
   before=$(sha256sum < "$pcb")
-  if (cd "$guard/gen" && env -u CSC_REBUILD_ROUTED CSC_BOARD=$board ./build.sh >/dev/null 2>&1); then
+  # It must refuse for the right reason: any other failure (a missing tool, say) doesn't count.
+  if out=$(cd "$guard/gen" && env -u CSC_REBUILD_ROUTED CSC_BOARD=$board ./build.sh 2>&1); then
     rm -rf -- "$guard"; echo "FAIL  build.sh rebuilt the routed $board board" >&2; exit 1
+  fi
+  if ! grep -q "$board is routed by hand" <<<"$out"; then
+    rm -rf -- "$guard"; echo "FAIL  build.sh failed for $board without the routed-board refusal:" >&2; echo "$out" >&2; exit 1
   fi
   [[ "$(sha256sum < "$pcb")" == "$before" ]] || { rm -rf -- "$guard"; echo "FAIL  build.sh changed $board.kicad_pcb" >&2; exit 1; }
 done
