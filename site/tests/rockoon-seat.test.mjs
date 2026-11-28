@@ -21,7 +21,7 @@ const seat = { player: '0123456789ab', ticket: 'A'.repeat(43), creator: true, jo
 test('a saved seat reads back for the same room, and only that room', () => {
   const store = tabStore();
   assert.equal(saveSeat(store, 'K7QX2', seat), true);
-  assert.deepEqual(loadSeat(store, 'K7QX2'), { ...seat, turns: {}, shops: {} });
+  assert.deepEqual(loadSeat(store, 'K7QX2'), { ...seat, own: {} });
   assert.equal(loadSeat(store, 'M3RT8'), null);
 });
 
@@ -62,17 +62,20 @@ test('saving refuses a bad seat or room, and survives a full store', () => {
   assert.equal(saveSeat({ setItem() { throw new Error('QuotaExceededError'); } }, 'K7QX2', seat), false);
 });
 
-test('uncommitted turns and shops are kept with the seat', () => {
+test('the player\'s own snapshot (match, history, requests) is kept with the seat', () => {
   const store = tabStore();
-  const turns = { 3: { angle: 45, power: 60, weapon: 'standard' } }, shops = { 2: ['standard'] };
-  assert.equal(saveSeat(store, 'K7QX2', { ...seat, turns, shops }), true);
-  const back = loadSeat(store, 'K7QX2');
-  assert.deepEqual(back.turns, turns);
-  assert.deepEqual(back.shops, shops);
-  // Anything that is not a plain object reads as no requests.
-  store.setItem('rockoon-seat:K7QX2', JSON.stringify({ ...seat, turns: [1], shops: 'x' }));
-  assert.deepEqual(loadSeat(store, 'K7QX2').turns, {});
-  assert.deepEqual(loadSeat(store, 'K7QX2').shops, {});
+  const own = {
+    host: { seed: 7, rounds: 3, order: [seat.player, 'ba9876543210'], names: {} },
+    log: { 0: 'skip' }, shopLog: { 1: [[], []] },
+    turns: { 3: { angle: 45, power: 60, weapon: 'standard' } }, shops: { 2: ['standard'] },
+  };
+  assert.equal(saveSeat(store, 'K7QX2', { ...seat, own }), true);
+  assert.deepEqual(loadSeat(store, 'K7QX2').own, own);
+  // Anything that is not a plain object reads as nothing kept.
+  for (const bad of [[1], 'x', null, 5]) {
+    store.setItem('rockoon-seat:K7QX2', JSON.stringify({ ...seat, own: bad }));
+    assert.deepEqual(loadSeat(store, 'K7QX2').own, {}, JSON.stringify(bad));
+  }
 });
 
 test('credentials must be strings, and a join time peers would reject is replaced', () => {
