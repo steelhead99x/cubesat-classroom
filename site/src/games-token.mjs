@@ -36,7 +36,7 @@ const b64urlText = text => b64url(enc.encode(text));
  * Reads a JSON body of at most `max` bytes, without buffering more than that. Returns
  * undefined when the body is too large and null when it is not valid JSON.
  */
-async function readSmallJson(request, max) {
+export async function readSmallJson(request, max) {
   const declared = Number(request.headers.get('content-length') ?? NaN);
   if (declared > max) return undefined;
   if (!request.body) return null;
