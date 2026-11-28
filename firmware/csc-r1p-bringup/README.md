@@ -29,11 +29,12 @@ cargo +stable test --locked --manifest-path firmware/csc-r1p-bringup/Cargo.toml 
 | `CONTROLS` | Send it before and while holding each switch. Each `true` means the input is low. BAND closed selects 70 cm on the panel. Step the encoder slowly to sample A and B. |
 | `POTS` | Turn GAIN and LEVEL separately. Each should change its own raw counts. `Ok(None)` means conversion timed out. |
 | `LED ON` / `LED OFF` | Check that the ENGAGE LED follows the command. |
+| `ENCODER TEST` | Turn TUNE steadily in one direction for five seconds, then repeat in the other direction. Record forward, reverse and missed counts. |
 | `OLED TEST` | Look for a border at all four edges for about 1.5 seconds. The display should then turn off and the console should report both results. |
 | `SAFE` | Retry both expander setups and turn the ENGAGE LED off. |
 | `HELP` | List the commands. |
 
-The console uses USB Serial/JTAG, leaving XIAO D6 available for the control interrupt. Check that line during reset before adding interrupt-driven encoder handling. Future firmware needs ADC and DAC audio, encoder tracking, live OLED status and the station's receiver telemetry.
+The console uses USB Serial/JTAG, leaving XIAO D6 available for the control interrupt. Check that line during reset before adding interrupt-driven encoder handling. The encoder diagnostic polls approximately every 2 ms and reports raw quadrature edges. Forward and reverse describe channel phase order. A missed count means both channels changed between samples and their order is unknown. A full cycle between samples is invisible to this test. Record a slow turn and a fast turn in each direction before choosing a production polling interval. Future firmware needs ADC and DAC audio, encoder-driven tuning, live OLED status and receiver telemetry.
 
 ## Check the local oscillator
 

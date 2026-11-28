@@ -32,6 +32,40 @@ pub struct Controls {
     pub band_70cm: bool,
 }
 
+/// Counts quadrature edges without assuming a particular pulses-per-detent encoder.
+pub struct EncoderTrace {
+    previous: u8,
+    pub forward_edges: u32,
+    pub reverse_edges: u32,
+    pub missed_samples: u32,
+}
+
+impl EncoderTrace {
+    pub fn new(a: bool, b: bool) -> Self {
+        Self {
+            previous: (u8::from(a) << 1) | u8::from(b),
+            forward_edges: 0,
+            reverse_edges: 0,
+            missed_samples: 0,
+        }
+    }
+
+    pub fn sample(&mut self, a: bool, b: bool) {
+        // Phase order 00 → 01 → 11 → 10. The bench test establishes
+        // whether this is clockwise for the fitted encoder.
+        const PHASE_INDEX: [u8; 4] = [0, 1, 3, 2];
+        let current = (u8::from(a) << 1) | u8::from(b);
+        let delta = (PHASE_INDEX[current as usize] + 4 - PHASE_INDEX[self.previous as usize]) % 4;
+        match delta {
+            1 => self.forward_edges += 1,
+            2 => self.missed_samples += 1,
+            3 => self.reverse_edges += 1,
+            _ => {}
+        }
+        self.previous = current;
+    }
+}
+
 impl<Bus: I2c> Pedal<Bus> {
     /// Set the latch before taking control of the pins. Keep the bias tee,
     /// demodulator, ADC, PLL and audio disabled.
@@ -192,6 +226,26 @@ mod tests {
             }
         );
         assert!(pedal.0.0.is_empty());
+    }
+
+    #[test]
+    fn traces_encoder_in_both_directions_and_resyncs_after_a_missed_edge() {
+        let mut trace = EncoderTrace::new(false, false);
+        for (a, b) in [(false, true), (true, true), (true, false), (false, false)] {
+            trace.sample(a, b);
+        }
+        trace.sample(true, false);
+        trace.sample(true, false); // a held position adds no edge
+        trace.sample(false, true); // two bits changed between samples
+        trace.sample(false, false); // reverse from the resynchronized phase
+        assert_eq!(
+            (
+                trace.forward_edges,
+                trace.reverse_edges,
+                trace.missed_samples
+            ),
+            (4, 2, 1)
+        );
     }
 
     #[test]

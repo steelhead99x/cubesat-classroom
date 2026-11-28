@@ -2,7 +2,7 @@
 #![no_main]
 
 use csc_r1p_bringup::{
-    Pedal, Pot,
+    EncoderTrace, Pedal, Pot,
     pll::{BenchBand, POWER_DOWN},
 };
 use embedded_hal::{i2c::I2c, spi::SpiBus};
@@ -62,7 +62,7 @@ fn main() -> ! {
                     match &line[..len] {
                         b"HELP" => {
                             println!(
-                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | OLED TEST | PLL TEST 2M | PLL TEST 70CM | HELP"
+                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | PLL TEST 2M | PLL TEST 70CM | HELP"
                             );
                         }
                         b"SAFE" => controls_ready = setup(&mut pedal),
@@ -74,6 +74,16 @@ fn main() -> ! {
                         }
                         b"LED ON" | b"LED OFF" => {
                             println!("ERR control board setup failed. Retry SAFE.");
+                        }
+                        b"ENCODER TEST" => {
+                            println!("Turn TUNE in one direction for five seconds.");
+                            match trace_encoder(&mut pedal, &delay) {
+                                Ok(trace) => println!(
+                                    "ENCODER forward={} reverse={} missed={}",
+                                    trace.forward_edges, trace.reverse_edges, trace.missed_samples
+                                ),
+                                Err(error) => println!("ENCODER I2C error: {error:?}"),
+                            }
                         }
                         b"OLED TEST" => {
                             let show = pedal.oled_test();
@@ -191,6 +201,21 @@ fn write_pll_register<Serial: SpiBus>(
     latch.set_low();
     delay.delay_micros(1);
     Ok(())
+}
+
+fn trace_encoder<Bus: I2c>(
+    pedal: &mut Pedal<Bus>,
+    delay: &Delay,
+) -> Result<EncoderTrace, Bus::Error> {
+    let input = pedal.controls()?;
+    let mut trace = EncoderTrace::new(input.encoder_a, input.encoder_b);
+    let start = esp_hal::time::Instant::now();
+    while start.elapsed().as_millis() < 5_000 {
+        delay.delay_millis(2);
+        let input = pedal.controls()?;
+        trace.sample(input.encoder_a, input.encoder_b);
+    }
+    Ok(trace)
 }
 
 fn read_pot<Bus: I2c>(
