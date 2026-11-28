@@ -728,14 +728,15 @@ pub fn latch_coupon_box(c: &Outdoor) -> Manifold {
         .union(&lugs(c))
 }
 
+/// How thick the coupon lid's middle is: the logo's depth and its backing, and a little more.
+pub const BADGE_T: f64 = 1.2;
+
 /// The coupon's lid in its own frame: the real lid's edge, latches and skirt, with its middle
-/// open inside the skirt, to save plastic.
+/// a thin web inside the skirt, to save plastic, carrying the CubeSat Classroom logo.
 pub fn latch_coupon_lid(d: &Design, c: &Outdoor, deflect: f64) -> Result<Manifold, String> {
-    // The open middle, less a patch on one plain side for the logo.
-    let inner = c.cavity / 2.0 - c.gland - c.skirt_wall;
+    // The middle is a thin web in the top face, just thick enough to carry the logo.
     let middle = offset(&c.cavity_outline(), -(c.gland + c.skirt_wall), FACETS)
-        .difference(&rect(-7.0, inner - 9.0, 7.0, inner + 1.0))
-        .extrude(c.lid_t + 2.0)
+        .extrude(c.lid_t - BADGE_T + 1.0)
         .translate(0.0, 0.0, -1.0);
     // Away from the latches the lid only needs to cover the wall.
     let keep = c
