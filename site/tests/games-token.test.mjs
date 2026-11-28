@@ -121,6 +121,9 @@ test('the terrain rules use a separate room namespace from old clients', async (
   } })).json();
   assert.equal(new URL(current.url).pathname, `/proj/games/rockoon-battle-v4/${room}`);
   assert.notEqual(current.player, legacy.player);
+  // v5 (stand-in marks) has its own rooms too, so v4 clients never share a match with it.
+  const v5 = await (await ask(configured, { body: { game: 'rockoon-battle-v5', room } })).json();
+  assert.equal(new URL(v5.url).pathname, `/proj/games/rockoon-battle-v5/${room}`);
 });
 
 test('a seat ticket keeps the same player id in the same room, and only there', async () => {

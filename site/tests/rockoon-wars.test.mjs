@@ -418,6 +418,38 @@ test('a copy of an entry taken on a stand-in\'s word keeps the stand-in\'s autho
   assert.equal(R.fingerprint(Room.replay(three, s, [ids[1]]).match), R.fingerprint(a));
 });
 
+test('a watcher replays a stand-in\'s entry from a marked copy after the stand-in leaves', () => {
+  // Review: a watcher who joined after B left replayed only up to B's skip of C's turn, because
+  // only a player catching up took marked copies, and the watcher never catches up as a player.
+  const { three, s, k } = threeAt(ids[2]);
+  const bView = { gone: [ids[0], ids[2]], me: ids[1] };
+  let b = Room.replay(three, s, bView).match;
+  assert.ok(Room.commit(b, three, s, bView.gone, ids[1]));
+  b = Room.replay(three, s, bView).match;
+  Room.mirror(b, three, s, ids[1]);
+  const aView = { gone: [ids[2]], me: ids[0], rejoined: true };
+  let a = Room.replay(three, s, aView).match;
+  Room.mirror(a, three, s, ids[0]);
+  s[ids[0]].turns[k + 1] = { angle: 70, power: 50, weapon: 'baby' };
+  assert.ok(Room.commit(a, three, s, [ids[2]], ids[0]));
+  a = Room.replay(three, s, aView).match;
+  Room.mirror(a, three, s, ids[0]);
+  delete s[ids[1]];
+  delete s[ids[2]];
+  // A fresh watcher, not catching up, with B and C gone: the creator's marked copy is enough.
+  const watcher = 'eeeeeeeeeeee';
+  const w = Room.replay(three, s, { gone: [ids[1], ids[2]], me: watcher }).match;
+  assert.equal(w.log.length, k + 2);
+  assert.equal(R.fingerprint(w), R.fingerprint(a));
+  // A player screen that is not catching up still doesn't take it on the creator's word.
+  assert.equal(Room.replay(three, s, { gone: [ids[1], ids[2]], me: ids[2] }).match.log.length, k);
+});
+
+test('v5 snapshots carry stand-in marks, and v4 snapshots are not read', () => {
+  assert.equal(Room.ROOM_PROTOCOL, 5);
+  assert.equal(Room.cleanSnapshot({ p: 4, cs: 'GS-AA1', joined: 1, turns: {}, shops: {} }), null);
+});
+
 test('a stand-in mark never makes a forged copy believable', () => {
   const { three, s, match, k } = threeAt(ids[2]);
   const cView = { gone: [], me: ids[2], rejoined: true };

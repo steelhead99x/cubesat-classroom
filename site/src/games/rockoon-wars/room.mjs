@@ -25,9 +25,11 @@ import { WEAPON, createMatch, buy, startRound, fire, skip } from './logic.mjs';
 /**
  * The room protocol. It names the relay namespace (rockoon-battle-v<N>) and every snapshot
  * carries it as `p`. A snapshot from another version is ignored, so a client that follows only
- * the creator (v3 and older) and one that hands the room on (v4) never share a match.
+ * the creator (v3 and older) and one that hands the room on (v4) never share a match. v5 marks
+ * copies of a stand-in's word (`standin`); a v4 client would ignore the mark and take such a copy
+ * on the copier's authority, so the two never share a match either.
  */
-export const ROOM_PROTOCOL = 4;
+export const ROOM_PROTOCOL = 5;
 export const ROOM_NAMESPACE = `rockoon-battle-v${ROOM_PROTOCOL}`;
 
 const ID = /^[0-9a-f]{12}$/;
@@ -244,15 +246,19 @@ function contradicted(host, get, field, key, entry, owner) {
 
 /**
  * Whether a copy marked as stand-in `by`'s word (`standin`) is believable, as that stand-in's
- * word: never the copier's. Only a screen catching up takes it, as it would from the stand-in
- * itself, and only when every player before the stand-in is gone, is this screen, or carries the
+ * word: never the copier's. Only a player's screen catching up takes it, as it would from the
+ * stand-in itself, or a watcher's screen (not in the match, so it never republishes history and
+ * can only mislead itself), and only when every player before the stand-in is gone, is this screen, or carries the
  * same entry taken from the same stand-in (it was away, and the stand-in recorded it), and when
  * the stand-in itself, if it is still here, carries the same entry or none. Someone must vouch
  * for it: the stand-in or one of those copies. So the record survives the stand-in leaving, and
  * a copier can never lend it the creator's authority.
  */
 function relayed(host, get, field, key, entry, by, v) {
-  if (!v.rejoined || !v.me || !host.order.includes(v.me)) return false;
+  if (!v.me) return false;
+  // A watcher follows the match from whatever copies are left: after the stand-in has gone, a
+  // marked copy may be the only record of its entry.
+  if (host.order.includes(v.me) && !v.rejoined) return false;
   const j = host.order.indexOf(by);
   if (j < 1) return false;
   const own = get(by)?.[field]?.[key];
