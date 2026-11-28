@@ -47,7 +47,7 @@ pub fn rules(o: &Outdoor) -> Check {
     )?;
     require(
         o.skin >= 1.6 && o.skin < o.wall,
-        "the isogrid skin must be at least 1.6 mm (four 0.4 mm perimeters) to hold water",
+        "the isogrid skin must be at least 1.6 mm",
     )?;
     require(
         o.rib_w >= 2.0,
@@ -431,7 +431,6 @@ pub fn verify_xiao(d: &Design, o: &Outdoor) -> Check {
     )
 }
 
-/// Deliberately broken outdoor designs: the checks must reject every one.
 /// The lid on a box: it sits on the rim and under the lugs' catches, can't lift off, goes on
 /// with its latches pushed in, and can't slide sideways off a catch, because its skirt holds
 /// it square in the opening.
@@ -506,6 +505,7 @@ pub fn broken_latch_coupons() -> Vec<(&'static str, Outdoor)> {
     ]
 }
 
+/// Deliberately broken outdoor designs: the checks must reject every one.
 pub fn broken_designs() -> Vec<(&'static str, Design, Outdoor, bool)> {
     let with = |f: &dyn Fn(&mut Outdoor)| {
         let mut o = Outdoor::default();

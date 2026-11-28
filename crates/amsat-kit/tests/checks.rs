@@ -134,6 +134,17 @@ fn both_outdoor_latch_coupons_pass() {
 }
 
 #[test]
+fn broken_latch_coupons_fail() {
+    let design = Design::default();
+    for (name, outdoor) in outdoor_checks::broken_latch_coupons() {
+        assert!(
+            outdoor_checks::verify_latch_coupon(&design, &outdoor).is_err(),
+            "accepted broken latch coupon: {name}"
+        );
+    }
+}
+
+#[test]
 fn broken_outdoor_designs_fail() {
     let missed: Vec<_> = outdoor_checks::broken_designs()
         .into_iter()

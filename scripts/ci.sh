@@ -59,6 +59,13 @@ shellcheck docs/start.sh scripts/*.sh
 (cd hardware/solar-face/gen && python3 test_drc.py)
 python3 hardware/rideshare-flatsat/test_lab.py
 python3 hardware/rideshare-flatsat-ground/test_ground.py
+bash hardware/sdr-receiver/gen/test_gates.sh --report-only
+
+patch_env=$(mktemp -d)
+trap 'rm -rf -- "$patch_env"' EXIT
+python3 -m venv "$patch_env"
+patch_python="$patch_env/bin/python"
+"$patch_python" -m pip install -r hardware/patches/gen/requirements.txt
 
 echo "=== Firmware builds ==="
 bash scripts/firmware.sh
@@ -70,12 +77,8 @@ cargo run --locked --release -p amsat-kit
 cargo clippy --locked --release -p cubesat-cad --all-targets -- -D warnings
 cargo test --locked --release -p cubesat-cad
 cargo run --locked --release -p cubesat-cad -- build hardware/rev-c
-hardware_status="$(git status --porcelain -- hardware)"
-if [ -n "$hardware_status" ]; then
-  printf '%s\n' "$hardware_status"
-  echo "Regenerate the hardware files (see hardware/README.md) and commit them." >&2
-  exit 1
-fi
+"$patch_python" scripts/test-print-files.py
+"$patch_python" scripts/check-print-files.py
 
 echo "=== Site and Worker ==="
 if ! pick_node24; then
@@ -86,6 +89,7 @@ echo "Using node $(node -v)"
 (
   cd site
   npm ci
+  "$patch_python" "$ROOT/hardware/patches/gen/patches.py" check
   npm run build
   npm test
   npm run build:github

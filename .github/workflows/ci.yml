@@ -61,6 +61,12 @@ jobs:
           cache: npm
           cache-dependency-path: site/package-lock.json
       - run: npm ci
+      - name: Mission patch sources and print files are up to date
+        working-directory: .
+        run: |
+          python3 -m venv "$RUNNER_TEMP/patch-check"
+          "$RUNNER_TEMP/patch-check/bin/python" -m pip install -r hardware/patches/gen/requirements.txt
+          "$RUNNER_TEMP/patch-check/bin/python" hardware/patches/gen/patches.py check
       - run: npm run build
       - name: Worker behaviour tests (redirects, Origin check, preview gate, guide off)
         run: npm test
@@ -213,9 +219,12 @@ jobs:
         run: |
           cargo run --locked --release -p amsat-kit -- self-test
           cargo run --locked --release -p amsat-kit
-      - name: Committed STL, 3MF, drawing and AMSAT kit are up to date
+      - name: Committed print files are up to date
         run: |
-          if [ -n "$(git status --porcelain -- hardware)" ]; then git status --short -- hardware; echo "Regenerate the hardware files (see hardware/README.md) and commit them."; exit 1; fi
+          python3 -m venv "$RUNNER_TEMP/print-check"
+          "$RUNNER_TEMP/print-check/bin/python" -m pip install -r hardware/patches/gen/requirements.txt
+          "$RUNNER_TEMP/print-check/bin/python" scripts/test-print-files.py
+          "$RUNNER_TEMP/print-check/bin/python" scripts/check-print-files.py
 
   cad:
     name: Rev C CAD and CDS checks (Rust)
@@ -266,3 +275,4 @@ jobs:
           persist-credentials: false
       - run: bash -n docs/start.sh scripts/*.sh
       - run: shellcheck docs/start.sh scripts/*.sh
+      - run: bash hardware/sdr-receiver/gen/test_gates.sh --report-only
