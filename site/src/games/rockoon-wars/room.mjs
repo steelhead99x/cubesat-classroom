@@ -27,9 +27,11 @@ import { WEAPON, createMatch, buy, startRound, fire, skip } from './logic.mjs';
  * carries it as `p`. A snapshot from another version is ignored, so a client that follows only
  * the creator (v3 and older) and one that hands the room on (v4) never share a match. v5 marks
  * copies of a stand-in's word (`standin`); a v4 client would ignore the mark and take such a copy
- * on the copier's authority, so the two never share a match either.
+ * on the copier's authority, so the two never share a match either. v6 publishes each relay
+ * session under <player>/<session> instead of <player> (see net.ts), which a v5 client can't
+ * follow.
  */
-export const ROOM_PROTOCOL = 5;
+export const ROOM_PROTOCOL = 6;
 export const ROOM_NAMESPACE = `rockoon-battle-v${ROOM_PROTOCOL}`;
 
 const ID = /^[0-9a-f]{12}$/;
@@ -45,9 +47,11 @@ export function newRoomCode(random = Math.random) {
 function cleanShot(t) {
   if (!t || typeof t !== 'object') return null;
   const angle = int(t.angle, 0, 180), power = int(t.power, 0, 100);
-  return angle === null || power === null || !WEAPON[t.weapon] ? null : { angle, power, weapon: t.weapon };
+  // A weapon must be a known id: an object here could break the lookup (or match a prototype key).
+  const known = typeof t.weapon === 'string' && Object.hasOwn(WEAPON, t.weapon);
+  return angle === null || power === null || !known ? null : { angle, power, weapon: t.weapon };
 }
-const cleanList = list => list.filter(w => typeof w === 'string' && WEAPON[w]).slice(0, 40);
+const cleanList = list => list.filter(w => typeof w === 'string' && Object.hasOwn(WEAPON, w)).slice(0, 40);
 
 /** Checks a snapshot from the relay. Anything malformed is dropped or trimmed. */
 export function cleanSnapshot(raw) {

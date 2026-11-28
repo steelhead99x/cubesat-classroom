@@ -1,8 +1,9 @@
 // Rockoon Battle rooms over Media over QUIC (MoQ).
 //
 // The site's Worker hands out a short-lived token (POST /api/games/moq-token) scoped to one room,
-// hikd/games/rockoon-battle-v5/<CODE>, that lets this player publish only under its own id. Each
-// player publishes one broadcast with one track, `state`: its whole snapshot (see room.mjs),
+// hikd/games/rockoon-battle-v6/<CODE>, that lets this player publish only under its own id. Each
+// player publishes one broadcast per relay session, <id>/<session>, with one track, `state`: its
+// whole snapshot (see room.mjs),
 // rewritten every few seconds so players who join late or reconnect catch up. Everyone replays
 // the same snapshots, so nothing but angles, powers, weapons and shop lists crosses the relay.
 import * as Moq from '@moq/net';
@@ -20,6 +21,10 @@ export type Snapshot = NonNullable<ReturnType<typeof cleanSnapshot>>;
 interface Token { url: string; player: string; callsign: string; expires: number; ticket?: string }
 
 const HEARTBEAT_MS = 3_000;
+const PLAYER_ID = /^[0-9a-f]{12}$/;
+const SESSION_ID = /^[0-9a-f]{8}$/;
+/** A fresh id for one relay session's broadcast. */
+const sessionId = () => [...crypto.getRandomValues(new Uint8Array(4))].map(b => b.toString(16).padStart(2, '0')).join('');
 
 export class RoomLink {
   status: LinkStatus = 'off';
@@ -34,7 +39,8 @@ export class RoomLink {
   #closed = false;
   #origin?: Moq.Origin.Producer;
   #track?: Moq.Track.Producer;
-  #peers = new Map<string, () => void>();
+  /** Followed broadcasts by <player>/<session>. */
+  #peers = new Map<string, { id: string; close: () => void }>();
   #snapshot: unknown = null;
   #beat?: ReturnType<typeof setInterval>;
   #retry = 0;
@@ -43,11 +49,17 @@ export class RoomLink {
   #abort?: AbortController;
   #ready?: (ok: boolean) => void;
 
-  constructor(room: string, events: LinkEvents, endpoint = '/api/games/moq-token') {
+  /** `seat` is a seat this tab held in this room before a reload (see seat.mjs). The Worker keeps
+   * it only if the ticket is valid for this room; otherwise this player gets a new id. */
+  constructor(room: string, events: LinkEvents, endpoint = '/api/games/moq-token', seat?: { player: string; ticket: string }) {
     this.room = room;
     this.#events = events;
     this.#endpoint = endpoint;
+    if (seat) { this.player = seat.player; this.#ticket = seat.ticket; }
   }
+
+  /** This player's seat ticket, known once connected: with `player`, it keeps the seat. */
+  get ticket() { return this.#ticket; }
 
   #set(status: LinkStatus, detail?: string) {
     this.status = status;
@@ -115,7 +127,8 @@ export class RoomLink {
   }
 
   async #token(): Promise<Token> {
-    // After the first token, keep the same seat (player id) with the Worker's seat ticket.
+    // After the first token (or after a reload, with the saved seat), keep the same seat (player
+    // id) with the Worker's seat ticket.
     const seat = this.player && this.#ticket ? { player: this.player, ticket: this.#ticket } : {};
     const res = await fetch(this.#endpoint, {
       method: 'POST',
@@ -152,7 +165,14 @@ export class RoomLink {
       if (this.#connection === connection) this.#closed = true;
     };
     void connection.closed.then(markClosed, markClosed);
-    const broadcast = origin.createBroadcast(Moq.Path.from(token.player));
+    // Each session publishes under a path of its own, <player>/<session>. Reusing the bare player
+    // id meant that a player who came back (after a reload, a dropped connection or a token
+    // renewal) announced the same path again before the relay had retracted the old session's
+    // copy. Every other player's MoQ client takes a second announce for a live path as a protocol
+    // violation and closes its whole session; its reconnect then did the same to the first
+    // player, and the room flickered for 15 to 50 seconds. The token lets a player publish under
+    // its id and anything beneath it.
+    const broadcast = origin.createBroadcast(Moq.Path.from(token.player, sessionId()));
     this.#track = broadcast.createTrack('state', { priority: 1 });
     broadcast.announce();
     this.#set('live');
@@ -177,20 +197,23 @@ export class RoomLink {
   async #discover(origin: Moq.Origin.Producer, self: string) {
     for await (const update of origin.announced()) {
       if (this.#origin !== origin) return;
-      const id = Moq.Path.parts(update.prefix)[0] ?? '';
-      if (!/^[0-9a-f]{12}$/.test(id) || id === self) continue;
+      // <player>/<session>: a player who reconnects briefly has two, the old one retracting.
+      const [id = '', session = '', ...rest] = Moq.Path.parts(update.prefix);
+      if (!PLAYER_ID.test(id) || !SESSION_ID.test(session) || rest.length || id === self) continue;
+      const key = `${id}/${session}`;
       if (update.kind === 'retracted') {
-        this.#peers.get(id)?.();
-        this.#peers.delete(id);
-        this.#events.leave(id);
+        this.#peers.get(key)?.close();
+        this.#peers.delete(key);
+        // Gone only when none of that player's sessions is left.
+        if (![...this.#peers.values()].some(p => p.id === id)) this.#events.leave(id);
         continue;
       }
-      if (!this.#peers.has(id)) this.#follow(origin, id);
+      if (!this.#peers.has(key)) this.#follow(origin, update.prefix, key, id);
     }
   }
 
-  #follow(origin: Moq.Origin.Producer, id: string) {
-    const request = origin.request(Moq.Path.from(id));
+  #follow(origin: Moq.Origin.Producer, path: Moq.Path.Valid, key: string, id: string) {
+    const request = origin.request(path);
     const subs: { close(): void }[] = [];
     const stopWatch = request.active.subscribe(broadcast => {
       for (const s of subs.splice(0)) s.close();
@@ -206,7 +229,7 @@ export class RoomLink {
         }
       })();
     });
-    this.#peers.set(id, () => { stopWatch(); for (const s of subs.splice(0)) s.close(); request.close(); });
+    this.#peers.set(key, { id, close: () => { stopWatch(); for (const s of subs.splice(0)) s.close(); request.close(); } });
   }
 
   /** Sets this player's snapshot and sends it now (and again with every heartbeat). */
@@ -223,8 +246,10 @@ export class RoomLink {
 
   #cleanup() {
     clearInterval(this.#beat);
-    for (const [id, close] of this.#peers) { close(); this.#events.leave(id); }
+    const ids = new Set([...this.#peers.values()].map(p => p.id));
+    for (const p of this.#peers.values()) p.close();
     this.#peers.clear();
+    for (const id of ids) this.#events.leave(id);
     try { this.#track?.close(); } catch { /* already closed */ }
     // Closing a session the relay already closed makes the library log an error, so skip it.
     if (!this.#closed) try { this.#connection?.close(); } catch { /* already closed */ }
