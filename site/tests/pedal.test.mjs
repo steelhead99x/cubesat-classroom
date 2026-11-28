@@ -82,6 +82,9 @@ test('each experiment is recognised when it is carried out, and only then', () =
   const ex = Object.fromEntries(EXPERIMENTS.map(e => [e.id, e]));
   assert.ok(ex['six-db'].done(reading({ gainDb: 10 }), reading({ gainDb: 16 })));
   assert.ok(!ex['six-db'].done(reading({ gainDb: 10 }), reading({ gainDb: 12 })));
+  assert.ok(!ex['six-db'].done(reading({ gainDb: 0 }), reading({ gainDb: 6 })));
+  assert.ok(!ex['six-db'].keep(reading({ gainDb: 0 }), reading({ gainDb: 10 })));
+  assert.ok(ex['six-db'].keep(reading({ gainDb: 10 }), reading({ gainDb: 15 })));
   assert.ok(ex['level-clip'].done(reading({ gainDb: 42, level: 60 }), reading({ gainDb: 42, level: 30 })));
   assert.ok(!ex['level-clip'].done(reading({ gainDb: 10, level: 60 }), reading({ gainDb: 10, level: 30 })));
   assert.ok(ex.band.done(reading(), reading({ band: '70' })));
