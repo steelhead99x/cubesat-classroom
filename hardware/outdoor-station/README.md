@@ -1,8 +1,10 @@
-# Outdoor ground station: Uno R3, Nano 33 BLE Sense and a 3000 mAh battery
+# Outdoor ground station (beta): Uno R3, Nano 33 BLE Sense and a 3000 mAh battery
+
+![The outdoor ground station: a white isogrid box with two ports and a lid carrying the CubeSat Classroom logo, held by snap latches](render.png)
 
 The [classroom kit](../amsat-cubesatsim/README.md)'s payload, sealed in a box for outdoors. The box has the same columns and keyed snap pins inside, so the **same payload plate** snaps in, with the Uno R3 and the bare Nano 33 BLE Sense Rev2 on it exactly as in the kit. The 3000 mAh battery lies under the plate. A **1/4"-20 camera thread** in the middle of the back takes a tripod. **No screws anywhere:** the lid presses down over an O-ring and latches on, and comes off again by hand. The rules behind it are in the [design guide](../DESIGN-GUIDE.md).
 
-**Status: design checks only.** Nothing in this folder has been printed, and nothing here is a water test. Don't trust the seal until the box has been tested: see "Test it" below.
+**Status: beta.** The design checks pass, and the outdoor test coupons have printed and work in PLA (see "Printed so far" below). The box and lid haven't been printed, and nothing here is a water test. Don't trust the seal until the box has been tested: see "Test it" below.
 
 ## How it goes together
 
