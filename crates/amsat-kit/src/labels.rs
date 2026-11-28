@@ -58,7 +58,7 @@ pub const LABELS: &[Label] = &[
         thick: None,
     },
     Label {
-        part: "coupon-latch-rim",
+        part: "coupon-latch-box",
         lines: &["LID LATCH: BOX", "PRESS THE LID ON", "UNTIL IT CLICKS"],
         side: Side::MinusY,
         thick: None,
@@ -179,6 +179,19 @@ pub fn apply(
 mod tests {
     use super::*;
     use crate::brand;
+
+    /// A label whose part was renamed would otherwise be skipped without a word, and the coupon
+    /// would print bare.
+    #[test]
+    fn every_label_names_a_printed_part() {
+        use crate::bambu::{CLASSROOM, OUTDOOR, OUTDOOR_XIAO};
+        for l in LABELS {
+            let printed = [&CLASSROOM, &OUTDOOR, &OUTDOOR_XIAO]
+                .iter()
+                .any(|k| k.parts.iter().any(|p| p.source == l.part));
+            assert!(printed, "{}: no kit prints this part", l.part);
+        }
+    }
 
     #[test]
     fn every_label_prints() {

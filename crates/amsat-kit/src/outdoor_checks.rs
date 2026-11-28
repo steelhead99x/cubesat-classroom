@@ -145,21 +145,7 @@ pub fn verify(d: &Design, o: &Outdoor, payload: &Payload) -> Check {
         format!("the {name} boards stand too tall for the lid"),
     )?;
     let lid = outdoor::lid_in_place(d, o, 0.0)?;
-    // The lid: sits on the rim and over the lugs' catches, can't lift off, and goes on with its
-    // latches pushed in.
-    require(
-        overlap(&lid.translate(0.0, 0.0, 0.3), &body) > 1e-3,
-        "nothing holds the lid down: the lugs don't catch it",
-    )?;
-    // A finger can only go in as far as the slit behind it allows.
-    let push = (o.lug_reach + 0.15).min(o.latch_slit - 0.2);
-    let pushed = outdoor::lid_in_place(d, o, push)?;
-    for dz in [0.5, 1.0, 2.0, 3.0] {
-        require(
-            overlap(&pushed.translate(0.0, 0.0, dz), &body) < 1e-3,
-            "the lid can't be pressed on past its lugs",
-        )?;
-    }
+    lid_latches(o, &body, &|f| outdoor::lid_in_place(d, o, f))?;
     require(
         overlap(&lid, &inside) < 1e-3,
         format!("the lid's skirt hits the {name} boards or plate"),
@@ -326,6 +312,80 @@ pub fn verify_xiao(d: &Design, o: &Outdoor) -> Check {
 }
 
 /// Deliberately broken outdoor designs: the checks must reject every one.
+/// The lid on a box: it sits on the rim and under the lugs' catches, can't lift off, goes on
+/// with its latches pushed in, and can't slide sideways off a catch, because its skirt holds
+/// it square in the opening.
+/// `lid` builds the lid in place on the box, with its fingers pushed in by the given amount.
+pub fn lid_latches(
+    o: &Outdoor,
+    body: &Manifold,
+    lid: &dyn Fn(f64) -> Result<Manifold, String>,
+) -> Check {
+    require(
+        outdoor::latches_on_edges(o),
+        "a latch finger, its slit or its lug runs onto a corner chamfer",
+    )?;
+    let make = lid;
+    let lid = make(0.0)?;
+    require(overlap(&lid, body) < 1e-3, "the lid collides with the box")?;
+    require(
+        overlap(&lid.translate(0.0, 0.0, 0.3), body) > 1e-3,
+        "nothing holds the lid down: the lugs don't catch it",
+    )?;
+    // A finger can only go in as far as the slit behind it allows.
+    let push = (o.lug_reach + 0.15).min(o.latch_slit - 0.2);
+    let pushed = make(push)?;
+    for dz in [0.5, 1.0, 2.0, 3.0] {
+        require(
+            overlap(&pushed.translate(0.0, 0.0, dz), body) < 1e-3,
+            "the lid can't be pressed on past its lugs",
+        )?;
+    }
+    // Pushed sideways away from a lug by as far as its catch reaches, the lid must hit the box
+    // wall: otherwise the lug just shoves the lid aside instead of bending the finger.
+    for a in o.latch_angles() {
+        let r = a.to_radians();
+        let away = lid.translate(-o.lug_reach * r.cos(), -o.lug_reach * r.sin(), 0.0);
+        require(
+            overlap(&away, body) > 1e-3,
+            "the lid can slide sideways off its catches: nothing holds it square",
+        )?;
+    }
+    Ok(())
+}
+
+/// The latch coupon: its box and lid go together exactly like the real ones.
+pub fn verify_latch_coupon(d: &Design, o: &Outdoor) -> Check {
+    let c = outdoor::latch_coupon_case(o);
+    let body = outdoor::latch_coupon_box(&c);
+    lid_latches(&c, &body, &|f| {
+        Ok(outdoor::latch_coupon_lid(d, &c, f)?.translate(0.0, 0.0, c.top))
+    })
+}
+
+/// Latch coupons that must be refused, each by a different check. `o` is the real case.
+pub fn broken_latch_coupons() -> Vec<(&'static str, Outdoor)> {
+    let o = Outdoor::default();
+    let with = |f: &dyn Fn(&mut Outdoor)| {
+        let mut o = o.clone();
+        f(&mut o);
+        o
+    };
+    vec![
+        (
+            "latch coupon lid loose between its skirt and lugs: it could slide off a catch",
+            with(&|o| {
+                o.skirt_clear = 1.2;
+                o.lug_gap = 1.5;
+            }),
+        ),
+        (
+            "latch coupon fingers too long for its lid's straight edge",
+            with(&|o| o.latch_tab = 12.0),
+        ),
+    ]
+}
+
 pub fn broken_designs() -> Vec<(&'static str, Design, Outdoor, bool)> {
     let with = |f: &dyn Fn(&mut Outdoor)| {
         let mut o = Outdoor::default();
