@@ -1,6 +1,6 @@
 # CSC-R1P pedal bring-up
 
-The Rust console runs on the Seeed XIAO ESP32-S3 in the [CSC-R1P pedal](../../hardware/sdr-receiver/pedal/README.md). It sets both I²C expanders to known states, then lets you check the switches, pots and ENGAGE LED over USB. It keeps the bias tee, demodulator, ADC and PLL disabled and the audio muted after successful initialization. The PCB pulls PLL CE high until firmware can take control.
+The Rust console runs on the Seeed XIAO ESP32-S3 in the [CSC-R1P pedal](../../hardware/sdr-receiver/pedal/README.md). It sets both I²C expanders to known states, then lets you check the switches, pots, ENGAGE LED and OLED over USB. It keeps the bias tee, demodulator, ADC and PLL disabled and the audio muted after successful initialization. The PCB pulls PLL CE high until firmware can take control.
 
 ## Build
 
@@ -29,7 +29,8 @@ cargo +stable test --locked --manifest-path firmware/csc-r1p-bringup/Cargo.toml 
 | `CONTROLS` | Send it before and while holding each switch. Each `true` means the input is low. BAND closed selects 70 cm on the panel. Step the encoder slowly to sample A and B. |
 | `POTS` | Turn GAIN and LEVEL separately. Each should change its own raw counts. `Ok(None)` means conversion timed out. |
 | `LED ON` / `LED OFF` | Check that the ENGAGE LED follows the command. |
+| `OLED TEST` | Look for a border at all four edges for about 1.5 seconds. The display should then turn off and the console should report both results. |
 | `SAFE` | Retry both expander setups and turn the ENGAGE LED off. |
 | `HELP` | List the commands. |
 
-The console uses USB Serial/JTAG, leaving XIAO D6 available for the control interrupt. Check that line during reset before adding interrupt-driven encoder handling. Future firmware needs PLL lock detection, ADC and DAC audio, encoder tracking, OLED status and the station's receiver telemetry.
+The console uses USB Serial/JTAG, leaving XIAO D6 available for the control interrupt. Check that line during reset before adding interrupt-driven encoder handling. Future firmware needs PLL lock detection, ADC and DAC audio, encoder tracking, live OLED status and the station's receiver telemetry.

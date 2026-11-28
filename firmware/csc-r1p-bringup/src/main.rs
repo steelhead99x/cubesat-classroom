@@ -41,7 +41,9 @@ fn main() -> ! {
                 } else if len != 0 {
                     match &line[..len] {
                         b"HELP" => {
-                            println!("SAFE | CONTROLS | LED ON | LED OFF | POTS | HELP");
+                            println!(
+                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | OLED TEST | HELP"
+                            );
                         }
                         b"SAFE" => controls_ready = setup(&mut pedal),
                         b"CONTROLS" => {
@@ -52,6 +54,14 @@ fn main() -> ! {
                         }
                         b"LED ON" | b"LED OFF" => {
                             println!("ERR control board setup failed. Retry SAFE.");
+                        }
+                        b"OLED TEST" => {
+                            let show = pedal.oled_test();
+                            if show.is_ok() {
+                                delay.delay_millis(1500);
+                            }
+                            let off = pedal.oled_off();
+                            println!("OLED show={show:?} off={off:?}");
                         }
                         b"POTS" => {
                             let gain = read_pot(&mut pedal, Pot::Gain, &delay);
