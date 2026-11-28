@@ -2,6 +2,7 @@
 
 pub mod fm;
 pub mod pll;
+pub mod tuning;
 
 use embedded_hal::i2c::I2c;
 
@@ -48,7 +49,7 @@ pub struct EncoderTrace {
 impl EncoderTrace {
     pub fn new(a: bool, b: bool) -> Self {
         Self {
-            previous: (u8::from(a) << 1) | u8::from(b),
+            previous: encoder_state(a, b),
             forward_edges: 0,
             reverse_edges: 0,
             missed_samples: 0,
@@ -56,12 +57,8 @@ impl EncoderTrace {
     }
 
     pub fn sample(&mut self, a: bool, b: bool) {
-        // Phase order 00 → 01 → 11 → 10. The bench test establishes
-        // whether this is clockwise for the fitted encoder.
-        const PHASE_INDEX: [u8; 4] = [0, 1, 3, 2];
-        let current = (u8::from(a) << 1) | u8::from(b);
-        let delta = (PHASE_INDEX[current as usize] + 4 - PHASE_INDEX[self.previous as usize]) % 4;
-        match delta {
+        let current = encoder_state(a, b);
+        match encoder_transition(self.previous, current) {
             1 => self.forward_edges += 1,
             2 => self.missed_samples += 1,
             3 => self.reverse_edges += 1,
@@ -69,6 +66,16 @@ impl EncoderTrace {
         }
         self.previous = current;
     }
+}
+
+fn encoder_state(a: bool, b: bool) -> u8 {
+    (u8::from(a) << 1) | u8::from(b)
+}
+
+fn encoder_transition(previous: u8, current: u8) -> u8 {
+    // Phase order 00 → 01 → 11 → 10. Establish physical direction on the bench.
+    const PHASE_INDEX: [u8; 4] = [0, 1, 3, 2];
+    (PHASE_INDEX[current as usize] + 4 - PHASE_INDEX[previous as usize]) % 4
 }
 
 impl<Bus: I2c> Pedal<Bus> {

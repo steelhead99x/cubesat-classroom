@@ -30,6 +30,7 @@ cargo +stable test --locked --manifest-path firmware/csc-r1p-bringup/Cargo.toml 
 | `POTS` | Turn GAIN and LEVEL separately. Each should change its own raw counts. `Ok(None)` means conversion timed out. |
 | `LED ON` / `LED OFF` | Check that the ENGAGE LED follows the command. |
 | `ENCODER TEST` | Turn TUNE steadily in one direction for five seconds, then repeat in the other direction. Record forward, reverse and missed counts. |
+| `PANEL TUNE TEST` | For 10 seconds, turn and press TUNE, toggle BAND and press ENGAGE. The console shows the requested channel, step and engagement with RF disabled. Compare one physical detent with one requested step. |
 | `OLED TEST` | Look for a border at all four edges for about 1.5 seconds. The display should then turn off and the console should report both results. |
 | `SAFE` | Retry both expander setups and turn the ENGAGE LED off. |
 | `HELP` | List the commands. |

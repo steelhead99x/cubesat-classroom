@@ -2,6 +2,9 @@
 //! Register fields and initialization order follow Figures 24–29 and the
 //! worked example in the ADF4351 datasheet, Rev. A.
 
+pub const TWO_METERS_KHZ: core::ops::RangeInclusive<u32> = 144_000..=146_000;
+pub const SEVENTY_CM_KHZ: core::ops::RangeInclusive<u32> = 435_000..=438_000;
+
 const PFD_HZ: u32 = 25_000_000;
 const MODULUS: u32 = 3125; // 8 kHz VCO grid, an exact 1 kHz output grid on both bands
 const R2: u32 = (6 << 26) // digital lock detect on MUXOUT
@@ -38,10 +41,12 @@ pub struct ReceiveChannel {
 impl ReceiveChannel {
     /// Select one of the supported receiver channels on the whole-kHz grid.
     pub fn from_khz(khz: u32) -> Option<Self> {
-        let divider_code = match khz {
-            144_000..=146_000 => 4, // divide by 16
-            435_000..=438_000 => 3, // divide by 8
-            _ => return None,
+        let divider_code = if TWO_METERS_KHZ.contains(&khz) {
+            4 // divide by 16
+        } else if SEVENTY_CM_KHZ.contains(&khz) {
+            3 // divide by 8
+        } else {
+            return None;
         };
         Some(Self {
             hz: khz * 1_000,

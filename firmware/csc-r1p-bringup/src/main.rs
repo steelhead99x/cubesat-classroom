@@ -6,7 +6,8 @@ mod audio_bus;
 use audio_bus::AudioBus;
 use csc_r1p_bringup::{
     EncoderTrace, Pedal, Pot,
-    pll::{BenchBand, POWER_DOWN, ReceiveChannel, has_stable_lock},
+    pll::{BenchBand, POWER_DOWN, ReceiveChannel, SEVENTY_CM_KHZ, has_stable_lock},
+    tuning::PanelTuning,
 };
 use embedded_hal::{i2c::I2c, spi::SpiBus};
 use esp_backtrace as _;
@@ -68,7 +69,7 @@ fn main() -> ! {
                     match &line[..len] {
                         b"HELP" => {
                             println!(
-                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | ADC CHECK | ADC CLOCK TEST | AUDIO BUS TEST | FM STREAM TEST | FM RF TEST <band> | PLL TEST 2M | PLL TEST 70CM | PLL TEST <kHz> | HELP"
+                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | PANEL TUNE TEST | OLED TEST | ADC CHECK | ADC CLOCK TEST | AUDIO BUS TEST | FM STREAM TEST | FM RF TEST <band> | PLL TEST 2M | PLL TEST 70CM | PLL TEST <kHz> | HELP"
                             );
                         }
                         b"SAFE" => controls_ready = setup(&mut pedal),
@@ -89,6 +90,11 @@ fn main() -> ! {
                                     trace.forward_edges, trace.reverse_edges, trace.missed_samples
                                 ),
                                 Err(error) => println!("ENCODER I2C error: {error:?}"),
+                            }
+                        }
+                        b"PANEL TUNE TEST" => {
+                            if let Err(error) = panel_tune_test(&mut pedal, &delay) {
+                                println!("PANEL TUNE I2C error: {error:?}");
                             }
                         }
                         b"OLED TEST" => {
@@ -250,7 +256,9 @@ fn run_pll_test<Bus: I2c, Serial: SpiBus>(
                         );
                         if let Some(audio_bus) = audio_bus {
                             let status = pedal
-                                .enable_muted_receiver(channel.frequency_hz() >= 435_000_000)
+                                .enable_muted_receiver(
+                                    SEVENTY_CM_KHZ.contains(&(channel.frequency_hz() / 1_000)),
+                                )
                                 .and_then(|()| {
                                     delay.delay_millis(2);
                                     prepare_adc_clocks(pedal, delay)
@@ -300,6 +308,24 @@ fn write_pll_register<Serial: SpiBus>(
     delay.delay_micros(1);
     latch.set_low();
     delay.delay_micros(1);
+    Ok(())
+}
+
+fn panel_tune_test<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay) -> Result<(), Bus::Error> {
+    pedal.enter_safe()?;
+    let mut tuning = PanelTuning::new(pedal.controls()?);
+    println!("PANEL TUNE: watch requested settings for 10 seconds; RF off");
+    let mut last_reported = None;
+    let start = esp_hal::time::Instant::now();
+    while start.elapsed().as_millis() < 10_000 {
+        tuning.sample(pedal.controls()?);
+        let status = tuning.status();
+        if last_reported != Some(status) {
+            println!("PANEL TUNE: {status:?}");
+            last_reported = Some(status);
+        }
+        delay.delay_millis(2);
+    }
     Ok(())
 }
 
