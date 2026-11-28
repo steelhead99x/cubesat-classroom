@@ -270,6 +270,45 @@ test('a later player\'s skip counts only once everyone before it has gone, and t
   assert.equal(Room.diverged(fixed, host, s), false);
 });
 
+test('a returning host keeps the turns played without it', () => {
+  // Review: the stand-in recorded a skip of the host's turn and its own shot; the host came back
+  // without publishing anything new, and replay dropped both and went back to turn one.
+  const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [], 2: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [], 2: [] } }) };
+  let { match } = settle(s);
+  // Play until it's the host's turn.
+  for (let i = 0; i < 6 && host.order[match.turn] !== ids[0]; i++) {
+    s[host.order[match.turn]].turns[match.log.length] = { angle: 80, power: 40, weapon: 'baby' };
+    ({ match } = settle(s));
+  }
+  const k = match.log.length;
+  assert.equal(host.order[match.turn], ids[0]);
+  // The host goes away. Its stand-in skips the host's turn, then plays its own.
+  const away = [ids[0]];
+  const bView = { gone: away, me: ids[1] };
+  let b = Room.replay(host, s, bView).match;
+  Room.mirror(b, host, s, ids[1]);
+  assert.ok(Room.commit(b, host, s, away, ids[1]));
+  b = Room.replay(host, s, bView).match;
+  s[ids[1]].turns[b.log.length] = { angle: 70, power: 50, weapon: 'baby' };
+  assert.ok(Room.commit(b, host, s, away, ids[1]));
+  b = Room.replay(host, s, bView).match;
+  Room.mirror(b, host, s, ids[1]);
+  assert.equal(b.log.length, k + 2);
+  // The host is back (gone is empty again) and has published nothing new.
+  const bBack = { gone: [], me: ids[1] };
+  assert.equal(Room.diverged(b, host, s, bBack), false, 'a heartbeat alone never undoes a turn');
+  // The host's own screen, just rejoined, accepts the skip of its missed turn and catches up.
+  const hostView = { gone: [], me: ids[0], ownSkips: true };
+  const h = Room.replay(host, s, hostView).match;
+  assert.equal(h.log.length, k + 2);
+  assert.equal(R.fingerprint(h), R.fingerprint(b));
+  // Once the host carries the skip, every other screen believes it, even with nobody gone.
+  Room.mirror(h, host, s, ids[0]);
+  assert.equal(R.fingerprint(Room.replay(host, s, []).match), R.fingerprint(b));
+  // And the host records turns again.
+  assert.equal(Room.committerFor(host, []), ids[0]);
+});
+
 test('nobody can commit a shot, a skip or a purchase for someone else', () => {
   const three = { ...host, order: ids, names: { ...host.names, [ids[2]]: 'GS-CC3' } };
   const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [] } }), [ids[2]]: snap('GS-CC3', { shops: { 1: [] } }) };

@@ -131,18 +131,39 @@ function matchesRequests(host, get, field, key, entry, owner) {
 }
 
 /**
- * A committed log entry for turn k (owned by `owner`), or a shop list for a round. Copies are
- * read in player order and the first believable one wins. A copy is believed when its author
- * is the creator, or the committer as this screen sees it (everyone earlier in the order has
- * gone), or when it matches what the players asked for. So the creator's history never
- * changes, and nobody else can commit a shot, a skip or a purchase for someone else.
+ * How this screen sees the room: `gone` lists players it has given up on (never itself), `me`
+ * is its own player id, and `ownSkips` is true while it has just (re)joined, when it could not
+ * have taken a turn that came round while it was away. A plain array is read as `gone`.
+ * @typedef {{gone?: string[], me?: string, ownSkips?: boolean} | string[]} RoomView
  */
-function historyEntry(host, get, field, key, owner, gone = []) {
+const viewOf = view => (Array.isArray(view) ? { gone: view } : { gone: [], ...view });
+
+/**
+ * A committed log entry for turn k (owned by `owner`), or a shop list for a round. Copies are
+ * read in player order and the first believable one wins. A copy is believed when:
+ *   - its author is the creator, or the committer as this screen sees it (everyone earlier in
+ *     the order has gone);
+ *   - it matches what the players asked for (a shot equal to the owner's own request, a shop
+ *     list equal to each player's own picks);
+ *   - it skips a player's turn and that player carries the same skip in its own history: the
+ *     owner has accepted it;
+ *   - it skips this screen's own turn while this screen has just (re)joined (`ownSkips`), so
+ *     it missed that turn anyway. Accepting it is what lets a returning host keep the turns
+ *     played without it.
+ * So the creator's history never changes, and nobody else can commit a shot, a purchase or
+ * (while its owner is here) a skip for someone else.
+ */
+function historyEntry(host, get, field, key, owner, view = {}) {
+  const { gone, me, ownSkips } = viewOf(view);
   for (const [i, id] of host.order.entries()) {
     const entry = get(id)?.[field]?.[key];
     if (!entry) continue;
     const committer = host.order.slice(0, i).every(p => gone.includes(p));
     if (committer || matchesRequests(host, get, field, key, entry, owner)) return entry;
+    if (field === 'log' && entry === 'skip' && owner) {
+      if (get(owner)?.log?.[key] === 'skip') return entry;
+      if (ownSkips && owner === me && !get(me)?.turns?.[key]) return entry;
+    }
   }
   return undefined;
 }
@@ -157,19 +178,19 @@ function historyEntry(host, get, field, key, owner, gone = []) {
  * Actions taken from history carry `ref`, so apply() can note what was played.
  * @returns {NextAction}
  */
-export function nextAction(match, host, snapshots, gone = []) {
+export function nextAction(match, host, snapshots, view = {}) {
   const get = getter(snapshots);
   if (match.phase === 'over') return { kind: 'over' };
   if (match.phase === 'shop') {
     const round = match.round + 1;
-    const buys = historyEntry(host, get, 'shopLog', round, undefined, gone);
+    const buys = historyEntry(host, get, 'shopLog', round, undefined, view);
     if (buys) return { kind: 'shop', buys, ref: `S${round}` };
     const missing = host.order.filter(id => !get(id)?.shops?.[round]);
     return missing.length ? { kind: 'wait', ids: missing } : { kind: 'wait', ids: [], sent: true };
   }
   const k = match.log.length;
   const owner = host.order[match.turn];
-  const entry = historyEntry(host, get, 'log', k, owner, gone);
+  const entry = historyEntry(host, get, 'log', k, owner, view);
   if (entry === 'skip') return { kind: 'skip', ref: `L${k}`, owner };
   if (entry) return { kind: 'fire', shot: entry, ref: `L${k}`, owner };
   return get(owner)?.turns?.[k] ? { kind: 'wait', ids: [owner], sent: true } : { kind: 'wait', ids: [owner] };
@@ -227,12 +248,15 @@ export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
   return true;
 }
 
-/** True when an entry this match has already played no longer matches the committed history. */
-export function diverged(match, host, snapshots, gone = []) {
+/** True when a believable copy of an entry this match has already played says something else. */
+export function diverged(match, host, snapshots, view = {}) {
   const get = getter(snapshots);
   for (const [ref, played] of Object.entries(match.played ?? {})) {
-    const entry = historyEntry(host, get, ref[0] === 'S' ? 'shopLog' : 'log', Number(ref.slice(1)), played.owner, gone);
-    if (JSON.stringify(entry) !== JSON.stringify(played.entry)) return true;
+    const entry = historyEntry(host, get, ref[0] === 'S' ? 'shopLog' : 'log', Number(ref.slice(1)), played.owner, view);
+    // Only a believable copy that says something different counts. An entry nobody now
+    // vouches for (say, the host came back without publishing anything for that turn) stays
+    // played: a heartbeat alone never undoes a committed turn.
+    if (entry !== undefined && JSON.stringify(entry) !== JSON.stringify(played.entry)) return true;
   }
   return false;
 }
@@ -256,10 +280,10 @@ export function apply(match, action) {
 }
 
 /** Replays the committed history from the start. A reconnecting client uses this to catch up. */
-export function replay(host, snapshots, gone = []) {
+export function replay(host, snapshots, view = {}) {
   const match = matchFor(host);
   for (let guard = 0; guard < 5000; guard++) {
-    const action = nextAction(match, host, snapshots, gone);
+    const action = nextAction(match, host, snapshots, view);
     if (action.kind === 'wait' || action.kind === 'over') return { match, action };
     apply(match, action);
   }

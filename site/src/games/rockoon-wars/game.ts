@@ -175,7 +175,7 @@ function start(root: HTMLElement) {
   function publish() {
     if (mode === 'online' && link) link.publish(snapOf(me));
   }
-  const waitingOn = (): ReturnType<typeof Room.nextAction> | null => (match && host ? Room.nextAction(match, host, snaps, goneIds()) : null);
+  const waitingOn = (): ReturnType<typeof Room.nextAction> | null => (match && host ? Room.nextAction(match, host, snaps, roomView()) : null);
   const myTurn = () => {
     const a = waitingOn();
     return !!a && a.kind === 'wait' && !a.sent && match!.phase === 'play' && mine.includes(a.ids[0]);
@@ -196,10 +196,10 @@ function start(root: HTMLElement) {
   function step() {
     if (!match || !host) return render();
     // Two copies of the history disagreed and the earlier player's won: start again from it.
-    if (mode === 'online' && Room.diverged(match, host, snaps, goneIds())) {
+    if (mode === 'online' && Room.diverged(match, host, snaps, roomView())) {
       anim = null; banner = null; ghosts = { round: -1, paths: {} };
       clearAscent();
-      match = Room.replay(host, snaps, goneIds()).match;
+      match = Room.replay(host, snaps, roomView()).match;
       // A request made for a turn in the old timeline must not fire in the new one.
       for (const id of mine) {
         const turns = snapOf(id).turns;
@@ -218,7 +218,7 @@ function start(root: HTMLElement) {
     for (let guard = 0; guard < 50; guard++) {
       // The committer records each turn once; everyone, the committer included, then plays that record.
       record();
-      const action = Room.nextAction(match, host, snaps, goneIds());
+      const action = Room.nextAction(match, host, snaps, roomView());
       if (action.kind === 'fire') {
         const before = structuredClone(match.field!) as Field;
         before.units[match.turn].angle = action.shot.angle;
@@ -253,6 +253,12 @@ function start(root: HTMLElement) {
 
   /** Players this screen gives up on after 30 seconds without a snapshot. Their turns are
    * skipped, and if the committer is one of them the next player in the order takes over. */
+  /** How this screen sees the room, for room.mjs: who has gone, who it is, and whether it has
+   * just (re)joined, when it accepts skips of its own turns taken while it was away. */
+  function roomView() {
+    return { gone: goneIds(), me, ownSkips: mode === 'online' && Date.now() - liveSince < 30_000 };
+  }
+
   function goneIds() {
     if (mode !== 'online' || !host) return [];
     const now = Date.now();
@@ -754,7 +760,7 @@ function start(root: HTMLElement) {
     if (!pick) return;
     host = pick[1].host!;
     // Catch up without animating everything that already happened.
-    match = Room.replay(host, snaps, goneIds()).match;
+    match = Room.replay(host, snaps, roomView()).match;
     say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');
   }
 
