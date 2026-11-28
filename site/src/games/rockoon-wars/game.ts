@@ -918,6 +918,18 @@ function start(root: HTMLElement) {
   // Re-check the room now and then: players who have gone, and the host's committed turns.
   setInterval(() => { if (mode === 'online') { if (!anim) step(); else renderOverlay(); } }, 5_000);
 
+  // Leaving or reloading the page: close the relay session now. Left to time out, the relay keeps
+  // it for several seconds, and a reloaded page coming back under the same player id collides
+  // with it (a duplicate announce), which makes the relay drop everyone's sessions for a while.
+  let parked = false;
+  addEventListener('pagehide', e => {
+    if (!link) return;
+    link.stop(); link = null;
+    // Kept in the back/forward cache: coming back reloads, which resumes the seat.
+    parked = e.persisted;
+  });
+  addEventListener('pageshow', e => { if (e.persisted && parked) location.reload(); });
+
   // ---- controls ----
   function adjust(kind: 'angle' | 'power' | 'weapon', delta: number) {
     if (!match || !canAct()) return;
