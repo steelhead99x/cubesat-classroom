@@ -127,7 +127,7 @@ See the [export comparison and prototype fabrication checks](fabrication-checks.
 - Flux flags a main-board ground airwire between L5 pad 2 and U7, plus a sliver at a bottom-layer 3V3_PLL via. The archived KiCad check for the same routed file reports zero unconnected items and zero violations. Compare copper and drill output at both locations.
 - The main KiCad board contains 17 paste-only apertures at U10, U12 and U13. The aligned top-paste exports confirm that Flux replaces those apertures with one opening per device. Use the KiCad stencil and confirm it with the assembler.
 - Flux reports a 1.30 mm stackup. The KiCad files specify 1.6 mm nominal thickness. Confirm the actual build with the fabricator, including the top-layer dielectric spacing for the RF traces.
-- D2 clamps VDC upstream of F1, so F1 cannot limit a sustained current through D2. Check the intended DC adapter and clamp behavior during the power review.
+- D2 clamps `VBUCK_IN_F` downstream of F1. Verify the exact fuse trip curve and the adapter's fault behavior against the clamp's limits during the power review.
 - Y1 feeds the receiver ADC MCLK through R37. The board calls for the ADC to drive BCLK and FSYNC to the XIAO and DAC. Verify those signals on the bench before enabling audio.
 
 ## Open items

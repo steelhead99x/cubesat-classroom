@@ -6,4 +6,4 @@ Account for all 17 main-board paste-only apertures in the Flux and KiCad F.Paste
 
 ## Plan
 
-A registered overlay of the actual F.Paste exports found four separate KiCad apertures each at U10 and U12, and nine at U13. The Flux export renders one continuous opening at each site. Use the KiCad stencil for the prototype. Confirm the aperture pattern with the assembler and repeat the comparison before any Flux release. See the [fabrication checks](/hardware/sdr-receiver/pedal/fabrication-checks.md).
+A registered overlay of the actual F.Paste exports found four separate KiCad apertures each at U10 and U12, and nine at U13. The Flux export renders one continuous opening at each site. Use the KiCad stencil for the prototype. The f26d445 reimports also added back-side paste openings on both boards that are absent in KiCad. Confirm the KiCad aperture pattern with the assembler and repeat the comparison after exporter corrections. See the [fabrication checks](/hardware/sdr-receiver/pedal/fabrication-checks.md).

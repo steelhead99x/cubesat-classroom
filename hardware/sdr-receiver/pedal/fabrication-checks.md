@@ -14,6 +14,12 @@ The four-layer Gerbers and Excellon files were exported from the Flux imports an
 
 The registered raster comparison at 40 pixels/mm also shows that the Flux main In1 pour differs across the board and that the control import has less copper on all four layers. The complete stencil images differ on both boards, including regions outside the three exposed pads. Confirm the KiCad exposed-pad stencil with the assembler. The Flux ground airwire at L5 pad 2 and U7 and the bottom-layer 3V3_PLL via still need a continuity comparison. The archived KiCad results report zero unconnected items on both source boards.
 
+## Revised board import at `f26d445`
+
+Flux repeated the comparison on new imports of both boards. It verified the input clamp on `VBUCK_IN_F`, the L2 DNP setting, and both SMT lists against fresh KiCad exports. The main board has 213 fitted top-side SMT placements and the control board has 22.
+
+The revised Flux exports again reduced four plated component holes from 0.75 mm to 0.70 mm. Flux measured roughly 135 mm² of source-only copper and 24 mm² of Flux-only copper on main-board In1.Cu. It reported differences on all four control-board copper layers. Both imports also introduced back-side paste openings absent from the KiCad plots. Keep KiCad as the fabrication and stencil source. These are digital export comparisons. Vendor DFM and physical continuity remain open.
+
 ## RF stackup candidate
 
 JLCPCB's published JLC04161H-7628 build is a candidate for a quote. It uses approximately 0.2104 mm of dielectric between F.Cu and In1.Cu. With 40.64 µm outer copper and assumed Dk 4.4, the existing repository microstrip model gives 50.1 Ω for a 0.35 mm trace. The same model with the thinner 3313 spacing gives 30.9 Ω. These estimates omit solder mask, etch shape and nearby side copper. Confirm the actual material and impedance tolerance with the fab and inspect the filled J2 and U7 returns before release. [JLCPCB stackup examples](https://jlcpcb.com/blog/pcb-ground-loop-noise-reduction) · [JLCPCB calculation assumptions](https://jlcpcb.com/help/article/user-guide-to-the-jlcpcb-impedance-calculator)
