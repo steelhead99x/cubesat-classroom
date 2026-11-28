@@ -1,0 +1,81 @@
+---
+import { icon } from '../games/icons.mjs';
+// Step-by-step instructions, like a building-instructions booklet: one action per step, a
+// picture, the controls to press, and a link to that exact step (#step-<id>) that a teacher can
+// share or put on a slide. Opening a step's link highlights it.
+interface Step { id: string; pic: string; title: string; text: string; keys: string[] }
+interface Props { steps: Step[]; keysNote: string; heading?: string; listId?: string }
+const { steps, keysNote, heading = 'How to play', listId = 'steps-list' } = Astro.props;
+---
+<section id="steps" class="game-steps" aria-labelledby="steps-title">
+  <div class="steps-head">
+    <h2 id="steps-title">{heading}</h2>
+    <p>{steps.length} steps. Each one has its own link to share.</p>
+  </div>
+  <ol id={listId} class="steps-grid">
+    {steps.map((s, i) => (
+      <li id={`step-${s.id}`} class="step" aria-labelledby={`step-${s.id}-title`}>
+        <div class="step-top">
+          <span class="step-n">Step {i + 1}</span>
+          <a class="step-link" href={`#step-${s.id}`} data-step-link aria-label={`Copy link to step ${i + 1}: ${s.title}`}><Fragment set:html={icon('link', 16)} /><span>Copy link<span data-step-confirmation aria-hidden="true" hidden> · Copied</span></span></a>
+        </div>
+        <span class="step-pic" set:html={icon(s.pic, 30)} />
+        <h3 id={`step-${s.id}-title`}>{s.title}</h3>
+        <p>{s.text}</p>
+        {s.keys.length > 0 && (
+          <p class="step-keys"><span class="sr-only">Controls: </span>{s.keys.map(k => <kbd>{k}</kbd>)}</p>
+        )}
+      </li>
+    ))}
+  </ol>
+  <p class="steps-keys"><strong>Keyboard:</strong> {keysNote}</p>
+  <p class="sr-only" data-step-status role="status" aria-live="polite"></p>
+</section>
+
+<script>
+  // Copy link: put the step's full address on the clipboard. Without JavaScript (or without
+  // clipboard access) the link still works as an ordinary link to the step.
+  const status = document.querySelector<HTMLElement>('[data-step-status]');
+  const feedbackTimers = new WeakMap<HTMLAnchorElement, ReturnType<typeof setTimeout>>();
+  for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-step-link]')) {
+    link.addEventListener('click', async e => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || !navigator.clipboard) return;
+
+      const url = new URL(link.href);
+      e.preventDefault();
+      try {
+        await navigator.clipboard.writeText(url.href);
+      } catch {
+        location.hash = url.hash;
+        return;
+      }
+
+      const confirmation = link.querySelector<HTMLElement>('[data-step-confirmation]')!;
+      confirmation.hidden = false;
+      if (status) {
+        const message = `Link to ${link.closest('li')!.querySelector('h3')!.textContent} copied.`;
+        status.replaceChildren(document.createTextNode(message));
+      }
+      clearTimeout(feedbackTimers.get(link));
+      feedbackTimers.set(link, setTimeout(() => { confirmation.hidden = true; }, 2000));
+    });
+  }
+</script>
+
+<style>
+  .game-steps { display: grid; gap: 1rem; }
+  .steps-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
+  .steps-head p { color: var(--color-muted); }
+  .steps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr)); gap: .75rem; list-style: none; padding: 0; margin: 0; counter-reset: none; }
+  .step { position: relative; display: grid; align-content: start; gap: .45rem; padding: 1rem 1.1rem 1.1rem; background: #fff; border: 1px solid var(--color-line); border-top: 3px solid var(--color-navy); border-radius: .25rem; scroll-margin-top: 1.5rem; }
+  .step:target { border-color: var(--color-flag); border-top-color: var(--color-flag); box-shadow: 0 0 0 3px rgb(234 3 3 / .18); }
+  .step-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+  .step-n { font: 600 .8rem var(--font-mono); letter-spacing: .08em; color: var(--color-accent); }
+  .step-link { display: inline-flex; align-items: center; gap: .3rem; min-height: 2.75rem; padding: 0 .2rem; font-size: .85rem; font-weight: 600; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
+  .step-pic { display: inline-grid; place-items: center; width: 3rem; height: 3rem; border-radius: 50%; color: #fff; background: var(--color-navy); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .18), 0 0 0 1px var(--color-navy); }
+  .step h3 { font-size: 1.15rem; }
+  .step p { color: var(--color-ink); line-height: 1.5; }
+  .step-keys { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .15rem; }
+  .step-keys kbd { display: inline-flex; align-items: center; min-height: 1.9rem; padding: .15rem .55rem; border: 1px solid var(--color-line); border-bottom-width: 2px; border-radius: .25rem; background: var(--color-mist); font: 600 .85rem var(--font-mono); color: var(--color-ink); }
+  .steps-keys { color: var(--color-muted); }
+</style>

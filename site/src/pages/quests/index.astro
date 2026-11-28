@@ -14,13 +14,13 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const quests = (await getCollection('quests')).sort((a, b) => a.data.order - b.data.order);
 const total = quests.reduce((sum, quest) => sum + quest.data.minutes, 0);
 ---
-<Base title="Classroom lessons | CubeSat Classroom" description="Five browser lessons on satellite operations, each available at three levels." canonical={siteOrigin + '/quests/'}>
+<Base title="Classroom lessons | CubeSat Classroom" description="Browser lessons on satellites, radio and rockets, each at three levels." canonical={siteOrigin + '/quests/'}>
   <SiteHeader slot="header" home={base + '/'} current="lessons" />
   <div class="shell space-y-9 py-10 sm:py-14">
     <header class="grid items-end gap-5 lg:grid-cols-[1fr_auto]">
       <div>
         <h1>Classroom lessons</h1>
-        <p class="lede mt-3">Five exercises in the browser ground station. Allow about {total} minutes for the full sequence.</p>
+        <p class="lede mt-3">{quests.length} lessons, about {Math.round(total / 5) * 5} minutes in all. Lessons 1 to 5 use the practice ground station on each lesson page. The others open a game, the receiver pedal, the rocket workbook or cubesat.app in a new tab.</p>
       </div>
       <LevelPicker describe />
     </header>
@@ -30,18 +30,19 @@ const total = quests.reduce((sum, quest) => sum + quest.data.minutes, 0);
           <span aria-hidden="true">{String(quest.data.order).padStart(2, '0')}</span>
           <div class="grid gap-x-5 gap-y-2 sm:grid-cols-[1fr_auto]">
             <div>
-              <a href={`${base}/quests/${quest.id}/`} class="font-bold text-accent underline underline-offset-4">{quest.data.title}</a>
+              <a href={`${base}/quests/${quest.id}/`} class="tap font-bold text-accent underline underline-offset-4">{quest.data.title}</a>
               <p class="mt-1">{quest.data.summary}</p>
             </div>
-            <p class="sm:text-right">{quest.data.minutes} min · {quest.data.skill}</p>
+            <p class="sm:text-right">{quest.data.minutes} min · {quest.data.skill}<br /><span class="text-sm text-faint">{quest.data.tool ? quest.data.tool.name : 'Practice ground station'}</span></p>
           </div>
         </li>
       ))}
     </ol>
     <PlayLearn />
-    <details class="reference-panel">
+    <details class="reference-panel" open>
       <summary>Mission patches</summary>
       <div class="mt-5"><PatchShelf size={84} /></div>
+      <p class="mt-4 text-sm text-muted">Every patch is also a three-colour 3D print. <a class="font-bold text-ink underline underline-offset-4" href={base + '/patches/'}>Print your patches</a></p>
     </details>
     <details class="reference-panel">
       <summary>Ground station questions</summary>

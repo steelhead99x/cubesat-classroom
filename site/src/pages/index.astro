@@ -1,4 +1,5 @@
 ---
+import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
@@ -23,10 +24,12 @@ const labs = [
   { name: 'Balloon lab', text: 'Log pressure and temperature, then compare your measurements with data from a balloon flight.', href: repo + '/blob/main/docs/balloon-lab.md', action: 'Open the lab' },
   { name: 'Printable CubeSat', text: 'Print the AMSAT-based 1U frame and Arduino payload plate. Start with the test coupons and measure the fit.', href: base + '/hardware/', action: 'View drawings and print files' },
 ];
+const lessons = (await getCollection('quests')).sort((a, b) => a.data.order - b.data.order);
+const lessonMinutes = lessons.reduce((sum, lesson) => sum + lesson.data.minutes, 0);
 ---
 <Base
   title="CubeSat Classroom | Satellite operations for ages 13 and up"
-  description="Run a simulated satellite ground station in your classroom. Start with five free, open-source lessons, then explore the Rust station and hands-on bench labs."
+  description="Run a simulated satellite ground station in your classroom. Start with free, open-source lessons and games, then explore the Rust station and hands-on bench labs."
   canonical={site + '/'}
   image={site + preview.src.replace(base, '')}
 >
@@ -76,15 +79,11 @@ const labs = [
       <div>
         <p class="eyebrow t-label">01 · Lessons</p>
         <h2 id="lessons-title">Classroom lessons</h2>
-        <p class="mt-3 max-w-md text-muted">Five short exercises, about 35 minutes. Take a reading, bring back a picture, lose the signal, decide when data is old, and watch the light change.</p>
+        <p class="mt-3 max-w-md text-muted">{lessons.length} short lessons, about {Math.round(lessonMinutes / 5) * 5} minutes in all. The first five use the ground station simulator below. The rest take you into the games, the receiver pedal, the rocket workbook and cubesat.app.</p>
         <a class="mt-4 inline-block text-accent" href={base + '/quests/'}>View the lesson sequence</a>
       </div>
       <ol class="lesson-outline">
-        <li><span>01</span><div><a class="text-ink hover:text-accent" href={base + '/quests/first-contact/'}>Request a reading</a><p>Record a value and its unit.</p></div></li>
-        <li><span>02</span><div><a class="text-ink hover:text-accent" href={base + '/quests/bring-back-a-picture/'}>Receive a picture</a><p>Count the frames that reach the station.</p></div></li>
-        <li><span>03</span><div><a class="text-ink hover:text-accent" href={base + '/quests/lose-the-signal/'}>Investigate a signal loss</a><p>Pause contact and check which data still arrives.</p></div></li>
-        <li><span>04</span><div><a class="text-ink hover:text-accent" href={base + '/quests/fresh-or-historical/'}>Decide if a reading is fresh</a><p>Wait until the station calls it historical.</p></div></li>
-        <li><span>05</span><div><a class="text-ink hover:text-accent" href={base + '/quests/light-and-shadow/'}>Watch the light level</a><p>See why it sometimes drops to zero.</p></div></li>
+        {lessons.map(lesson => <li><span>{String(lesson.data.order).padStart(2, '0')}</span><div><a class="tap text-ink hover:text-accent" href={`${base}/quests/${lesson.id}/`}>{lesson.data.title}</a><p>{lesson.data.summary}</p></div></li>)}
       </ol>
     </div>
   </section>
@@ -108,7 +107,7 @@ const labs = [
         ].map(([id, steps]) => <ol data-show={id} class="ml-6 list-decimal space-y-1">{Array.isArray(steps) && steps.map(step => <li>{step}</li>)}</ol>)}
       </div>
       <StationDemo heading={false} anchor="station-controls" />
-      <a class="mt-5 inline-block font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>Continue with the five lessons</a>
+      <a class="mt-5 inline-block font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>Continue with the lessons</a>
       <PedalLab />
     </div>
   </div>
@@ -125,7 +124,7 @@ const labs = [
               <div>
                 <h3>{lab.name}</h3>
                 <p class="my-2 text-muted">{lab.text}</p>
-                <a class="text-accent" href={lab.href}>{lab.action}</a>
+                <a class="tap text-accent" href={lab.href}>{lab.action}</a>
               </div>
             </article>
           ))}
@@ -176,7 +175,7 @@ const labs = [
           <li><span>03</span><div><strong class="text-ink">Add your mission</strong><p>Write quests for your balloon, rocket, glider or satellite. Share improvements back if you like.</p></div></li>
         </ul>
         <a class="mt-5 inline-block font-bold text-accent underline underline-offset-4" href={repo + '/blob/main/docs/fork-guide.md'}>Read the fork guide</a>
-          <a class="mt-3 block text-accent" href={base + '/open-source/'}>Open-source neighbours: projects with and without AI, both respected</a>
+          <a class="mt-3 block text-accent" href={base + '/open-source/'}>Open-source neighbours: projects with and without SI, both respected</a>
       </div>
     </div>
   </section>
@@ -194,8 +193,8 @@ const labs = [
         <h3>Volunteer and contribute</h3>
         <p class="mt-3 max-w-lg text-muted">Help review a lesson, run a bench test, or make plans for a workshop with CubeSat Club.</p>
         <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-          <a class="text-accent" href={base + '/volunteer/'}>Volunteer with CubeSat Club</a>
-          <a class="text-accent" href={repo + '/blob/main/CONTRIBUTING.md'}>Contribution guide</a>
+          <a class="tap text-accent" href={base + '/volunteer/'}>Volunteer with CubeSat Club</a>
+          <a class="tap text-accent" href={repo + '/blob/main/CONTRIBUTING.md'}>Contribution guide</a>
         </div>
       </div>
     </section>

@@ -1,8 +1,9 @@
-import pcbnew, design, sys
+import pcbnew, sys, boardcfg
+design=boardcfg.design()
 FPDIR='/usr/share/kicad/footprints'
 def load(fp):
     lib,name=fp.split(':')
-    d='../kicad' if lib=='CSC_R1' else FPDIR
+    d=boardcfg.KICAD if lib=='CSC_R1' else FPDIR
     return pcbnew.FootprintLoad(f'{d}/{lib}.pretty',name)
 bad=0; seen={}
 for r,p in design.parts.items():

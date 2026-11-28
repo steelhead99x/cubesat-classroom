@@ -1,6 +1,9 @@
 // Catch the Pass: drawing, input, sound and the live sky. The rules are in logic.mjs.
 import * as G from './logic.mjs';
 import { inputPercent } from '../../lib/pedal.mjs';
+import { STEPS } from './steps.mjs';
+import { icon } from '../icons.mjs';
+import { patch } from '../patches.mjs';
 import type { LiveSky, StationState, PacketNote, SkyStatus } from './net';
 
 type Game = ReturnType<typeof G.createGame>;
@@ -72,7 +75,7 @@ function init(root: HTMLElement) {
     soundOn = !soundOn;
     if (soundOn && !audio) audio = new AudioContext();
     (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(soundOn));
-    (e.currentTarget as HTMLElement).textContent = soundOn ? '🔊' : '🔇';
+    (e.currentTarget as HTMLElement).innerHTML = icon(soundOn ? 'sound-on' : 'sound-off');
     (e.currentTarget as HTMLElement).setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off');
     beep(660, 80);
   });
@@ -165,9 +168,11 @@ function init(root: HTMLElement) {
     show(`<h3>${mode === 'live' ? 'Live sky' : `Level ${levelIndex + 1}: ${G.LEVELS[levelIndex].name}`}</h3>
       <p>${currentLevel().tip}</p>
       <p class="goal">Goal: ${currentLevel().goal.map((g, i) => `${'★'.repeat(i + 1)} ${g} packets`).join(' · ')}</p>
-      <button type="button" class="go" data-go>▶ Start</button>`);
+      <button type="button" class="go" data-go>${icon('start')} Start</button>`);
     hud(); draw();
-    if (!seenHowto() && !helpOpen) showHowto();
+    // Shown on a first visit without moving focus: the page has only just loaded, so keyboard
+    // and screen-reader users start at the top (skip link, header) like on every other page.
+    if (!seenHowto() && !helpOpen) showHowto(false);
   }
 
   // ---- The first-visit "How to play" card ----
@@ -177,23 +182,24 @@ function init(root: HTMLElement) {
     canvas.parentElement!.dataset.panel = open ? 'howto' : '';
   }
 
-  function showHowto() {
+  function showHowto(takeFocus = true) {
     if (helpOpen) return;
     if (running && mode === 'missions' && !paused) setPaused(true, false);
     clearAim();
     // Opened from a results card: bring that card (and its Next level button) back afterwards.
     afterHelp = mode === 'missions' && !running && game?.done && !overlay.hidden ? overlay.innerHTML : null;
     setHelp(true);
-    show(`<h3>How to play</h3>
+    // The key steps from the page's step-by-step instructions (steps.mjs), with their numbers.
+    const pick = ['start', 'track', 'radio'].map(id => [STEPS.findIndex(s => s.id === id), STEPS.find(s => s.id === id)!] as const);
+    show(`<div class="logo">${patch('pass', 'Catch the Pass')}</div><h3>How to play</h3>
       <ol class="steps">
-        <li><span class="pic" aria-hidden="true">🛰️</span><b>Find the satellite</b><span>It rises on the left and crosses the sky.</span></li>
-        <li><span class="pic" aria-hidden="true">📡</span><b>Keep the circle on it</b><span>Use the ▲ ◀ ▶ ▼ buttons, drag on the sky, or press the arrow keys.</span></li>
-        <li><span class="pic" aria-hidden="true">📦</span><b>Catch packets</b><span>A green signal bar means you are catching packets and earning credits. Lost it? Try Far.</span></li>
+        ${pick.map(([i, s]) => `<li><span class="pic">${icon(s.pic, 34)}</span><b>Step ${i + 1}: ${s.title}</b><span>${s.text}</span></li>`).join('')}
       </ol>
+      <p class="small"><a href="#steps">See all ${STEPS.length} steps</a>, each with its own link to share.</p>
       <button type="button" class="go" data-howto>Got it!</button>`);
     const got = overlay.querySelector<HTMLButtonElement>('[data-howto]')!;
     got.addEventListener('click', closeHowto);
-    got.focus({ preventScroll: true });
+    if (takeFocus) got.focus({ preventScroll: true });
   }
   function closeHowto() {
     try { localStorage.setItem(howtoKey, '1'); } catch { /* private mode */ }
@@ -211,7 +217,7 @@ function init(root: HTMLElement) {
       helpBtn.focus({ preventScroll: true });
     }
   }
-  helpBtn.addEventListener('click', showHowto);
+  helpBtn.addEventListener('click', () => showHowto());
 
   function hideOverlay() {
     overlay.hidden = true;
@@ -579,11 +585,18 @@ function init(root: HTMLElement) {
   }
 
   // ---- HUD (HTML, so it is readable and zoomable) ----
+  const nowEl = $<HTMLParagraphElement>('[data-now]');
+  /** The "what to do now" line: one instruction, and a link to that step on the page. */
+  function sayNow(stepId: string, text: string) {
+    const i = STEPS.findIndex(s => s.id === stepId);
+    const html = `<span class="now-n">Step ${i + 1} of ${STEPS.length}</span> ${text} <a href="#step-${stepId}">How?</a>`;
+    if (nowEl.dataset.html !== html) { nowEl.innerHTML = html; nowEl.dataset.html = html; }
+  }
   const hudEl = {
     snr: $('[data-snr]'), bar: $<HTMLElement>('[data-snr-bar]'), floor: $<HTMLElement>('[data-snr-floor]'),
     battery: $('[data-battery]'), batteryBar: $<HTMLElement>('[data-battery-bar]'),
     rx: $('[data-rx]'), score: $('[data-score]'), streak: $('[data-streak]'), time: $('[data-time]'),
-    tx: $('[data-tx]'), light: $('[data-light]'), log: $('[data-log]'), board: $('[data-board]'),
+    tx: $('[data-tx]'), txLabel: $('[data-tx] [data-tx-label]'), light: $('[data-light]'), log: $('[data-log]'), board: $('[data-board]'),
   };
   const pct = (snr: number) => Math.max(0, Math.min(100, (snr + 30) / 40 * 100));
   let lastBoard = 0;
@@ -606,7 +619,7 @@ function init(root: HTMLElement) {
     put(hudEl.time, left.toFixed(0) + ' s');
     put(hudEl.light, G.inEclipse(game.level, game.t / game.level.duration) ? 'In Earth\u2019s shadow' : 'Sunlit');
     hudEl.tx.setAttribute('aria-pressed', String(game.transmit));
-    put(hudEl.tx, game.transmit ? '📡 Sending: on' : '📡 Sending: resting');
+    put(hudEl.txLabel, game.transmit ? 'Sending: on' : 'Sending: resting');
     const antenna = G.ANTENNAS[game.antenna as Antenna];
     put(antennaNote, `${antenna.name} · ${antenna.note}`);
     const { peak, status } = G.readReceiver(game);
@@ -620,6 +633,13 @@ function init(root: HTMLElement) {
     put(receiverHud.gain, receiver.gainDb + ' dB');
     put(receiverHud.level, receiver.level + '%');
     sfButtons.forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.sf) === game!.sf)));
+    if (!running) sayNow('start', 'Press Start when you are ready.');
+    else if (countdown > 0) sayNow('track', 'Get ready: the satellite rises on the left.');
+    else if (paused) sayNow('start', 'Paused. Press Resume to keep going.');
+    else if (game.safe) sayNow('battery', 'The battery is low. Press Sending to let the satellite rest.');
+    else if (!receiver.engaged) sayNow('receiver', 'The receiver is off. Press Engaged on the receiver pedal.');
+    else if (game.locked) sayNow('track', 'You are catching packets. Keep the circle on the satellite.');
+    else sayNow('track', 'Move the circle onto the satellite until the signal bar turns green.');
     if (game.log[0] && hudEl.log.dataset.seq !== String(game.log[0].seq)) {
       hudEl.log.dataset.seq = String(game.log[0].seq);
       hudEl.log.replaceChildren(...game.log.slice(0, 5).map(r => Object.assign(document.createElement('li'), {

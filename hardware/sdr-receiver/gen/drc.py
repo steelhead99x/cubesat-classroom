@@ -11,13 +11,15 @@ Anything else, or any unconnected pad, fails the gate.
 """
 import collections
 import re
+import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import boardcfg
 ALLOWED_TYPE = 'copper_edge_clearance'
-ALLOWED_REF = 'J3'          # SMA edge connector
-ALLOWED_MAX = 5             # its two pads, on the layers they occupy
+ALLOWED_REF = boardcfg.EDGE_REF or 'none'   # Rev A: SMA edge connector J3; the pedal boards allow none
+ALLOWED_MAX = boardcfg.EDGE_MAX            # Rev A: its two pads, on the layers they occupy
 
 
 def gate(report):
@@ -56,13 +58,23 @@ def gate(report):
 
 def run(fill):
     import pcbnew
-    b = pcbnew.LoadBoard('../kicad/csc-r1.kicad_pcb')
-    if fill:
-        pcbnew.ZONE_FILLER(b).Fill(b.Zones())
     with TemporaryDirectory() as tmp:
         report = Path(tmp) / 'board.rpt'
-        if not pcbnew.WriteDRCReport(b, str(report), pcbnew.EDA_UNITS_MILLIMETRES, True):
-            sys.exit('could not write DRC report')
+        if hasattr(pcbnew, 'EDA_UNITS_MILLIMETRES'):
+            board = pcbnew.LoadBoard(boardcfg.PCB)
+            if fill:
+                pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+            if not pcbnew.WriteDRCReport(board, str(report), pcbnew.EDA_UNITS_MILLIMETRES, True):
+                sys.exit('could not write DRC report')
+        else:
+            # The newer pcbnew binding cannot run DRC outside KiCad's application.
+            command = [
+                'kicad-cli', 'pcb', 'drc', '--all-track-errors',
+                '--units', 'mm', '--output', str(report),
+            ]
+            if fill:
+                command.append('--refill-zones')
+            subprocess.run([*command, boardcfg.PCB], check=True)
         return report.read_bytes()
 
 
@@ -80,7 +92,7 @@ def main():
         problems = gate(t)
         for p in problems:
             print('DRC FAIL', p)
-        print('DRC gate:', 'FAIL' if problems else f'pass (only the documented {ALLOWED_REF} edge items)')
+        print('DRC gate:', 'FAIL' if problems else (f'pass (only the documented {ALLOWED_REF} edge items)' if ALLOWED_MAX else 'pass (no DRC items)'))
         if problems:
             sys.exit(1)
         if len(sys.argv) == 3:

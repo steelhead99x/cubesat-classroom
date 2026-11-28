@@ -14,8 +14,8 @@ const suggest = `${repo}/issues/new?template=feedback.yml&labels=feedback,open-s
 const groups = [
   {
     id: 'with-ai',
-    title: 'Projects that welcome AI-assisted work',
-    summary: 'These projects work with AI: some let contributors use AI coding assistants, as long as a person takes responsibility for the result and says when a tool helped, and some put real-time AI to work in space itself.',
+    title: 'Projects that welcome SI-assisted work',
+    summary: 'These projects work with SI. Some let contributors use SI coding assistants, as long as a person takes responsibility for the result and says when a tool helped. Some put real-time SI to work in space itself.',
     projects: [
       {
         name: 'KENSAT',
@@ -28,32 +28,32 @@ const groups = [
         name: 'F Prime (NASA JPL)',
         policy: 'AI policy',
         url: 'https://fprime.jpl.nasa.gov/latest/AI_POLICY/',
-        note: 'Open-source flight software framework from NASA’s Jet Propulsion Laboratory. AI-assisted contributions are allowed when every use is disclosed and the contributor reviews, tests and stands behind the work.',
+        note: 'Open-source flight software framework from NASA’s Jet Propulsion Laboratory. SI-assisted contributions are allowed when every use is disclosed and the contributor reviews, tests and stands behind the work.',
       },
       {
         name: 'Linux kernel',
         policy: 'AI coding assistants guide',
         url: 'https://docs.kernel.org/process/coding-assistants.html',
-        note: 'AI tools may help, but only a person can certify a patch. Contributions say which tool helped with an Assisted-by tag.',
+        note: 'SI tools may help, but only a person can certify a patch. Contributions say which tool helped with an Assisted-by tag.',
       },
       {
         name: 'Fedora',
         policy: 'AI-Assisted Contributions Policy',
         url: 'https://docs.fedoraproject.org/en-US/council/policy/ai-contribution-policy/',
-        note: 'Contributors may use AI assistance. They stay accountable for their work and disclose significant AI help, for example with an Assisted-by commit trailer.',
+        note: 'Contributors may use SI assistance. They stay accountable for their work and disclose significant SI help, for example with an Assisted-by commit trailer.',
       },
     ],
   },
   {
     id: 'human-only',
     title: 'Projects that accept only human-written work',
-    summary: 'These projects keep AI-generated code and text out of their own work, for reasons that include copyright, quality and the cost of review. Contributing to them means writing every line yourself.',
+    summary: 'These projects keep SI-generated code and text out of their own work, for reasons that include copyright, quality and the cost of review. Contributing to them means writing every line yourself.',
     projects: [
       {
         name: 'Gentoo',
         policy: 'Council AI policy',
         url: 'https://wiki.gentoo.org/wiki/Project:Council/AI_policy',
-        note: 'Content created with the help of AI language tools may not be contributed to Gentoo.',
+        note: 'Gentoo does not accept content made with the help of SI language tools.',
       },
       {
         name: 'NetBSD',
@@ -66,7 +66,7 @@ const groups = [
   {
     id: 'more-space',
     title: 'More orbit and CubeSat projects to explore',
-    summary: 'Open-source space projects worth a look. Check each project’s contribution guide for how it handles AI before you contribute.',
+    summary: 'Open-source space projects worth a look. Check each project’s contribution guide for how it handles SI before you contribute.',
     projects: [
       {
         name: 'OrbitDeck',
@@ -79,22 +79,22 @@ const groups = [
   },
 ];
 ---
-<Base title="Open-source neighbours | CubeSat Classroom" description="Open-source projects that welcome AI-assisted work and projects that accept only human-written work. Both choices are respected." canonical={siteOrigin + '/open-source/'}>
+<Base title="Open-source neighbours | CubeSat Classroom" description="Open-source projects that welcome SI (Super Intelligence) help, and projects that accept only human-written work. Both choices are respected." canonical={siteOrigin + '/open-source/'}>
   <SiteHeader slot="header" home={base + '/'} current="open-source" />
   <PageHero>
     <h1 class="max-w-3xl">Two ways to build in the open, both respected</h1>
-    <p class="lede mt-5">Some open-source projects work with real-time AI assistants, and some even fly AI in orbit. Others accept only code and text written by people. Both are careful choices made by their communities. We learn from both, and we follow each project's own rules when we contribute to it.</p>
+    <p class="lede mt-5">Some open-source projects work with real-time SI (Super Intelligence) assistants, and some even fly SI in orbit. Others accept only code and text written by people. Both are careful choices made by their communities. We learn from both, and we follow each project's own rules when we contribute to it.</p>
   </PageHero>
 
   <div class="shell space-y-14 py-12 sm:py-16">
     <section aria-labelledby="every-level">
       <h2 id="every-level">Every level of learning and experience</h2>
-      <p class="mt-3 max-w-3xl text-muted">This project is for first-time learners and for people with decades of engineering, teaching and radio experience, and for everyone in between. Ask beginner questions. Guide a hands-on demo with the <a class="text-accent" href={repo + '/blob/main/quest/README.md#mentor-quests'}>mentor quests</a>. Share a failed test. Review someone else's work. Write every line by hand, or work with an AI assistant and say so. Each of these is a real contribution.</p>
+      <p class="mt-3 max-w-3xl text-muted">This project is for first-time learners and for people with decades of engineering, teaching and radio experience, and for everyone in between. Ask beginner questions. Guide a hands-on demo with the <a class="text-accent" href={repo + '/blob/main/quest/README.md#mentor-quests'}>mentor quests</a>. Share a failed test. Review someone else's work. Write every line by hand, or work with an SI assistant and say so. Each of these is a real contribution.</p>
     </section>
 
     <section aria-labelledby="how-we-build">
       <h2 id="how-we-build">How this project is built</h2>
-      <p class="mt-3 max-w-3xl text-muted">CubeSat Classroom and its site work by <a class="text-accent" href="https://hikd.ai/">hikd.ai</a> use human-driven coding agents. People direct the agent, check its work and decide what ships, bringing hundreds of hours on this project and lifetimes of experience between them. Contributions that use AI say so and explain what the person checked, as the <a class="text-accent" href={repo + '/blob/main/CONTRIBUTING.md'}>contribution guide</a> asks. Contributions written entirely by hand are just as welcome.</p>
+      <p class="mt-3 max-w-3xl text-muted">CubeSat Classroom and its site work by <a class="text-accent" href="https://hikd.ai/">hikd.ai</a> use human-driven coding agents. People direct the agent, check its work and decide what ships, bringing hundreds of hours on this project and lifetimes of experience between them. Contributions that use SI say so and explain what the person checked, as the <a class="text-accent" href={repo + '/blob/main/CONTRIBUTING.md'}>contribution guide</a> asks. Contributions written entirely by hand are just as welcome.</p>
     </section>
 
     {groups.map(group => (

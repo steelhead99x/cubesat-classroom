@@ -1,0 +1,70 @@
+---
+// Mission patches: every quest patch in colour, with its three-colour 3D print file.
+// The art and the print files come from one source (src/patch-art.json; hardware/patches).
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import Patch from '../components/Patch.astro';
+import art from '../patch-art.json';
+import { repo } from '../hubs.mjs';
+import { siteOrigin } from '../origin';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const quests = (await getCollection('quests')).sort((a, b) => a.data.order - b.data.order);
+const raw = repo + '/raw/refs/heads/main/hardware/patches/print/';
+const guide = repo + '/blob/main/hardware/patches/README.md';
+const tones = art.patches as Record<string, { tone: string }>;
+const p = art.print;
+const swap1 = p.body_mm;
+const swap2 = p.body_mm + p.tone_mm;
+const total = p.body_mm + p.tone_mm + p.white_mm;
+---
+<Base title="Mission patches | CubeSat Classroom" description="Earn a mission patch for each lesson, then print it: three-colour 3D-printable patches for every CubeSat Classroom quest." canonical={siteOrigin + '/patches/'}>
+  <SiteHeader slot="header" home={base + '/'} current="lessons" />
+  <div class="shell space-y-10 py-10 sm:py-14">
+    <header class="max-w-3xl">
+      <h1>Mission patches</h1>
+      <p class="lede mt-3">Each lesson has its own patch. Earn it on the lesson page, then print it: every patch is a flat three-colour print, about 75 × 73 mm and {total.toFixed(1)} mm thick, made from the same drawing as the one on screen.</p>
+      <p class="mt-4 text-muted">See which ones you've earned on the <a class="font-bold text-ink underline underline-offset-4" href={base + '/quests/'}>lessons page</a>. Your patches are saved only in this browser.</p>
+    </header>
+
+    <section aria-labelledby="all-title">
+      <h2 id="all-title" class="sr-only">All patches</h2>
+      <ul class="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+        {quests.map(quest => (
+          <li id={quest.id} class="flex items-center gap-5">
+            <Patch id={quest.id} name={quest.data.title} label={quest.data.patch} size={136} show />
+            <div class="min-w-0">
+              <h3 class="text-lg leading-tight">{quest.data.patch}</h3>
+              <p class="mt-1 text-sm text-muted">Earned in <a class="font-bold text-ink underline underline-offset-4" href={`${base}/quests/${quest.id}/`}>{quest.data.title}</a></p>
+              <p class="mt-2 text-sm"><a class="tap font-bold text-accent underline underline-offset-4" href={`${raw}${quest.id}.3mf`} download>Print file (3MF)</a></p>
+              <p class="mt-1 text-xs text-faint">Colours: navy, <span class="inline-block size-3 rounded-full border border-line align-middle" style={`background:${tones[quest.id]?.tone}`}></span> <code>{tones[quest.id]?.tone}</code>, white</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="grid gap-8 border-t border-line pt-8 lg:grid-cols-2" aria-labelledby="print-title">
+      <div>
+        <h2 id="print-title">Print them</h2>
+        <p class="mt-3 text-muted">Print each patch flat, top face up, with no supports. PLA is fine. Each file holds three parts stacked by height, so it works on any printer.</p>
+        <ul class="mt-4 list-disc space-y-2 pl-5 text-muted">
+          <li><strong class="text-ink">Multi-colour printer</strong> (for example a Bambu AMS): give the three parts, <code>body</code>, <code>tone</code> and <code>white</code>, navy, the patch's colour and white.</li>
+          <li><strong class="text-ink">Single-colour printer:</strong> start in navy, change to the patch's colour at {swap1} mm, then to white at {swap2} mm.</li>
+        </ul>
+      </div>
+      <div class="border-2 border-line bg-ground p-6">
+        <h2 class="text-xl">Print the test coupon first</h2>
+        <p class="mt-3 text-muted">A small strip with the longest patch name and four test bars from 0.6 to 1.2 mm. It shows whether your printer keeps every letter open before you print all eleven.</p>
+        <p class="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+          <a class="button primary" href={raw + 'coupon-label-and-features.3mf'} download>Download the test coupon</a>
+          <a class="tap self-center font-bold text-accent underline underline-offset-4" href={guide}>Print guide and design checks</a>
+        </p>
+        <p class="mt-4 text-sm text-faint">Design-checked, not yet printed by us. Tell us how yours come out.</p>
+      </div>
+    </section>
+  </div>
+  <SiteFooter slot="footer" />
+</Base>

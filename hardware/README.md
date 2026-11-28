@@ -10,6 +10,7 @@ The printed 1U CubeSat frame (100 × 100 × 113.5 mm), the 1U solar face and the
 | Teachers in Space frame | The frame TIS uses in its Arduino CubeSat workshops, and the model for our payload plate. Files come from TIS. | [Links and comparison](tis/README.md) |
 | CSC-R1 receiver dev kit | Receive-only SDR board for the 2 m and 70 cm satellite bands, around a XIAO. Designed and rule-checked; not built or tested. Plus the plan for a pedal-enclosure version with HaLow. | [Design and review](sdr-receiver/README.md) |
 | 1U solar face | One 82.5 × 98 mm side-panel board in two versions that differ only in their cells: 24 silicon SolarBITs for the bench, or two AZUR triple-junction space cells for flight. Designed and rule-checked; cell land patterns not yet verified, so no Gerbers yet. | [Design and review](solar-face/README.md) |
+| Mission patches | The 11 quest patches as flat three-colour prints, about 75 × 73 mm, drawn from the same art as the website. Design-checked; not yet printed. | [Print files and rules](patches/README.md) |
 
 Build the AMSAT frame with the Arduino payload. Print its test coupons first. Every printed design follows the [design guide](DESIGN-GUIDE.md): no loose pieces where possible, rocket-launch ready and durable, and easy enough for kids.
 

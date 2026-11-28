@@ -98,29 +98,39 @@ test('HS256 and Ed25519 keys work too', async () => {
   }
 });
 
-test('Rockoon Wars tokens are scoped to one room, joined by code', async () => {
+test('Rockoon Battle tokens are scoped to one room, joined by code', async () => {
   const room = 'K7QX2';
-  const body = await (await ask(configured, { body: { game: 'rockoon-wars', room } })).json();
+  const body = await (await ask(configured, { body: { game: 'rockoon-battle', room } })).json();
   const url = new URL(body.url);
-  assert.equal(url.pathname, `/proj/games/rockoon-wars/${room}`);
+  assert.equal(url.pathname, `/proj/games/rockoon-battle/${room}`);
   const claims = part(url.searchParams.get('jwt'), 1);
-  assert.equal(claims.root, `proj/games/rockoon-wars/${room}`);
+  assert.equal(claims.root, `proj/games/rockoon-battle/${room}`);
   assert.deepEqual(claims.put, [body.player]);
   assert.equal(body.room, room);
   assert.match(body.ticket, /^[A-Za-z0-9_-]{43}$/);
   for (const bad of [undefined, '', 'k7qx2', 'K7QX', 'K7QX2/../x', 'O0O0O', '../live']) {
-    assert.equal((await ask(configured, { body: { game: 'rockoon-wars', room: bad } })).status, 400, String(bad));
+    assert.equal((await ask(configured, { body: { game: 'rockoon-battle', room: bad } })).status, 400, String(bad));
   }
 });
 
+test('the terrain rules use a separate room namespace from old clients', async () => {
+  const room = 'K7QX2';
+  const legacy = await (await ask(configured, { body: { game: 'rockoon-battle', room } })).json();
+  const current = await (await ask(configured, { body: {
+    game: 'rockoon-battle-v4', room, player: legacy.player, ticket: legacy.ticket,
+  } })).json();
+  assert.equal(new URL(current.url).pathname, `/proj/games/rockoon-battle-v4/${room}`);
+  assert.notEqual(current.player, legacy.player);
+});
+
 test('a seat ticket keeps the same player id in the same room, and only there', async () => {
-  const first = await (await ask(configured, { body: { game: 'rockoon-wars', room: 'K7QX2' } })).json();
-  const again = await (await ask(configured, { body: { game: 'rockoon-wars', room: 'K7QX2', player: first.player, ticket: first.ticket } })).json();
+  const first = await (await ask(configured, { body: { game: 'rockoon-battle', room: 'K7QX2' } })).json();
+  const again = await (await ask(configured, { body: { game: 'rockoon-battle', room: 'K7QX2', player: first.player, ticket: first.ticket } })).json();
   assert.equal(again.player, first.player);
   assert.equal(again.callsign, first.callsign);
-  const forged = await (await ask(configured, { body: { game: 'rockoon-wars', room: 'K7QX2', player: first.player, ticket: 'x'.repeat(43) } })).json();
+  const forged = await (await ask(configured, { body: { game: 'rockoon-battle', room: 'K7QX2', player: first.player, ticket: 'x'.repeat(43) } })).json();
   assert.notEqual(forged.player, first.player);
-  const otherRoom = await (await ask(configured, { body: { game: 'rockoon-wars', room: 'ZZZZ2', player: first.player, ticket: first.ticket } })).json();
+  const otherRoom = await (await ask(configured, { body: { game: 'rockoon-battle', room: 'ZZZZ2', player: first.player, ticket: first.ticket } })).json();
   assert.notEqual(otherRoom.player, first.player);
 });
 

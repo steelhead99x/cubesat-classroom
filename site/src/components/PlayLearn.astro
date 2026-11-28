@@ -11,14 +11,14 @@ const items = [
     tag: 'Game',
     name: 'Catch the Pass',
     text: 'Aim a ground-station antenna at a CubeSat, pick the right radio setting and grab its packets before it sets. Play solo or in the live sky with other stations.',
-    who: 'Ages 8 and up · keyboard, mouse or touch',
+    who: 'Solo or live sky · keyboard, mouse or touch',
     href: base + '/games/catch-the-pass/',
     action: 'Play the game',
   },
   {
     tag: 'Game',
-    name: 'Rockoon Wars',
-    text: 'Take turns launching rockets from balloon platforms over the hills. Set the angle and power, mind the wind, and be the last rockoon flying.',
+    name: 'Rockoon Battle',
+    text: 'Launch a balloon from the ground, release a rocket and score by flying through the sky ring.',
     who: '2 to 4 players · one computer or online',
     href: base + '/games/rockoon-wars/',
     action: 'Play the game',
@@ -67,7 +67,7 @@ const items = [
         <h3 class="text-lg">{item.name}</h3>
         <p class="text-muted">{item.text}</p>
         <p class="t-src mt-auto">{item.who}</p>
-        <a class="font-bold text-accent underline underline-offset-4" href={item.href}>{item.action} <span aria-hidden="true">→</span></a>
+        <a class="tap font-bold text-accent underline underline-offset-4" href={item.href}>{item.action} <span aria-hidden="true">→</span></a>
       </li>
     ))}
   </ul>

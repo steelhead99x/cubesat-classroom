@@ -8,7 +8,8 @@ import os
 from sexp import parse, dump, find, first, Sym as S
 
 FPDIR = '/usr/share/kicad/footprints'
-OUT = '../kicad/CSC_R1.pretty'
+import boardcfg
+OUT = f'{boardcfg.KICAD}/CSC_R1.pretty'
 
 
 def ltc_uf24():
@@ -61,6 +62,6 @@ if __name__ == '__main__':
     name, t = ltc_uf24()
     open(f'{OUT}/{name}.kicad_mod', 'w').write(dump(t) + '\n')
     print('wrote', f'{OUT}/{name}.kicad_mod')
-    open('../kicad/fp-lib-table', 'w').write(
+    open(f'{boardcfg.KICAD}/fp-lib-table', 'w').write(
         '(fp_lib_table\n  (lib (name "CSC_R1")(type "KiCad")(uri "${KIPRJMOD}/CSC_R1.pretty")(options "")'
         '(descr "CSC-R1 project footprints"))\n)\n')

@@ -1,9 +1,12 @@
 """Small grid maze router (A*, 45-degree moves, through vias) written for this board.
 Routes every net except GND and the hand-routed RF nets on F.Cu, In2.Cu and B.Cu. In1.Cu is kept as an unbroken ground plane."""
 import pcbnew, math, heapq, sys, time, numpy as np
-OUT='../kicad'; PROJ='csc-r1'; OX,OY=60.0,50.0
+import boardcfg
+OUT=boardcfg.KICAD; PROJ=boardcfg.PROJ; OX,OY=60.0,50.0
 G=0.1; CLR=0.16; VIA_D=0.6; VIA_DRL=0.3; EDGE=0.5
-b=pcbnew.LoadBoard(f'{OUT}/base.kicad_pcb'); T=pcbnew.ToMM; mm=pcbnew.FromMM
+import os as _os
+FINISH=_os.environ.get('ROUTE_FINISH')     # finishing mode: start from a routed board, route only its unfinished nets
+b=pcbnew.LoadBoard(FINISH if FINISH else boardcfg.BASE); T=pcbnew.ToMM; mm=pcbnew.FromMM
 bb=b.GetBoardEdgesBoundingBox(); W=T(bb.GetWidth()); H=T(bb.GetHeight())
 NX=int(round(W/G))+1; NY=int(round(H/G))+1
 LAYERS=[pcbnew.F_Cu,pcbnew.In1_Cu,pcbnew.In2_Cu,pcbnew.B_Cu]; ROUTE=[0,2,3]; NL=4
@@ -47,6 +50,23 @@ for k in KEYS:
     e=int(round((EDGE+ (WIDTHS[k]/2 if k!='via' else VIA_D/2))/G))
     for l in range(NL):
         own[k][l][:e,:]=-1; own[k][l][-e:,:]=-1; own[k][l][:,:e]=-1; own[k][l][:,-e:]=-1
+# board outline: cells outside the Edge.Cuts outline (notches, slots) or too close to it are blocked
+_outline=pcbnew.SHAPE_POLY_SET()
+if b.GetBoardPolygonOutlines(_outline) and _outline.OutlineCount()==1 and _outline.Outline(0).PointCount()>4:
+    from matplotlib.path import Path as _MPath
+    _pts=[( T(_outline.Outline(0).CPoint(i).x)-OX, T(_outline.Outline(0).CPoint(i).y)-OY ) for i in range(_outline.Outline(0).PointCount())]
+    _cells=np.column_stack([(xs*G).ravel(),(ys*G).ravel()])
+    _P=np.array(_pts+[_pts[0]])
+    _segd=np.full(len(_cells),1e9)
+    for (ax_,ay_),(bx_,by_) in zip(_P[:-1],_P[1:]):
+        vx,vy=bx_-ax_,by_-ay_; L2=vx*vx+vy*vy
+        t_=np.clip(((_cells[:,0]-ax_)*vx+(_cells[:,1]-ay_)*vy)/L2,0,1) if L2>0 else 0
+        _segd=np.minimum(_segd,np.hypot(_cells[:,0]-(ax_+t_*vx),_cells[:,1]-(ay_+t_*vy)))
+    _inside=_MPath(_pts).contains_points(_cells)
+    for k in KEYS:
+        lim=EDGE+(WIDTHS[k]/2 if k!='via' else VIA_D/2)
+        blocked=((~_inside)|(_segd<lim)).reshape(NY,NX)
+        for l in range(NL): own[k][l][blocked]=-1
 pads_by_net={}
 for f in b.GetFootprints():
     for p in f.Pads():
@@ -132,6 +152,10 @@ for f in b.GetFootprints():
         for d in pads_by_net[net]:
             if d['ref']==ref and d['num']==p.GetNumber(): d.update(x=ex,y=ey,w=0.24,h=0.24,ang=0)
 PARTIAL={'3V3_VCO','3V3_PLL','PLL_TEMP','PLL_VTUNE','PLL_RSET','PLL_VCOM','PLL_VREF','PLL_REFIN','BBF_IP','BBF_IN','BBF_QP','BBF_QN','TRIM_IP2Q','TRIM_DCOQ','TRIM_DCOI','TRIM_IP2I'}
+if FINISH:
+    import json as _json
+    _unfinished=set(_json.loads(_os.environ['ROUTE_FINISH_NETS']))
+    PARTIAL=PARTIAL|_unfinished
 SKIP=({'GND'}|routed_nets)-PARTIAL
 NN=NX*NY
 # existing (hand-drawn) tracks per net: used to seed the routing tree of partly routed nets
@@ -174,6 +198,8 @@ def pad_cells(p,shrink=0.03):
     u=X*c-Y*s; v=X*s+Y*c; m=(np.abs(u)<=max(p['w']/2-shrink,0.02))&(np.abs(v)<=max(p['h']/2-shrink,0.02))
     iy,ix=np.nonzero(m); return [(int(a)+y0)*NX+int(c_)+x0 for a,c_ in zip(iy,ix)]
 SQ2=1.41421356
+# search budget per connection: the dev kit keeps its original 450k; the pedal boards scale with grid size
+POP_LIMIT=450000 if PROJ=='csc-r1' else max(450000, int(1.6*NX*NY))
 VIA_COST=30.0; LCOST={0:1.0,2:1.15,3:1.05}
 def astar(src,tgt_flag,passb,viaok,tb):
     """src: list of node ids; tgt_flag: bytearray over NL*NN; passb: dict layer->bytes; returns node path"""
@@ -194,7 +220,7 @@ def astar(src,tgt_flag,passb,viaok,tb):
             while n in par: n=par[n]; path.append(n)
             return path[::-1]
         pops+=1
-        if pops>450000: return None
+        if pops>POP_LIMIT: return None
         l=n//NN; r=n-l*NN; y=r//NX; x=r-y*NX; pb=passb[l]; lc=LCOST[l]
         for dx,dy,c in moves:
             xx=x+dx; yy=y+dy
@@ -279,6 +305,8 @@ def route_net(name):
     return ok
 if __name__=='__main__':
     names=[n for n in pads_by_net if n not in SKIP and len(pads_by_net[n])>1]
+    if FINISH:
+        names=[n for n in names if n in _unfinished]
     def span(n):
         ps=pads_by_net[n]; return (max(p['x'] for p in ps)-min(p['x'] for p in ps))+(max(p['y'] for p in ps)-min(p['y'] for p in ps))
     names.sort(key=span)
@@ -286,7 +314,15 @@ if __name__=='__main__':
     from pathlib import Path
     priority, result = map(Path, sys.argv[1:])
     pri = json.loads(priority.read_text()) if priority.exists() else []
-    names=[n for n in pri if n in names]+[n for n in names if n not in pri]
+    rest=[n for n in names if n not in pri]
+    if PROJ!='csc-r1':
+        # pedal boards: vary the order of the not-yet-failed nets from pass to pass (seeded by the
+        # priority list, so a run is repeatable) instead of repeating the same order every time
+        import random, hashlib
+        rnd=random.Random(hashlib.sha256(json.dumps(pri).encode()).hexdigest())
+        for i in range(len(rest)-1):
+            if rnd.random()<0.35: rest[i],rest[i+1]=rest[i+1],rest[i]
+    names=[n for n in pri if n in names]+rest
     only=[]
     # ---------------- ground: give every surface-mount GND pad a short track to a via into the planes, then stitch
     gcode=b.FindNet('GND').GetNetCode(); gtree=bytearray(NL*NN); nvia0=len(new_vias); gfail=[]
@@ -295,7 +331,11 @@ if __name__=='__main__':
         vo=np.ones((NY,NX),dtype=bool)
         for l in range(NL): vo&=(own['via'][l]==0)|(own['via'][l]==gcode)
         vo&=~novia; return ps,vo
-    gp=[p for p in pads_by_net['GND'] if not p['tht'] and not (p['ref'] in('U8','U10','U11'))]
+    if PROJ=='csc-r1':
+        ep_refs={'U8','U10','U11'}      # the dev kit's demodulator, ADC and synthesizer (exposed pads)
+    else:
+        ep_refs={p['ref'] for p in pads_by_net['GND'] if not p['tht'] and p['w']>=2.0 and p['h']>=2.0}
+    gp=[] if FINISH else [p for p in pads_by_net['GND'] if not p['tht'] and not (p['ref'] in ep_refs)]   # finishing: ground already done
     gp.sort(key=lambda p:(p['x'],p['y']))
     for p in gp:
         ps,vo=gmasks(); cs=pad_cells(p,0.16 if min(p['w'],p['h'])>=0.7 else 0.03); src=[c for c in cs]
@@ -323,7 +363,7 @@ if __name__=='__main__':
         if n not in fn: fn.append(n)
     # stitching vias on a grid (denser beside the RF path)
     gcode=b.FindNet('GND').GetNetCode(); ps,vo=gmasks(); nst=0
-    for yy in np.arange(2.0,H-1.9,2.5):
+    for yy in (np.arange(2.0,H-1.9,2.5) if not FINISH else []):
         for xx in np.arange(2.0,W-1.9,2.5):
             dense=abs(yy-52.0)<9.0 or xx>80
             if not dense and (round(xx/2.5)%2 or round(yy/2.5)%2): continue
@@ -339,3 +379,4 @@ if __name__=='__main__':
         sys.exit('could not save routed board')
     priority.write_text(json.dumps(fn + [n for n in pri if n not in fn]))
     result.write_text(json.dumps(len(failed)))
+    Path(str(result) + '.nets').write_text(json.dumps(fn))   # names of the unfinished nets

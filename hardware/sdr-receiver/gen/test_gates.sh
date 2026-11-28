@@ -29,6 +29,26 @@ print("ok    DRC gate accepts only J3 edge items with 0 unconnected")
 PY
 )
 
+# The routed pedal boards: build.sh must refuse before it changes any file. No KiCad needed.
+# Runs on a throwaway copy with the override cleared, so a broken guard (or an override left
+# set in the caller's shell) can't touch the real boards.
+guard=$(mktemp -d)
+cp -R "$src/." "$guard/"
+for board in csc-r1p csc-r1p-ctl; do
+  pcb="$guard/pedal/kicad/$board.kicad_pcb"
+  before=$(sha256sum < "$pcb")
+  # It must refuse for the right reason: any other failure (a missing tool, say) doesn't count.
+  if out=$(cd "$guard/gen" && env -u CSC_REBUILD_ROUTED CSC_BOARD=$board ./build.sh 2>&1); then
+    rm -rf -- "$guard"; echo "FAIL  build.sh rebuilt the routed $board board" >&2; exit 1
+  fi
+  if ! grep -q "$board is routed by hand" <<<"$out"; then
+    rm -rf -- "$guard"; echo "FAIL  build.sh failed for $board without the routed-board refusal:" >&2; echo "$out" >&2; exit 1
+  fi
+  [[ "$(sha256sum < "$pcb")" == "$before" ]] || { rm -rf -- "$guard"; echo "FAIL  build.sh changed $board.kicad_pcb" >&2; exit 1; }
+done
+rm -rf -- "$guard"
+echo "ok    build.sh refuses to rebuild the routed pedal boards and leaves them untouched"
+
 if [[ "${1:-}" == "--report-only" ]]; then exit 0; fi
 command -v kicad-cli >/dev/null || { echo "test_gates needs kicad-cli" >&2; exit 1; }
 python3 -c 'import pcbnew'
@@ -64,6 +84,20 @@ if ! (cd "$d/gen" && ./export.sh >"$d/export.log" 2>&1); then
   exit 1
 fi
 echo "ok    baseline export"
+
+# The pedal boards use nested fab directories that must resolve from KiCad's working directory.
+for spec in csc-r1p:main csc-r1p-ctl:controls; do
+  board=${spec%:*}
+  fab=${spec#*:}
+  d=$(fresh)
+  if ! (cd "$d/gen" && CSC_BOARD="$board" ./export.sh >"$d/export.log" 2>&1); then
+    cat "$d/export.log" >&2
+    echo "FAIL  $board export" >&2
+    exit 1
+  fi
+  test -s "$d/pedal/fab/$fab/gerbers/$board-F_Cu.gtl"
+  echo "ok    $board export"
+done
 # 1. A failing netlist checker.
 d=$(fresh); printf 'import sys\nprint("mismatches: 1")\nsys.exit(1)\n' > "$d/gen/check_net.py"
 expect_refused "failing netlist check" "$d" "mismatches: 1"

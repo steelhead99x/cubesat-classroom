@@ -1,27 +1,50 @@
 ---
-import { patchTones } from '../patches';
+// A quest's mission patch: navy field, white keyline and stars, a band in the quest's colour, the
+// icon, and the patch name cut into a ribbon. The art is in ../patch-art.json and the frame and
+// label outlines in ../patch-shapes.json, both shared with the 3D-printable patches
+// (hardware/patches). Run `python3 hardware/patches/gen/patches.py build` after changing either.
+import art from '../patch-art.json';
+import shapes from '../patch-shapes.json';
 
 interface Props {
   id: string;
   name: string;   // full quest title, used for the accessible label
   label: string;
   size?: number;
+  show?: boolean;  // always in colour (the patches page), not tied to this browser's progress
 }
 
-const { id, name, label, size = 120 } = Astro.props;
-const tone = patchTones[id] ?? '#a4c9ff';
-const icons: Record<string, string> = {
-  'first-contact': 'M50 64V46m0 0-7 7m7-7 7 7M40 40a14 14 0 0 1 20 0m-25-6a21 21 0 0 1 30 0',
-  'bring-back-a-picture': 'M37 44h26v19H37zM44 44l2.5-4h7l2.5 4M50 59a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z',
-  'lose-the-signal': 'M38 44a17 17 0 0 1 24 0m-19 5a10 10 0 0 1 14 0M50 59h0M38 38l24 26',
-  'fresh-or-historical': 'M50 41v11l7 4M50 66a14 14 0 1 0 0-28 14 14 0 0 0 0 28z',
-  'light-and-shadow': 'M44 42a10 10 0 1 0 0 16 12 12 0 0 1 0-16zM60 40v-3m7 10h3m-5-7 2.5-2.5M60 54a5 5 0 1 0 0-10',
-};
+type Shape = { layer: 'white' | 'tone'; kind: 'fill' | 'stroke'; d: string; width?: number; gap?: number };
+const { id, name, label, size = 120, show = false } = Astro.props;
+const spec = (art.patches as Record<string, { tone: string; shapes: Shape[] }>)[id];
+const tone = spec?.tone ?? '#a4c9ff';
+const [dx, dy] = art.frame.art_shift;
+const outline = (shapes.labels as Record<string, { label: string; d: string }>)[id];
+// Use the outlined label only if it was generated from the current name.
+const useOutline = outline?.label === label;
+const f = shapes.frame;
 ---
-<svg class="patch" data-patch={id} data-name={name} style={`--tone:${tone}`} viewBox="0 0 100 100" width={size} height={size} role="img">
-  <title>{name}: not earned yet</title>
-  <path class="band rim" d="M50 5 90 26v41L50 93 10 67V26L50 5Z" stroke-width="2.5" />
-  <path class="core" d="M50 17 78 32v29L50 79 22 61V32L50 17Z" />
-  <text class="label" x="50" y="74" text-anchor="middle" font-family="var(--font-sans)" font-size="8.6" font-weight="700" fill="currentColor">{label}</text>
-  <path class="icon" d={icons[id]} transform="translate(0 -6)" fill="none" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round" />
+<svg class="patch" data-patch={show ? undefined : id} data-earned={show ? '' : undefined} data-name={name} style={`--tone:${tone}`} viewBox="0 0 100 100" width={size} height={size} role="img">
+  <title>{show ? `${name} mission patch` : `${name}: not earned yet`}</title>
+  <path class="p-body" d={f.body} />
+  <path class="p-white" d={f.key} fill-rule="evenodd" />
+  <path class="p-tone" d={f.band} fill-rule="evenodd" />
+  <path class="p-white" d={f.stars} />
+  <g transform={`translate(${dx} ${dy})`}>
+    {(spec?.shapes ?? []).map(s => (
+      <>
+        {s.gap && (s.kind === 'fill'
+          ? <path class="p-gap" d={s.d} stroke-width={2 * s.gap} fill-rule="evenodd" />
+          : <path class="p-gap-line" d={s.d} stroke-width={(s.width ?? 0) + 2 * s.gap} />)}
+        {s.kind === 'fill'
+          ? <path class={`p-${s.layer}`} d={s.d} fill-rule="evenodd" />
+          : <path class={`s-${s.layer}`} d={s.d} stroke-width={s.width} />}
+      </>
+    ))}
+  </g>
+  <path class="p-white" d={f.ribbon} />
+  <path class="p-tone" d={f.ribbonInner} />
+  {useOutline
+    ? <path class="p-body" d={outline.d} fill-rule="evenodd" />
+    : <text class="p-body" x="50" y={art.frame.label.cy + art.frame.label.cap / 2} text-anchor="middle" font-family="var(--font-mono)" font-size={art.frame.label.cap * 1.35} font-weight="500" letter-spacing=".4">{label.toUpperCase()}</text>}
 </svg>

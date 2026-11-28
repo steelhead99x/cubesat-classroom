@@ -37,8 +37,8 @@ const ld = {
         <input id="wiki-filter" type="search" autocomplete="off" spellcheck="false" placeholder="Try LoRa, orbit or Part 97" class="wiki-search mt-2" aria-describedby="wiki-count" />
         <p id="wiki-count" class="mt-2 text-sm text-muted" role="status" aria-live="polite">{entries.length} terms</p>
       </div>
-      <nav aria-label="Jump to letter" class="flex flex-wrap gap-x-3 gap-y-1 font-mono text-sm">
-        {groups.map(group => <a class="text-accent underline underline-offset-4" href={`#letter-${group.id}`} data-letter-link={group.id}>{group.letter}</a>)}
+      <nav aria-label="Jump to letter" class="flex flex-wrap gap-x-1 font-mono text-sm">
+        {groups.map(group => <a class="tap min-w-[2.75rem] justify-center text-accent underline underline-offset-4" href={`#letter-${group.id}`} data-letter-link={group.id}>{group.letter}</a>)}
       </nav>
     </div>
 
@@ -49,7 +49,7 @@ const ld = {
           <ul class="mt-3 grid gap-x-8 gap-y-4 md:grid-cols-2">
             {group.entries.map(entry => (
               <li data-entry data-search={[entry.data.term, ...entry.data.aliases, entry.data.summary, entry.data.category].join(' ').toLowerCase()}>
-                <a class="font-bold text-accent underline underline-offset-4" href={`${base}/wiki/${entry.id}/`}>{entry.data.term}</a>
+                <a class="tap font-bold text-accent underline underline-offset-4" href={`${base}/wiki/${entry.id}/`}>{entry.data.term}</a>
                 <span class="t-src ml-2 text-muted">{entry.data.category}</span>
                 <p class="mt-1 text-muted">{entry.data.summary}</p>
                 {entry.data.aliases.length > 0 && <p class="mt-1 text-sm text-muted">Also: {entry.data.aliases.join(', ')}</p>}

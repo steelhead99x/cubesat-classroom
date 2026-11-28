@@ -4,6 +4,7 @@ mod classroom;
 mod flight;
 mod live;
 mod passes;
+mod receiver;
 
 use std::io::{self, Write};
 use std::net::SocketAddr;
@@ -116,6 +117,13 @@ enum Command {
     LiveFeed(live::FeedArgs),
     /// Subscribe to one live-feed track and print it. Reference reader for the client contract.
     ReadLive(live::ReadArgs),
+    /// Desk simulation of the classroom receiver's `stats` track: a satellite pass seen
+    /// by the CSC-R1P pedal or an RTL-SDR Blog V4. Prints JSON lines without --relay.
+    ReceiverSim(receiver::SimArgs),
+    /// Publish `stats` from a real RTL-SDR: pipe `rtl_power` rows in on standard input.
+    ReceiverBridge(receiver::BridgeArgs),
+    /// Read one `stats` snapshot from the receiver broadcast.
+    ReadReceiver(receiver::ReadArgs),
     /// Publish synthetic sensor readings at 1 Hz over MoQ.
     Simulate {
         #[command(flatten)]
@@ -569,6 +577,9 @@ async fn main() -> Result<()> {
         }
         Command::LiveFeed(args) => live::serve(args).await?,
         Command::ReadLive(args) => live::read(args).await?,
+        Command::ReceiverSim(args) => receiver::run(args).await?,
+        Command::ReceiverBridge(args) => receiver::bridge(args).await?,
+        Command::ReadReceiver(args) => receiver::read(args).await?,
         Command::Simulate { link } => publish(link, Sample::synthetic).await?,
         Command::PublishSensors { link, inputs } => {
             publish(link, |sequence| inputs.sample(sequence)).await?;

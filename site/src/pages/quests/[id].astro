@@ -7,6 +7,7 @@ import LevelPicker from '../../components/LevelPicker.astro';
 import StationDemo from '../../components/StationDemo.astro';
 import FullExperience from '../../components/FullExperience.astro';
 import QuestGuide from '../../components/QuestGuide.astro';
+import Patch from '../../components/Patch.astro';
 import { repo } from '../../hubs.mjs';
 import { siteOrigin } from '../../origin';
 import { levels, inline } from '../../levels';
@@ -21,6 +22,8 @@ export async function getStaticPaths() {
 
 const { quest, next, total } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const tool = quest.data.tool;
+const toolHref = tool && (tool.href.startsWith('/') ? base + tool.href : tool.href);
 const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title=${encodeURIComponent('Quest feedback: ' + quest.data.title)}`;
 ---
 <Base title={quest.data.title + ' | Example quest | CubeSat Classroom'} description={quest.data.summary} canonical={`${siteOrigin}/quests/${quest.id}/`}>
@@ -28,7 +31,7 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
   <div class="section-band">
     <div class="shell grid items-end gap-5 py-8 sm:py-11 lg:grid-cols-[1fr_auto]">
       <div>
-        <a class="text-sm font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>All lessons</a>
+        <a class="tap text-sm font-bold text-accent underline underline-offset-4" href={base + '/quests/'}>All lessons</a>
         <p class="mt-4 text-sm text-muted">Lesson {quest.data.order} of {total} · {quest.data.minutes} min · {quest.data.skill}</p>
         <h1 class="mt-2 max-w-3xl">{quest.data.title}</h1>
         <p class="lede mt-3">{quest.data.summary}</p>
@@ -59,6 +62,13 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
             </div>
           );
         })}
+        <div class="quest-patch flex items-center gap-4 border-2 border-line bg-ground p-4">
+          <span class="shrink-0"><Patch id={quest.id} name={quest.data.title} label={quest.data.patch} size={96} /></span>
+          <div>
+            <p class="text-sm font-bold text-ink">Mission patch: {quest.data.patch}</p>
+            <p class="mt-1 text-sm text-muted"><span data-patch-note>Finish the quest and mark it done to earn it.</span> Your patches are saved only in this browser. <a class="font-bold text-ink underline underline-offset-4" href={`${base}/patches/#${quest.id}`}>Print this patch</a></p>
+          </div>
+        </div>
         <div class="flex flex-wrap items-center gap-3">
           <button type="button" data-complete={quest.id} class="button quiet disabled:cursor-default disabled:border-transparent disabled:bg-mint">Mark this quest done</button>
           {next
@@ -67,7 +77,14 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
         </div>
         <p class="text-sm text-faint">Something unclear or wrong? <a class="font-bold text-ink underline underline-offset-4" href={feedback}>Suggest a change on GitHub</a>.</p>
       </article>
-      <StationDemo heading={false} />
+      {tool ? (
+        <aside class="lesson-tool order-first self-start border-2 lg:order-none border-line bg-ground p-6" aria-labelledby="tool-title">
+          <h2 id="tool-title" class="text-2xl">You need: {tool.name}</h2>
+          <p class="mt-3 text-muted">{tool.note}</p>
+          <p class="mt-5"><a class="button primary" href={toolHref} target="_blank" rel="noopener">Open {tool.name} <span class="sr-only">(opens in a new tab)</span></a></p>
+          <p class="mt-4 text-sm text-faint">It opens in a new tab, so these steps stay here. Keep your notes on paper, with your team nickname, not your name.</p>
+        </aside>
+      ) : <StationDemo heading={false} />}
     </div>
     <details class="reference-panel">
       <summary>Get help with this lesson</summary>
@@ -79,7 +96,7 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
 </Base>
 
 <script>
-  import { earn, earned } from '../../patches';
+  import { earn, earned, paint } from '../../patches';
 
   const button = document.querySelector<HTMLButtonElement>('[data-complete]');
   function sync() {
@@ -87,8 +104,12 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
     const done = earned().has(button.dataset.complete!);
     button.disabled = done;
     button.textContent = done ? 'Lesson complete' : 'Mark this quest done';
+    const note = document.querySelector('[data-patch-note]');
+    if (note) note.textContent = done ? 'Earned. It is on your patch shelf.' : 'Finish the quest and mark it done to earn it.';
   }
   button?.addEventListener('click', () => earn(button.dataset.complete!));
   document.addEventListener('patchearned', sync);
+  document.addEventListener('patchearned', event => paint((event as CustomEvent<string>).detail));
   sync();
+  paint();
 </script>

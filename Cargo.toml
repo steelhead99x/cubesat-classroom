@@ -41,11 +41,13 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
+default-run = "cubesat-classroom"
 
 [dependencies]
 anyhow = "1"
 axum = "0.8"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
+jiff = "1"
 clap = { version = "4", features = ["derive", "env"] }
 hang = "=0.21.24"
 moq-tokio = { version = "=0.19.37", default-features = false, features = ["noq", "ring"] }
@@ -53,6 +55,7 @@ serde.workspace = true
 serde_json.workspace = true
 mission-budget = { path = "crates/mission-budget" }
 downlink = { path = "crates/downlink" }
+bench-tools = { path = "crates/bench-tools" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time", "net", "sync"] }
 url = "2"
 sgp4 = "2"

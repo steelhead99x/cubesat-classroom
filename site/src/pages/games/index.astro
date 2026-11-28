@@ -3,6 +3,8 @@ import Base from '../../layouts/Base.astro';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import { siteOrigin } from '../../origin';
+import { patch } from '../../games/patches.mjs';
+import { icon } from '../../games/icons.mjs';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const games = [
@@ -13,14 +15,16 @@ const games = [
     mode: 'Solo levels or shared sky',
     time: 'About 1 minute per pass',
     theme: 'pass',
+    patch: 'pass',
   },
   {
     href: base + '/games/rockoon-wars/',
-    name: 'Rockoon Wars',
-    text: 'Take turns on the balloon battlefield. Adjust your aim for the wind and share one screen or join a room.',
+    name: 'Rockoon Battle',
+    text: 'Launch a balloon from the ground, release a rocket and score by flying through the sky ring.',
     mode: '2–4 players, local or online',
     time: '5–15 minutes',
     theme: 'rockoon',
+    patch: 'rockoon',
   },
 ];
 ---
@@ -37,12 +41,16 @@ const games = [
     <ul class="games-list">
       {games.map(game => (
         <li class:list={['game-card', game.theme]}>
+          <div class="game-patch" set:html={patch(game.patch, game.name)} />
           <div class="game-info">
             <h2>{game.name}</h2>
             <p>{game.text}</p>
+            <ul class="game-details" aria-label="Game details">
+              <li><Fragment set:html={icon('crew', 16)} />{game.mode}</li>
+              <li><Fragment set:html={icon('clock', 16)} />{game.time}</li>
+            </ul>
+            <a class="button play" href={game.href}><Fragment set:html={icon('start', 18)} />Play {game.name}</a>
           </div>
-          <ul class="game-details" aria-label="Game details"><li>{game.mode}</li><li>{game.time}</li></ul>
-          <a class="button play" href={game.href}>Play {game.name} <span class="arrow" aria-hidden="true">→</span></a>
         </li>
       ))}
     </ul>
@@ -56,22 +64,25 @@ const games = [
 <style>
   .games-intro { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1rem 2rem; }
   .games-intro > p { max-width: 20rem; color: var(--color-muted); }
-  .games-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 1rem; list-style: none; padding: 0; }
+  .games-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(30rem, 100%), 1fr)); gap: 1rem; list-style: none; padding: 0; }
+  /* Each game is a mission card: its patch, a short brief, and one action. */
   .game-card {
-    display: flex; flex-direction: column; align-items: start; gap: 1rem;
-    min-width: 0; padding: clamp(1.25rem, 4vw, 2.2rem);
-    border: 1px solid #394985; border-radius: 1rem;
-    background: radial-gradient(ellipse at 100% 0%, var(--glow), transparent 66%), #101942;
-    color: #f2f4ff;
+    display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 1.25rem 1.5rem;
+    min-width: 0; padding: clamp(1.25rem, 3.5vw, 1.9rem);
+    border-radius: .25rem; background: var(--color-navy); color: #fff;
+    border-bottom: 4px solid var(--color-flag);
   }
-  .pass { --glow: #23598b; --action: #a9e3ff; }
-  .rockoon { --glow: #68417e; --action: #ffd786; }
-  .game-info { display: grid; gap: .5rem; }
-  .game-info p { max-width: 35ch; color: #e0e5fc; }
-  .game-details { display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin-block-start: auto; list-style: none; color: #d7def5; font-size: .9rem; }
-  .play { background: var(--action); color: #101942; border-color: transparent; }
-  .play:hover { background: #fff; color: #101942; }
-  .game-card a:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+  .game-patch { width: clamp(6.5rem, 16vw, 8.5rem); }
+  .game-patch :global(.patch) { display: block; width: 100%; height: auto; }
+  .game-info { display: grid; gap: .6rem; justify-items: start; min-width: 0; }
+  .game-info h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); }
+  .game-info p { max-width: 38ch; color: rgb(255 255 255 / .86); }
+  .game-details { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; padding: 0; margin: .1rem 0 .3rem; list-style: none; font: 500 .82rem var(--font-mono); color: var(--color-sky); }
+  .game-details li { display: inline-flex; align-items: center; gap: .35rem; }
+  .play { gap: .55rem; background: #fff; color: var(--color-navy); border-color: transparent; }
+  .play:hover { background: var(--color-sky); color: var(--color-navy); }
+  .game-card a:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  @media (max-width: 520px) { .game-card { grid-template-columns: minmax(0, 1fr); } .game-patch { width: 7rem; } }
   .lesson-link { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem 1.5rem; border-top: 1px solid var(--color-line); padding-top: 1.2rem; }
   .lesson-link h2 { font-size: 1.3rem; }
   .lesson-link p { color: var(--color-muted); margin-top: .25rem; }

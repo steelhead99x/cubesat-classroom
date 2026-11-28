@@ -1,6 +1,7 @@
 """quick courtyard overlap check (bounding boxes) + list"""
 import pcbnew,sys
-b=pcbnew.LoadBoard('../kicad/csc-r1.kicad_pcb'); OX,OY=60,50
+import boardcfg
+b=pcbnew.LoadBoard(boardcfg.PCB); OX,OY=60,50
 rs=[]
 for f in b.GetFootprints():
     bb=None

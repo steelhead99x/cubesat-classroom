@@ -39,6 +39,31 @@ Use the existing Rust MoQ stack for live data and audio. Add a station publisher
 | `receive-audio` | Optional mono Opus audio from the receiver, with codec information in the catalog | Station publishes. Paired phones subscribe. |
 | `teacher-mic` | Mono Opus push-to-talk audio in a separate LAN-only broadcast | Paired teacher publishes. Station subscribes. |
 
+### `stats` version 1
+
+The station writes this layout now, from a simulator or from a real RTL-SDR, so the app and website can be built before the pedal is on the air. Run `cargo run --locked --bin cubesat-classroom -- receiver-sim` to print one pass cycle as JSON lines, or add `--relay` and `--station <nickname>` to publish to the `live` broadcast. `read-receiver --relay ...` reads one snapshot back. Pick the receiver with `--source pedal` or `--source rtl-sdr-v4`, the band with `--band 2m` or `--band 70cm`, and add `--track-doppler` to retune during the pass. Without it the receiver stays on the nominal frequency, so near rise and set the carrier drifts outside the passband (by default 1.5 kHz for the pedal and 3 kHz for the V4; set it with `--passband-hz`) and the snapshot shows `lost`, as the website's pass mode does. For a real receiver, pipe `rtl_power` into `receiver-bridge`, for example `rtl_power -f 145.79M:145.81M:500 -g 30 -i 1 - | cubesat-classroom receiver-bridge --gain-db 30 --relay ...`. It labels snapshots `received-rf`, or `hardware-bench` with `--label hardware-bench`; name what you are hearing with `--satellite`. The code lives in [src/receiver.rs](../src/receiver.rs); the website's pass mode uses the same orbit model in [site/src/lib/pass.mjs](../site/src/lib/pass.mjs), and a test keeps the two in step.
+
+The first block of fields is the contract the cubesat.app phone app reads (`StationSnapshot` in its `mobile/src/lib/snapshot.ts`). The app drops fields it doesn't know, so the receiver block can grow without breaking it. The default broadcast is `live`, the name the app subscribes to.
+
+| Field | Meaning |
+| --- | --- |
+| `v` | Layout version, `1`. Readers refuse other versions. |
+| `seq`, `session` | Counter, and an id that changes each time the publisher starts, so viewers can order readings when `seq` restarts |
+| `station` | Station nickname such as `room-12`: lower-case letters, digits and hyphens. Never a name, school or address. |
+| `source` | What is being heard, such as `Simulated satellite` or `ISS (ZARYA)` |
+| `provenance` | `desk-simulation`, `hardware-bench` or `received-rf`. Show it beside every value. The simulator always writes `desk-simulation`. |
+| `utc` | Capture time, RFC 3339. For `rtl_power`, the row’s local timestamp converted to UTC. |
+| `received_utc` | When the bridge read the row, RFC 3339. Omitted for simulation and on older snapshots. |
+| `contact` | `acquired` (carrier heard), `lost` (satellite up, carrier not heard) or `idle` |
+| `frequency_hz`, `level_dbfs`, `level_db_rel` | Tuned frequency. Simulated total level in dBFS or relative FFT peak in dB. |
+| `elevation_deg` | Satellite elevation. Absent from a real receiver without a pass prediction. |
+| `sensors` | Decoded beacon values as `{"temperature": {"value": 18.0, "unit": "°C"}}`, absent when the signal is too weak or clipped |
+| `receiver`, `band`, `nominal_hz` | `pedal` (CSC-R1P) or `rtl-sdr-v4`; `2m` or `70cm`; the published downlink frequency |
+| `gain_db`, `noise_dbfs`, `noise_db_rel`, `snr_db`, `clipping` | Gain setting, noise floor, signal-to-noise ratio (`null` with no signal) and whether the input is near full scale. `clipping` is absent from `rtl_power` readings: its averaged FFT bins cannot show ADC clipping. |
+| `doppler_hz`, `offset_hz`, `range_km`, `pass_s` | Doppler shift, received carrier minus tuned frequency, slant range, and seconds since rise (negative before it). Absent from a real receiver without a pass prediction. |
+
+The simulated levels are planning numbers, not measurements. The simulator hears and decodes a carrier only within `--passband-hz` (1500 Hz for the pedal, as in the website trainer, and 3000 Hz for the V4 by default) of where it is tuned, so a receiver left on the published frequency loses the beacon when the Doppler shift is large; `--track-doppler` keeps it. For `rtl_power`, `level_db_rel` is the strongest in-band FFT bin. `noise_db_rel` is the median of the out-of-band bins. These relative levels can exceed 0 dB. Compare sweeps made with the same receiver and gain. With no out-of-band bins, the bridge leaves the noise floor and SNR unknown. The bridge assumes the recorder used this computer’s time zone. When replaying a log from another zone, pass `--rtl-power-tz America/Denver` with the recorder’s zone. Pass `--rtl-power-tz UTC` for logs recorded in UTC. When the clocks go back, a live bridge uses the time it read each row to tell the two copies of the repeated hour apart. This needs each row read within an hour of its timestamp, so keep `rtl_power -i` well under an hour. A replayed log is read long after both, so rows from the repeated hour are skipped rather than guessed, with a note on standard error; replay those with `--rtl-power-tz UTC` if the recorder ran in UTC. Rows with invalid capture times, or local times that never happened when the clocks went forward, are skipped.
+
 Publish a fresh stats snapshot about once a second. The app should show its age and mark the feed stale when updates stop. Start with a subscribe-only app. When adding student interaction, use a separate request track for a predefined action such as asking for the latest sensor snapshot. Validate and rate-limit the requests at the station. Keep radio tuning and any transmitter controls out of that path.
 
 Use a private MoQ project for hosted development and testing between networks. Keep the relay URL configurable and use short-lived credentials scoped to each station and role. Keep publisher secrets on the station or token issuer. Test that a subscriber credential cannot publish or read a different station's broadcast. Send simulated or approved non-personal data to the hosted relay. Pin a compatible MoQ protocol version and prove interoperability on physical iOS and Android devices before relying on the hosted path. [MoQ relay authentication](https://doc.moq.dev/bin/relay/)

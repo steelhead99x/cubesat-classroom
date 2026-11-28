@@ -595,10 +595,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "bench-tools",
  "clap",
  "downlink",
  "hang",
  "image",
+ "jiff 1.0.1",
  "mission-budget",
  "moq-tokio",
  "serde",
