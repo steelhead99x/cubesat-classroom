@@ -3,7 +3,7 @@ import { cp, rm } from 'node:fs/promises';
 const build = new URL('../dist-github/', import.meta.url);
 const pages = new URL('../../docs/', import.meta.url);
 
-const directories = ['_astro', 'quests', 'plans', 'hardware', 'mission', 'volunteer', 'open-source', 'hub', 'wiki', 'games', 'rockoon', 'patches'];
+const directories = ['_astro', 'quests', 'plans', 'hardware', 'mission', 'volunteer', 'open-source', 'hub', 'wiki', 'games', 'rockoon', 'patches', 'privacy', 'terms'];
 for (const directory of directories) {
   await rm(new URL(directory, pages), { recursive: true, force: true });
 }

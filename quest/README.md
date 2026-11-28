@@ -162,6 +162,7 @@ Maintainer work for the live classroom site. These quests stay in the log after 
 - [Patch the url advisory and add a dependency audit to the classroom Rust workspace](/quest/m0/classroom-rust-advisories.md)
 - [Align the public site copy with the volunteer review](/quest/m0/classroom-public-copy.md)
 - [Stop the phone header jumping, make taps 44px, and apply the SI house rule](/quest/m0/phone-header-taps-si.md)
+- [Add Privacy and Terms pages and footer links](/quest/m0/privacy-and-terms.md)
 - [Add the Rev C printed 1U frame and Nano 33 firmware, in Rust](/quest/m0/rev-c-printed-frame.md)
 - [Compile the firmware in every build](/quest/m0/compile-firmware-in-builds.md)
 - [Run cubesat-classroom CI on PrairieDog runners](/quest/m0/prairiedog-ci.md)
