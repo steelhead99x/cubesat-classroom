@@ -14,7 +14,10 @@
 // Every player in the match republishes `host` and a copy of the history it has played, so a
 // player who joins or reconnects after the creator has left can still catch up. Another
 // player's copy only counts if that player is the committer or the copy matches what the
-// players asked for, so nobody can commit a move for someone else (historyEntry). When copies
+// players asked for, so nobody can commit a move for someone else (historyEntry). An entry a
+// player believed only on a stand-in's word is copied with that stand-in named in `standin`
+// ({ L<turn> | S<round>: authorId }), so republishing a copy never lends the stand-in's record the
+// copier's authority, and the record outlives the stand-in leaving. When copies
 // disagree, the one earlier in the order wins; a screen that already played the other replays
 // from the start (diverged).
 import { WEAPON, createMatch, buy, startRound, fire, skip } from './logic.mjs';
@@ -22,9 +25,11 @@ import { WEAPON, createMatch, buy, startRound, fire, skip } from './logic.mjs';
 /**
  * The room protocol. It names the relay namespace (rockoon-battle-v<N>) and every snapshot
  * carries it as `p`. A snapshot from another version is ignored, so a client that follows only
- * the creator (v3 and older) and one that hands the room on (v4) never share a match.
+ * the creator (v3 and older) and one that hands the room on (v4) never share a match. v5 marks
+ * copies of a stand-in's word (`standin`); a v4 client would ignore the mark and take such a copy
+ * on the copier's authority, so the two never share a match either.
  */
-export const ROOM_PROTOCOL = 4;
+export const ROOM_PROTOCOL = 5;
 export const ROOM_NAMESPACE = `rockoon-battle-v${ROOM_PROTOCOL}`;
 
 const ID = /^[0-9a-f]{12}$/;
@@ -100,6 +105,17 @@ export function cleanSnapshot(raw) {
           out.shopLog[r] = lists.map(list => (Array.isArray(list) ? cleanList(list) : []));
         }
       }
+      // Which copied entries are a stand-in's word, and whose: never the creator's (order[0]),
+      // who needs no stand-in, and only for an entry this snapshot carries.
+      if (raw.standin && typeof raw.standin === 'object') {
+        const standin = {};
+        for (const [ref, by] of Object.entries(raw.standin).slice(0, 2020)) {
+          const m = /^([LS])(\d{1,4})$/.exec(ref);
+          if (!m || typeof by !== 'string' || order.indexOf(by) < 1) continue;
+          if ((m[1] === 'L' ? out.log : out.shopLog)[Number(m[2])] !== undefined) standin[`${m[1]}${Number(m[2])}`] = by;
+        }
+        if (Object.keys(standin).length) out.standin = standin;
+      }
     }
   }
   return out;
@@ -111,6 +127,16 @@ export function matchFor(host) {
 }
 
 const getter = snapshots => id => (snapshots instanceof Map ? snapshots.get(id) : snapshots[id]);
+
+/** The name of a history entry in `played` and `standin`: L<turn> or S<round>. */
+const refOf = (field, key) => `${field === 'log' ? 'L' : 'S'}${Number(key)}`;
+const sameEntry = (a, b) => a !== undefined && JSON.stringify(a) === JSON.stringify(b);
+
+/** Whether p carries `entry` as a copy of `author`'s word: it took it from that stand-in. */
+function vouchedBy(get, p, field, key, author, entry) {
+  const snap = get(p);
+  return snap?.standin?.[refOf(field, key)] === author && (entry === undefined ? snap?.[field]?.[key] !== undefined : sameEntry(snap?.[field]?.[key], entry));
+}
 
 /** The player who records turns: the first in the order who hasn't left. `gone` excludes this screen's own players. */
 export function committerFor(host, gone = []) {
@@ -156,23 +182,33 @@ const viewOf = view => {
  *     who would have been the committer with this screen away, along with those gone, any
  *     player whose own snapshot says it is catching up too, and any player whose history stops
  *     short of the entry. That is how a returning host keeps
- *     the turns its stand-in recorded without it, even when other players lost theirs as well.
+ *     the turns its stand-in recorded without it, even when other players lost theirs as well;
+ *   - a stand-in earlier in the order than this screen, while it is catching up, only when every
+ *     player before the stand-in carries the entry marked as taken from that stand-in. The entry
+ *     keeps the stand-in's authority, never the copier's (see relayed for such copies).
  */
 function speaksFor(host, get, i, view, field, key) {
   if (host.order.slice(0, i).every(p => view.gone.includes(p))) return true;
   if (!view.rejoined || !view.me) return false;
   const mine = host.order.indexOf(view.me);
-  if (mine < 0 || mine >= i) return false;
-  // Away, for this entry: gone, this screen, anyone catching up, and anyone whose history stops
-  // short of it (they lost it on a reload, or were away, so they can't have stood in for it). A
-  // player whose history runs right up to this entry is here and current, so nobody after it in
-  // the order can speak over it. If the committer later publishes a different entry, it is
-  // earlier in the order and wins (diverged).
+  if (mine < 0) return false;
+  // A player who carries this entry as a copy of this author's word took it from the author as
+  // its stand-in: it was away for it, and says so.
+  const tookFromAuthor = p => vouchedBy(get, p, field, key, host.order[i]);
+  // A stand-in later in the order than this screen: only that counts. Each player before it has
+  // itself taken this entry from it, so the author was the committer then.
+  if (mine >= i) return committerFor(host, [...view.gone, view.me, ...host.order.filter((p, j) => j < i && tookFromAuthor(p))]) === host.order[i];
+  // Away, for this entry: gone, this screen, anyone catching up, anyone who took it from this
+  // author, and
+  // anyone whose history stops short of it (they lost it on a reload, or were away, so they
+  // can't have stood in for it). A player whose history runs right up to this entry is here and
+  // current, so nobody after it in the order can speak over it. If the committer later publishes
+  // a different entry, it is earlier in the order and wins (diverged).
   // A player who is here records within a turn or so of the newest entry, so only one with no
   // history at all, or more than a whole round of turns behind, counts as having lost it.
   const behind = p => {
     const keys = Object.keys(get(p)?.[field] ?? {}).map(Number);
-    return !keys.length || Math.max(...keys) < Number(key) - host.order.length;
+    return !keys.length || Math.max(...keys) < Number(key) - host.order.length || tookFromAuthor(p);
   };
   const away = [...view.gone, view.me, ...host.order.filter((p, j) => j < i && (get(p)?.catchUp || behind(p)))];
   return committerFor(host, away) === host.order[i];
@@ -208,21 +244,59 @@ function contradicted(host, get, field, key, entry, owner) {
   });
 }
 
-/** historyEntry, saying how the copy was believed: 'standin' when only by the catch-up rule. */
+/**
+ * Whether a copy marked as stand-in `by`'s word (`standin`) is believable, as that stand-in's
+ * word: never the copier's. Only a player's screen catching up takes it, as it would from the
+ * stand-in itself, or a watcher's screen (not in the match, so it never republishes history and
+ * can only mislead itself), and only when every player before the stand-in is gone, is this screen, or carries the
+ * same entry taken from the same stand-in (it was away, and the stand-in recorded it), and when
+ * the stand-in itself, if it is still here, carries the same entry or none. The stand-in or an
+ * earlier player's copy can vouch for it. If those players have left, the current committer can
+ * supply its retained copy. The record keeps the original author's mark in every case.
+ */
+function relayed(host, get, field, key, entry, by, carrier, v) {
+  if (!v.me) return false;
+  // A watcher follows the match from whatever copies are left: after the stand-in has gone, a
+  // marked copy may be the only record of its entry.
+  if (host.order.includes(v.me) && !v.rejoined) return false;
+  const j = host.order.indexOf(by);
+  if (j < 1) return false;
+  const own = get(by)?.[field]?.[key];
+  if (own !== undefined && !sameEntry(own, entry)) return false;
+  const before = host.order.slice(0, j);
+  const vouches = p => vouchedBy(get, p, field, key, by, entry);
+  if (!before.every(p => v.gone.includes(p) || p === v.me || vouches(p))) return false;
+  if (sameEntry(own, entry) || before.some(vouches)) return true;
+  if (!v.gone.includes(by)) return false;
+  // A returning player may have been away when the remaining committer took over.
+  const away = v.rejoined ? [...v.gone, v.me] : v.gone;
+  return committerFor(host, away) === carrier;
+}
+
+/** historyEntry, saying how the copy was believed: 'standin' (with `by`, whose word it is) when only by the catch-up rule. */
 function findEntry(host, get, field, key, owner, view = {}) {
   const v = viewOf(view);
+  const ref = refOf(field, key);
   for (const [i, id] of host.order.entries()) {
     const entry = get(id)?.[field]?.[key];
     if (!entry) continue;
-    if (host.order.slice(0, i).every(p => v.gone.includes(p))) return { entry, via: 'committer' };
+    // A copy of a stand-in's word: the copier's place in the order gives it no authority.
+    const by = get(id)?.standin?.[ref];
+    if (!by && host.order.slice(0, i).every(p => v.gone.includes(p))) return { entry, via: 'committer' };
     // This screen's own copy: it only ever holds what it committed or already believed.
-    if (id === v.me) return { entry, via: 'own' };
+    // A copy of a stand-in's word stays one, so mirroring it again keeps the mark.
+    if (id === v.me) return by ? { entry, via: 'standin', by } : { entry, via: 'own' };
     if (matchesRequests(host, get, field, key, entry, owner, v.gone)) return { entry, via: 'requests' };
-    if (field === 'log' && owner && JSON.stringify(get(owner)?.log?.[key]) === JSON.stringify(entry)) return { entry, via: 'owner' };
+    if (field === 'log' && owner && JSON.stringify(get(owner)?.log?.[key]) === JSON.stringify(entry) && !get(owner)?.standin?.[ref]) return { entry, via: 'owner' };
+    const live = owner === v.me || !contradicted(host, get, field, key, entry, owner);
+    if (by) {
+      if (relayed(host, get, field, key, entry, by, id, v) && live) return { entry, via: 'standin', by };
+      continue;
+    }
     // A stand-in can't override what another player is asking for right now. This screen's own
     // turn is different: it is catching up, and a request it made before seeing the stand-in's
     // record of that turn is just late.
-    if (speaksFor(host, get, i, v, field, key) && (owner === v.me || !contradicted(host, get, field, key, entry, owner))) return { entry, via: 'standin' };
+    if (speaksFor(host, get, i, v, field, key) && live) return { entry, via: 'standin', by: id };
   }
   return undefined;
 }
@@ -243,7 +317,7 @@ export function nextAction(match, host, snapshots, view = {}) {
   if (match.phase === 'shop') {
     const round = match.round + 1;
     const found = findEntry(host, get, 'shopLog', round, undefined, view);
-    if (found) return { kind: 'shop', buys: found.entry, ref: `S${round}`, via: found.via };
+    if (found) return { kind: 'shop', buys: found.entry, ref: `S${round}`, via: found.via, by: found.by };
     const missing = host.order.filter(id => !get(id)?.shops?.[round]);
     return missing.length ? { kind: 'wait', ids: missing } : { kind: 'wait', ids: [], sent: true };
   }
@@ -251,16 +325,18 @@ export function nextAction(match, host, snapshots, view = {}) {
   const owner = host.order[match.turn];
   const found = findEntry(host, get, 'log', k, owner, view);
   const entry = found?.entry;
-  if (entry === 'skip') return { kind: 'skip', ref: `L${k}`, owner, via: found.via };
-  if (entry) return { kind: 'fire', shot: entry, ref: `L${k}`, owner, via: found.via };
+  if (entry === 'skip') return { kind: 'skip', ref: `L${k}`, owner, via: found.via, by: found.by };
+  if (entry) return { kind: 'fire', shot: entry, ref: `L${k}`, owner, via: found.via, by: found.by };
   return get(owner)?.turns?.[k] ? { kind: 'wait', ids: [owner], sent: true } : { kind: 'wait', ids: [owner] };
 }
 
 /**
  * Copies the history this screen has played into `id`'s own snapshot, so it survives the
- * committer leaving. Only entries already checked and played are copied, and an entry taken
- * only on a stand-in's word is copied only if it is `id`'s own turn, so a forged entry can't
- * spread on someone else's authority. Returns true when it added anything.
+ * committer leaving. Only entries already checked and played are copied. An entry taken only on
+ * a stand-in's word is copied with that stand-in named in `standin`, unless it is `id`'s own
+ * turn (an owner's word on its own turn is believable already), so the copy keeps the stand-in's
+ * authority and never gains `id`'s: a forged entry can't spread on someone else's authority, and
+ * the record stays replayable after the stand-in leaves. Returns true when it changed anything.
  */
 export function mirror(match, host, snapshots, id) {
   const get = getter(snapshots);
@@ -270,15 +346,29 @@ export function mirror(match, host, snapshots, id) {
   if (!mine.host) { mine.host = structuredClone(host); added = true; }
   mine.log ??= {};
   mine.shopLog ??= {};
-  for (const [ref, { entry }] of Object.entries(match.played ?? {})) {
+  for (const [ref, { entry, owner, via, by }] of Object.entries(match.played ?? {})) {
     const field = ref[0] === 'S' ? 'shopLog' : 'log';
     const key = ref.slice(1);
+    // A shop entry covers everyone's picks, so it is never `id`'s alone.
+    const author = via === 'standin' && by && by !== id && !(field === 'log' && owner === id) ? by : undefined;
     if (JSON.stringify(mine[field][key]) !== JSON.stringify(entry)) {
       mine[field][key] = structuredClone(entry);
       added = true;
     }
+    if ((mine.standin?.[ref]) !== author) {
+      if (author) (mine.standin ??= {})[ref] = author;
+      else unmark(mine, ref);
+      added = true;
+    }
   }
   return added;
+}
+
+/** This entry is now the snapshot's own record, not a copy of a stand-in's word. */
+function unmark(snap, ref) {
+  if (!snap.standin?.[ref]) return;
+  delete snap.standin[ref];
+  if (!Object.keys(snap.standin).length) delete snap.standin;
 }
 
 /**
@@ -297,6 +387,7 @@ export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
     if (historyEntry(host, get, 'shopLog', round, undefined, gone)) return false;
     if (host.order.some(p => !get(p)?.shops?.[round] && !gone.includes(p))) return false;
     mine.shopLog[round] = host.order.map(p => [...(get(p)?.shops?.[round] ?? [])]);
+    unmark(mine, `S${round}`);
     return true;
   }
   const k = match.log.length;
@@ -306,6 +397,7 @@ export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
   if (shot) mine.log[k] = { angle: shot.angle, power: shot.power, weapon: shot.weapon };
   else if (gone.includes(owner)) mine.log[k] = 'skip';
   else return false;
+  unmark(mine, `L${k}`);
   return true;
 }
 
@@ -322,13 +414,13 @@ export function diverged(match, host, snapshots, view = {}) {
   return false;
 }
 
-/** @typedef {{kind:'shop',buys:string[][],ref?:string,via?:string}|{kind:'fire',shot:{angle:number,power:number,weapon:string},ref?:string,owner?:string,via?:string}|{kind:'skip',ref?:string,owner?:string,via?:string}|{kind:'wait',ids:string[],sent?:boolean}|{kind:'over'}} NextAction */
+/** @typedef {{kind:'shop',buys:string[][],ref?:string,via?:string,by?:string}|{kind:'fire',shot:{angle:number,power:number,weapon:string},ref?:string,owner?:string,via?:string,by?:string}|{kind:'skip',ref?:string,owner?:string,via?:string,by?:string}|{kind:'wait',ids:string[],sent?:boolean}|{kind:'over'}} NextAction */
 
 /** Applies one action from nextAction. Returns fire()'s result for a shot, else null. */
 export function apply(match, action) {
   if (action.ref) {
     match.played ??= {};
-    match.played[action.ref] = { entry: structuredClone(action.kind === 'shop' ? action.buys : action.kind === 'fire' ? action.shot : 'skip'), owner: action.owner, via: action.via };
+    match.played[action.ref] = { entry: structuredClone(action.kind === 'shop' ? action.buys : action.kind === 'fire' ? action.shot : 'skip'), owner: action.owner, via: action.via, ...(action.by ? { by: action.by } : {}) };
   }
   if (action.kind === 'shop') {
     action.buys.forEach((list, i) => { for (const w of list) buy(match, i, w); });
