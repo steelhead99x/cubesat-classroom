@@ -445,6 +445,41 @@ test('a watcher replays a stand-in\'s entry from a marked copy after the stand-i
   assert.equal(Room.replay(three, s, { gone: [ids[1], ids[2]], me: ids[2] }).match.log.length, k);
 });
 
+test('the remaining committer can replay a stand-in copy after earlier players leave', () => {
+  const [a, b, c] = ids;
+  const d = 'dddddddddddd';
+  const order = [...ids, d];
+  const names = { ...host.names, [c]: 'GS-CC3', [d]: 'GS-DD4' };
+  const four = { ...host, seed: 42, order, names };
+  const snapshots = Object.fromEntries(order.map(id => [id, snap(names[id], { shops: { 1: [] } })]));
+  assert.ok(Room.commit(Room.matchFor(four), four, snapshots));
+  let match = Room.replay(four, snapshots).match;
+  while (four.order[match.turn] !== c) {
+    snapshots[four.order[match.turn]].turns[match.log.length] = { angle: 60, power: 50, weapon: 'baby' };
+    assert.ok(Room.commit(match, four, snapshots));
+    match = Room.replay(four, snapshots).match;
+  }
+  const turn = match.log.length;
+  for (const id of order) Room.mirror(match, four, snapshots, id);
+
+  assert.ok(Room.commit(match, four, snapshots, [a, c], b));
+  const creator = Room.replay(four, snapshots, { gone: [c], me: a, rejoined: true }).match;
+  Room.mirror(creator, four, snapshots, a);
+  delete snapshots[b];
+
+  snapshots[d] = snap(names[d], { shops: { 1: [] } });
+  const remaining = Room.replay(four, snapshots, { gone: [b, c], me: d, rejoined: true }).match;
+  Room.mirror(remaining, four, snapshots, d);
+  assert.equal(snapshots[d].standin[`L${turn}`], b);
+  delete snapshots[a];
+
+  snapshots[c] = snap(names[c], { shops: { 1: [] } });
+  const returning = Room.replay(four, snapshots, { gone: [a, b], me: c, rejoined: true }).match;
+  assert.equal(R.fingerprint(returning), R.fingerprint(remaining));
+  assert.equal(returning.played[`L${turn}`].by, b);
+  assert.equal(Room.replay(four, snapshots, { gone: [a], me: c, rejoined: true }).match.log.length, turn);
+});
+
 test('v5 snapshots carry stand-in marks, and v4 snapshots are not read', () => {
   assert.equal(Room.ROOM_PROTOCOL, 5);
   assert.equal(Room.cleanSnapshot({ p: 4, cs: 'GS-AA1', joined: 1, turns: {}, shops: {} }), null);

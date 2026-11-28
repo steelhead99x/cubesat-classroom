@@ -250,11 +250,11 @@ function contradicted(host, get, field, key, entry, owner) {
  * stand-in itself, or a watcher's screen (not in the match, so it never republishes history and
  * can only mislead itself), and only when every player before the stand-in is gone, is this screen, or carries the
  * same entry taken from the same stand-in (it was away, and the stand-in recorded it), and when
- * the stand-in itself, if it is still here, carries the same entry or none. Someone must vouch
- * for it: the stand-in or one of those copies. So the record survives the stand-in leaving, and
- * a copier can never lend it the creator's authority.
+ * the stand-in itself, if it is still here, carries the same entry or none. The stand-in or an
+ * earlier player's copy can vouch for it. If those players have left, the current committer can
+ * supply its retained copy. The record keeps the original author's mark in every case.
  */
-function relayed(host, get, field, key, entry, by, v) {
+function relayed(host, get, field, key, entry, by, carrier, v) {
   if (!v.me) return false;
   // A watcher follows the match from whatever copies are left: after the stand-in has gone, a
   // marked copy may be the only record of its entry.
@@ -266,7 +266,11 @@ function relayed(host, get, field, key, entry, by, v) {
   const before = host.order.slice(0, j);
   const vouches = p => vouchedBy(get, p, field, key, by, entry);
   if (!before.every(p => v.gone.includes(p) || p === v.me || vouches(p))) return false;
-  return sameEntry(own, entry) || before.some(vouches);
+  if (sameEntry(own, entry) || before.some(vouches)) return true;
+  if (!v.gone.includes(by)) return false;
+  // A returning player may have been away when the remaining committer took over.
+  const away = v.rejoined ? [...v.gone, v.me] : v.gone;
+  return committerFor(host, away) === carrier;
 }
 
 /** historyEntry, saying how the copy was believed: 'standin' (with `by`, whose word it is) when only by the catch-up rule. */
@@ -286,7 +290,7 @@ function findEntry(host, get, field, key, owner, view = {}) {
     if (field === 'log' && owner && JSON.stringify(get(owner)?.log?.[key]) === JSON.stringify(entry) && !get(owner)?.standin?.[ref]) return { entry, via: 'owner' };
     const live = owner === v.me || !contradicted(host, get, field, key, entry, owner);
     if (by) {
-      if (relayed(host, get, field, key, entry, by, v) && live) return { entry, via: 'standin', by };
+      if (relayed(host, get, field, key, entry, by, id, v) && live) return { entry, via: 'standin', by };
       continue;
     }
     // A stand-in can't override what another player is asking for right now. This screen's own
