@@ -23,6 +23,7 @@ const FLIGHT_SPEED = 1.6; // path points are 1/60 s of game time; play a little 
 const LIFT_TIME = 1.1;
 const BOOM_TIME = 0.45;
 const SETTLE_TIME = 0.8; // the balloon's trip back down to its pad
+const CATCH_UP_MS = 30_000;
 
 const root = document.querySelector<HTMLElement>('[data-rw]');
 if (root) start(root);
@@ -82,11 +83,9 @@ function start(root: HTMLElement) {
   if (joinCode) menuStep = 'join';
   let lastTurnKey = '';
   let liveSince = 0; // when this screen's room connection last went live
-  let adoptedAt = 0; // when this screen picked up the match settings
   let catchUpUntil = 0; // until then this screen is catching up (see roomView)
   let notLiveSince: number | null = null, firstLive = true, rejoiningRoom = false;
-  let rejoinedSession = false; // this connection began after a reload or time offline
-  const metSinceLive = new Set<string>(); // players heard from since this screen went live
+  let heard: Map<string, Set<string>> | undefined; // peers and their history since this screen returned
   let shotNote = ''; // what the last shot did, shown with the next turn
 
   function seenHowto() { try { return localStorage.getItem(HOWTO_KEY) === '1'; } catch { return false; } }
@@ -209,9 +208,11 @@ function start(root: HTMLElement) {
   function record() {
     if (!match || !host) return;
     syncCatchUpFlag();
-    const gone = goneIds();
-    const committer = Room.committerFor(host, gone);
-    let changed = mine.includes(committer) && Room.commit(match, host, snaps, gone, committer);
+    const current = roomView();
+    const committer = Room.committerFor(host, current.gone);
+    // Requests made while the connection is down stay provisional until the room is heard again.
+    const canCommit = mode === 'local' || link?.status === 'live';
+    let changed = canCommit && mine.includes(committer) && Room.commit(match, host, snaps, current, committer);
     if (mode === 'online' && host.order.includes(me) && Room.mirror(match, host, snaps, me)) changed = true;
     if (changed) publish();
   }
@@ -281,7 +282,7 @@ function start(root: HTMLElement) {
    * just (re)joined, or just picked up a match already under way: then it accepts the turns its
    * stand-in recorded without it. */
   function roomView() {
-    return { gone: goneIds(), me, rejoined: catchingUp() };
+    return { gone: goneIds(), me, rejoined: catchingUp(), heard: mode === 'online' ? heard : undefined };
   }
 
   function goneIds() {
@@ -786,7 +787,7 @@ function start(root: HTMLElement) {
     history.replaceState(null, '', `#room=${code}`);
     // Was this page already in this room before a reload? (Session storage survives a reload of
     // the same tab, nothing else.)
-    firstLive = true; notLiveSince = null;
+    firstLive = true; notLiveSince = null; catchUpUntil = 0; heard = undefined;
     try {
       rejoiningRoom = sessionStorage.getItem('rockoon-room') === code;
       sessionStorage.setItem('rockoon-room', code);
@@ -800,31 +801,27 @@ function start(root: HTMLElement) {
           // few seconds offline, or this page reloaded into a room it was already in. A token
           // renewal or the first connection to a new room isn't that.
           const wasAway = notLiveSince !== null && liveSince - notLiveSince > 5_000;
-          rejoinedSession = wasAway || (firstLive && rejoiningRoom);
-          if (rejoinedSession) catchUpUntil = liveSince + 30_000;
-          if (wasAway || firstLive) metSinceLive.clear();
+          if (wasAway || (firstLive && rejoiningRoom)) {
+            heard = new Map();
+            catchUpUntil = liveSince + CATCH_UP_MS;
+          }
           firstLive = false; notLiveSince = null;
+          syncCatchUpFlag();
         } else notLiveSince ??= Date.now();
         netDetail = detail ?? '';
         net.textContent = s === 'live' ? `Room ${code}, you are ${thisLink.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : s === 'offline' ? 'Offline' : '';
         render();
       },
       peer(id: string, snap: Snapshot) {
-        snaps.set(id, snap as Snap);
-        seen.set(id, Date.now());
-        // The first word from a player since this screen went live, carrying history this screen
-        // hasn't played: catch up from it for a while (see roomView).
-        // Only after this screen itself came back (it may have missed turns), and only for a
-        // player in this match carrying the same match settings. A screen that has been here all
-        // along has missed nothing, so history it hasn't seen is not a reason to catch up.
+        const now = Date.now();
         const s = snap as Snap;
-        if (rejoinedSession && host && match && host.order.includes(id) && !metSinceLive.has(id) && (!s.host || JSON.stringify(s.host) === JSON.stringify(host))) {
-          metSinceLive.add(id);
-          // Shots this screen hasn't played, or a shop it hasn't (a stand-in may have closed one
-          // without this screen's picks): either way it must catch up before sending its own.
-          const unplayedShot = Object.keys(s.log ?? {}).some(k => Number(k) >= match!.log.length);
-          const unplayedShop = Object.keys(s.shopLog ?? {}).some(r => Number(r) > match!.round && !match!.played?.[`S${Number(r)}`]);
-          if (unplayedShot || unplayedShop) catchUpUntil = Math.max(catchUpUntil, Date.now() + 30_000);
+        snaps.set(id, s);
+        seen.set(id, now);
+        // A returning screen may learn about a missed turn or shop well after a peer's first
+        // snapshot. Give that history time to be played before recording a new move.
+        if (heard && (!host || (host.order.includes(id) && (!s.host || JSON.stringify(s.host) === JSON.stringify(host)))) &&
+            Room.notePeerHistory(heard, id, s, match)) {
+          catchUpUntil = now + CATCH_UP_MS;
         }
         adoptHost();
         step();
@@ -880,10 +877,9 @@ function start(root: HTMLElement) {
     const pick = byCreator ?? best?.[0];
     if (!pick) return;
     host = pick[1].host!;
-    adoptedAt = Date.now();
     // Picking up a match already under way is catching up; a match that has only just started
     // (nothing recorded yet, as when this screen starts it) is not.
-    if ([...snaps.values()].some(s => Object.keys(s.log ?? {}).length || Object.keys(s.shopLog ?? {}).length)) catchUpUntil = adoptedAt + 30_000;
+    if ([...snaps.values()].some(s => Object.keys(s.log ?? {}).length || Object.keys(s.shopLog ?? {}).length)) catchUpUntil = Date.now() + CATCH_UP_MS;
     // Catch up without animating everything that already happened.
     match = Room.replay(host, snaps, roomView()).match;
     say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');

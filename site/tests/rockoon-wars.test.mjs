@@ -221,6 +221,77 @@ test('the match waits for every shop, then for the player whose turn it is', () 
   assert.deepEqual(action, { kind: 'wait', ids: [ids[match.turn]] });
 });
 
+// The stand-in closed the shop while the creator was away. The returning screen may still
+// see a snapshot from before the shop closed.
+function shopSettledWhileAway() {
+  const [creator, standin] = ids;
+  const early = snap('GS-BB2', { host, shops: { 1: ['rocket'] } });
+  const settled = structuredClone(early);
+  const peers = { [standin]: settled };
+  assert.ok(Room.commit(Room.matchFor(host), host, peers, [creator], standin));
+  const peerMatch = Room.replay(host, peers, { gone: [creator], me: standin }).match;
+  return { creator, standin, early, settled, peerMatch };
+}
+
+test('a stand-in can bring a settled shop after its first snapshot and the catch-up window', () => {
+  const { creator, standin, early, settled, peerMatch } = shopSettledWhileAway();
+  const s = { [creator]: snap('GS-AA1'), [standin]: early };
+  const match = Room.matchFor(host);
+  const heard = new Map();
+  assert.equal(Room.notePeerHistory(heard, standin, early, match), false);
+  assert.ok(heard.has(standin), 'a snapshot without history still counts as hearing from the peer');
+
+  s[standin] = settled;
+  assert.equal(Room.notePeerHistory(heard, standin, settled, match), true, 'the later shop reopens catch-up');
+  assert.equal(Room.notePeerHistory(heard, standin, early, match), false);
+  assert.equal(Room.notePeerHistory(heard, standin, settled, match), false, 'heartbeats do not reopen catch-up again');
+
+  // If the result banner was up, the remembered shop still counts after the flag times out.
+  const view = { me: creator, heard, rejoined: false };
+  s[creator].shops[1] = ['big'];
+  assert.equal(Room.commit(match, host, s, view), false);
+  const action = Room.nextAction(match, host, s, view);
+  assert.deepEqual(action.buys, [[], ['rocket']]);
+  Room.apply(match, action);
+  Room.mirror(match, host, s, creator);
+  assert.equal(s[creator].shops[1], undefined, 'the late picks are dropped');
+  assert.equal(R.fingerprint(match), R.fingerprint(peerMatch));
+  assert.equal(Room.diverged(peerMatch, host, s, { me: standin }), false);
+});
+
+test('a returning creator can submit picks before the stand-in is heard without replacing its shop', () => {
+  const { creator, standin, early, settled, peerMatch } = shopSettledWhileAway();
+  // After a dropped connection, the creator still has the stand-in's old requests cached.
+  const s = { [creator]: snap('GS-AA1', { shops: { 1: ['big'] } }), [standin]: early };
+  const match = Room.matchFor(host);
+  const heard = new Map();
+  const view = { me: creator, heard, rejoined: true };
+  assert.equal(Room.commit(match, host, s, view), false, 'old snapshots cannot release the creator to commit');
+  assert.equal(s[creator].shopLog?.[1], undefined);
+  assert.equal(Room.commit(match, host, s, { ...view, rejoined: false }), false, 'the wait can outlast the catch-up flag');
+
+  s[standin] = settled;
+  assert.equal(Room.notePeerHistory(heard, standin, settled, match), true);
+  assert.equal(Room.commit(match, host, s, view), false, 'the settled shop takes precedence over the late picks');
+  const action = Room.nextAction(match, host, s, view);
+  assert.deepEqual(action.buys, [[], ['rocket']]);
+  Room.apply(match, action);
+  Room.mirror(match, host, s, creator);
+  assert.equal(s[creator].standin.S1, standin);
+  assert.equal(R.fingerprint(match), R.fingerprint(peerMatch));
+  assert.equal(Room.diverged(peerMatch, host, s, { me: standin }), false);
+});
+
+test('a new creator commits promptly and a returning creator can proceed once a peer is gone', () => {
+  const [creator, other] = ids;
+  const s = { [creator]: snap('GS-AA1', { shops: { 1: ['big'] } }), [other]: snap('GS-BB2', { shops: { 1: [] } }) };
+  const match = Room.matchFor(host);
+  assert.equal(Room.commit(match, host, structuredClone(s), { me: creator }), true);
+  const heard = new Map();
+  assert.equal(Room.commit(match, host, s, { me: creator, heard }), false);
+  assert.equal(Room.commit(match, host, s, { me: creator, heard, gone: [other] }), true);
+});
+
 test('two clients replaying the same snapshots agree shot for shot', () => {
   const s = { [ids[0]]: snap('GS-AA1', { shops: { 1: [], 2: [] } }), [ids[1]]: snap('GS-BB2', { shops: { 1: [], 2: [] } }) };
   const r = R.rng(3);
@@ -353,6 +424,34 @@ function threeAt(turnOwner) {
   for (const id of ids) Room.mirror(match, three, s, id);
   return { three, s, match, k: match.log.length };
 }
+
+test('a returning creator keeps a stand-in skip over its own late shot', () => {
+  const [creator, standin, other] = ids;
+  const { three, s, match, k } = threeAt(creator);
+  const away = [creator];
+  assert.ok(Room.commit(match, three, s, away, standin));
+  const peerMatch = Room.replay(three, s, { gone: away, me: standin }).match;
+  const settled = s[standin];
+  delete s[standin];
+
+  const heard = new Map();
+  const view = { me: creator, heard, rejoined: true };
+  Room.notePeerHistory(heard, other, s[other], match);
+  s[creator].turns[k] = { angle: 60, power: 50, weapon: 'baby' };
+  assert.equal(Room.commit(match, three, s, view), false, 'hearing from another player does not release the creator');
+  assert.equal(s[creator].log[k], undefined);
+
+  s[standin] = settled;
+  assert.equal(Room.notePeerHistory(heard, standin, settled, match), true);
+  assert.equal(Room.commit(match, three, s, view), false);
+  const action = Room.nextAction(match, three, s, view);
+  assert.equal(action.kind, 'skip');
+  Room.apply(match, action);
+  Room.mirror(match, three, s, creator);
+  assert.equal(s[creator].turns[k], undefined);
+  assert.equal(R.fingerprint(match), R.fingerprint(peerMatch));
+  assert.equal(Room.diverged(peerMatch, three, s, { me: standin }), false);
+});
 
 test('a player catching up does not take a skip of its own turn from someone who did not stand in', () => {
   const { three, s, match, k } = threeAt(ids[1]);

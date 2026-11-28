@@ -136,6 +136,24 @@ const getter = snapshots => id => (snapshots instanceof Map ? snapshots.get(id) 
 const refOf = (field, key) => `${field === 'log' ? 'L' : 'S'}${Number(key)}`;
 const sameEntry = (a, b) => a !== undefined && JSON.stringify(a) === JSON.stringify(b);
 
+/**
+ * Records that a peer has been heard from and whether it brought new, unplayed history.
+ * Keep the refs across snapshots so a heartbeat or an older snapshot can't restart catch-up.
+ */
+export function notePeerHistory(heard, id, snap, match) {
+  const refs = heard.get(id) ?? new Set();
+  heard.set(id, refs);
+  let unplayed = false;
+  for (const field of ['log', 'shopLog']) {
+    for (const key of Object.keys(snap[field] ?? {})) {
+      const ref = refOf(field, key);
+      if (!refs.has(ref) && !match?.played?.[ref]) unplayed = true;
+      refs.add(ref);
+    }
+  }
+  return unplayed;
+}
+
 /** Whether p carries `entry` as a copy of `author`'s word: it took it from that stand-in. */
 function vouchedBy(get, p, field, key, author, entry) {
   const snap = get(p);
@@ -169,8 +187,9 @@ function matchesRequests(host, get, field, key, entry, owner, gone = []) {
 /**
  * How this screen sees the room: `gone` lists players it has given up on (never itself), `me`
  * is its own player id, and `rejoined` is true for a short while after it (re)joined, when it
- * may have missed turns. A plain array is read as `gone`.
- * @typedef {{gone?: string[], me?: string, rejoined?: boolean, ownSkips?: boolean} | string[]} RoomView
+ * may have missed turns. A returning screen also supplies `heard`, the peers it has heard
+ * from since returning. A plain array is read as `gone`.
+ * @typedef {{gone?: string[], me?: string, rejoined?: boolean, ownSkips?: boolean, heard?: ReadonlyMap<string, Set<string>>} | string[]} RoomView
  */
 const viewOf = view => {
   const v = Array.isArray(view) ? { gone: view } : { gone: [], ...view };
@@ -234,16 +253,16 @@ function historyEntry(host, get, field, key, owner, view = {}) {
 
 /**
  * Whether a live request says something different from an entry: the owner's own `turns`
- * request for that turn, or any player's own picks for that round. A stand-in's copy never
- * overrides what a player is asking for right now.
+ * request for that turn, or any player's own picks for that round. A request from this screen
+ * while it is catching up can be late, so it doesn't contradict its stand-in's record.
  */
-function contradicted(host, get, field, key, entry, owner) {
+function contradicted(host, get, field, key, entry, owner, provisionalId) {
   if (field === 'log') {
-    const asked = owner && get(owner)?.turns?.[key];
+    const asked = owner && owner !== provisionalId && get(owner)?.turns?.[key];
     return !!asked && (entry === 'skip' || asked.angle !== entry.angle || asked.power !== entry.power || asked.weapon !== entry.weapon);
   }
   return Array.isArray(entry) && host.order.some((id, i) => {
-    const asked = get(id)?.shops?.[key];
+    const asked = id !== provisionalId && get(id)?.shops?.[key];
     return Array.isArray(asked) && JSON.stringify(asked) !== JSON.stringify(entry[i]);
   });
 }
@@ -292,15 +311,16 @@ function findEntry(host, get, field, key, owner, view = {}) {
     if (id === v.me) return by ? { entry, via: 'standin', by } : { entry, via: 'own' };
     if (matchesRequests(host, get, field, key, entry, owner, v.gone)) return { entry, via: 'requests' };
     if (field === 'log' && owner && JSON.stringify(get(owner)?.log?.[key]) === JSON.stringify(entry) && !get(owner)?.standin?.[ref]) return { entry, via: 'owner' };
-    const live = owner === v.me || !contradicted(host, get, field, key, entry, owner);
+    // A result banner or an animation can outlast catch-up. Keep considering history
+    // heard on this return before recording over it, even after the flag has timed out.
+    const recovery = !v.rejoined && v.heard?.get(id)?.has(ref) ? { ...v, rejoined: true } : v;
+    const live = !contradicted(host, get, field, key, entry, owner, recovery.rejoined ? recovery.me : undefined);
     if (by) {
-      if (relayed(host, get, field, key, entry, by, id, v) && live) return { entry, via: 'standin', by };
+      if (relayed(host, get, field, key, entry, by, id, recovery) && live) return { entry, via: 'standin', by };
       continue;
     }
-    // A stand-in can't override what another player is asking for right now. This screen's own
-    // turn is different: it is catching up, and a request it made before seeing the stand-in's
-    // record of that turn is just late.
-    if (speaksFor(host, get, i, v, field, key) && live) return { entry, via: 'standin', by: id };
+    // A stand-in can't override what another player is asking for right now.
+    if (speaksFor(host, get, i, recovery, field, key) && live) return { entry, via: 'standin', by: id };
   }
   return undefined;
 }
@@ -364,6 +384,16 @@ export function mirror(match, host, snapshots, id) {
       else unmark(mine, ref);
       added = true;
     }
+    // The screen may have sent a late request while catching up. Drop it now so other
+    // screens can still check the stand-in's record against the players' requests.
+    if (via === 'standin' && field === 'shopLog' && mine.shops?.[key] && !sameEntry(mine.shops[key], entry[host.order.indexOf(id)])) {
+      delete mine.shops[key];
+      added = true;
+    }
+    if (via === 'standin' && field === 'log' && owner === id && mine.turns?.[key] && !sameEntry(mine.turns[key], entry)) {
+      delete mine.turns[key];
+      added = true;
+    }
   }
   return added;
 }
@@ -376,11 +406,14 @@ function unmark(snap, ref) {
 }
 
 /**
- * The committer's side: records what the current turn or shop was, once. `gone` lists players
- * this screen has given up on. `id` is the committer (committerFor). Writes into that player's
- * own snapshot and returns true when it added an entry.
+ * The committer's side: records what the current turn or shop was, once. A returning committer
+ * waits until each player has been heard from or given up on, then checks the history before
+ * recording. Writes into the committer's own snapshot and returns true when it added an entry.
  */
-export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
+export function commit(match, host, snapshots, view = [], id = host.order[0]) {
+  const v = viewOf(view);
+  const { gone, heard } = v;
+  if (heard && host.order.some(p => p !== id && !gone.includes(p) && !heard.has(p))) return false;
   const get = getter(snapshots);
   const mine = get(id);
   if (!mine || match.phase === 'over') return false;
@@ -388,7 +421,7 @@ export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
   mine.shopLog ??= {};
   if (match.phase === 'shop') {
     const round = match.round + 1;
-    if (historyEntry(host, get, 'shopLog', round, undefined, gone)) return false;
+    if (historyEntry(host, get, 'shopLog', round, undefined, v)) return false;
     if (host.order.some(p => !get(p)?.shops?.[round] && !gone.includes(p))) return false;
     mine.shopLog[round] = host.order.map(p => [...(get(p)?.shops?.[round] ?? [])]);
     unmark(mine, `S${round}`);
@@ -396,7 +429,7 @@ export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
   }
   const k = match.log.length;
   const owner = host.order[match.turn];
-  if (historyEntry(host, get, 'log', k, owner, gone)) return false;
+  if (historyEntry(host, get, 'log', k, owner, v)) return false;
   const shot = get(owner)?.turns?.[k];
   if (shot) mine.log[k] = { angle: shot.angle, power: shot.power, weapon: shot.weapon };
   else if (gone.includes(owner)) mine.log[k] = 'skip';
@@ -408,8 +441,11 @@ export function commit(match, host, snapshots, gone = [], id = host.order[0]) {
 /** True when a believable copy of an entry this match has already played says something else. */
 export function diverged(match, host, snapshots, view = {}) {
   const get = getter(snapshots);
+  // Remembered catch-up history can still settle the next move after the flag expires.
+  // It doesn't change how we check moves this screen has already played.
+  const { gone, me, rejoined } = viewOf(view);
   for (const [ref, played] of Object.entries(match.played ?? {})) {
-    const entry = historyEntry(host, get, ref[0] === 'S' ? 'shopLog' : 'log', Number(ref.slice(1)), played.owner, view);
+    const entry = historyEntry(host, get, ref[0] === 'S' ? 'shopLog' : 'log', Number(ref.slice(1)), played.owner, { gone, me, rejoined });
     // Only a believable copy that says something different counts. An entry nobody now
     // vouches for (say, the host came back without publishing anything for that turn) stays
     // played: a heartbeat alone never undoes a committed turn.
