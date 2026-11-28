@@ -45,6 +45,22 @@ pub fn rules(o: &Outdoor) -> Check {
         o.wall >= 2.4 && o.floor >= 2.4,
         "outdoor walls and back must be at least 2.4 mm",
     )?;
+    require(
+        o.skin >= 1.6 && o.skin < o.wall,
+        "the isogrid skin must be at least 1.6 mm (four 0.4 mm perimeters) to hold water",
+    )?;
+    require(
+        o.rib_w >= 2.0,
+        "the isogrid ribs must be at least 2 mm wide",
+    )?;
+    require(
+        o.band >= o.skirt_h + 2.0,
+        "the O-ring would press on the isogrid: the solid band at the top must reach 2 mm past the skirt",
+    )?;
+    require(
+        o.lid_skin >= 1.6 && o.lid_skin < o.lid_t,
+        "the lid's skin over its isogrid must be at least 1.6 mm",
+    )?;
     let squeeze = o.oring_squeeze();
     require(
         (0.18..=0.3).contains(&squeeze),
@@ -151,6 +167,17 @@ pub fn verify(d: &Design, o: &Outdoor, payload: &Payload) -> Check {
         format!("the lid's skirt hits the {name} boards or plate"),
     )?;
     require(overlap(&lid, &body) < 1e-3, "the lid collides with the box")?;
+    // Each port's seal needs a flat face: no isogrid pocket under its outside body.
+    let pockets = outdoor::wall_pockets(o);
+    for p in &o.ports {
+        require(
+            overlap(&port_outside(o, p), &pockets) < 1e-3,
+            format!(
+                "the {} sits on the isogrid: its seal needs a flat face",
+                p.kind.name()
+            ),
+        )?;
+    }
     // Ports: each on a flat part of its wall below the rim's slope, with room for its nut.
     let flat = o.cavity / 2.0 - o.cavity_chamfer;
     let obstacles = union_all(&[
@@ -398,6 +425,36 @@ pub fn broken_designs() -> Vec<(&'static str, Design, Outdoor, bool)> {
             "outdoor walls too thin",
             d.clone(),
             with(&|o| o.wall = 2.0),
+            false,
+        ),
+        (
+            "isogrid skin 1 mm thin: it may not hold water",
+            d.clone(),
+            with(&|o| o.skin = 1.0),
+            false,
+        ),
+        (
+            "isogrid ribs 1.2 mm wide",
+            d.clone(),
+            with(&|o| o.rib_w = 1.2),
+            false,
+        ),
+        (
+            "isogrid reaching up where the O-ring presses",
+            d.clone(),
+            with(&|o| o.band = 8.0),
+            false,
+        ),
+        (
+            "lid skin 1 mm over its isogrid",
+            d.clone(),
+            with(&|o| o.lid_skin = 1.0),
+            false,
+        ),
+        (
+            "isogrid pocket under the cable gland's seal",
+            d.clone(),
+            with(&|o| o.port_pad = -8.0),
             false,
         ),
         (
