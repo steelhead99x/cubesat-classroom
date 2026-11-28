@@ -135,7 +135,7 @@ The Flux imports of `bd4be2a` match the KiCad board envelopes and counts of copp
 - Verify the parts and clearances in the [panel BOM](panel-bom.md), then confirm sourcing and bench operation of the selected Y2 candidate.
 - The buck's switching frequency (about 2.1 MHz) and its harmonics need checking against the 2 m and 70 cm bands on the bench with the [desense quest](../../../quest/m1/receiver-rev-a-desense.md).
 - Reading the encoder through an I²C expander works at hand speed; confirm in firmware that fast spins don't skip.
-- The [Rust bring-up console](../../../firmware/csc-r1p-bringup/README.md) covers safe I²C initialization and panel checks. PLL, ADC, audio, OLED and station telemetry are tracked in the [prototype quest](../../../quest/m1/receiver-pedal-prototype.md).
+- The [Rust bring-up console](../../../firmware/csc-r1p-bringup/README.md) covers safe I²C initialization and panel checks. PLL, ADC, audio, OLED and station telemetry are tracked in the [prototype quests](../../../quest/m1/receiver-pedal/README.md).
 
 ## Rebuilding
 

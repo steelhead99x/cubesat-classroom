@@ -1,22 +1,13 @@
-# [L] Verify a CSC-R1P pedal prototype
+# [S] Complete the CSC-R1P prototype evidence record
 
 ## Goal
 
-Take both routed CSC-R1P boards through fabrication review and bring a receive-only pedal through its first hardware bench checks. Use Rust for new pedal firmware. Record the board and firmware revision with each measurement.
+Publish one concise build record linking the reviewed fab package, firmware revision, wiring and results from the first receive-only prototype.
 
 ## Plan
 
-1. Both boards are imported into separate Flux projects from KiCad revision `bd4be2a`. The board envelope and counts of copper layers, footprints, route segments and vias match. Flux reports a 1.30 mm stackup while both source boards specify a 1.6 mm nominal board thickness. Flux flags a main-board ground airwire between L5 pad 2 and U7 plus a sliver at a bottom-layer 3V3_PLL via. Its main import has 17 fewer pad objects, corresponding to the source paste-only apertures on U10, U12 and U13. Reconcile copper, plated drills, stencil and stackup against the KiCad exports before using the Flux copies for fabrication. Have an independent reviewer check both KiCad layouts, oscillator selection, power isolation, BOM and proposed fab stackup.
-2. Confirm parts availability and dry-fit the [panel parts and wiring](/hardware/sdr-receiver/pedal/panel-bom.md). Verify the enclosure, standoffs, mated headers, footswitch clearance and isolated DC jack before releasing either board for assembly.
-3. Run the [Rust console](/firmware/csc-r1p-bringup/README.md) on the assembled boards. The console now covers startup, switches, pots, LED, a 128×32 OLED border test and a timed rotary-encoder diagnostic. Record slow and fast counts in both directions. Record supply current, rail voltages and panel responses. Current evidence is host tests and an ESP32-S3 release build.
-4. Run the Rust PLL tests at 145.800 MHz and 437.000 MHz. Confirm digital lock, measure the LO monitor and verify shutdown on both bands before enabling audio. The register profiles pass host tests and the ESP32-S3 release build. Check ADC control with `ADC CHECK`, then continue with ADC and DAC audio, encoder-driven tuning, live OLED status and station telemetry. Verify receive audio and telemetry with a shielded test signal.
-5. Measure the 5 V switching frequency and check for desense at the intended receive frequencies. Keep the raw bench log with the board and firmware revisions.
+Record which CAD package was fabricated and whether the Flux differences affect any proposed export. Link the approved stackup, independent review and physical bench logs. List any fixes that need a new board or firmware revision.
 
-## Waiting
+## Required
 
-- Maintainer (action): Record the independent PCB review, enclosure dry fit and assembler stackup confirmation before releasing the CSC-R1P for fabrication.
-- Maintainer (PC): Connect a CSC-R1P prototype and XIAO ESP32-S3 for the first Rust console bench run.
-
-## Related
-
-- [Write the CSC-R1 Rev A bring-up firmware](/quest/m1/receiver-rev-a-firmware.md) - related receiver blocks and tests.
+- [CSC-R1P pedal prototype](/quest/m1/receiver-pedal/README.md) - provides the fabrication decisions and hardware evidence.
