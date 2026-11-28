@@ -3,7 +3,7 @@
 <h2>What could go wrong</h2>
 <table>
 <tr><th>Risk</th><th>Why it matters</th><th>Plan</th></tr>
-<tr><td>Routing doesn’t close</td><td class="dim">About 15 main-board connections around the ADF4351 stay unrouted on every pass</td><td class="dim">Freerouting or hand routing in KiCad, or Flux; else move parts, 6 layers or a 1590BB box</td></tr>
+<tr><td>Unverified RF layout</td><td class="dim">Both boards pass KiCad DRC. RF return paths and synthesizer supply routing need a separate review.</td><td class="dim">Review the copper and enclosure fit, then compare bench measurements against the V4.</td></tr>
 <tr><td>Radios beside the receiver</td><td class="dim">XIAO Wi-Fi now, HaLow in Rev B, in the same box as signals near the noise floor</td><td class="dim">Receive antenna on the mast; 70 cm filter −46 dB at 915 MHz (calculated); measure desense first</td></tr>
 <tr><td>Pedalboard power</td><td class="dim">About 0.4–0.6 A at 9 V (estimate); the buck switches near 2.1 MHz</td><td class="dim">PTC and reverse-polarity FET fitted; measure current and buck harmonics with the desense quest</td></tr>
 <tr><td>Certification grows</td><td class="dim">The XIAO’s Wi-Fi transmits; Rev B adds HaLow</td><td class="dim">Certified modules only; integration testing after prototypes</td></tr>
