@@ -45,9 +45,11 @@ export function newRoomCode(random = Math.random) {
 function cleanShot(t) {
   if (!t || typeof t !== 'object') return null;
   const angle = int(t.angle, 0, 180), power = int(t.power, 0, 100);
-  return angle === null || power === null || !WEAPON[t.weapon] ? null : { angle, power, weapon: t.weapon };
+  // A weapon must be a known id: an object here could break the lookup (or match a prototype key).
+  const known = typeof t.weapon === 'string' && Object.hasOwn(WEAPON, t.weapon);
+  return angle === null || power === null || !known ? null : { angle, power, weapon: t.weapon };
 }
-const cleanList = list => list.filter(w => typeof w === 'string' && WEAPON[w]).slice(0, 40);
+const cleanList = list => list.filter(w => typeof w === 'string' && Object.hasOwn(WEAPON, w)).slice(0, 40);
 
 /** Checks a snapshot from the relay. Anything malformed is dropped or trimmed. */
 export function cleanSnapshot(raw) {

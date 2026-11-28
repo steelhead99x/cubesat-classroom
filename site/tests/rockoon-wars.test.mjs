@@ -887,3 +887,12 @@ test('the rising flag is display only and checked like everything else', () => {
   assert.equal(Room.cleanSnapshot({ ...base, rising: 4 }).rising, 4);
   for (const bad of [-1, 1e6, 'x', 2.5, null]) assert.equal(Room.cleanSnapshot({ ...base, rising: bad }).rising, undefined, String(bad));
 });
+
+test('a shot or shop list with a weapon that is not a known id is dropped, without throwing', () => {
+  const base = { p: Room.ROOM_PROTOCOL, cs: 'GS-AA1', joined: 1 };
+  for (const [i, weapon] of [{ toString: 1 }, ['rocket'], 'toString', '__proto__', 7].entries()) {
+    const s = Room.cleanSnapshot({ ...base, turns: { 0: { angle: 45, power: 50, weapon } }, shops: { 1: [weapon, 'rocket'] } });
+    assert.deepEqual(s.turns, {}, `case ${i}`);
+    assert.deepEqual(s.shops[1], ['rocket']);
+  }
+});

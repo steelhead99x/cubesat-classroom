@@ -15,17 +15,11 @@ const JOINED_MAX = 1e14;
 const validJoined = joined => Number.isInteger(joined) && joined > 0 && joined <= JOINED_MAX;
 const validCredentials = (player, ticket) =>
   typeof player === 'string' && PLAYER.test(player) && typeof ticket === 'string' && TICKET.test(ticket);
-/** This player's own snapshot fields, kept as a plain object; room.mjs's cleanSnapshot checks them. */
-const plainObject = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 
 /**
  * The seat this tab held in `room`, or null. `storage` is sessionStorage (or a stand-in in tests);
  * a missing, blocked or damaged store reads as no seat.
- * `own` is what this player had last published: the match (`host`), the history it recorded or
- * mirrored (`log`, `shopLog`, `standin`) and its requests (`turns`, `shops`), so a reload neither
- * loses a match nobody else has a copy of yet nor takes back a turn already sent. It is unchecked
- * here: run it through cleanSnapshot, and restore requests only once the match is reconciled.
- * @returns {{ player: string, ticket: string, creator: boolean, joined: number, own: object } | null}
+ * @returns {{ player: string, ticket: string, creator: boolean, joined: number } | null}
  */
 export function loadSeat(storage, room) {
   if (!ROOM.test(String(room))) return null;
@@ -35,14 +29,13 @@ export function loadSeat(storage, room) {
   let seat;
   try { seat = JSON.parse(raw); } catch { return null; }
   if (!seat || typeof seat !== 'object') return null;
-  const { player, ticket, creator, joined, own } = seat;
+  const { player, ticket, creator, joined } = seat;
   if (!validCredentials(player, ticket)) return null;
   return {
     player,
     ticket,
     creator: creator === true,
     joined: validJoined(joined) ? joined : Date.now(),
-    own: plainObject(own),
   };
 }
 
@@ -53,7 +46,6 @@ export function saveSeat(storage, room, seat) {
     storage.setItem(KEY + room, JSON.stringify({
       player: seat.player, ticket: seat.ticket, creator: seat.creator === true,
       joined: validJoined(seat.joined) ? seat.joined : Date.now(),
-      own: plainObject(seat.own),
     }));
     return true;
   } catch { return false; }

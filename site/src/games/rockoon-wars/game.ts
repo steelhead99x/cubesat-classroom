@@ -50,7 +50,7 @@ function start(root: HTMLElement) {
 
   // ---- state ----
   let mode: 'menu' | 'local' | 'online' = 'menu';
-  let menuStep: 'home' | 'local' | 'online' | 'join' = new URLSearchParams(location.hash.slice(1)).get('room') ? 'join' : 'home';
+  let menuStep: 'home' | 'local' | 'online' | 'join' = 'home';
   let host: Host | null = null;
   let match: Match | null = null;
   const snaps = new Map<string, Snap>();
@@ -79,6 +79,7 @@ function start(root: HTMLElement) {
   // replaced the #room fragment, from this tab's session (see startOnline).
   let joinCode = new URLSearchParams(location.hash.slice(1)).get('room') ?? '';
   if (!joinCode) { try { joinCode = sessionStorage.getItem('rockoon-room') ?? ''; } catch { /* storage blocked */ } }
+  if (joinCode) menuStep = 'join';
   let lastTurnKey = '';
   let liveSince = 0; // when this screen's room connection last went live
   let adoptedAt = 0; // when this screen picked up the match settings
@@ -230,7 +231,6 @@ function start(root: HTMLElement) {
       publish();
       say('Caught up with the room.');
     }
-    restoreRequests();
     syncCatchUpFlag(); // also while paused or animating, so the flag never sticks on
     if (anim || paused) return render();
     // A round's result stays up until it's dismissed, but the committer keeps recording turns
@@ -736,34 +736,8 @@ function start(root: HTMLElement) {
   let freshSeatRoom: string | null = null;
   /** Gives up this tab's claim on its seat in the room it is in (see claimSeat). */
   let releaseSeat: (() => void) | null = null;
-  /** Saves this tab's seat, with its own snapshot, so a reload keeps both. */
+  /** Saves this tab's seat (player id and ticket, which a token renewal may change). */
   let keepSeat: (() => void) | null = null;
-  /** Requests this player had sent before a reload, held back until this screen has caught up
-   * with the match they were made in (see restoreRequests). */
-  let pendingRequests: { match: string; turns: Snap['turns']; shops: Snap['shops'] } | null = null;
-
-  /** Re-sends requests saved before a reload, once this screen has caught up, and only those for
-   * the same match that the room has not already settled. A request the room settled without it
-   * (a stand-in skipped the turn or closed the shop) is dropped, so it can't contradict history. */
-  function restoreRequests() {
-    if (!pendingRequests || mode !== 'online' || !host || !match || !snaps.has(me) || catchingUp()) return;
-    // Connected and listening for long enough to have heard every player's history.
-    if (notLiveSince !== null || !liveSince || Date.now() - liveSince < 30_000) return;
-    const { match: key, turns, shops } = pendingRequests;
-    pendingRequests = null;
-    if (key !== JSON.stringify(host)) return;
-    const mineNow = snapOf(me);
-    let added = false;
-    for (const [k, shot] of Object.entries(turns)) {
-      const n = Number(k);
-      if (n >= match.log.length && !match.played?.[`L${n}`] && !mineNow.turns[n]) { mineNow.turns[n] = shot; added = true; }
-    }
-    for (const [r, list] of Object.entries(shops)) {
-      const n = Number(r);
-      if (n > match.round && !match.played?.[`S${n}`] && !mineNow.shops[n]) { mineNow.shops[n] = list; added = true; }
-    }
-    if (added) publish();
-  }
   const seatLocks = () => (typeof navigator !== 'undefined' ? navigator.locks : undefined);
   /** `resume` is set when the page opens itself back into a room it has a saved seat for. */
   async function startOnline(code: string, creator: boolean, resume = false) {
@@ -868,20 +842,12 @@ function start(root: HTMLElement) {
     }
     if (freshSeatRoom === code) freshSeatRoom = null;
     const joined = kept?.joined ?? Date.now();
-    // What this player had published before the reload, checked as any snapshot is. Its match and
-    // history go back out at once: other screens saw them already, and the match may have no other
-    // copy yet. Its requests wait until this screen has caught up (restoreRequests).
-    const own = kept ? Room.cleanSnapshot({ ...kept.own, p: Room.ROOM_PROTOCOL, cs: link.callsign, joined, creator }) : null;
-    pendingRequests = own?.host ? { match: JSON.stringify(own.host), turns: own.turns, shops: own.shops } : null;
-    if (!snaps.has(me)) {
-      const fresh: Snap = { p: Room.ROOM_PROTOCOL, cs: link.callsign, joined, creator, turns: {}, shops: {} };
-      if (own?.host) Object.assign(fresh, { host: own.host, log: own.log ?? {}, shopLog: own.shopLog ?? {} }, own.standin ? { standin: own.standin } : {});
-      snaps.set(me, fresh);
-    }
+    // Requests and history this player sent before a reload are not restored: peers may have
+    // settled them differently while it was away. It catches up from the room, and re-sends a
+    // turn or shop the room is still waiting on.
+    if (!snaps.has(me)) snaps.set(me, { p: Room.ROOM_PROTOCOL, cs: link.callsign, joined, creator, turns: {}, shops: {} });
     keepSeat = () => {
-      if (!store || link !== thisLink || !snaps.has(me)) return;
-      const { host: h, log, shopLog, standin, turns, shops } = snapOf(me);
-      saveSeat(store, code, { player: me, ticket: thisLink.ticket, creator, joined, own: { host: h, log, shopLog, standin, turns, shops } });
+      if (store && link === thisLink) saveSeat(store, code, { player: me, ticket: thisLink.ticket, creator, joined });
     };
     keepSeat();
     publish();
@@ -928,7 +894,7 @@ function start(root: HTMLElement) {
   function quit() {
     link?.stop(); link = null;
     joinAttempt++; joining = false;
-    releaseSeat?.(); releaseSeat = null; keepSeat = null; pendingRequests = null;
+    releaseSeat?.(); releaseSeat = null; keepSeat = null;
     try { sessionStorage.removeItem('rockoon-room'); } catch { /* storage blocked */ }
     mode = 'menu'; menuStep = 'home'; host = null; match = null; anim = null; ascent = null; remoteRise = null; banner = null; paused = false; drag = null;
     snaps.clear(); seen.clear(); mine = []; me = ''; lastTurnKey = '';
