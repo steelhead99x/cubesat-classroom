@@ -1,6 +1,9 @@
 #![no_std]
 #![no_main]
 
+mod audio_bus;
+
+use audio_bus::AudioBus;
 use csc_r1p_bringup::{
     EncoderTrace, Pedal, Pot,
     pll::{BenchBand, POWER_DOWN, ReceiveChannel, has_stable_lock},
@@ -45,6 +48,9 @@ fn main() -> ! {
     .with_mosi(p.GPIO9);
     let delay = Delay::new();
     let mut controls_ready = setup(&mut pedal);
+    let mut audio_bus = Some(AudioBus::new(
+        p.I2S0, p.DMA_CH0, p.GPIO1, p.GPIO2, p.GPIO3, p.GPIO44,
+    ));
 
     let mut line = [0; 32];
     let mut len = 0;
@@ -62,7 +68,7 @@ fn main() -> ! {
                     match &line[..len] {
                         b"HELP" => {
                             println!(
-                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | ADC CHECK | ADC CLOCK TEST | PLL TEST 2M | PLL TEST 70CM | PLL TEST <kHz> | HELP"
+                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | ADC CHECK | ADC CLOCK TEST | AUDIO BUS TEST | PLL TEST 2M | PLL TEST 70CM | PLL TEST <kHz> | HELP"
                             );
                         }
                         b"SAFE" => controls_ready = setup(&mut pedal),
@@ -93,8 +99,19 @@ fn main() -> ! {
                             let off = pedal.oled_off();
                             println!("OLED show={show:?} off={off:?}");
                         }
-                        b"ADC CHECK" => check_adc(&mut pedal, &delay, false),
-                        b"ADC CLOCK TEST" => check_adc(&mut pedal, &delay, true),
+                        b"ADC CHECK" => check_adc(&mut pedal, &delay, None::<fn()>),
+                        b"ADC CLOCK TEST" => {
+                            check_adc(&mut pedal, &delay, Some(|| delay.delay_millis(5_000)))
+                        }
+                        b"AUDIO BUS TEST" => check_adc(
+                            &mut pedal,
+                            &delay,
+                            Some(|| {
+                                if let Some(bus) = audio_bus.take() {
+                                    audio_bus = Some(bus.probe());
+                                }
+                            }),
+                        ),
                         command if command.starts_with(b"PLL TEST ") => {
                             let channel = match &command[b"PLL TEST ".len()..] {
                                 b"2M" => Some(BenchBand::TwoMeters.channel()),
@@ -142,7 +159,7 @@ fn setup<Bus: I2c>(pedal: &mut Pedal<Bus>) -> bool {
     controls.is_ok()
 }
 
-fn check_adc<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay, clocks: bool) {
+fn check_adc<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay, with_clocks: Option<impl FnOnce()>) {
     if let Err(error) = pedal.enter_safe() {
         println!("ADC: safe setup failed: {error:?}");
         return;
@@ -151,14 +168,14 @@ fn check_adc<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay, clocks: bool) {
     delay.delay_millis(100);
     let status = pedal.adc_release_shutdown(true).and_then(|()| {
         delay.delay_millis(2);
-        if clocks {
+        if let Some(test) = with_clocks {
             pedal.adc_wake_for_clocks()?;
             delay.delay_millis(2);
             pedal.adc_start_clocks()?;
             delay.delay_millis(20);
             let status = pedal.adc_clock_status()?;
-            println!("ADC ASI status=0x{status:02x}; measure the clocks now");
-            delay.delay_millis(5_000);
+            println!("ADC ASI status=0x{status:02x}");
+            test();
         }
         pedal.adc_status()
     });

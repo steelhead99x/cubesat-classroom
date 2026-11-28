@@ -250,7 +250,7 @@ qv = one('Q', 'VDC_G'); ap.block(qv, 9.6, 8.5, 0)
 for ref, net, xy, ang in ((one('R', 'VDC_G', 'GND'), 'VDC_G', (9.6, 11.6), 90),):
     ap.near(ref, net, xy, ang, 0.4)
 ap.block(one('D', 'VDC', 'VDC_G'), 13.6, 11.6, 0)
-ap.block(one('D', 'VDC', 'GND'), 6.0, 18.0, 0)
+ap.block(one('D', 'VBUCK_IN_F', 'GND'), 6.0, 18.0, 0)
 ap.block(one('F', 'VDC', 'VBUCK_IN_F'), 12.6, 17.2, 0)
 ap.block(one('FB', 'VBUCK_IN_F', 'VBUCK_IN'), 15.8, 15.6, 90)
 buck = one('U', 'BUCK_SW'); put(buck, 20.5, 9.0, 0)

@@ -6,7 +6,7 @@ Obtain a dated, itemized quote for five released CSC-R1P pairs with top-side SMT
 
 ## Plan
 
-The provisional comparison covers both four-layer PCBs, 236 top-side SMT placements, 13 hand-fit parts, a non-Sense XIAO ESP32-S3, the drilled enclosure and harness, the power adapter, receive antenna and powered listening setup. The provisional cost model uses the controlled-impedance main board and standard control board. The standard-board placement estimate still needs confirmation for that same build.
+The provisional comparison covers both four-layer PCBs, 235 fitted top-side SMT placements, 13 hand-fit parts, a non-Sense XIAO ESP32-S3, the drilled enclosure and harness, the power adapter, receive antenna and powered listening setup. The provisional cost model uses the controlled-impedance main board and standard control board. The standard-board placement estimate still needs confirmation for that same build.
 
 Request a combined quote for the released KiCad CAM with the approved 50 Ω main stackup. Ask for a breakdown of sourcing minimums, substitutions, stencil, setup, placement, inspection, freight, duties and applicable taxes. Specify the assembly side and exclude the underside socket and TP3 from automated placement. Price case work, hand soldering, wiring and unit acceptance separately. Keep first-run engineering and any re-spin as distinct budget lines. Document quote validity, destination and exclusions. Quoting does not place an order.
 

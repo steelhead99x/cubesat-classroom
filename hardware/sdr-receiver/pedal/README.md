@@ -34,9 +34,11 @@ The radio is the same circuit: bias tee, PGA-103+ LNA, the two switched band fil
 - The antenna input is a U.FL for a pigtail to the wall-mounted SMA, not an edge SMA. The BP1 test break is gone.
 - The dev-kit extras are gone: current-measurement jumpers, CTRL and AUX headers, the baseband test header, the MCLK jumper, the user LED, the lock LED and the LD and PDBRF test points. The synthesizer's lock output still reaches the XIAO on PLL_MUXOUT.
 
+**Passive prototype:** leave L2 unpopulated. The RF input stays AC-coupled and the antenna connector supplies no bias power.
+
 Added for the pedal:
 
-- **9 V input**: JST-PH to the panel jack, AO3401A reverse-polarity FET with a 10 V gate zener, SMAJ15A clamp, 1 A PTC fuse and ferrite, then a TPS62933F buck at about 2.1 MHz (forced PWM, so its switching tone stays at one frequency) making 5.09 V. Five LP5907 3.3 V regulators feed the VCO, synthesizer, ADC, digital and audio rails.
+- **9 V input**: JST-PH to the panel jack, AO3401A reverse-polarity FET with a 10 V gate zener, 1 A PTC fuse followed by the SMAJ15A clamp and ferrite, then a TPS62933F buck at about 2.1 MHz (forced PWM, so its switching tone stays at one frequency) making 5.09 V. Five LP5907 3.3 V regulators feed the VCO, synthesizer, ADC, digital and audio rails.
 - **Audio**: PCM5102A on the same I²S clocks as the ADC, its own 3.3 V rail, 470 Ω / 2.2 nF output filter, to the OUT jack on a JST-PH. It starts muted (XSMT pulled low) until the firmware unmutes it.
 - **Control board**: SSD1306 OLED, EC11E encoder for TUNE (push to change step), Alpha 9 mm pots for GAIN and LEVEL read by an ADS1015, a second TCA9534 for the encoder, footswitch, BAND toggle and ENGAGE LED.
 

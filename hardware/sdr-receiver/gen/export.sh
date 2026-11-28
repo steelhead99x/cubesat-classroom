@@ -25,10 +25,16 @@ p['sheets'] = [[root, ""]]
 json.dump(p, open(f'{k}/{n}.kicad_pro', 'w'), indent=1)
 PY
 mkdir -p "$stage/gerbers"
+# The pedal placement file is for the assembler's top SMT operation. The BOM
+# still lists hand-fit hardware and DNP parts with their fit notes.
+placement_options=()
+if [[ "$proj" == csc-r1p || "$proj" == csc-r1p-ctl ]]; then
+  placement_options=(--smd-only --exclude-dnp)
+fi
 ( cd "$kicad"
   kicad-cli pcb export gerbers -o "$stage/gerbers/" --layers F.Cu,In1.Cu,In2.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts "$proj.kicad_pcb" >/dev/null
   kicad-cli pcb export drill -o "$stage/gerbers/" --format excellon --drill-origin absolute --excellon-units mm "$proj.kicad_pcb" >/dev/null
-  kicad-cli pcb export pos -o "$stage/$proj-cpl-top.csv" --format csv --units mm --side front "$proj.kicad_pcb" >/dev/null
+  kicad-cli pcb export pos -o "$stage/$proj-cpl-top.csv" --format csv --units mm --side front "${placement_options[@]}" "$proj.kicad_pcb" >/dev/null
   kicad-cli pcb export pdf -o "$proj-layout-top.pdf" --layers F.Cu,F.SilkS,Edge.Cuts "$proj.kicad_pcb" >/dev/null
   kicad-cli sch export pdf -o "$proj-schematic.pdf" "$proj.kicad_sch" >/dev/null )
 python3 bom.py "$stage"

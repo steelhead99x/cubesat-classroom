@@ -55,3 +55,11 @@ The nominal profiles use the board's 25 MHz reference and the modeled 2.5 mA cha
 After verifying the rails, send `ADC CHECK`. It releases the TLV320ADC3140 from hardware shutdown, reads DEV_STS0 and DEV_STS1 over I²C, then reasserts shutdown. Record both status bytes and confirm the console reports `shutdown=Ok(())`. The converter stays in its reset sleep mode during the read. The test checks control wiring and the address strap. Clock and audio capture checks are separate. [TI TLV320ADC3140 datasheet](https://www.ti.com/lit/ds/symlink/tlv320adc3140.pdf)
 
 After `ADC CHECK` passes, use `ADC CLOCK TEST` with an oscilloscope or logic analyzer. The ADC drives 192 kHz FSYNC and 12.288 MHz BCLK for up to five seconds. Read the printed ASI status as a diagnostic and confirm the actual rates and alignment at the ADC and the XIAO. The DAC stays muted. The I²S edge alignment uses TI's zero-offset controller-mode workaround. [TI application note SBAA382](https://www.ti.com/lit/an/sbaa382/sbaa382.pdf)
+
+### Check both I²S data paths
+
+Run `AUDIO BUS TEST` after the clock test. The ADC supplies both clocks. The XIAO's BCLK and FSYNC pins are inputs for both receive and transmit. U14 stays muted throughout the test.
+
+1. Set the logic analyzer to trigger on data at the DAC DIN input before sending the command. Decode Philips I²S with two 32-bit slots per frame. Check for left word `0x40000000` and right word `0xc0000000`.
+2. Check that the console reports an RX block and successful TX completion. Compare the first two reported RX words with ADC SDOUT. Verify slot order and the one-bit shift.
+3. Confirm `shutdown=Ok(())` and confirm XSMT stayed low. A missing frame-sync edge, timeout, or DMA error fails the test. Continuous audio, fault mute and RF sensitivity still need their own tests.

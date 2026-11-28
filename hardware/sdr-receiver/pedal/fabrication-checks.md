@@ -1,6 +1,6 @@
 # CSC-R1P prototype fabrication checks
 
-Desk evidence for KiCad source revision `bd4be2a`. Use the reviewed KiCad files for any prototype order. Record a new source revision and repeat both DRC and export checks after layout changes.
+Desk evidence for the CSC-R1P prototype. Use the reviewed KiCad files for fabrication. The Flux comparison below used `bd4be2a`, before the input protection and passive-bias changes.
 
 ## Flux export comparison
 
@@ -20,7 +20,11 @@ JLCPCB's published JLC04161H-7628 build is a candidate for a quote. It uses appr
 
 ## Power review
 
-Use a center-negative isolated panel jack. Q1 blocks steady reversed input. D2 is on VDC ahead of F1, so the fuse does not interrupt a sustained current in D2. Review moving the input current protection ahead of the clamp, or qualify the specific current-limited adapter and clamp behavior with an independent reviewer. Check the intended chassis bonds and current through the USB path on the bench. Record the result with both USB-only and adapter-only power before combining supplies.
+Use a center-negative isolated panel jack. Q1 blocks steady reversed input. D2 now clamps `VBUCK_IN_F` downstream of F1. The main PCB carries this connection on B.Cu, and the In1.Cu ground fill was regenerated. Verify coordination between the selected 9 V adapter's current limit, the exact fuse trip curve and the TVS limits. Check chassis bonds and measure USB VBUS and I/O backfeed with each source alone before exercising both together.
+
+Leave main-board L2 unpopulated in the passive build. This opens the DC route through the bias network into the 5 V rail. An active bias option needs separate backfeed qualification before L2 is fitted.
+
+The revised main and control boards report zero enabled DRC violations and zero unconnected items in KiCad 10.0.8. The repository checks report zero schematic-to-design and zero PCB pad/net mismatches on 230 main and 33 control footprints. KiCad's optional parity output reports local net naming and metadata differences. Confirm the vendor stackup, stencil and mechanical fit before release.
 
 ## Y2 sourcing
 

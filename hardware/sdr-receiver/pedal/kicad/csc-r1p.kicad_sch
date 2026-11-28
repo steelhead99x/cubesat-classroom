@@ -8074,7 +8074,7 @@
         (justify left) hide
       )
     )
-    (property "Note" "input surge clamp; cathode (band, pad 1) to VDC. Use a 9-12 V supply, not 18 V"
+    (property "Note" "Input surge clamp after F1. Use a qualified 9 V center-negative supply."
       (at 102.87 39.37 0)
       (effects
         (font
@@ -8098,7 +8098,7 @@
       )
     )
   )
-  (label "VDC"
+  (label "VBUCK_IN_F"
     (at 99.06 39.37 180)
     (effects
       (font
@@ -13043,7 +13043,7 @@
     (unit 1)
     (in_bom yes)
     (on_board yes)
-    (dnp no)
+    (dnp yes)
     (uuid "a5c2f222-354c-4090-b29a-8623ea998168")
     (property "Reference" "L2"
       (at 207.05 108.1 90)
@@ -13090,7 +13090,7 @@
         (justify left) hide
       )
     )
-    (property "Note" ""
+    (property "Note" "Leave open for the passive receive prototype. Fitting L2 requires separate backfeed qualification."
       (at 209.55 114.3 90)
       (effects
         (font
