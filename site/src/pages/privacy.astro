@@ -1,0 +1,45 @@
+---
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { privacyEmail, repo } from '../hubs.mjs';
+import { siteOrigin } from '../origin';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const canonical = siteOrigin + '/privacy/';
+---
+<Base
+  title="Privacy | CubeSat Classroom"
+  description="How the CubeSat Classroom website handles information. The site is for learners 13 and up, and is not directed at children under 13."
+  canonical={canonical}
+>
+  <SiteHeader slot="header" home={base + '/'} />
+
+  <article class="shell max-w-3xl py-11 sm:py-16">
+    <p class="field-label">Legal</p>
+    <h1 class="mt-3">Privacy</h1>
+    <p class="lede mt-5">This page explains who runs this website, who it is for, and what information stays in your browser or may be sent to the site.</p>
+    <p class="mt-3 text-sm text-muted">Last updated 27 November 2026. The wording is plain language, not a formal legal opinion.</p>
+
+    <h2 class="mt-10 text-xl">Who runs this site</h2>
+    <p class="mt-3">This site is operated by the CubeSat Classroom volunteer project, an independent open-source space education project. Its public home is <a class="text-accent underline underline-offset-4" href={siteOrigin + '/'}>cubesatclass.org</a>. The source for the site and the lessons is the public GitHub repository <a class="text-accent underline underline-offset-4" href={repo}>{repo.replace('https://', '')}</a>.</p>
+    <p class="mt-3">For general questions about this privacy page, open an issue on that GitHub repository. Issues are public, so never put a name, school, location or any other personal detail in one.</p>
+    <p class="mt-3">For anything about a particular person, including a request to delete information, email <a class="text-accent underline underline-offset-4" href={`mailto:${privacyEmail}`}>{privacyEmail}</a>. That mailbox is private: only the project's maintainers read it, and no account is needed. A parent, guardian or teacher should send it, and should include only what we need to find the information.</p>
+
+    <h2 class="mt-10 text-xl">Who the site is for</h2>
+    <p class="mt-3">CubeSat Classroom is written for learners 13 and up, and for the teachers, guardians and mentors who guide them. This website is not directed at children under 13, and we do not knowingly collect personal information from anyone under 13. If you believe we have information from a child under 13, a parent, guardian or teacher should email <a class="text-accent underline underline-offset-4" href={`mailto:${privacyEmail}`}>{privacyEmail}</a> (not a public issue) so we can delete it.</p>
+    <p class="mt-3">Younger learners may take part only alongside a teacher, guardian or mentor who stays for the whole activity. They should not create an account of their own, and the adult should never share a login with anyone under 13.</p>
+
+    <h2 class="mt-10 text-xl">What stays in your browser</h2>
+    <p class="mt-3">The public site does not ask you to create an account. A few preferences and scores stay in your browser's local storage so the page can remember them on this device. They include your learning-level setting, a random id used by the optional lesson-question guide, game preferences and best scores, and drafts in the rockoon workbook. You can clear them by clearing this site's data in your browser. They are not sent to us just because they were saved.</p>
+
+    <h2 class="mt-10 text-xl">What may be sent to the site</h2>
+    <p class="mt-3">If you use the optional lesson-question guide, the site receives the question you picked and the random guide id stored in your browser, so it can return an answer. If you play a live game, the site may issue a short-lived token so your browser can talk to the game relay. Those requests go to this project's own servers for cubesatclass.org, not to a separate advertising network. This site's pages do not include a third-party analytics script.</p>
+    <p class="mt-3">If you open an issue, discussion or pull request on GitHub, GitHub handles that information under its own terms. Do not post student names, school locations, or other contact details there.</p>
+
+    <h2 class="mt-10 text-xl">Changes</h2>
+    <p class="mt-3">If this page changes, we will update the date above. The current version will always be at this address.</p>
+  </article>
+
+  <SiteFooter slot="footer" />
+</Base>

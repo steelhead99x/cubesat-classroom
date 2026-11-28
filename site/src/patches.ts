@@ -1,12 +1,11 @@
 // Mission patches earned in the example quests. Progress is stored only in this
 // browser (localStorage) and never leaves the page.
-export const patchTones: Record<string, string> = {
-  'first-contact': '#a4c9ff',
-  'bring-back-a-picture': '#ffd23f',
-  'lose-the-signal': '#ef6b6c',
-  'fresh-or-historical': '#6fd3a0',
-  'light-and-shadow': '#b9a4ff',
-};
+import art from './patch-art.json';
+
+// Each patch's colour comes from patch-art.json, which the printed patches use too.
+export const patchTones: Record<string, string> = Object.fromEntries(
+  Object.entries(art.patches).map(([id, patch]) => [id, patch.tone]),
+);
 
 const KEY = 'cubesat.patches';
 // Kept in memory too, so patches still work for this visit if storage is blocked.

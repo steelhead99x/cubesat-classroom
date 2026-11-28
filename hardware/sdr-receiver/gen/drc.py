@@ -11,6 +11,7 @@ Anything else, or any unconnected pad, fails the gate.
 """
 import collections
 import re
+import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -57,14 +58,23 @@ def gate(report):
 
 def run(fill):
     import pcbnew
-    import boardcfg
-    b = pcbnew.LoadBoard(boardcfg.PCB)
-    if fill:
-        pcbnew.ZONE_FILLER(b).Fill(b.Zones())
     with TemporaryDirectory() as tmp:
         report = Path(tmp) / 'board.rpt'
-        if not pcbnew.WriteDRCReport(b, str(report), pcbnew.EDA_UNITS_MILLIMETRES, True):
-            sys.exit('could not write DRC report')
+        if hasattr(pcbnew, 'EDA_UNITS_MILLIMETRES'):
+            board = pcbnew.LoadBoard(boardcfg.PCB)
+            if fill:
+                pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+            if not pcbnew.WriteDRCReport(board, str(report), pcbnew.EDA_UNITS_MILLIMETRES, True):
+                sys.exit('could not write DRC report')
+        else:
+            # The newer pcbnew binding cannot run DRC outside KiCad's application.
+            command = [
+                'kicad-cli', 'pcb', 'drc', '--all-track-errors',
+                '--units', 'mm', '--output', str(report),
+            ]
+            if fill:
+                command.append('--refill-zones')
+            subprocess.run([*command, boardcfg.PCB], check=True)
         return report.read_bytes()
 
 

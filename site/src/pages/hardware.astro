@@ -6,6 +6,7 @@ import SiteFooter from '../components/SiteFooter.astro';
 import exploded from '../../../hardware/amsat-cubesatsim/render-exploded.png';
 import assembled from '../../../hardware/amsat-cubesatsim/render-assembled.png';
 import { repo } from '../hubs.mjs';
+import Patch from '../components/Patch.astro';
 import { siteOrigin } from '../origin';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -68,6 +69,14 @@ const kitFiles = [
       </figure>
     </section>
 
+    <section class="grid items-center gap-6 border-y border-line py-6 sm:grid-cols-[auto_1fr]" aria-labelledby="patches-title">
+      <Patch id="first-contact" name="Make first contact" label="First contact" size={96} show />
+      <div>
+        <h2 id="patches-title" class="text-2xl">Mission patches</h2>
+        <p class="mt-2 max-w-3xl text-muted">Every lesson's patch is a flat three-colour print, about 75 × 73 mm, for a multi-colour printer or two filament changes. Print the test coupon first.</p>
+        <a class="mt-3 inline-block font-bold text-accent underline underline-offset-4" href={base + '/patches/'}>All mission patches and print files</a>
+      </div>
+    </section>
     <section aria-labelledby="credit-title">
       <h2 id="credit-title">Credit</h2>
       <ul class="mt-3 max-w-3xl space-y-3 text-muted">

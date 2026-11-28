@@ -1,12 +1,12 @@
 // Rockoon Battle rooms over Media over QUIC (MoQ).
 //
 // The site's Worker hands out a short-lived token (POST /api/games/moq-token) scoped to one room,
-// hikd/games/rockoon-battle/<CODE>, that lets this player publish only under its own id. Each
+// hikd/games/rockoon-battle-v4/<CODE>, that lets this player publish only under its own id. Each
 // player publishes one broadcast with one track, `state`: its whole snapshot (see room.mjs),
 // rewritten every few seconds so players who join late or reconnect catch up. Everyone replays
 // the same snapshots, so nothing but angles, powers, weapons and shop lists crosses the relay.
 import * as Moq from '@moq/net';
-import { cleanSnapshot } from './room.mjs';
+import { cleanSnapshot, ROOM_NAMESPACE } from './room.mjs';
 
 export type LinkStatus = 'off' | 'connecting' | 'live' | 'offline';
 export interface LinkEvents {
@@ -120,7 +120,7 @@ export class RoomLink {
     const res = await fetch(this.#endpoint, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ game: 'rockoon-battle', room: this.room, ...seat }),
+      body: JSON.stringify({ game: ROOM_NAMESPACE, room: this.room, ...seat }),
       credentials: 'same-origin',
       cache: 'no-store',
       signal: this.#abort?.signal,

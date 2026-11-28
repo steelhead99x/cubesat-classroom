@@ -5,7 +5,9 @@ import * as G from './logic.mjs';
 
 type Unit = { x: number; y: number; angle: number; power: number; weapon: string };
 export type Scene = {
+  pads: Unit[];
   target: { x: number; y: number }; terrain: number[]; units: Unit[]; wind: number; colors: string[]; names: string[];
+  targetPreview?: { x: number; y: number }[];
   released?: number;
   active: number; // whose turn it is (-1 for none)
   preview: number[][] | null; // aim dots
@@ -127,17 +129,39 @@ export class Renderer {
     if (!scene) return;
     this.#world(shx, shy);
     ctx.save();
-    ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(scene.target.x, scene.target.y, G.TARGET_RADIUS, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(scene.target.x, scene.target.y, 2, 0, Math.PI * 2); ctx.fill();
+    if (scene.targetPreview) {
+      ctx.beginPath();
+      scene.targetPreview.forEach(({ x, y }, i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+      ctx.setLineDash([3, 5]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#ffe27a99';
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    for (let i = G.TARGET_RINGS.length - 1; i >= 0; i--) {
+      const ring = G.TARGET_RINGS[i];
+      ctx.beginPath();
+      ctx.arc(scene.target.x, scene.target.y, ring.radius, 0, Math.PI * 2);
+      ctx.fillStyle = hexA(ring.color, ring.points === 10 ? 1 : 0.17);
+      ctx.fill();
+      ctx.strokeStyle = ring.color;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
     ctx.restore();
     if (scene.ghost) this.#drawGhost(scene.ghost);
     if (scene.preview) {
-      if (scene.active >= 0) this.#drawAscent(scene.units[scene.active], scene.wind, scene.colors[scene.active]);
+      if (scene.active >= 0) this.#drawAscent(scene.pads[scene.active], scene.wind, scene.colors[scene.active]);
       this.#drawPreview(scene.preview);
     }
+    scene.pads.forEach(({ x, y }, i) => {
+      ctx.fillStyle = '#141b42';
+      ctx.fillRect(x - 10, y - 3, 20, 5);
+      ctx.fillStyle = scene.colors[i];
+      ctx.fillRect(x - 10, y + 1, 20, 2);
+    });
     scene.units.forEach((u, i) => { this.#drawRockoon(u, scene.colors[i], i === scene.active, i !== scene.released); });
-    if (scene.drag && scene.active >= 0) this.#drawDrag(G.releasePoint(scene.units[scene.active], scene.wind), scene.drag, scene.colors[scene.active]);
+    if (scene.drag && scene.active >= 0) this.#drawDrag(G.releasePoint(scene.pads[scene.active], scene.wind), scene.drag, scene.colors[scene.active]);
     if (scene.shot) this.#drawShot(scene.shot);
     this.#drawBooms();
     this.#drawParticles();
@@ -204,9 +228,7 @@ export class Renderer {
   }
 
   #groundFor(terrain: number[]) {
-    // Cheap change check: the terrain only changes after a shot.
-    let key = String(this.canvas.width) + ':';
-    for (let i = 0; i < G.W; i += 3) key += terrain[i] + ',';
+    const key = `${this.canvas.width}x${this.canvas.height}:${terrain.join(',')}`;
     if (key === this.#groundKey) return this.#ground;
     this.#groundKey = key;
     const c = this.#ground; c.width = this.canvas.width; c.height = this.canvas.height;
@@ -449,8 +471,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 /** Small pictures of each rocket for the shop and the rocket button. */
 export function rocketSvg(id: string, size = 40) {
-  if (id === 'dirt') return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="24" rx="14" ry="11" fill="#8a5a32"/><circle cx="14" cy="21" r="3" fill="#6b4426"/><circle cx="25" cy="27" r="2.5" fill="#6b4426"/><ellipse cx="16" cy="18" rx="5" ry="2" fill="#b07b4a"/></svg>`;
-  const look: Record<string, [string, number]> = { baby: ['#ffd23f', 0.62], rocket: ['#ef6b6c', 0.8], big: ['#ff9f43', 0.92], mega: ['#b9a4ff', 1] };
+  const look: Record<string, [string, number]> = { baby: ['#ffd23f', 0.62], rocket: ['#ef6b6c', 0.8], dirt: ['#6fd3a0', 0.86], big: ['#ff9f43', 0.92], mega: ['#b9a4ff', 1] };
   const [c, s] = look[id] ?? look.baby;
   return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true"><g transform="translate(20 20) rotate(45) scale(${s}) translate(-20 -20)">
     <path d="M20 3c5 4 7 10 7 17v8h-14v-8c0-7 2-13 7-17z" fill="${c}"/><path d="M13 22l-5 7v4l5-3zM27 22l5 7v4l-5-3z" fill="#5b6ab8"/>

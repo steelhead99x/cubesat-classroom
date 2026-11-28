@@ -122,6 +122,7 @@ Before a new or changed part is printed beyond a coupon:
 | [Rev B rail-fit set](ARCHIVE.md#rev-b-rail-fit-set) | No: needs supports, and has no board mounts. Archived. |
 | [CSC-R1 receiver](sdr-receiver/README.md) | Its enclosure is a bought die-cast box. Any printed bracket, knob or faceplate follows the guide. |
 | [Teachers in Space frame](tis/README.md) | Not ours, so it's linked, not changed. Mounts we print for it follow the guide. |
+| [Mission patches](patches/README.md) | Yes: one flat part per patch, three colours stacked by height, no supports. Every rule is checked in `hardware/patches/gen/patches.py`, with a label-and-feature coupon. Not yet printed. |
 | Designs in other CubeSat Classroom repositories (balloon gondolas, rocket pods, solar faces) | Apply the guide the next time each is changed. |
 
 When a design doesn't meet the guide yet, its README says so.
