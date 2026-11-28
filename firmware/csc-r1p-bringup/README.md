@@ -44,11 +44,14 @@ Connect the onboard LO MON port to a 50 Ω instrument or termination before runn
 | --- | ---: | ---: |
 | `PLL TEST 2M` | 145.800 MHz | 16 |
 | `PLL TEST 70CM` | 437.000 MHz | 8 |
+| `PLL TEST <kHz>` | 144000–146000 or 435000–438000 kHz, in 1 kHz steps | 16 or 8 |
 
-The console checks that MUXOUT starts low and waits up to 100 ms for digital lock. After lock, the onboard monitor output is available for five seconds at the lowest ADF4351 output setting. It then sets the power-down register and drives CE low. Check the serial shutdown results, record the measured frequency and level, and repeat for the other band. The other RF controls and audio remain off throughout the test.
+The console checks that MUXOUT starts low and waits up to 100 ms for digital lock. After lock, the onboard monitor output is available for up to five seconds at the lowest ADF4351 output setting. The test powers down early if lock drops. It then sets the power-down register and drives CE low. Check the serial shutdown results, record the measured frequency and level, and repeat for the other band. The other RF controls and audio remain off throughout the test.
 
 The nominal profiles use the board's 25 MHz reference and the modeled 2.5 mA charge-pump setting. [ADF4351 register map and timing](https://www.analog.com/media/en/technical-documentation/data-sheets/ADF4351.pdf) · [XIAO ESP32-S3 pinout](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)
 
 ## Check the receiver ADC
 
 After verifying the rails, send `ADC CHECK`. It releases the TLV320ADC3140 from hardware shutdown, reads DEV_STS0 and DEV_STS1 over I²C, then reasserts shutdown. Record both status bytes and confirm the console reports `shutdown=Ok(())`. The converter stays in its reset sleep mode during the read. The test checks control wiring and the address strap. Clock and audio capture checks are separate. [TI TLV320ADC3140 datasheet](https://www.ti.com/lit/ds/symlink/tlv320adc3140.pdf)
+
+After `ADC CHECK` passes, use `ADC CLOCK TEST` with an oscilloscope or logic analyzer. The ADC drives 192 kHz FSYNC and 12.288 MHz BCLK for up to five seconds. Read the printed ASI status as a diagnostic and confirm the actual rates and alignment at the ADC and the XIAO. The DAC stays muted. The I²S edge alignment uses TI's zero-offset controller-mode workaround. [TI application note SBAA382](https://www.ti.com/lit/an/sbaa382/sbaa382.pdf)

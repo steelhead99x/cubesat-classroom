@@ -6,4 +6,4 @@ Account for all 17 main-board paste-only apertures in the Flux and KiCad F.Paste
 
 ## Plan
 
-Check the four apertures each at U10 and U12 and the nine at U13. Record whether each survives export. If any are missing or changed, document the approved stencil source and the assembler's aperture decision before using a Flux fabrication export.
+A registered overlay of the actual F.Paste exports found four separate KiCad apertures each at U10 and U12, and nine at U13. The Flux export renders one continuous opening at each site. Use the KiCad stencil for the prototype. Confirm the aperture pattern with the assembler and repeat the comparison before any Flux release. See the [fabrication checks](/hardware/sdr-receiver/pedal/fabrication-checks.md).

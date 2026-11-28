@@ -96,6 +96,34 @@ impl<Bus: I2c> Pedal<Bus> {
         Ok(status)
     }
 
+    pub fn adc_wake_for_clocks(&mut self) -> Result<(), Bus::Error> {
+        self.0.write(AUDIO_ADC, &[0x02, 0x81]) // exit sleep with internal AREG
+    }
+
+    /// Configure the on-board ADC as controller. Leave DAC mute and demodulator off.
+    pub fn adc_start_clocks(&mut self) -> Result<(), Bus::Error> {
+        for command in [
+            [0x21, 0xa0], // GPIO1 is the 24.576 MHz MCLK input
+            [0x13, 0x87], // controller mode, automatic clocks with PLL, 48 kHz family
+            [0x14, 0x64], // 192 kHz FSYNC; BCLK = 64 × FSYNC
+            [0x07, 0xbe], // 32-bit slots, TI SBAA382 §3.2 standard I²S edge alignment
+            [0x0b, 0x00], // I in left slot zero
+            [0x0c, 0x20], // Q in right slot zero
+            [0x73, 0xc0], // input channels 1 and 2
+            [0x74, 0xc0], // enable their ASI output
+            [0x75, 0x60], // power ADC and PLL; MICBIAS off
+        ] {
+            self.0.write(AUDIO_ADC, &command)?;
+        }
+        Ok(())
+    }
+
+    pub fn adc_clock_status(&mut self) -> Result<u8, Bus::Error> {
+        let mut status = [0];
+        self.0.write_read(AUDIO_ADC, &[0x15], &mut status)?;
+        Ok(status[0])
+    }
+
     pub fn init_controls(&mut self) -> Result<(), Bus::Error> {
         self.0.write(CONTROL, &[OUTPUT, STATUS_LED])?;
         self.0.write(CONTROL, &[DIRECTION, !STATUS_LED])
@@ -275,6 +303,37 @@ mod tests {
         pedal.adc_release_shutdown(true).unwrap();
         assert_eq!(pedal.adc_status().unwrap(), [0, 0]);
         pedal.adc_release_shutdown(false).unwrap();
+        assert!(pedal.0.0.is_empty());
+    }
+
+    #[test]
+    fn configures_adc_clock_controller_before_powering_the_channels() {
+        let mut pedal = Pedal(Mock(&[
+            Step::Write(0x4c, &[0x02, 0x81], false),
+            Step::Write(0x4c, &[0x21, 0xa0], false),
+            Step::Write(0x4c, &[0x13, 0x87], false),
+            Step::Write(0x4c, &[0x14, 0x64], false),
+            Step::Write(0x4c, &[0x07, 0xbe], false),
+            Step::Write(0x4c, &[0x0b, 0x00], false),
+            Step::Write(0x4c, &[0x0c, 0x20], false),
+            Step::Write(0x4c, &[0x73, 0xc0], false),
+            Step::Write(0x4c, &[0x74, 0xc0], false),
+            Step::Write(0x4c, &[0x75, 0x60], false),
+            Step::Read(0x4c, 0x15, &[0x64]),
+        ]));
+        pedal.adc_wake_for_clocks().unwrap();
+        pedal.adc_start_clocks().unwrap();
+        assert_eq!(pedal.adc_clock_status().unwrap(), 0x64);
+        assert!(pedal.0.0.is_empty());
+    }
+
+    #[test]
+    fn incomplete_adc_clock_setup_never_reaches_power_enable() {
+        let mut pedal = Pedal(Mock(&[
+            Step::Write(0x4c, &[0x21, 0xa0], false),
+            Step::Write(0x4c, &[0x13, 0x87], true),
+        ]));
+        assert_eq!(pedal.adc_start_clocks(), Err(ErrorKind::Other));
         assert!(pedal.0.0.is_empty());
     }
 

@@ -3,7 +3,7 @@
 
 use csc_r1p_bringup::{
     EncoderTrace, Pedal, Pot,
-    pll::{BenchBand, POWER_DOWN},
+    pll::{BenchBand, POWER_DOWN, ReceiveChannel, has_stable_lock},
 };
 use embedded_hal::{i2c::I2c, spi::SpiBus};
 use esp_backtrace as _;
@@ -62,7 +62,7 @@ fn main() -> ! {
                     match &line[..len] {
                         b"HELP" => {
                             println!(
-                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | ADC CHECK | PLL TEST 2M | PLL TEST 70CM | HELP"
+                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | ADC CHECK | ADC CLOCK TEST | PLL TEST 2M | PLL TEST 70CM | PLL TEST <kHz> | HELP"
                             );
                         }
                         b"SAFE" => controls_ready = setup(&mut pedal),
@@ -93,14 +93,24 @@ fn main() -> ! {
                             let off = pedal.oled_off();
                             println!("OLED show={show:?} off={off:?}");
                         }
-                        b"ADC CHECK" => check_adc(&mut pedal, &delay),
-                        b"PLL TEST 2M" | b"PLL TEST 70CM" => {
-                            let band = if &line[..len] == b"PLL TEST 2M" {
-                                BenchBand::TwoMeters
-                            } else {
-                                BenchBand::SeventyCentimeters
+                        b"ADC CHECK" => check_adc(&mut pedal, &delay, false),
+                        b"ADC CLOCK TEST" => check_adc(&mut pedal, &delay, true),
+                        command if command.starts_with(b"PLL TEST ") => {
+                            let channel = match &command[b"PLL TEST ".len()..] {
+                                b"2M" => Some(BenchBand::TwoMeters.channel()),
+                                b"70CM" => Some(BenchBand::SeventyCentimeters.channel()),
+                                raw => core::str::from_utf8(raw)
+                                    .ok()
+                                    .and_then(|value| value.parse::<u32>().ok())
+                                    .and_then(ReceiveChannel::from_khz),
                             };
-                            run_pll_test(&mut pedal, &mut spi, &mut latch, &lock, &delay, band);
+                            if let Some(channel) = channel {
+                                run_pll_test(
+                                    &mut pedal, &mut spi, &mut latch, &lock, &delay, channel,
+                                );
+                            } else {
+                                println!("PLL: use 144000–146000 or 435000–438000 kHz");
+                            }
                         }
                         b"POTS" => {
                             let gain = read_pot(&mut pedal, Pot::Gain, &delay);
@@ -132,7 +142,7 @@ fn setup<Bus: I2c>(pedal: &mut Pedal<Bus>) -> bool {
     controls.is_ok()
 }
 
-fn check_adc<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay) {
+fn check_adc<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay, clocks: bool) {
     if let Err(error) = pedal.enter_safe() {
         println!("ADC: safe setup failed: {error:?}");
         return;
@@ -141,6 +151,15 @@ fn check_adc<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay) {
     delay.delay_millis(100);
     let status = pedal.adc_release_shutdown(true).and_then(|()| {
         delay.delay_millis(2);
+        if clocks {
+            pedal.adc_wake_for_clocks()?;
+            delay.delay_millis(2);
+            pedal.adc_start_clocks()?;
+            delay.delay_millis(20);
+            let status = pedal.adc_clock_status()?;
+            println!("ADC ASI status=0x{status:02x}; measure the clocks now");
+            delay.delay_millis(5_000);
+        }
         pedal.adc_status()
     });
     let shutdown = pedal.adc_release_shutdown(false);
@@ -153,7 +172,7 @@ fn run_pll_test<Bus: I2c, Serial: SpiBus>(
     latch: &mut Output<'_>,
     lock: &Input<'_>,
     delay: &Delay,
-    band: BenchBand,
+    channel: ReceiveChannel,
 ) {
     if let Err(error) = pedal.enter_safe() {
         println!("PLL: safe setup failed: {error:?}");
@@ -167,29 +186,30 @@ fn run_pll_test<Bus: I2c, Serial: SpiBus>(
         Ok(()) => {
             // Allow the part to come out of CE power-down before loading R5.
             delay.delay_millis(1);
-            match band
+            match channel
                 .registers()
                 .into_iter()
                 .try_for_each(|word| write_pll_register(spi, latch, delay, word))
             {
                 Ok(()) => {
-                    let mut high_samples = 0;
-                    for _ in 0..100 {
+                    let locked = has_stable_lock((0..100).map(|_| {
                         delay.delay_millis(1);
-                        if lock.is_high() {
-                            high_samples += 1;
-                            if high_samples == 3 {
+                        lock.is_high()
+                    }));
+                    if locked {
+                        println!(
+                            "PLL {} Hz: locked, measure LO MON now",
+                            channel.frequency_hz()
+                        );
+                        for _ in 0..5_000 {
+                            delay.delay_millis(1);
+                            if !lock.is_high() {
+                                println!("PLL: lock lost, powering down");
                                 break;
                             }
-                        } else {
-                            high_samples = 0;
                         }
-                    }
-                    if high_samples == 3 {
-                        println!("PLL {} Hz: locked, measure LO MON now", band.frequency_hz());
-                        delay.delay_millis(5_000);
                     } else {
-                        println!("PLL {} Hz: lock timeout", band.frequency_hz());
+                        println!("PLL {} Hz: lock timeout", channel.frequency_hz());
                     }
                 }
                 Err(error) => println!("PLL: SPI programming failed: {error:?}"),
