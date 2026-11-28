@@ -6,7 +6,7 @@ Produce a versioned fabrication package for both boards with an independent sign
 
 ## Plan
 
-Export the four-layer Gerbers, solder paste, plated and nonplated drill data, BOM and placement files from KiCad. Verify outline slots, exposed-pad apertures, the RF stackup and the reviewed protection changes. Record the source commit, DRC results and reviewer decisions.
+Export the four-layer Gerbers, solder paste, plated and nonplated drill data, BOM and placement files from KiCad. Verify outline slots, exposed-pad apertures, the RF stackup and the reviewed protection changes. Record the source commit, DRC results and reviewer decisions. Prepare separate bare-board and top-SMT quotes from the KiCad outputs. Record the quantity, finish, stackup, SMT and hand-fit scope, freight and any exclusions. Keep the unapproved baseline quote separate from the release package.
 
 ## Required
 
