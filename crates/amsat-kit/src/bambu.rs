@@ -734,6 +734,14 @@ fn project(
         let num = id.num;
         let path = format!("3D/Objects/object_{num}.model");
         let v = &meshes[o.part];
+        // Check each volume as the 3MF stores it: six decimals, equal corners merged.
+        for (what, m) in [("body", Some(&v.body)), ("logo", v.accent.as_ref())] {
+            let Some(m) = m else { continue };
+            let stored = m.quantized(|x| fmt(x).parse().unwrap_or(f64::NAN));
+            if let Some(e) = stored.defects() {
+                return Err(format!("{}: its {what} in {title} has {e}", o.label));
+            }
+        }
         let mut res = mesh_xml(
             &v.body,
             id.body,

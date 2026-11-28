@@ -57,8 +57,13 @@ fn write_meshes(
         let mesh = closed_solid(name, &solid)?;
         let (lo, _) = mesh.bounds();
         let mesh = mesh.translated([0.0, 0.0, -lo[2]]);
-        mesh.write_stl(&stl.join(format!("{name}.stl")), name)
-            .map_err(|e| e.to_string())?;
+        let path = stl.join(format!("{name}.stl"));
+        mesh.write_stl(&path, name).map_err(|e| e.to_string())?;
+        // Check the file as a slicer reads it: f32 corners, equal ones merged.
+        let written = Mesh::read_stl(&path).map_err(|e| e.to_string())?;
+        if let Some(e) = written.defects() {
+            return Err(format!("{name}.stl has {e}"));
+        }
         let e = mesh.extents();
         println!(
             "{name}: [{:.1}, {:.1}, {:.1}] mm, {:.1} cm3, closed, {} triangles",
