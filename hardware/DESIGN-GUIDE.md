@@ -89,7 +89,7 @@ Print each coupon in the material of the real part. Record what you find, and ch
 - **Ports face down; antennas point up.** Use glands and bulkheads with their own O-rings, on flat parts of the wall.
 - **A breathable vent**, so condensation and pressure changes can't pump water past the seal.
 - **Tripod mount:** a 1/4"-20 UNC thread in a sealed boss in the middle of the back. Printed, no metal, and tested with the thread coupon.
-- **Isogrid walls, light and stiff:** triangular pockets in the outside faces between flush 2 mm ribs, with 45° sides so they print upright, leaving a skin of at least 1.6 mm (four perimeters) so it holds water. Keep solid wall where the O-ring presses and round every port's seal. A flange only where something stands on it.
+- **Isogrid walls, light and stiff:** triangular pockets in the outside faces between flush 2 mm ribs, with 45° sides so they print upright, leaving a CAD skin of at least 1.6 mm. Check the skin in the 0.6 mm nozzle slicer preview and water-test the printed case to verify sealing. Keep solid wall where the O-ring presses and round every port's seal. A flange only where something stands on it.
 - **Same plates inside:** an outdoor case uses the kit's columns and keyed pins, so the plates (and the coupons that proved them) carry over.
 
 ## Batteries
