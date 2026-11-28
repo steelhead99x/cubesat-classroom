@@ -669,6 +669,8 @@ function start(root: HTMLElement) {
     const code = joinCode.toUpperCase().replace(/[\s-]/g, '');
     if (!Room.ROOM_CODE.test(code)) { menuNote = 'Room codes have 5 letters and numbers, like K7QX2.'; return renderOverlay(); }
     menuNote = '';
+    // A Join pressed while the page is still reopening its saved seat replaces that attempt.
+    if (resumeAttempt && resumeAttempt === joinAttempt) { joinAttempt++; joining = false; }
     void startOnline(code, false);
   }
 
@@ -731,6 +733,8 @@ function start(root: HTMLElement) {
   let joining = false;
   /** Bumped whenever a join in progress is abandoned (Back, leaving the room), so it stops. */
   let joinAttempt = 0;
+  /** The attempt that is reopening a saved seat on its own after a reload, while it runs. */
+  let resumeAttempt = 0;
   /** A room whose saved seat this tab must not take: it was told the seat is open in another tab
    * and promised a new player. */
   let freshSeatRoom: string | null = null;
@@ -745,6 +749,7 @@ function start(root: HTMLElement) {
     if (joining || link) return;
     joining = true;
     const attempt = ++joinAttempt;
+    resumeAttempt = resume ? attempt : 0;
     const done = () => { if (attempt === joinAttempt) joining = false; };
     const abandoned = () => attempt !== joinAttempt || mode !== 'menu' || !!link;
     const { RoomLink } = await import('./net').catch(() => ({ RoomLink: null })).finally(done);
@@ -815,7 +820,11 @@ function start(root: HTMLElement) {
         const s = snap as Snap;
         if (rejoinedSession && host && match && host.order.includes(id) && !metSinceLive.has(id) && (!s.host || JSON.stringify(s.host) === JSON.stringify(host))) {
           metSinceLive.add(id);
-          if (Object.keys(s.log ?? {}).some(k => Number(k) >= match!.log.length)) catchUpUntil = Math.max(catchUpUntil, Date.now() + 30_000);
+          // Shots this screen hasn't played, or a shop it hasn't (a stand-in may have closed one
+          // without this screen's picks): either way it must catch up before sending its own.
+          const unplayedShot = Object.keys(s.log ?? {}).some(k => Number(k) >= match!.log.length);
+          const unplayedShop = Object.keys(s.shopLog ?? {}).some(r => Number(r) > match!.round && !match!.played?.[`S${Number(r)}`]);
+          if (unplayedShot || unplayedShop) catchUpUntil = Math.max(catchUpUntil, Date.now() + 30_000);
         }
         adoptHost();
         step();
@@ -847,7 +856,9 @@ function start(root: HTMLElement) {
     // turn or shop the room is still waiting on.
     if (!snaps.has(me)) snaps.set(me, { p: Room.ROOM_PROTOCOL, cs: link.callsign, joined, creator, turns: {}, shops: {} });
     keepSeat = () => {
-      if (store && link === thisLink) saveSeat(store, code, { player: me, ticket: thisLink.ticket, creator, joined });
+      // A renewal that came back with a different id (its ticket no longer valid) is not this
+      // seat: keep the saved one rather than pair this seat's id with another seat's ticket.
+      if (store && link === thisLink && thisLink.player === me) saveSeat(store, code, { player: me, ticket: thisLink.ticket, creator, joined });
     };
     keepSeat();
     publish();
