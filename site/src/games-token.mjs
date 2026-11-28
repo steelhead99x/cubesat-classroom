@@ -20,7 +20,7 @@ export const TOKEN_TTL = 600;
 // the moving target, v4 rooms (room.mjs ROOM_PROTOCOL) let the next player take over when
 // the host leaves, which older clients can't follow, and v5 marks history copied on a stand-in's
 // word, which v4 clients would misread.
-const GAMES = { 'catch-the-pass': { rooms: false }, 'rockoon-wars': { rooms: true }, 'rockoon-battle': { rooms: true }, 'rockoon-battle-v2': { rooms: true }, 'rockoon-battle-v3': { rooms: true }, 'rockoon-battle-v4': { rooms: true }, 'rockoon-battle-v5': { rooms: true }, 'rockoon-battle-v6': { rooms: true } };
+const GAMES = { 'catch-the-pass': { rooms: false }, 'rockoon-wars': { rooms: true }, 'rockoon-battle': { rooms: true }, 'rockoon-battle-v2': { rooms: true }, 'rockoon-battle-v3': { rooms: true }, 'rockoon-battle-v4': { rooms: true }, 'rockoon-battle-v5': { rooms: true }, 'rockoon-battle-v6': { rooms: true }, 'rockoon-battle-v7': { rooms: true } };
 const ROOM = 'live';
 const ROOM_CODE = /^[A-HJ-NP-Z2-9]{5}$/;
 const PLAYER_ID = /^[0-9a-f]{12}$/;
