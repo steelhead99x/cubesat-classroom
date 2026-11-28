@@ -71,6 +71,13 @@ fn the_outdoor_cases_pass() {
 }
 
 #[test]
+fn both_outdoor_latch_coupons_pass() {
+    let d = Design::default();
+    outdoor_checks::verify_latch_coupon(&d, &Outdoor::default()).expect("Uno/Nano latch coupon");
+    outdoor_checks::verify_latch_coupon(&d, &Outdoor::xiao()).expect("XIAO latch coupon");
+}
+
+#[test]
 fn broken_outdoor_designs_fail() {
     let missed: Vec<_> = outdoor_checks::broken_designs()
         .into_iter()

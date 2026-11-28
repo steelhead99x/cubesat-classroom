@@ -43,6 +43,7 @@ CubeSat Classroom's printed parts are code: Rust with the `manifold-csg` crate (
 
 - **Deterministic output:** same input, same bytes. Format numbers with fixed decimals, keep zip timestamps fixed, write files in a fixed order. Check it by running twice and comparing hashes. CI fails if committed files differ.
 - **Every STL** is a closed single solid, standing on z = 0, in print orientation.
+- **Check the files as written,** not the solid: read each STL back and each 3MF volume at its six decimals, merge equal corners, and fail on any collapsed or zero-area triangle or unpaired edge. Booleans leave coincident vertices that an index-based closed check misses; `Mesh::from_solid` simplifies, snaps to a grid and welds them away.
 - **Report the numbers** a reviewer needs: strain, preload, retention vs load, volumes.
 
 ## Honesty

@@ -20,7 +20,7 @@ Every CubeSat Classroom 3D design follows these rules, in every repository and f
 | Keyed snap pin | Plates onto columns | A pin with two flats and a 45° head in a keyed slot: rigid walls on the flats, two straight flex fingers either side with teeth under the head. Drops on one way, centred; clicks. |
 | Lips + snap hooks | Circuit boards | Tuck one edge under fixed lips, swing down, and hooks on in-plane fingers click over the other edge. Hook underside at 10°, under PLA's ~17° friction angle, so it locks itself. |
 | Push-down end hooks | Thick parts: batteries | Press straight down between side guides until a hook clicks over each end. Tuck-and-swing fails for thick parts, because their bottom edge swings into the lips. |
-| Lid latches | Lids, sealed ones too | Press the lid down: an in-plane finger cut into each lid edge bends over a lug on the rim (45° lead-in) and clicks under it. Thumb each finger outward to lift it off. |
+| Lid latches | Lids, sealed ones too | Press the lid down. A finger in each edge bends inward over a lug (45° lead-in) and clicks under it. Push each finger inward toward the centre with a thumb and lift the lid off. |
 
 No screws, inserts or nuts hold printed parts together. A seal that needs no clamping force (a radial O-ring) lets a lid latch on.
 
@@ -41,7 +41,7 @@ No screws, inserts or nuts hold printed parts together. A seal that needs no cla
 
 ## Look (all versions)
 
-Clean and engineered, like a modern launch vehicle, without copying anyone's names or logos: white structure and black decks, crisp mitred chamfers on outer edges, triangular isogrid pockets (2.4 mm ribs at 60°) instead of free-form holes, flush faces with nothing showing, and the CubeSat Classroom logo on every part (coupons too), inlaid flush 0.6 mm in the other colour as a second volume, 1 mm clear of every edge, hole and slit, strokes at least 0.45 mm. The look never costs strength, fit or printability.
+Clean and engineered, like a modern launch vehicle, without copying anyone's names or logos: white structure and black decks, crisp mitred chamfers on outer edges, triangular isogrid pockets (2.4 mm ribs at 60°) instead of free-form holes, flush faces with nothing showing, and the CubeSat Classroom logo on every part (coupons too), inlaid 0.9 mm in the other colour as a second volume and raised 0.6 mm on upward faces where nothing mounted comes within 0.3 mm (flush on the bed face), 1 mm clear of every edge, hole and slit, strokes at least 0.65 mm and gaps at least 0.8 mm so a 0.6 mm nozzle prints it. Shared coupons also carry a label tile saying what they test. The look never costs strength, fit or printability.
 
 ## Printability
 
@@ -58,5 +58,7 @@ Clean and engineered, like a modern launch vehicle, without copying anyone's nam
 5. Package prints with names, plates and settings (see the bambu-studio-projects skill).
 6. **Label every result**: design check, desk simulation or hardware bench. Never present a check as a measurement, and say in the README what has been printed and what hasn't.
 7. Run the checklist: no loose pieces or screws, one way round, no supports, snap rules, locating, launch, material, coupon, checks, look, labels.
+
+Both outdoor kits use the [same two-latch coupon procedure](../../../hardware/outdoor-station/README.md#two-latch-coupon).
 
 When an existing design doesn't meet the guide, say so in its README rather than hiding it.
