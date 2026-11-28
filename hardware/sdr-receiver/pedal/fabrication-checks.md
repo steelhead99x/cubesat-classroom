@@ -20,6 +20,17 @@ Flux repeated the comparison on new imports of both boards. It verified the inpu
 
 The revised Flux exports again reduced four plated component holes from 0.75 mm to 0.70 mm. Flux measured roughly 135 mm² of source-only copper and 24 mm² of Flux-only copper on main-board In1.Cu. It reported differences on all four control-board copper layers. Both imports also introduced back-side paste openings absent from the KiCad plots. Keep KiCad as the fabrication and stencil source. These are digital export comparisons. Vendor DFM and physical continuity remain open.
 
+## Verify the assembly package
+
+The KiCad exporter writes a separate `kicad-cam.json` for each board. It records SHA-256 hashes for the board, schematic and project source and for the Gerber job, all 11 Gerber layers, drill set, BOM, placement file and DRC report. Keep the reviewed manifest separately when sending the package. Verify a returned or staged copy with that saved manifest before using the files for a quote or fabrication review.
+
+```sh
+python3 hardware/sdr-receiver/gen/pedal_cam.py verify extracted/main reviewed-main.json
+python3 hardware/sdr-receiver/gen/pedal_cam.py verify extracted/controls reviewed-controls.json
+```
+
+A match verifies file identity. Fabrication approval still requires the board revision, stackup, material and assembly decisions recorded in the release quest.
+
 ## RF stackup candidate
 
 JLCPCB's published JLC04161H-7628 build is a candidate for a quote. It uses approximately 0.2104 mm of dielectric between F.Cu and In1.Cu. With 40.64 µm outer copper and assumed Dk 4.4, the existing repository microstrip model gives 50.1 Ω for a 0.35 mm trace. The same model with the thinner 3313 spacing gives 30.9 Ω. These estimates omit solder mask, etch shape and nearby side copper. Confirm the actual material and impedance tolerance with the fab and inspect the filled J2 and U7 returns before release. [JLCPCB stackup examples](https://jlcpcb.com/blog/pcb-ground-loop-noise-reduction) · [JLCPCB calculation assumptions](https://jlcpcb.com/help/article/user-guide-to-the-jlcpcb-impedance-calculator)
