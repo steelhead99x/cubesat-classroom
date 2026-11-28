@@ -13,6 +13,7 @@ beginner:
   steps:
     - Do the three pedal tasks shown above the pedal. Tap ENGAGE, tune to 145.800 MHz, then set GAIN and LEVEL.
     - Write down the frequency, gain and level that worked.
+    - Answer the four **Predict, then test** questions under the pedal, then try each one. The trainer tells you if your prediction was right. Watch the row of stages. A red stage is where the signal is stopped.
     - Check the ENGAGE light is on, then press **Start a pass**. When the satellite rises, turn TUNE to keep the readout saying **carrier heard**. The score only counts time with the pedal engaged.
   check: You have the three settings written down and the percent of the pass you heard, from the result line.
   discuss: The satellite's signal seems to change frequency as it goes past. Have you heard a siren change pitch as it drives by?
@@ -22,7 +23,8 @@ intermediate:
     - Set the TUNE step to 5 kHz before starting the first pass. Record the percent heard.
     - Use the TUNE step button to select 1 kHz, then run another pass. Record the percent heard again.
     - During the second pass, write down the Doppler value at rise, at the highest point and at set.
-  check: You have two scores, one for each step size, and three Doppler values with units.
+    - After each pass, look at the chart under the result. The gold line is the satellite and the green band is what you could hear. Write down where the gold line left the green band.
+  check: You have two scores, one for each step size, three Doppler values with units, and where on the pass you lost the carrier.
   discuss: The receiver hears signals within 1.5 kHz of where it is tuned. Using that, explain why 5 kHz steps miss the start of the pass.
 professional:
   steps:
