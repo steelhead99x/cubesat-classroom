@@ -298,7 +298,7 @@ test('a returning host keeps the turns played without it', () => {
   const bBack = { gone: [], me: ids[1] };
   assert.equal(Room.diverged(b, host, s, bBack), false, 'a heartbeat alone never undoes a turn');
   // The host's own screen, just rejoined, accepts the skip of its missed turn and catches up.
-  const hostView = { gone: [], me: ids[0], ownSkips: true };
+  const hostView = { gone: [], me: ids[0], rejoined: true };
   const h = Room.replay(host, s, hostView).match;
   assert.equal(h.log.length, k + 2);
   assert.equal(R.fingerprint(h), R.fingerprint(b));
@@ -332,12 +332,66 @@ test('a shot stays replayable after the player who took it leaves (three players
   Room.mirror(c, three, s, ids[2]);
   // The stand-in leaves for good, and the host returns. It has never seen the stand-in's request.
   delete s[ids[1]];
-  const hostView = { gone: [ids[1]], me: ids[0], ownSkips: true };
+  const hostView = { gone: [ids[1]], me: ids[0], rejoined: true };
   const h = Room.replay(three, s, hostView).match;
   assert.equal(h.log.length, k + 1, 'the host replays the shot from the third player\'s copy');
   assert.equal(R.fingerprint(h), R.fingerprint(c));
   assert.equal(Room.commit(h, three, s, [ids[1]]), false, 'nothing to record over it');
   assert.equal(Room.diverged(c, three, s, { gone: [ids[1]], me: ids[2] }), false, 'the third player keeps its match');
+});
+
+// Review cases for the stand-in rules, three players: A creator, B, C.
+function threeAt(turnOwner) {
+  const three = { ...host, order: ids, names: { ...host.names, [ids[2]]: 'GS-CC3' } };
+  const s = Object.fromEntries(ids.map((id, i) => [id, snap(['GS-AA1', 'GS-BB2', 'GS-CC3'][i], { shops: { 1: [], 2: [], 3: [] } })]));
+  let match;
+  for (let i = 0; i < 10; i++) { match = Room.replay(three, s).match; if (!Room.commit(match, three, s)) break; }
+  for (let i = 0; i < 9 && three.order[match.turn] !== turnOwner; i++) {
+    s[three.order[match.turn]].turns[match.log.length] = { angle: 80, power: 40, weapon: 'baby' };
+    Room.commit(match, three, s); match = Room.replay(three, s).match;
+  }
+  for (const id of ids) Room.mirror(match, three, s, id);
+  return { three, s, match, k: match.log.length };
+}
+
+test('a player catching up does not take a skip of its own turn from someone who did not stand in', () => {
+  const { three, s, match, k } = threeAt(ids[1]);
+  // C forges skips far ahead; B reloads (no requests, catching up). A is here and current.
+  s[ids[2]].log = { ...s[ids[2]].log, ...Object.fromEntries(Array.from({ length: 30 }, (_, j) => [k + j, 'skip'])) };
+  s[ids[1]].turns = {};
+  assert.deepEqual(Room.nextAction(match, three, s, { gone: [], me: ids[1], rejoined: true }).kind, 'wait');
+});
+
+test('a carried shot for a player who has gone is not believed from just anyone', () => {
+  const { three, s, match, k } = threeAt(ids[1]);
+  s[ids[2]].log = { ...s[ids[2]].log, [k]: { angle: 1, power: 1, weapon: 'baby' } };
+  delete s[ids[1]];
+  assert.equal(Room.nextAction(match, three, s, { gone: [ids[1]], me: ids[0] }).kind, 'wait');
+  assert.ok(Room.commit(match, three, s, [ids[1]]), 'the creator records a skip');
+  assert.equal(Room.nextAction(match, three, s, { gone: [ids[1]], me: ids[0] }).kind, 'skip');
+});
+
+test('nobody else can close the shop with empty picks for players still choosing', () => {
+  const { three, s, match } = threeAt(ids[0]);
+  const shop = { ...match, phase: 'shop', round: 1 };
+  for (const id of ids) delete s[id].shops[2];
+  s[ids[2]].shops[2] = ['rocket'];
+  s[ids[2]].shopLog = { ...s[ids[2]].shopLog, 2: [[], [], ['rocket']] };
+  assert.equal(Room.nextAction(shop, three, s).kind, 'wait');
+});
+
+test('an owner\'s own copy of its turn stays believable after its request is gone (reloads)', () => {
+  const { three, s, k } = threeAt(ids[1]);
+  // B's shot is committed and everyone mirrors it; then B and A reload (requests and A's log gone).
+  s[ids[1]].turns[k] = { angle: 66, power: 55, weapon: 'baby' };
+  let m = Room.replay(three, s).match;
+  Room.commit(m, three, s); m = Room.replay(three, s).match;
+  for (const id of ids) Room.mirror(m, three, s, id);
+  s[ids[1]].turns = {};
+  s[ids[0]] = snap('GS-AA1');
+  const a = Room.replay(three, s, { gone: [], me: ids[0], rejoined: true }).match;
+  assert.equal(a.log.length, k + 1);
+  assert.equal(R.fingerprint(a), R.fingerprint(m));
 });
 
 test('nobody can commit a shot, a skip or a purchase for someone else', () => {

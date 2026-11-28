@@ -10,7 +10,7 @@ import * as Room from './room.mjs';
 import { Renderer, rocketSvg, type Scene } from './render';
 import type { RoomLink, LinkStatus, Snapshot } from './net';
 
-type Snap = { p?: number; cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; rising?: number; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]> };
+type Snap = { p?: number; catchUp?: boolean; cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; rising?: number; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]> };
 type Host = { seed: number; rounds: number; order: string[]; names: Record<string, string> };
 type Match = ReturnType<typeof G.createMatch>;
 type Field = NonNullable<Match['field']>;
@@ -77,6 +77,9 @@ function start(root: HTMLElement) {
   let joinCode = new URLSearchParams(location.hash.slice(1)).get('room') ?? '';
   let lastTurnKey = '';
   let liveSince = 0; // when this screen's room connection last went live
+  let adoptedAt = 0; // when this screen picked up the match settings
+  let catchUpUntil = 0; // until then this screen is catching up (see roomView)
+  const metSinceLive = new Set<string>(); // players heard from since this screen went live
   let shotNote = ''; // what the last shot did, shown with the next turn
 
   function seenHowto() { try { return localStorage.getItem(HOWTO_KEY) === '1'; } catch { return false; } }
@@ -183,9 +186,17 @@ function start(root: HTMLElement) {
   const shooter = () => match!.field!.units[match!.turn];
 
   /** Runs every action that is ready. Shots animate one at a time. */
+  /** Whether this screen is catching up: just (re)joined, just picked up a running match, or just
+   * met a player with history it missed. Its snapshot says so, for the other screens. */
+  const catchingUp = () => mode === 'online' && Date.now() < catchUpUntil;
+
   /** Records the next turn if this screen is the committer, and keeps a copy of the history. */
   function record() {
     if (!match || !host) return;
+    if (mode === 'online' && snaps.has(me) && !!snapOf(me).catchUp !== catchingUp()) {
+      if (catchingUp()) snapOf(me).catchUp = true; else delete snapOf(me).catchUp;
+      publish();
+    }
     const gone = goneIds();
     const committer = Room.committerFor(host, gone);
     let changed = mine.includes(committer) && Room.commit(match, host, snaps, gone, committer);
@@ -254,9 +265,10 @@ function start(root: HTMLElement) {
   /** Players this screen gives up on after 30 seconds without a snapshot. Their turns are
    * skipped, and if the committer is one of them the next player in the order takes over. */
   /** How this screen sees the room, for room.mjs: who has gone, who it is, and whether it has
-   * just (re)joined, when it accepts skips of its own turns taken while it was away. */
+   * just (re)joined, or just picked up a match already under way: then it accepts the turns its
+   * stand-in recorded without it. */
   function roomView() {
-    return { gone: goneIds(), me, ownSkips: mode === 'online' && Date.now() - liveSince < 30_000 };
+    return { gone: goneIds(), me, rejoined: catchingUp() };
   }
 
   function goneIds() {
@@ -718,7 +730,7 @@ function start(root: HTMLElement) {
     const thisLink: RoomLink = link = new RoomLink(code, {
       status(s: LinkStatus, detail?: string) {
         if (link !== thisLink) return; // a room this screen has already left
-        if (s === 'live') liveSince = Date.now();
+        if (s === 'live') { liveSince = Date.now(); catchUpUntil = liveSince + 30_000; metSinceLive.clear(); }
         netDetail = detail ?? '';
         net.textContent = s === 'live' ? `Room ${code}, you are ${thisLink.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : s === 'offline' ? 'Offline' : '';
         render();
@@ -726,6 +738,13 @@ function start(root: HTMLElement) {
       peer(id: string, snap: Snapshot) {
         snaps.set(id, snap as Snap);
         seen.set(id, Date.now());
+        // The first word from a player since this screen went live, carrying history this screen
+        // hasn't played: catch up from it for a while (see roomView).
+        if (!metSinceLive.has(id)) {
+          metSinceLive.add(id);
+          const s = snap as Snap, played = match?.log.length ?? 0;
+          if (Object.keys(s.log ?? {}).some(k => Number(k) >= played)) catchUpUntil = Date.now() + 30_000;
+        }
         adoptHost();
         step();
       },
@@ -748,17 +767,18 @@ function start(root: HTMLElement) {
   function adoptHost() {
     if (host) return;
     const carriers = [...snaps].filter(([id, s]) => s.host && s.host.order.includes(id) && s.host.names[id] === s.cs);
-    // The creator's settings first. Without the creator, take the settings most players carry,
-    // and only once at least two agree (or the one carrier is the only other player), so a
-    // single made-up copy can't start a different match on this screen.
+    // The creator's settings first; without the creator, the settings most players carry. (A
+    // made-up copy can only mislead a screen that has no other copy to compare with, and it
+    // can't change anyone else's match.)
     const byCreator = carriers.find(([id, s]) => s.creator && s.host!.order[0] === id);
     const groups = new Map<string, typeof carriers>();
     for (const c of carriers) { const key = JSON.stringify(c[1].host); groups.set(key, [...(groups.get(key) ?? []), c]); }
     const best = [...groups.values()].sort((a, b) => b.length - a.length)[0];
-    const others = [...snaps.keys()].filter(id => id !== me).length;
-    const pick = byCreator ?? (best && (best.length >= 2 || others === 1) ? best[0] : undefined);
+    const pick = byCreator ?? best?.[0];
     if (!pick) return;
     host = pick[1].host!;
+    adoptedAt = Date.now();
+    catchUpUntil = adoptedAt + 30_000;
     // Catch up without animating everything that already happened.
     match = Room.replay(host, snaps, roomView()).match;
     say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');

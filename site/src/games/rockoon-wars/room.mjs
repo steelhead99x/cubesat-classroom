@@ -71,6 +71,9 @@ export function cleanSnapshot(raw) {
   // so other screens can show it rising. It never changes the match.
   const rising = int(raw.rising, 0, 9999);
   if (rising !== null) out.rising = rising;
+  // This player is catching up (it has just rejoined, or just met a player with history it
+  // missed). Other screens then count it as away when working out who stood in for whom.
+  if (raw.catchUp === true) out.catchUp = true;
   if (raw.host && typeof raw.host === 'object') {
     const h = raw.host;
     const seed = int(h.seed, 0, 4294967295), rounds = int(h.rounds, 1, 10);
@@ -116,61 +119,81 @@ export function committerFor(host, gone = []) {
 
 /**
  * Whether a copy of a history entry matches what the players asked for: a shot equal to the
- * turn owner's own `turns` request, a shop list equal to each player's own `shops` (an empty
- * list only for a player whose picks never arrived). A skip can't be checked.
+ * turn owner's own `turns` request, or a shop list equal to each player's own `shops`. An empty
+ * list stands in for a player only once that player has gone in this screen's view. A skip
+ * can't be checked this way.
  */
 function matchesRequests(host, get, field, key, entry, owner, gone = []) {
   if (field === 'log') {
-    // A player who has left can't confirm or dispute their turn, and their request may have
-    // left with them; the copy the others carry is the only record of it.
-    if (owner && gone.includes(owner)) return entry === 'skip' || (typeof entry === 'object' && entry !== null);
     const asked = owner && get(owner)?.turns?.[key];
     return entry !== 'skip' && !!asked && asked.angle === entry.angle && asked.power === entry.power && asked.weapon === entry.weapon;
   }
   return Array.isArray(entry) && entry.length === host.order.length && entry.every((list, i) => {
     if (!Array.isArray(list)) return false;
-    if (gone.includes(host.order[i])) return true;
     const asked = get(host.order[i])?.shops?.[key];
-    return Array.isArray(asked) ? JSON.stringify(asked) === JSON.stringify(list) : list.length === 0;
+    if (Array.isArray(asked)) return JSON.stringify(asked) === JSON.stringify(list);
+    return list.length === 0 && gone.includes(host.order[i]);
   });
 }
 
 /**
  * How this screen sees the room: `gone` lists players it has given up on (never itself), `me`
- * is its own player id, and `ownSkips` is true while it has just (re)joined, when it could not
- * have taken a turn that came round while it was away. A plain array is read as `gone`.
- * @typedef {{gone?: string[], me?: string, ownSkips?: boolean} | string[]} RoomView
+ * is its own player id, and `rejoined` is true for a short while after it (re)joined, when it
+ * may have missed turns. A plain array is read as `gone`.
+ * @typedef {{gone?: string[], me?: string, rejoined?: boolean, ownSkips?: boolean} | string[]} RoomView
  */
-const viewOf = view => (Array.isArray(view) ? { gone: view } : { gone: [], ...view });
+const viewOf = view => {
+  const v = Array.isArray(view) ? { gone: view } : { gone: [], ...view };
+  return { ...v, rejoined: !!(v.rejoined ?? v.ownSkips) };
+};
+
+/**
+ * Who may speak for the history, from one screen's point of view. Every player publishes only
+ * its own snapshot (the relay enforces that), so authority comes from who wrote a copy:
+ *   - the creator (order[0]) always;
+ *   - the committer: a player all of whose predecessors in the order have gone, as seen here;
+ *   - the stand-in for this screen: while this screen is catching up (`rejoined`), the player
+ *     who would have been the committer with this screen away, along with those gone, any
+ *     player whose own snapshot says it is catching up too, and any player whose history stops
+ *     short of the entry. That is how a returning host keeps
+ *     the turns its stand-in recorded without it, even when other players lost theirs as well.
+ */
+function speaksFor(host, get, i, view, field, key) {
+  if (host.order.slice(0, i).every(p => view.gone.includes(p))) return true;
+  if (!view.rejoined || !view.me) return false;
+  const mine = host.order.indexOf(view.me);
+  if (mine < 0 || mine >= i) return false;
+  // Away, for this entry: gone, this screen, anyone catching up, and anyone whose history stops
+  // short of it (they lost it on a reload, or were away, so they can't have stood in for it). A
+  // player whose history runs right up to this entry is here and current, so nobody after it in
+  // the order can speak over it. If the committer later publishes a different entry, it is
+  // earlier in the order and wins (diverged).
+  // A player who is here records within a turn or so of the newest entry, so only one with no
+  // history at all, or more than a whole round of turns behind, counts as having lost it.
+  const behind = p => {
+    const keys = Object.keys(get(p)?.[field] ?? {}).map(Number);
+    return !keys.length || Math.max(...keys) < Number(key) - host.order.length;
+  };
+  const away = [...view.gone, view.me, ...host.order.filter((p, j) => j < i && (get(p)?.catchUp || behind(p)))];
+  return committerFor(host, away) === host.order[i];
+}
 
 /**
  * A committed log entry for turn k (owned by `owner`), or a shop list for a round. Copies are
- * read in player order and the first believable one wins. A copy is believed when:
- *   - its author is the creator, or the committer as this screen sees it (everyone earlier in
- *     the order has gone);
- *   - it matches what the players asked for (a shot equal to the owner's own request, a shop
- *     list equal to each player's own picks), where a player who has gone can't be asked: a
- *     turn or shop list of theirs that someone carries is kept, so a turn committed before
- *     they left stays replayable after;
- *   - it skips a player's turn and that player carries the same skip in its own history: the
- *     owner has accepted it;
- *   - it skips this screen's own turn while this screen has just (re)joined (`ownSkips`), so
- *     it missed that turn anyway. Accepting it is what lets a returning host keep the turns
- *     played without it.
- * So the creator's history never changes, and nobody else can commit a shot, a purchase or
- * (while its owner is here) a skip for someone else.
+ * read in player order and the first believable one wins. A copy is believed when its author
+ * speaks for the history (speaksFor), when it matches what the players asked for, or, for a log
+ * entry, when the turn's owner carries the identical entry in its own history: an owner's word
+ * on its own turn, which no one else can publish. So nobody can commit a shot, a skip or a
+ * purchase for someone else, and an entry that was believed and copied stays believable after
+ * requests are gone (a reload, or a player leaving).
  */
 function historyEntry(host, get, field, key, owner, view = {}) {
-  const { gone, me, ownSkips } = viewOf(view);
+  const v = viewOf(view);
   for (const [i, id] of host.order.entries()) {
     const entry = get(id)?.[field]?.[key];
     if (!entry) continue;
-    const committer = host.order.slice(0, i).every(p => gone.includes(p));
-    if (committer || matchesRequests(host, get, field, key, entry, owner, gone)) return entry;
-    if (field === 'log' && entry === 'skip' && owner) {
-      if (get(owner)?.log?.[key] === 'skip') return entry;
-      if (ownSkips && owner === me && !get(me)?.turns?.[key]) return entry;
-    }
+    if (speaksFor(host, get, i, v, field, key) || matchesRequests(host, get, field, key, entry, owner, v.gone)) return entry;
+    if (field === 'log' && owner && JSON.stringify(get(owner)?.log?.[key]) === JSON.stringify(entry)) return entry;
   }
   return undefined;
 }
