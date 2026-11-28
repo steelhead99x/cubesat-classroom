@@ -151,7 +151,7 @@ pub const CLASSROOM: Kit = Kit {
 
 const OUTDOOR_COUPON_PARTS: [Part; 7] = [
     p("Tripod thread coupon", "coupon-tripod-thread", true, WHITE),
-    p("Latch coupon box", "coupon-latch-box", true, WHITE),
+    p("Latch coupon box", "coupon-latch-box", false, WHITE),
     p("Latch coupon lid", "coupon-latch-lid", true, WHITE),
     PIN_PARTS[0],
     PIN_PARTS[1],

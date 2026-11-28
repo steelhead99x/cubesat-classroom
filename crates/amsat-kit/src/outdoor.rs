@@ -679,20 +679,37 @@ pub fn latches_on_edges(o: &Outdoor) -> bool {
 /// the lugs bend the fingers instead of pushing the lid aside.
 pub fn latch_coupon_case(o: &Outdoor) -> Outdoor {
     Outdoor {
-        cavity: 44.0,
-        cavity_chamfer: 4.0,
+        // As small as the latches allow: each finger and lug needs a straight edge.
+        cavity: 40.0,
+        cavity_chamfer: 3.0,
         cavity_round: 2.0,
         latches: 2,
-        // Tall enough for the skirt, with the rim's slope above the bottom. No floor: it's an
-        // open frame, to save plastic.
-        top: o.skirt_h + 7.0,
+        // Only as tall as the skirt, with the thinnest wall the guide allows and a short
+        // flange over its 45 degree slope. No floor: it's an open ring, to save plastic.
+        wall: 2.4,
+        flange_h: 2.0,
+        top: o.skirt_h + 1.0,
         floor: -1.0,
         ports: Vec::new(),
         ..o.clone()
     }
 }
 
-/// The coupon's box, as it prints: rim up. It has no floor.
+/// Where the coupon keeps its full lid and rim: a strip along each latched side, as long as
+/// the finger and its lug with 3 mm to spare. Elsewhere the rim is just the wall, and the lid
+/// just covers it.
+fn latch_strips(c: &Outdoor, from: f64) -> CrossSection {
+    let (root, tip) = (-c.latch_to_lug / 2.0, c.latch_to_lug / 2.0 + c.latch_tab);
+    let mut strips = CrossSection::empty();
+    for a in c.latch_angles() {
+        strips =
+            strips.union(&rect(from, root - 3.0, from + 20.0, tip + c.latch_slit + 3.0).rotate(a));
+    }
+    strips
+}
+
+/// The coupon's box, as it prints: rim up. It has no floor, and its flange is only where the
+/// lugs stand.
 pub fn latch_coupon_box(c: &Outdoor) -> Manifold {
     let cuts = union_all(&[
         c.cavity_outline()
@@ -700,13 +717,42 @@ pub fn latch_coupon_box(c: &Outdoor) -> Manifold {
             .translate(0.0, 0.0, c.floor),
         lead_in(c),
     ]);
-    outer_walls(c).difference(&cuts).union(&lugs(c))
+    let keep = c
+        .crisp(c.wall)
+        .union(&latch_strips(c, c.cavity / 2.0))
+        .extrude(c.top + 1.0)
+        .translate(0.0, 0.0, -0.5);
+    outer_walls(c)
+        .intersection(&keep)
+        .difference(&cuts)
+        .union(&lugs(c))
+}
+
+/// The coupon's lid in its own frame: the real lid's edge, latches and skirt, with its middle
+/// open inside the skirt, to save plastic.
+pub fn latch_coupon_lid(d: &Design, c: &Outdoor, deflect: f64) -> Result<Manifold, String> {
+    // The open middle, less a patch on one plain side for the logo.
+    let inner = c.cavity / 2.0 - c.gland - c.skirt_wall;
+    let middle = offset(&c.cavity_outline(), -(c.gland + c.skirt_wall), FACETS)
+        .difference(&rect(-7.0, inner - 9.0, 7.0, inner + 1.0))
+        .extrude(c.lid_t + 2.0)
+        .translate(0.0, 0.0, -1.0);
+    // Away from the latches the lid only needs to cover the wall.
+    let keep = c
+        .crisp(c.wall - 0.5)
+        .union(&latch_strips(c, c.cavity / 2.0))
+        .extrude(c.lid_t + c.skirt_h + 4.0)
+        .translate(0.0, 0.0, -c.skirt_h - 2.0);
+    Ok(lid(d, c, deflect)?.difference(&middle).intersection(&keep))
 }
 
 /// The latch coupon: its box and its lid (top face down, as it prints). `o` is the real case.
 pub fn latch_coupon(d: &Design, o: &Outdoor) -> Result<(Manifold, Manifold), String> {
     let c = latch_coupon_case(o);
-    Ok((latch_coupon_box(&c), lid_to_print(d, &c)?))
+    Ok((
+        latch_coupon_box(&c),
+        latch_coupon_lid(d, &c, 0.0)?.rotate(180.0, 0.0, 0.0),
+    ))
 }
 
 /// A tripod-thread coupon: two sockets, the box's clearance and 0.15 mm looser, in a block as

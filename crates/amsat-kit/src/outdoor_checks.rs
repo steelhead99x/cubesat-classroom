@@ -145,7 +145,7 @@ pub fn verify(d: &Design, o: &Outdoor, payload: &Payload) -> Check {
         format!("the {name} boards stand too tall for the lid"),
     )?;
     let lid = outdoor::lid_in_place(d, o, 0.0)?;
-    lid_latches(d, o, &body)?;
+    lid_latches(o, &body, &|f| outdoor::lid_in_place(d, o, f))?;
     require(
         overlap(&lid, &inside) < 1e-3,
         format!("the lid's skirt hits the {name} boards or plate"),
@@ -315,12 +315,18 @@ pub fn verify_xiao(d: &Design, o: &Outdoor) -> Check {
 /// The lid on a box: it sits on the rim and under the lugs' catches, can't lift off, goes on
 /// with its latches pushed in, and can't slide sideways off a catch, because its skirt holds
 /// it square in the opening.
-pub fn lid_latches(d: &Design, o: &Outdoor, body: &Manifold) -> Check {
+/// `lid` builds the lid in place on the box, with its fingers pushed in by the given amount.
+pub fn lid_latches(
+    o: &Outdoor,
+    body: &Manifold,
+    lid: &dyn Fn(f64) -> Result<Manifold, String>,
+) -> Check {
     require(
         outdoor::latches_on_edges(o),
         "a latch finger, its slit or its lug runs onto a corner chamfer",
     )?;
-    let lid = outdoor::lid_in_place(d, o, 0.0)?;
+    let make = lid;
+    let lid = make(0.0)?;
     require(overlap(&lid, body) < 1e-3, "the lid collides with the box")?;
     require(
         overlap(&lid.translate(0.0, 0.0, 0.3), body) > 1e-3,
@@ -328,7 +334,7 @@ pub fn lid_latches(d: &Design, o: &Outdoor, body: &Manifold) -> Check {
     )?;
     // A finger can only go in as far as the slit behind it allows.
     let push = (o.lug_reach + 0.15).min(o.latch_slit - 0.2);
-    let pushed = outdoor::lid_in_place(d, o, push)?;
+    let pushed = make(push)?;
     for dz in [0.5, 1.0, 2.0, 3.0] {
         require(
             overlap(&pushed.translate(0.0, 0.0, dz), body) < 1e-3,
@@ -352,7 +358,9 @@ pub fn lid_latches(d: &Design, o: &Outdoor, body: &Manifold) -> Check {
 pub fn verify_latch_coupon(d: &Design, o: &Outdoor) -> Check {
     let c = outdoor::latch_coupon_case(o);
     let body = outdoor::latch_coupon_box(&c);
-    lid_latches(d, &c, &body)
+    lid_latches(&c, &body, &|f| {
+        Ok(outdoor::latch_coupon_lid(d, &c, f)?.translate(0.0, 0.0, c.top))
+    })
 }
 
 /// Latch coupons that must be refused, each by a different check. `o` is the real case.
