@@ -68,7 +68,8 @@ From the [hardware design guide](../DESIGN-GUIDE.md), adapted to a flat patch:
 - **Nothing too thin:** every colour region is rounded to the 0.8 mm the printer can make. The checks fail if that rounding would remove more than a sharp tip (more than 30% of any piece, or 2% of a colour), or if a stroke is drawn thinner than 0.8 mm.
 - **The name stays readable:** the cuts that form the letters are at least 0.5 mm wide, the letters are at least 3 mm tall, and the name stays on the ribbon.
 - **Clean solids:** every body is a closed, watertight mesh with consistent winding and no zero-area triangles (as written, after rounding), and no two bodies share space. The three bodies are parts of one object with one build item, so a slicer can't arrange them apart.
-- **Reproducible:** the 3MF files are the same byte for byte on every run, with the library versions in `gen/requirements.txt`. Other versions write equally valid but different triangles, so `check` reports them as stale.
+- **Reproducible:** with the library versions in `gen/requirements.txt`, every run writes the same 3MF contents. `check` compares what is inside each 3MF (its files, byte for byte), not the ZIP around them, because the compressed bytes depend on the zlib build. Other library versions write equally valid but different triangles, so `check` reports them as stale.
+- **The test coupon** gets the same mesh checks as the patches.
 
 ## Change a patch
 
