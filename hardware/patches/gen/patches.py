@@ -18,6 +18,7 @@ import math
 import re
 import sys
 import zipfile
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -509,8 +510,10 @@ def mesh_fails(name, parts):
     """Every body closed, consistently wound, with volume, and no zero-area triangles as written."""
     fails = []
     for k, m in parts.items():
-        # Check the mesh as written: rounding can merge nearby vertices.
+        # Check the mesh as written, with vertices that land on the same point merged (as a slicer
+        # does): rounding to the file's 4 decimals can make two vertices one.
         w = trimesh.Trimesh(written(m.vertices), m.faces, process=False)
+        w.merge_vertices(digits_vertex=4)
         if not (m.is_watertight and m.is_winding_consistent and w.is_watertight and w.is_winding_consistent) or w.volume <= 0:
             fails.append(f'{name}: the {k} body is not a closed solid')
         if zero_area_faces(m):
@@ -530,8 +533,8 @@ def same_file(path, data):
             return [(i.filename, z.read(i)) for i in z.infolist()]
     try:
         return entries(old) == entries(data)
-    except zipfile.BadZipFile:
-        return False
+    except (zipfile.BadZipFile, zlib.error, EOFError):
+        return False            # a damaged file is stale, not a crash
 
 
 # ---------------------------------------------------------------- build / check
