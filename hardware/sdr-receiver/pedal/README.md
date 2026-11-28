@@ -118,6 +118,14 @@ The project’s schematic and PCB checks agree on the pad connections for both b
 
 An independent reviewer must check both boards before ordering. See [CONTRIBUTING.md](../../../CONTRIBUTING.md).
 
+## Flux import review
+
+The Flux imports of `bd4be2a` match the KiCad board envelopes and counts of copper layers, footprints, traces and vias. KiCad is the fabrication source. Check these differences before using a Flux export:
+
+- Flux flags a main-board ground airwire between L5 pad 2 and U7, plus a sliver at a bottom-layer 3V3_PLL via. The archived KiCad check for the same routed file reports zero unconnected items and zero violations. Compare copper and drill output at both locations.
+- The main KiCad board contains 17 paste-only apertures at U10, U12 and U13. The Flux pad count is lower by 17. Compare F.Paste output or get stencil confirmation from the assembler.
+- Flux reports a 1.30 mm stackup. The KiCad files specify 1.6 mm nominal thickness. Confirm the actual build with the fabricator, including the top-layer dielectric spacing for the RF traces.
+
 ## Open items
 
 - Review the copper and the generated fabrication files for both boards, including synthesizer supply paths, RF return paths and the enclosure fit.
