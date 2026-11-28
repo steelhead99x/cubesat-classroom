@@ -17,6 +17,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use anyhow::{Result, bail, ensure};
+use jiff::tz::TimeZone;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -174,6 +175,9 @@ pub(crate) struct Stats {
     pub source: String,
     pub provenance: Provenance,
     pub utc: String,
+    /// When the bridge read the row, separately from the receive capture time.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub received_utc: Option<String>,
     pub contact: Contact,
     /// Where the receiver is tuned.
     pub frequency_hz: u64,
@@ -384,6 +388,7 @@ impl Scenario {
             source: "Simulated satellite".into(),
             provenance: Provenance::DeskSimulation,
             utc: utc_string(captured_unix_ms),
+            received_utc: None,
             contact,
             frequency_hz: tuned_hz,
             level_dbfs: Some(round1(dbfs)),
@@ -670,17 +675,39 @@ pub(crate) struct BridgeArgs {
     /// `received-rf` for an antenna, `hardware-bench` for a test source or load.
     #[arg(long, value_enum, default_value_t = RealLabel::ReceivedRf)]
     label: RealLabel,
+    /// IANA time zone of the rtl_power log. Defaults to this computer's time zone.
+    #[arg(long, value_parser = parse_rtl_power_tz)]
+    rtl_power_tz: Option<TimeZone>,
+}
+
+fn parse_rtl_power_tz(name: &str) -> Result<TimeZone, jiff::Error> {
+    TimeZone::get(name)
 }
 
 /// Turn one rtl_power row into a snapshot, or `None` if the row holds no usable bins
-/// or none near the frequency.
-pub(crate) fn from_rtl_power(
+/// none near the frequency, or a capture time that is invalid or cannot be resolved.
+fn from_rtl_power(
     row: &str,
     args: &BridgeArgs,
     publisher: &Publisher,
     sequence: u64,
+    time_zone: &TimeZone,
+    received_unix_ms: Option<u64>,
 ) -> Option<Stats> {
-    let captured_unix_ms = sweep_unix_ms(row)?;
+    let Some(captured_unix_ms) = sweep_unix_ms(row, time_zone, received_unix_ms) else {
+        // A data row whose time couldn't be placed: say so, rather than drop it silently.
+        if row
+            .split(',')
+            .nth(1)
+            .is_some_and(|t| t.trim().contains(':'))
+        {
+            eprintln!(
+                "skipped an rtl_power row: its local time is invalid, never happened, or falls in the repeated hour when the clocks went back and can't be placed: {}",
+                row.split(',').take(2).collect::<Vec<_>>().join(",")
+            );
+        }
+        return None;
+    };
     let tuned_hz = args.frequency_hz.unwrap_or(args.band.default_hz());
     let (bins, _) = bench_tools::sweep::parse(row);
     let near = |f: f64| (f - tuned_hz as f64).abs() <= args.passband_hz;
@@ -700,6 +727,7 @@ pub(crate) fn from_rtl_power(
         source: args.satellite.clone(),
         provenance: args.label.provenance(),
         utc: utc_string(captured_unix_ms),
+        received_utc: received_unix_ms.map(utc_string),
         contact: if snr_db.is_some_and(|snr| snr >= HEARD_SNR_DB) {
             Contact::Acquired
         } else {
@@ -727,26 +755,42 @@ pub(crate) fn from_rtl_power(
     })
 }
 
-/// The time at the start of an rtl_power row (`2026-11-27, 18:30:05, ...`) as Unix ms.
-/// rtl_power writes this computer's local time, so it is converted with the local time zone.
-fn sweep_unix_ms(row: &str) -> Option<u64> {
+/// Convert the local time at the start of an rtl_power row to Unix milliseconds.
+///
+/// When the clocks go back, an hour of local times happens twice. A live bridge reads each
+/// row seconds after rtl_power writes it, so if exactly one of the two candidates is within
+/// the hour before the read time (`received_unix_ms`), that is the one. A replayed archive is
+/// read long after both, so neither is close and the row is skipped rather than guessed.
+/// Rows without a read time, and times that never happened (clocks going forward), are
+/// skipped too.
+fn sweep_unix_ms(row: &str, time_zone: &TimeZone, received_unix_ms: Option<u64>) -> Option<u64> {
+    use jiff::tz::AmbiguousOffset;
+    /// The repeated hour is an hour long, so a window shorter than that can't hold both.
+    const LIVE_WINDOW_MS: u64 = 3_600_000;
     let mut fields = row.split(',').map(str::trim);
     let (date, time) = (fields.next()?, fields.next()?);
-    let mut d = date.split('-').map(|v| v.parse::<i32>().ok());
-    let mut t = time.split(':').map(|v| v.parse::<i32>().ok());
-    let (y, mo, da) = (d.next()??, d.next()??, d.next()??);
-    let (h, mi, se) = (t.next()??, t.next()??, t.next()??);
-    if d.next().is_some() || t.next().is_some() {
-        return None;
+    let civil: jiff::civil::DateTime = format!("{date}T{time}").parse().ok()?;
+    let ms = |offset: jiff::tz::Offset| {
+        let stamp = offset.to_timestamp(civil).ok()?;
+        u64::try_from(stamp.as_millisecond()).ok()
+    };
+    match time_zone.to_ambiguous_timestamp(civil).offset() {
+        AmbiguousOffset::Unambiguous { offset } => ms(offset),
+        AmbiguousOffset::Gap { .. } => None,
+        AmbiguousOffset::Fold { before, after } => {
+            let read = received_unix_ms?;
+            let live = |t: &u64| *t <= read && read - *t < LIVE_WINDOW_MS;
+            let mut near = [ms(before)?, ms(after)?].into_iter().filter(live);
+            match (near.next(), near.next()) {
+                (Some(t), None) => Some(t),
+                _ => None,
+            }
+        }
     }
-    bench_tools::util::local_to_unix_s(y, mo, da, h, mi, se).map(|s| s * 1000)
 }
 
 pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
-    ensure!(
-        cfg!(unix),
-        "receiver-bridge needs Unix local-time conversion for rtl_power rows"
-    );
+    let time_zone = args.rtl_power_tz.clone().unwrap_or_else(TimeZone::system);
     let tuned_hz = args.frequency_hz.unwrap_or(args.band.default_hz());
     let (low, high) = args.band.range_hz();
     ensure!(
@@ -768,20 +812,22 @@ pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
     );
     let publisher = Publisher::new(&args.station)?;
     // Read standard input on its own thread so a slow relay never blocks rtl_power.
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(16);
+    let (tx, mut rx) = tokio::sync::mpsc::channel(16);
     std::thread::spawn(move || {
         use std::io::BufRead;
         for line in std::io::stdin().lock().lines() {
             let Ok(line) = line else { break };
-            if tx.blocking_send(line).is_err() {
+            if tx.blocking_send((line, unix_ms().ok())).is_err() {
                 break;
             }
         }
     });
     let mut sequence = 0;
     let Some(relay) = args.relay.clone() else {
-        while let Some(line) = rx.recv().await {
-            if let Some(stats) = from_rtl_power(&line, &args, &publisher, sequence) {
+        while let Some((line, received)) = rx.recv().await {
+            if let Some(stats) =
+                from_rtl_power(&line, &args, &publisher, sequence, &time_zone, received)
+            {
                 println!("{}", serde_json::to_string(&stats)?);
                 sequence += 1;
             }
@@ -809,8 +855,8 @@ pub(crate) async fn bridge(args: BridgeArgs) -> Result<()> {
     loop {
         tokio::select! {
             line = rx.recv() => {
-                let Some(line) = line else { bail!("rtl_power input ended") };
-                let Some(stats) = from_rtl_power(&line, &args, &publisher, sequence) else { continue };
+                let Some((line, received)) = line else { bail!("rtl_power input ended") };
+                let Some(stats) = from_rtl_power(&line, &args, &publisher, sequence, &time_zone, received) else { continue };
                 sequence += 1;
                 let mut group = track.append_group()?;
                 group.write_frame(Timestamp::now(), serde_json::to_vec(&stats)?)?;
@@ -1122,7 +1168,8 @@ mod tests {
         let args = bridge_args(&[]);
         // 145.790–145.810 MHz in 2.5 kHz bins: noise near -40 dB with a carrier at 145.800.
         let row = "2026-11-27, 18:30:05, 145790000, 145810000, 2500.00, 1000, -40.1, -39.8, -40.3, -40.0, -22.5, -39.9, -40.2, -40.4";
-        let st = from_rtl_power(row, &args, &publisher(), 7).expect("a snapshot");
+        let st =
+            from_rtl_power(row, &args, &publisher(), 7, &TimeZone::UTC, None).expect("a snapshot");
         assert_eq!(st.provenance, Provenance::ReceivedRf);
         assert_eq!(st.receiver, Source::RtlSdrV4);
         assert_eq!(st.contact, Contact::Acquired);
@@ -1137,12 +1184,14 @@ mod tests {
     #[test]
     fn bridge_skips_comments_and_rows_away_from_the_frequency() {
         let args = bridge_args(&["--label", "hardware-bench"]);
-        assert!(from_rtl_power("# a comment", &args, &publisher(), 0).is_none());
+        assert!(
+            from_rtl_power("# a comment", &args, &publisher(), 0, &TimeZone::UTC, None).is_none()
+        );
         let far = "2026-11-27, 18:30:05, 146000000, 146010000, 2500.00, 1000, -40, -40, -40, -40";
-        assert!(from_rtl_power(far, &args, &publisher(), 0).is_none());
+        assert!(from_rtl_power(far, &args, &publisher(), 0, &TimeZone::UTC, None).is_none());
         let near = "2026-11-27, 18:30:05, 145799000, 145801000, 1000.00, 1000, -30, -31";
         assert_eq!(
-            from_rtl_power(near, &args, &publisher(), 0)
+            from_rtl_power(near, &args, &publisher(), 0, &TimeZone::UTC, None)
                 .unwrap()
                 .provenance,
             Provenance::HardwareBench
@@ -1185,7 +1234,7 @@ mod tests {
         let args = bridge_args(&[]);
         // rtl_power bins are averaged FFT power and can be above 0 dB without clipping.
         let row = "2026-11-27, 18:30:05, 145799000, 145801000, 1000.00, 1000, -20.0, 4.5";
-        let st = from_rtl_power(row, &args, &publisher(), 0).unwrap();
+        let st = from_rtl_power(row, &args, &publisher(), 0, &TimeZone::UTC, None).unwrap();
         assert_eq!(st.level_db_rel, Some(4.5), "relative levels may exceed 0");
         assert!(st.level_dbfs.is_none() && st.noise_dbfs.is_none());
         assert!(
@@ -1202,14 +1251,52 @@ mod tests {
     }
 
     #[test]
-    fn bridge_keeps_the_sweep_time() {
-        let args = bridge_args(&[]);
-        let row = "2026-11-27, 18:30:05, 145799000, 145801000, 1000.00, 1000, -40, -20";
-        let st = from_rtl_power(row, &args, &publisher(), 0).unwrap();
-        let sweep = bench_tools::util::local_to_unix_s(2026, 11, 27, 18, 30, 5).unwrap() * 1000;
-        assert_eq!(st.utc, utc_string(sweep));
-        let odd = "2026-02-31, 18:30:05, 145799000, 145801000, 1000.00, 1000, -40, -20";
-        assert!(from_rtl_power(odd, &args, &publisher(), 0).is_none());
+    fn bridge_keeps_capture_and_read_times_separate() {
+        let args = bridge_args(&["--rtl-power-tz", "America/Denver"]);
+        let zone = args.rtl_power_tz.as_ref().unwrap();
+        let row = "2024-01-15, 09:30:05, 145799000, 145801000, 1000.00, 1000, -40, -20";
+        let st =
+            from_rtl_power(row, &args, &publisher(), 0, zone, Some(1_795_804_205_120)).unwrap();
+        assert_eq!(st.utc, "2024-01-15T16:30:05.000Z");
+        assert_eq!(st.received_utc.as_deref(), Some("2026-11-27T18:30:05.120Z"));
+        let old = from_rtl_power(row, &args, &publisher(), 0, &TimeZone::UTC, None).unwrap();
+        let json = serde_json::to_value(&old).unwrap();
+        assert!(json.get("received_utc").is_none());
+        assert_eq!(parse(&serde_json::to_vec(&old).unwrap()).unwrap(), old);
+    }
+
+    #[test]
+    fn bridge_skips_bad_and_ambiguous_capture_times() {
+        let zone = TimeZone::get("America/Denver").unwrap();
+        for row in [
+            "2026-02-31, 18:30:05, ...",
+            "2026-03-08, 02:30:05, ...",
+            "2026-11-01, 01:30:05, ...",
+        ] {
+            assert!(sweep_unix_ms(row, &zone, None).is_none(), "{row}");
+        }
+    }
+
+    #[test]
+    fn bridge_resolves_the_repeated_hour_from_the_read_time() {
+        let zone = TimeZone::get("America/Denver").unwrap();
+        let row = "2026-11-01, 01:30:05, ...";
+        // 01:30:05 MDT is 07:30:05 UTC; an hour later the clocks repeat it as 08:30:05 UTC.
+        let first = 1_793_518_205_000;
+        let second = first + 3_600_000;
+        // Read live, just after the first 01:30: it can only be the first one.
+        assert_eq!(sweep_unix_ms(row, &zone, Some(first + 900)), Some(first));
+        // Read live, just after the second 01:30: the first is over an hour old.
+        assert_eq!(sweep_unix_ms(row, &zone, Some(second + 900)), Some(second));
+        // A read time before both means the clocks disagree: skip the row.
+        assert_eq!(sweep_unix_ms(row, &zone, Some(first - 1)), None);
+        // A replay read days later can't tell them apart: skip, don't shift it by an hour.
+        assert_eq!(sweep_unix_ms(row, &zone, Some(second + 86_400_000)), None);
+        // Clocks going forward: 02:30 never happened, whatever the read time.
+        assert_eq!(
+            sweep_unix_ms("2026-03-08, 02:30:05, ...", &zone, Some(second)),
+            None
+        );
     }
 
     #[test]

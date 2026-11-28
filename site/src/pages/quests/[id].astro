@@ -7,6 +7,7 @@ import LevelPicker from '../../components/LevelPicker.astro';
 import StationDemo from '../../components/StationDemo.astro';
 import FullExperience from '../../components/FullExperience.astro';
 import QuestGuide from '../../components/QuestGuide.astro';
+import Patch from '../../components/Patch.astro';
 import { repo } from '../../hubs.mjs';
 import { siteOrigin } from '../../origin';
 import { levels, inline } from '../../levels';
@@ -61,6 +62,13 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
             </div>
           );
         })}
+        <div class="quest-patch flex items-center gap-4 border-2 border-line bg-ground p-4">
+          <span class="shrink-0"><Patch id={quest.id} name={quest.data.title} label={quest.data.patch} size={96} /></span>
+          <div>
+            <p class="text-sm font-bold text-ink">Mission patch: {quest.data.patch}</p>
+            <p class="mt-1 text-sm text-muted"><span data-patch-note>Finish the quest and mark it done to earn it.</span> Your patches are saved only in this browser. <a class="font-bold text-ink underline underline-offset-4" href={`${base}/patches/#${quest.id}`}>Print this patch</a></p>
+          </div>
+        </div>
         <div class="flex flex-wrap items-center gap-3">
           <button type="button" data-complete={quest.id} class="button quiet disabled:cursor-default disabled:border-transparent disabled:bg-mint">Mark this quest done</button>
           {next
@@ -88,7 +96,7 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
 </Base>
 
 <script>
-  import { earn, earned } from '../../patches';
+  import { earn, earned, paint } from '../../patches';
 
   const button = document.querySelector<HTMLButtonElement>('[data-complete]');
   function sync() {
@@ -96,8 +104,12 @@ const feedback = `${repo}/issues/new?template=feedback.yml&labels=feedback&title
     const done = earned().has(button.dataset.complete!);
     button.disabled = done;
     button.textContent = done ? 'Lesson complete' : 'Mark this quest done';
+    const note = document.querySelector('[data-patch-note]');
+    if (note) note.textContent = done ? 'Earned. It is on your patch shelf.' : 'Finish the quest and mark it done to earn it.';
   }
   button?.addEventListener('click', () => earn(button.dataset.complete!));
   document.addEventListener('patchearned', sync);
+  document.addEventListener('patchearned', event => paint((event as CustomEvent<string>).detail));
   sync();
+  paint();
 </script>

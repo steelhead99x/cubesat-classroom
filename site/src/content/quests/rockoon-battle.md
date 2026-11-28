@@ -18,9 +18,9 @@ beginner:
   discuss: The balloon carries the rocket before it launches. How does the wind move your rocket twice?
 intermediate:
   steps:
-    - Pick one crew and a round with wind. For that crew’s first launch, aim straight at the ring and record the wind, angle, power, rocket and score (3, 1 or 0).
+    - Pick one crew and a round with wind. For that crew’s first launch, aim straight at the ring and record the wind, angle, power, rocket and score.
     - Use the same power and rocket for that crew’s two remaining launches. Change only the angle to aim a little upwind.
-    - Compare the three scores. If the launch pad shifted during the round, note that before comparing.
+    - Compare the three scores. Record any change in the launch pad or the target’s starting position before comparing.
   check: Your table has three launches by the same crew in one round, and one sentence about what changed when you aimed upwind.
   discuss: Real rockoon teams wait for low winds before they launch. Using your table, explain why.
 professional:

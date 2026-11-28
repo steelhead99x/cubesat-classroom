@@ -10,11 +10,10 @@ import * as Room from './room.mjs';
 import { Renderer, rocketSvg, type Scene } from './render';
 import type { RoomLink, LinkStatus, Snapshot } from './net';
 
-type Snap = { cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]> };
+type Snap = { p?: number; catchUp?: boolean; cs: string; joined: number; creator?: boolean; turns: Record<number, { angle: number; power: number; weapon: string }>; shops: Record<number, string[]>; host?: Host; rising?: number; log?: Record<number, { angle: number; power: number; weapon: string } | 'skip'>; shopLog?: Record<number, string[][]> };
 type Host = { seed: number; rounds: number; order: string[]; names: Record<string, string> };
 type Match = ReturnType<typeof G.createMatch>;
 type Field = NonNullable<Match['field']>;
-type Events = { type: string; points?: number }[];
 
 /** At least three rounds, and one per crew, so every crew launches once from every slot. */
 const roundsFor = (crews: number) => Math.max(3, crews);
@@ -35,7 +34,7 @@ function start(root: HTMLElement) {
   const net = $<HTMLParagraphElement>('[data-net]');
   const toast = $<HTMLDivElement>('[data-toast]');
   const hud = {
-    air: $('[data-air]'), angle: $('[data-angle]'), power: $('[data-power]'), rocket: $('[data-rocket]'), rocketIcon: $('[data-rocket-icon]'),
+    launch: $<HTMLButtonElement>('[data-fire]'), air: $('[data-air]'), angle: $('[data-angle]'), power: $('[data-power]'), rocket: $('[data-rocket]'), rocketIcon: $('[data-rocket-icon]'),
     round: $('[data-round]'), board: $('[data-board]'), controls: $('[data-controls]'), wait: $('[data-wait]'), now: $('[data-now]'),
   };
   const pauseBtn = $<HTMLButtonElement>('[data-pause]');
@@ -60,7 +59,13 @@ function start(root: HTMLElement) {
   let me = '';
   let paused = false;
   let howto = !seenHowto();
-  let anim: null | { phase: 'lift' | 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; blast: { x: number; y: number; r: number; dirt: boolean } | null; events: Events; shooter: number } = null;
+  /** This screen's balloon on the way up, then waiting at the release point (`held` seconds). */
+  let ascent: { turn: number; elapsed: number; held: number; nudged: boolean } | null = null;
+  /** Another crew's balloon seen rising (from their `rising` flag): which turn, and since when. */
+  let remoteRise: { key: string; since: number } | null = null;
+  const NUDGE_AFTER = 8; // seconds at the release point before the button pulses
+  const AUTO_RELEASE_AFTER = 15; // and before the rocket goes by itself
+  let anim: null | { phase: 'lift' | 'flight' | 'boom' | 'settle' | 'rest'; t: number; pos: number; path: number[][]; before: Field; after: Field; blast: ReturnType<typeof G.fire>['blast']; weapon: string; hit: ReturnType<typeof G.fire>['hit']; scored: boolean; shooter: number } = null;
   /** Each player's last shot this round, drawn faintly so they can correct for the wind. */
   let ghosts: { round: number; paths: Record<number, number[][]> } = { round: -1, paths: {} };
   let banner: null | { title: string; text: string } = null; // round or match results, until dismissed
@@ -72,6 +77,11 @@ function start(root: HTMLElement) {
   let joinCode = new URLSearchParams(location.hash.slice(1)).get('room') ?? '';
   let lastTurnKey = '';
   let liveSince = 0; // when this screen's room connection last went live
+  let adoptedAt = 0; // when this screen picked up the match settings
+  let catchUpUntil = 0; // until then this screen is catching up (see roomView)
+  let notLiveSince: number | null = null, firstLive = true, rejoiningRoom = false;
+  let rejoinedSession = false; // this connection began after a reload or time offline
+  const metSinceLive = new Set<string>(); // players heard from since this screen went live
   let shotNote = ''; // what the last shot did, shown with the next turn
 
   function seenHowto() { try { return localStorage.getItem(HOWTO_KEY) === '1'; } catch { return false; } }
@@ -170,7 +180,7 @@ function start(root: HTMLElement) {
   function publish() {
     if (mode === 'online' && link) link.publish(snapOf(me));
   }
-  const waitingOn = (): ReturnType<typeof Room.nextAction> | null => (match && host ? Room.nextAction(match, host, snaps) : null);
+  const waitingOn = (): ReturnType<typeof Room.nextAction> | null => (match && host ? Room.nextAction(match, host, snaps, roomView()) : null);
   const myTurn = () => {
     const a = waitingOn();
     return !!a && a.kind === 'wait' && !a.sent && match!.phase === 'play' && mine.includes(a.ids[0]);
@@ -178,31 +188,79 @@ function start(root: HTMLElement) {
   const shooter = () => match!.field!.units[match!.turn];
 
   /** Runs every action that is ready. Shots animate one at a time. */
+  /** Whether this screen is catching up: just (re)joined, just picked up a running match, or just
+   * met a player with history it missed. Its snapshot says so, for the other screens. */
+  const catchingUp = () => mode === 'online' && Date.now() < catchUpUntil;
+
+  /** Keeps this screen's catchUp flag in step with catchingUp(), publishing only on a change. */
+  function syncCatchUpFlag() {
+    if (mode === 'online' && snaps.has(me) && !!snapOf(me).catchUp !== catchingUp()) {
+      if (catchingUp()) snapOf(me).catchUp = true; else delete snapOf(me).catchUp;
+      publish();
+    }
+  }
+
+  /** Records the next turn if this screen is the committer, and keeps a copy of the history. */
+  function record() {
+    if (!match || !host) return;
+    syncCatchUpFlag();
+    const gone = goneIds();
+    const committer = Room.committerFor(host, gone);
+    let changed = mine.includes(committer) && Room.commit(match, host, snaps, gone, committer);
+    if (mode === 'online' && host.order.includes(me) && Room.mirror(match, host, snaps, me)) changed = true;
+    if (changed) publish();
+  }
+
   function step() {
-    if (!match || !host || anim || paused) return render();
-    // A round's result stays up until it's dismissed, but the host keeps recording turns for
-    // everyone else while it's showing.
+    if (!match || !host) return render();
+    // Two copies of the history disagreed and the earlier player's won: start again from it.
+    if (mode === 'online' && Room.diverged(match, host, snaps, roomView())) {
+      anim = null; banner = null; ghosts = { round: -1, paths: {} };
+      clearAscent();
+      match = Room.replay(host, snaps, roomView()).match;
+      // A request made for a turn in the old timeline must not fire in the new one.
+      for (const id of mine) {
+        const turns = snapOf(id).turns;
+        for (const k of Object.keys(turns)) if (Number(k) >= match.log.length) delete turns[Number(k)];
+      }
+      publish();
+      say('Caught up with the room.');
+    }
+    syncCatchUpFlag(); // also while paused or animating, so the flag never sticks on
+    if (anim || paused) return render();
+    // A round's result stays up until it's dismissed, but the committer keeps recording turns
+    // for everyone else while it's showing.
     if (banner) {
-      if (amHost() && Room.commit(match, host, snaps, goneIds())) publish();
+      record();
       return render();
     }
     for (let guard = 0; guard < 50; guard++) {
-      // The host records each turn once; everyone, the host included, then plays that record.
-      if (amHost() && Room.commit(match, host, snaps, goneIds())) publish();
-      const action = Room.nextAction(match, host, snaps);
+      // The committer records each turn once; everyone, the committer included, then plays that record.
+      record();
+      const action = Room.nextAction(match, host, snaps, roomView());
       if (action.kind === 'fire') {
         const before = structuredClone(match.field!) as Field;
         before.units[match.turn].angle = action.shot.angle;
         const shooterIndex = match.turn;
+        // Skip the climb animation when this screen has already shown the balloon at the top:
+        // its own ascent, or another crew's balloon seen rising for the whole climb.
+        const turnKey = `${match.round}:${match.log.length}`;
+        const remoteTop = remoteRise?.key === turnKey && performance.now() - remoteRise.since >= LIFT_TIME * 1000;
+        const staged = (ascent?.turn === match.log.length && ascent.elapsed >= LIFT_TIME) || remoteTop;
+        clearAscent();
+        remoteRise = null;
         const result = Room.apply(match, action) as ReturnType<typeof G.fire>;
         if (ghosts.round !== match.round) ghosts = { round: match.round, paths: {} };
         ghosts.paths[shooterIndex] = result.path;
         // match.field is the same object until the next round starts, so keep a copy to draw.
-        anim = { phase: 'lift', t: 0, pos: 0, path: result.path, before, blast: result.blast, events: result.events, shooter: shooterIndex };
+        anim = { phase: staged ? 'flight' : 'lift', t: 0, pos: 0, path: result.path, before, after: match.field!, blast: result.blast, weapon: result.weapon, hit: result.hit, scored: false, shooter: shooterIndex };
         drag = null;
+        if (staged) beep('fire');
         return render();
       }
       if (action.kind === 'shop' || action.kind === 'skip') {
+        clearAscent();
+        remoteRise = null;
         Room.apply(match, action); shopPick = {};
         if (action.kind === 'skip' && match.phase !== 'play') { shotNote = 'Turn skipped.'; showRoundResult(); break; }
         continue;
@@ -212,10 +270,15 @@ function start(root: HTMLElement) {
     render();
   }
 
-  /** In local games this screen is the host. Online, the room creator is. */
-  const amHost = () => !!host && mine.includes(host.order[0]);
+  /** Players this screen gives up on after 30 seconds without a snapshot. Their turns are
+   * skipped, and if the committer is one of them the next player in the order takes over. */
+  /** How this screen sees the room, for room.mjs: who has gone, who it is, and whether it has
+   * just (re)joined, or just picked up a match already under way: then it accepts the turns its
+   * stand-in recorded without it. */
+  function roomView() {
+    return { gone: goneIds(), me, rejoined: catchingUp() };
+  }
 
-  /** Players the host gives up on after 30 seconds without a snapshot. Their turns are skipped. */
   function goneIds() {
     if (mode !== 'online' || !host) return [];
     const now = Date.now();
@@ -226,11 +289,30 @@ function start(root: HTMLElement) {
 
   const canAct = () => myTurn() && !anim && !paused && !banner && !howto;
 
+  /** Ends this screen's balloon climb, and takes its "rising" flag back down. */
+  function clearAscent() {
+    if (!ascent) return;
+    ascent = null;
+    for (const id of mine) if (snapOf(id).rising !== undefined) { delete snapOf(id).rising; publish(); }
+  }
+
   function fireNow() {
     if (!match || !canAct()) return;
-    const u = shooter(), id = host!.order[match.turn];
+    const id = host!.order[match.turn];
+    if (!ascent) {
+      ascent = { turn: match.log.length, elapsed: 0, held: 0, nudged: false };
+      // Let the other screens show this balloon rising too (display only).
+      snapOf(id).rising = match.log.length;
+      publish();
+      say('Balloon rising.', true);
+      renderHud();
+      return;
+    }
+    if (ascent.elapsed < LIFT_TIME) return;
+    const u = shooter();
     u.weapon = G.readyWeapon(match, match.turn);
     snapOf(id).turns[match.log.length] = { angle: u.angle, power: u.power, weapon: u.weapon };
+    delete snapOf(id).rising;
     publish();
     step();
   }
@@ -242,6 +324,24 @@ function start(root: HTMLElement) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     if (anim && !paused) advance(dt);
+    if (ascent && !paused && ascent.elapsed < LIFT_TIME) {
+      ascent.elapsed = Math.min(LIFT_TIME, ascent.elapsed + dt);
+      if (ascent.elapsed === LIFT_TIME) {
+        say('Balloon ready. Release rocket.', true);
+        renderHud();
+      }
+    } else if (ascent && canAct()) {
+      // Waiting at the release point: nudge, then release, so one crew cannot stall the match.
+      ascent.held += dt;
+      if (!ascent.nudged && ascent.held >= NUDGE_AFTER) {
+        ascent.nudged = true;
+        say(`Press Release rocket. It goes by itself in ${AUTO_RELEASE_AFTER - NUDGE_AFTER} seconds.`, true);
+        renderHud();
+      } else if (ascent.held >= AUTO_RELEASE_AFTER) {
+        say('Rocket released automatically.', true);
+        fireNow();
+      }
+    }
     view.draw(scene(), paused ? 0 : dt, sceneSeed());
   }
   requestAnimationFrame(frame);
@@ -255,12 +355,16 @@ function start(root: HTMLElement) {
       if (a.t >= LIFT_TIME) { a.phase = 'flight'; a.t = 0; beep('fire'); renderHud(); }
     } else if (a.phase === 'flight') {
       const prev = Math.floor(a.pos);
-      a.pos = Math.min(a.path.length - 1, a.pos + dt * 60 * (reduced ? 4 : FLIGHT_SPEED));
+      a.pos = Math.min(a.path.length - 1, a.pos + dt * G.FLIGHT_SAMPLES_PER_SECOND * (reduced ? 4 : FLIGHT_SPEED));
       for (let i = prev + 1; i <= Math.floor(a.pos); i += 2) view.trailPuff(a.path[i][0], a.path[i][1]);
+      if (!a.scored && a.hit.points && a.pos >= a.hit.at) {
+        a.scored = true;
+        hitFeedback(a);
+      }
       if (a.pos >= a.path.length - 1) {
         a.phase = 'boom'; a.t = 0;
-        if (a.blast) { view.boom(a.blast.x, a.blast.y, a.blast.r, a.blast.dirt); beep('boom'); }
-        hitFeedback(a);
+        if (a.blast) { view.boom(a.blast.x, a.blast.y, a.blast.r, true); beep('boom'); }
+        if (!a.scored) hitFeedback(a);
       }
     } else if (a.phase === 'boom' && a.t >= (a.blast ? BOOM_TIME : 0.2)) { a.phase = 'settle'; a.t = 0; }
     else if (a.phase === 'settle' && a.t >= SETTLE_TIME) { a.phase = 'rest'; a.t = 0; }
@@ -268,9 +372,10 @@ function start(root: HTMLElement) {
   }
 
   function hitFeedback(a: NonNullable<typeof anim>) {
-    const points = a.events.find(e => e.type === 'scan')?.points ?? 0;
-    const { x, y } = a.before.target;
-    view.float(x, y + 22, points ? `+${points}` : 'Miss');
+    const { hit } = a;
+    const frame = hit.points ? hit.at : a.pos;
+    const { x, y } = G.targetPosition(a.before, frame / G.FLIGHT_SAMPLES_PER_SECOND);
+    view.float(x, y + 22, hit.points ? `${hit.label} +${hit.points}` : 'Miss', hit.bullseye ? '#fff4af' : '#ffdd87');
   }
 
   /** What the canvas shows right now, including a shot in progress. */
@@ -278,29 +383,61 @@ function start(root: HTMLElement) {
     if (!match?.field) return null;
     const names = match.players.map(p => p.name), colors = match.players.map(p => p.color);
     if (anim) {
-      const { before, phase, t, shooter } = anim;
+      const { before, after, phase, t, shooter } = anim;
       // Up to the release point, then (once the rocket has landed or flown off) gently back
       // down to the pad, where the next rocket is loaded.
       const back = Math.min(1, t / SETTLE_TIME);
       const lift = phase === 'lift' ? Math.min(1, t / LIFT_TIME)
         : phase === 'settle' ? 1 - back * back * (3 - 2 * back)
         : phase === 'rest' ? 0 : 1;
-      const units = before.units.map((u, i) => i === shooter ? { ...u, ...G.balloonPosition(u, before.wind, lift) } : u);
+      const landed = phase === 'settle' || phase === 'rest';
+      // The crater (and any pads it moved) appears the moment the rocket hits, not after the blast.
+      const reshaped = landed || phase === 'boom';
+      const pads = reshaped ? after.units : before.units;
+      const units = pads.map((pad, i) => {
+        if (i !== shooter) return pad;
+        const start = G.balloonPosition(before.units[i], before.wind, 1);
+        return landed
+          ? { ...pad, x: pad.x + (start.x - pad.x) * lift, y: pad.y + (start.y - pad.y) * lift }
+          : { ...pad, ...G.balloonPosition(before.units[i], before.wind, lift) };
+      });
       const away = phase === 'flight' || phase === 'boom' || phase === 'settle';
-      return { ...before, units, colors, names, released: away ? shooter : undefined, active: -1, preview: null, drag: null,
+      return { ...before, target: G.targetPosition(before, anim.pos / G.FLIGHT_SAMPLES_PER_SECOND), terrain: reshaped ? after.terrain : before.terrain, pads, units, colors, names, released: away ? shooter : undefined, active: -1, preview: null, drag: null,
         shot: phase === 'flight' ? { path: anim.path, pos: anim.pos } : null };
     }
     const act = canAct() && match.phase === 'play';
+    const pads = match.field.units;
+    // This screen's balloon climbing, or another crew's balloon they have told us is rising.
+    let progress = ascent ? ascent.elapsed / LIFT_TIME : 0;
+    if (!ascent && match.phase === 'play' && host) {
+      const owner = host.order[match.turn];
+      const key = `${match.round}:${match.log.length}`;
+      if (!mine.includes(owner) && snaps.get(owner)?.rising === match.log.length) {
+        if (remoteRise?.key !== key) remoteRise = { key, since: performance.now() };
+        progress = Math.min(1, (performance.now() - remoteRise.since) / (LIFT_TIME * 1000));
+      } else if (remoteRise?.key === key) remoteRise = null;
+    }
+    const units = progress > 0 ? pads.map((u, i) => i === match!.turn
+      ? { ...u, ...G.balloonPosition(u, match!.field!.wind, progress) } : u) : pads;
     return {
-      target: match.field.target, terrain: match.field.terrain, units: match.field.units, wind: match.field.wind, colors, names,
+      target: G.targetPosition(match.field), terrain: match.field.terrain, pads, units, wind: match.field.wind, colors, names,
       active: match.phase === 'play' ? match.turn : -1,
-      preview: act ? G.aimPreview(match, 40) : null, drag: act ? drag : null, shot: null,
+      preview: act ? G.aimPreview(match, 40) : null,
+      targetPreview: act ? Array.from({ length: 9 }, (_, i) => G.targetPosition(match!.field!, i / 4)) : undefined, drag: act ? drag : null, shot: null,
       ghost: act && ghosts.round === match.round ? ghosts.paths[match.turn] ?? null : null,
     };
   }
   function finishShot() {
-    const points = anim!.events.find(e => e.type === 'scan')?.points ?? 0;
-    shotNote = points === 3 ? 'Through the ring! +3 points.' : points === 1 ? 'Outer scan! +1 point.' : 'Missed the ring. Check your last trail.';
+    const { blast, weapon, hit } = anim!;
+    const score = hit.bullseye ? `Bullseye award! +${hit.points} points.`
+      : hit.points ? `${hit.label}! +${hit.points} point${hit.points === 1 ? '' : 's'}.` : 'Missed the target.';
+    const impact = blast?.cutDepth
+      ? `${G.WEAPON[weapon].name} impact: ${G.WEAPON[weapon].impact.name.toLowerCase()}.`
+      : blast ? 'Hit bedrock.' : '';
+    const moved = blast?.moved.map(({ crew }) => match!.players[crew].name) ?? [];
+    const pads = moved.length === 1 ? `${moved[0]}'s launch pad moved.`
+      : moved.length ? `Launch pads moved for ${moved.join(', ')}.` : '';
+    shotNote = [score, impact, pads].filter(Boolean).join(' ');
     anim = null;
     if (match!.phase !== 'play') showRoundResult();
     say(shotNote, true);
@@ -329,7 +466,7 @@ function start(root: HTMLElement) {
   }
 
   function renderHud() {
-    const playing = !!match?.field && match.phase === 'play';
+    const playing = match?.phase === 'play';
     const turn = playing ? match!.turn : -1;
     const u = playing ? shooter() : null;
     const p = turn >= 0 ? match!.players[turn] : null;
@@ -348,7 +485,9 @@ function start(root: HTMLElement) {
       // An empty rocket can't launch: show (and send) the free Scout instead.
       u.weapon = G.readyWeapon(match!, turn);
       const n = p.ammo[u.weapon as keyof typeof p.ammo];
-      hud.rocket.textContent = `${G.WEAPON[u.weapon].name}${n === Infinity ? '' : ` ×${n}`}`;
+      const rocket = G.WEAPON[u.weapon];
+      hud.rocket.textContent = `${rocket.name}${n === Infinity ? '' : ` ×${n}`}`;
+      hud.rocket.title = rocket.impact.name;
       if (hud.rocketIcon.dataset.w !== u.weapon) { hud.rocketIcon.innerHTML = rocketSvg(u.weapon, 30); hud.rocketIcon.dataset.w = u.weapon; }
     }
     hud.round.textContent = match ? `Round ${Math.max(1, match.round)}/${match.rounds}` : '';
@@ -359,15 +498,20 @@ function start(root: HTMLElement) {
     if (hud.board.dataset.html !== board) { hud.board.innerHTML = board; hud.board.dataset.html = board; }
     const act = canAct();
     for (const b of hud.controls.querySelectorAll('button')) (b as HTMLButtonElement).disabled = !act;
-    root.dataset.playing = String(playing);
+    root.dataset.playing = String(playing || !!anim);
+    const rising = !!ascent && ascent.elapsed < LIFT_TIME;
+    const label = rising ? 'Balloon rising…' : ascent ? 'Release rocket' : 'Launch balloon';
+    if (hud.launch.textContent !== label) hud.launch.textContent = label;
+    hud.launch.setAttribute('aria-disabled', String(!act || rising));
+    if (ascent?.nudged) hud.launch.dataset.nudge = 'true'; else delete hud.launch.dataset.nudge;
     // When it is not this screen's turn, the controls make way for a short note.
     let wait = '';
-    if (playing && !act) {
+    if (anim || (playing && !act)) {
       const a = waitingOn();
       if (anim) wait = anim.phase === 'lift' ? 'Balloon rising…' : 'Rocket released';
       else if (paused) wait = 'Paused';
       else if (a?.kind === 'wait' && a.sent) wait = 'Sending the shot…';
-      else if (a?.kind === 'wait' && !mine.includes(a.ids[0])) wait = `Waiting for ${p!.name}…`;
+      else if (a?.kind === 'wait' && !mine.includes(a.ids[0])) wait = snaps.get(a.ids[0])?.rising === match!.log.length ? `${p!.name}'s balloon is up…` : `Waiting for ${p!.name}…`;
     }
     hud.controls.dataset.wait = wait ? 'true' : 'false';
     hud.wait.textContent = wait;
@@ -376,7 +520,9 @@ function start(root: HTMLElement) {
       const i = STEPS.findIndex(s => s.id === id);
       return `<span class="now-n">Step ${i + 1} of ${STEPS.length}</span> ${esc(text)} <a href="#step-${id}">How?</a>`;
     };
-    const now = playing && act && p ? step('aim', `${p.name}: aim at the gold ring, set the power, then press Launch.`)
+    const now = playing && act && p ? (rising ? 'Balloon rising…' : ascent
+      ? step('launch', 'Balloon ready. Adjust your aim and press Release rocket.')
+      : step('aim', `${p.name}: aim at the gold ring, then press Launch balloon.`))
       : playing && wait ? esc(wait)
       : match?.phase === 'shop' && !banner && !howto ? step('shop', 'Each crew chooses rockets, then presses Done.')
       : '';
@@ -487,7 +633,7 @@ function start(root: HTMLElement) {
 
   function scoresHtml() {
     return `<ol class="people">${[...match!.players].sort((a, b) => b.score - a.score)
-      .map(p => `<li><i style="background:${p.color}"></i> ${esc(p.name)}: ${p.score} points, ${p.credits} credits</li>`).join('')}</ol>`;
+      .map(p => `<li><i style="background:${p.color}"></i> ${esc(p.name)}: ${p.score} points, ${p.bullseyes} bullseyes, ${p.credits} credits</li>`).join('')}</ol>`;
   }
 
   function shopHtml() {
@@ -495,15 +641,15 @@ function start(root: HTMLElement) {
     if (a?.kind !== 'wait') return '';
     const id = a.ids.find(x => mine.includes(x));
     if (!id) return a.sent || !a.ids.length
-      ? `<h3>🛒 Shopping time</h3><p>Everyone is done. Starting the round…</p>`
-      : `<h3>🛒 Shopping time</h3><p>Waiting for ${esc(a.ids.map(x => host!.names[x]).join(', '))} to finish shopping.</p>`;
+      ? `<h3>Choose rockets</h3><p>Everyone is done. Starting the round…</p>`
+      : `<h3>Choose rockets</h3><p>Waiting for ${esc(a.ids.map(x => host!.names[x]).join(', '))} to finish shopping.</p>`;
     const i = host!.order.indexOf(id), p = match!.players[i];
     const picks = shopPick[id] ?? [];
     const credits = p.credits - picks.reduce((s, w) => s + G.WEAPON[w].price, 0);
     const cards = G.WEAPONS.filter(w => w.price).map(w => {
       const have = p.ammo[w.id as keyof typeof p.ammo] + picks.filter(x => x === w.id).length * w.pack;
       const poor = credits < w.price;
-      return `<li class="card${poor ? ' poor' : ''}">${rocketSvg(w.id, 48)}<b>${esc(w.name)}</b><span class="say">${esc(`Scans ${w.radius} pixels beyond the ring.`)}</span>
+      return `<li class="card${poor ? ' poor' : ''}">${rocketSvg(w.id, 48)}<b>${esc(w.name)}</b><span class="say">${esc(`Scan +${w.radius} px · ${w.impact.name}`)}</span>
         <span class="price">${w.pack} for ${w.price} credits</span><span class="have">You have ${have}</span>
         <button type="button" data-act="buy" data-w="${w.id}"${poor ? ' disabled' : ''} aria-label="Buy ${w.pack} ${esc(w.name)} for ${w.price} credits">${poor ? 'Not enough' : 'Buy'}</button></li>`;
     }).join('');
@@ -589,10 +735,27 @@ function start(root: HTMLElement) {
     host = null; match = null; banner = null; shopPick = {}; paused = false; lastTurnKey = '';
     mode = 'online';
     history.replaceState(null, '', `#room=${code}`);
+    // Was this page already in this room before a reload? (Session storage survives a reload of
+    // the same tab, nothing else.)
+    firstLive = true; notLiveSince = null;
+    try {
+      rejoiningRoom = sessionStorage.getItem('rockoon-room') === code;
+      sessionStorage.setItem('rockoon-room', code);
+    } catch { rejoiningRoom = false; }
     const thisLink: RoomLink = link = new RoomLink(code, {
       status(s: LinkStatus, detail?: string) {
         if (link !== thisLink) return; // a room this screen has already left
-        if (s === 'live') liveSince = Date.now();
+        if (s === 'live') {
+          liveSince = Date.now();
+          // Catch up only on evidence this screen may have missed turns: back after more than a
+          // few seconds offline, or this page reloaded into a room it was already in. A token
+          // renewal or the first connection to a new room isn't that.
+          const wasAway = notLiveSince !== null && liveSince - notLiveSince > 5_000;
+          rejoinedSession = wasAway || (firstLive && rejoiningRoom);
+          if (rejoinedSession) catchUpUntil = liveSince + 30_000;
+          if (wasAway || firstLive) metSinceLive.clear();
+          firstLive = false; notLiveSince = null;
+        } else notLiveSince ??= Date.now();
         netDetail = detail ?? '';
         net.textContent = s === 'live' ? `Room ${code}, you are ${thisLink.callsign}` : s === 'connecting' ? (detail || 'Connecting…') : s === 'offline' ? 'Offline' : '';
         render();
@@ -600,6 +763,16 @@ function start(root: HTMLElement) {
       peer(id: string, snap: Snapshot) {
         snaps.set(id, snap as Snap);
         seen.set(id, Date.now());
+        // The first word from a player since this screen went live, carrying history this screen
+        // hasn't played: catch up from it for a while (see roomView).
+        // Only after this screen itself came back (it may have missed turns), and only for a
+        // player in this match carrying the same match settings. A screen that has been here all
+        // along has missed nothing, so history it hasn't seen is not a reason to catch up.
+        const s = snap as Snap;
+        if (rejoinedSession && host && match && host.order.includes(id) && !metSinceLive.has(id) && (!s.host || JSON.stringify(s.host) === JSON.stringify(host))) {
+          metSinceLive.add(id);
+          if (Object.keys(s.log ?? {}).some(k => Number(k) >= match!.log.length)) catchUpUntil = Math.max(catchUpUntil, Date.now() + 30_000);
+        }
         adoptHost();
         step();
       },
@@ -612,23 +785,33 @@ function start(root: HTMLElement) {
     if (!ok || link !== thisLink) return;
     me = link.player;
     mine = [me];
-    if (!snaps.has(me)) snaps.set(me, { cs: link.callsign, joined: Date.now(), creator, turns: {}, shops: {} });
+    if (!snaps.has(me)) snaps.set(me, { p: Room.ROOM_PROTOCOL, cs: link.callsign, joined: Date.now(), creator, turns: {}, shops: {} });
     publish();
     render();
   }
 
-  /** Follows the room creator's match once it starts. */
+  /** Follows the room's match once it starts: from the creator, or, if the creator has left,
+   * from any player in the match who carries a copy. */
   function adoptHost() {
     if (host) return;
-    for (const [id, s] of snaps) {
-      if (s.host && s.host.order[0] === id && s.creator) {
-        host = s.host;
-        // Catch up without animating everything that already happened.
-        match = Room.replay(host, snaps).match;
-        say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');
-        return;
-      }
-    }
+    const carriers = [...snaps].filter(([id, s]) => s.host && s.host.order.includes(id) && s.host.names[id] === s.cs);
+    // The creator's settings first; without the creator, the settings most players carry. (A
+    // made-up copy can only mislead a screen that has no other copy to compare with, and it
+    // can't change anyone else's match.)
+    const byCreator = carriers.find(([id, s]) => s.creator && s.host!.order[0] === id);
+    const groups = new Map<string, typeof carriers>();
+    for (const c of carriers) { const key = JSON.stringify(c[1].host); groups.set(key, [...(groups.get(key) ?? []), c]); }
+    const best = [...groups.values()].sort((a, b) => b.length - a.length)[0];
+    const pick = byCreator ?? best?.[0];
+    if (!pick) return;
+    host = pick[1].host!;
+    adoptedAt = Date.now();
+    // Picking up a match already under way is catching up; a match that has only just started
+    // (nothing recorded yet, as when this screen starts it) is not.
+    if ([...snaps.values()].some(s => Object.keys(s.log ?? {}).length || Object.keys(s.shopLog ?? {}).length)) catchUpUntil = adoptedAt + 30_000;
+    // Catch up without animating everything that already happened.
+    match = Room.replay(host, snaps, roomView()).match;
+    say(host.order.includes(me) ? 'The game has started.' : 'The game has started. You are watching.');
   }
 
   function hostStart() {
@@ -646,7 +829,7 @@ function start(root: HTMLElement) {
 
   function quit() {
     link?.stop(); link = null;
-    mode = 'menu'; menuStep = 'home'; host = null; match = null; anim = null; banner = null; paused = false; drag = null;
+    mode = 'menu'; menuStep = 'home'; host = null; match = null; anim = null; ascent = null; remoteRise = null; banner = null; paused = false; drag = null;
     snaps.clear(); seen.clear(); mine = []; me = ''; lastTurnKey = '';
     pauseBtn.setAttribute('aria-pressed', 'false');
     net.textContent = '';

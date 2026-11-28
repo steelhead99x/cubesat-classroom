@@ -600,6 +600,7 @@ dependencies = [
  "downlink",
  "hang",
  "image",
+ "jiff 1.0.1",
  "mission-budget",
  "moq-tokio",
  "serde",
