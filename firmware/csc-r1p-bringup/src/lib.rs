@@ -8,12 +8,14 @@ const RF: u8 = 0x20;
 const CONTROL: u8 = 0x21;
 const OLED: u8 = 0x3c;
 const POTS: u8 = 0x48;
+const AUDIO_ADC: u8 = 0x4c;
 
 const INPUT: u8 = 0;
 const OUTPUT: u8 = 1;
 const DIRECTION: u8 = 3;
 const STATUS_LED: u8 = 1 << 5;
 const PLL_CE: u8 = 1 << 6;
+const ADC_SHDNZ: u8 = 1 << 5;
 
 pub struct Pedal<Bus>(pub Bus);
 
@@ -78,6 +80,20 @@ impl<Bus: I2c> Pedal<Bus> {
     pub fn pll_enable(&mut self, enabled: bool) -> Result<(), Bus::Error> {
         self.0
             .write(RF, &[OUTPUT, if enabled { PLL_CE } else { 0 }])
+    }
+
+    /// Release only the ADC shutdown pin after enter_safe has configured the port.
+    pub fn adc_release_shutdown(&mut self, released: bool) -> Result<(), Bus::Error> {
+        self.0
+            .write(RF, &[OUTPUT, if released { ADC_SHDNZ } else { 0 }])
+    }
+
+    /// Read TLV320ADC3140 DEV_STS0/1 on the default page after hardware reset.
+    pub fn adc_status(&mut self) -> Result<[u8; 2], Bus::Error> {
+        let mut status = [0; 2];
+        self.0.write_read(AUDIO_ADC, &[0x76], &mut status[..1])?;
+        self.0.write_read(AUDIO_ADC, &[0x77], &mut status[1..])?;
+        Ok(status)
     }
 
     pub fn init_controls(&mut self) -> Result<(), Bus::Error> {
@@ -246,6 +262,20 @@ mod tests {
             ),
             (4, 2, 1)
         );
+    }
+
+    #[test]
+    fn checks_adc_control_without_enabling_any_other_rf_stage() {
+        let mut pedal = Pedal(Mock(&[
+            Step::Write(0x20, &[1, 0x20], false),
+            Step::Read(0x4c, 0x76, &[0x00]),
+            Step::Read(0x4c, 0x77, &[0x00]),
+            Step::Write(0x20, &[1, 0], false),
+        ]));
+        pedal.adc_release_shutdown(true).unwrap();
+        assert_eq!(pedal.adc_status().unwrap(), [0, 0]);
+        pedal.adc_release_shutdown(false).unwrap();
+        assert!(pedal.0.0.is_empty());
     }
 
     #[test]

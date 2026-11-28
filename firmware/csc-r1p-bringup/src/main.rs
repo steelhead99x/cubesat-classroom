@@ -62,7 +62,7 @@ fn main() -> ! {
                     match &line[..len] {
                         b"HELP" => {
                             println!(
-                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | PLL TEST 2M | PLL TEST 70CM | HELP"
+                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | ENCODER TEST | OLED TEST | ADC CHECK | PLL TEST 2M | PLL TEST 70CM | HELP"
                             );
                         }
                         b"SAFE" => controls_ready = setup(&mut pedal),
@@ -93,6 +93,7 @@ fn main() -> ! {
                             let off = pedal.oled_off();
                             println!("OLED show={show:?} off={off:?}");
                         }
+                        b"ADC CHECK" => check_adc(&mut pedal, &delay),
                         b"PLL TEST 2M" | b"PLL TEST 70CM" => {
                             let band = if &line[..len] == b"PLL TEST 2M" {
                                 BenchBand::TwoMeters
@@ -129,6 +130,21 @@ fn setup<Bus: I2c>(pedal: &mut Pedal<Bus>) -> bool {
     let controls = pedal.init_controls();
     println!("CSC-R1P bring-up: RF safe={main:?} controls={controls:?}");
     controls.is_ok()
+}
+
+fn check_adc<Bus: I2c>(pedal: &mut Pedal<Bus>, delay: &Delay) {
+    if let Err(error) = pedal.enter_safe() {
+        println!("ADC: safe setup failed: {error:?}");
+        return;
+    }
+    // Allow a previous shutdown to settle before releasing SHDNZ again.
+    delay.delay_millis(100);
+    let status = pedal.adc_release_shutdown(true).and_then(|()| {
+        delay.delay_millis(2);
+        pedal.adc_status()
+    });
+    let shutdown = pedal.adc_release_shutdown(false);
+    println!("ADC status={status:02x?} shutdown={shutdown:?}");
 }
 
 fn run_pll_test<Bus: I2c, Serial: SpiBus>(
