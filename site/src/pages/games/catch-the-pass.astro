@@ -214,6 +214,20 @@ const wiki = (slug: string, text: string) => `<a href="${base}/wiki/${slug}/">${
   .numbers dd { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
   .meter { display: grid; gap: .25rem; font-family: var(--font-mono); }
   .meter .t-label { font-size: .7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* On a phone the two meters share a row: let their labels wrap instead of cutting off. */
+  @media (max-width: 480px) { .meter .t-label { white-space: normal; line-height: 1.25; flex-wrap: wrap; } }
+  .overlay :global(.tip) { max-width: 34rem; }
+  /* After a pass the results card stands in for the sky, at its own height. */
+  .ctp[data-results] .stage canvas { visibility: hidden; height: 0 !important; }
+  .ctp[data-results] .overlay { position: relative; inset: auto; padding: 1.25rem 1rem; }
+  .overlay :global(.debrief) { margin: 0; width: min(100%, 26rem); }
+  .overlay :global(.debrief svg) { display: block; width: 100%; height: auto; background: rgb(255 255 255 / .04); border-radius: .5rem; }
+  .overlay :global(.debrief figcaption) { margin-top: .25rem; font: .72rem/1.4 var(--font-mono); opacity: .85; }
+  .overlay :global(.debrief .k) { display: inline-block; width: .8rem; height: .25rem; margin: 0 .25rem 0 .5rem; vertical-align: middle; border-radius: 2px; }
+  .overlay :global(.debrief .k.sig) { background: #7df0a6; }
+  .overlay :global(.debrief .k.need) { background: repeating-linear-gradient(90deg, #ffd23f 0 4px, transparent 4px 7px); }
+  .overlay :global(.debrief .k.ok) { width: .25rem; height: .6rem; background: #7df0a6; }
+  .overlay :global(.debrief .k.lost) { width: .25rem; height: .6rem; background: #ef6b6c; }
   .bar { position: relative; height: .7rem; background: #1b2550; border-radius: 999px; overflow: hidden; }
   .bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #ffb13b, #ffd23f); border-radius: 999px; transition: width .15s linear; }
   .bar i[data-ok="true"] { background: linear-gradient(90deg, #3fbf7f, #7ff0a8); }

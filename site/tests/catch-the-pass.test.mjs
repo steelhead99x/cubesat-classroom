@@ -236,3 +236,60 @@ test('live seeds use every bit and the fade does not depend on frame rate', () =
   assert.ok(slow <= 1.5 && fast <= 1.5);
   assert.ok(Math.abs(slow - fast) < 1.2);
 });
+
+test('lost packets are put down to a cause, and the debrief names the biggest one', () => {
+  // Pointing the antenna straight away from the satellite: pointing losses.
+  const away = G.createGame(G.LEVELS[0], 5);
+  while (!away.done) G.step(away, { target: { az: 90, el: 85 } }, 0.05);
+  assert.ok(away.lost > 0);
+  assert.equal(away.causes.pointing, Math.max(...Object.values(away.causes)));
+  assert.equal(G.debrief(away).cause, 'pointing');
+  assert.equal(away.causes.pointing + away.causes.weak + away.causes.noise + away.causes.receiver, away.lost);
+
+  // A detuned receiver: receiver losses, even with perfect tracking.
+  const detuned = G.createGame(G.LEVELS[0], 5, 'patch', { ...G.DEFAULT_RECEIVER, offset: 3 });
+  while (!detuned.done) {
+    const sat = G.satPosition(detuned.level, detuned.t / detuned.level.duration);
+    G.step(detuned, { target: sat }, 0.05);
+  }
+  assert.equal(G.debrief(detuned).cause, 'receiver');
+  assert.equal(detuned.rx, 0);
+
+  // A low pass at the fastest setting, tracked perfectly: too weak for SF7.
+  const low = G.createGame(G.LEVELS[1], 5);
+  G.setSf(low, 7);
+  while (!low.done) {
+    const sat = G.satPosition(low.level, low.t / low.level.duration);
+    G.step(low, { target: sat }, 0.05);
+  }
+  assert.equal(G.debrief(low).cause, 'weak');
+  assert.match(G.debrief(low).text, /Far \(SF12\)/);
+  // Switching to Far after the pass, without sending another packet, doesn't change who's blamed.
+  assert.ok(low.weakBySf[7] > 0 && low.weakBySf[12] === 0);
+  G.setSf(low, 12);
+  assert.match(G.debrief(low).text, /at Fast even/);
+});
+
+test('weak losses are put down to the setting they were sent on', () => {
+  const g = G.createGame(G.LEVELS[1], 5);
+  g.causes.weak = 3;
+  g.weakBySf = { 7: 0, 9: 0, 12: 3 };
+  g.sf = 7;
+  assert.match(G.debrief(g).text, /even at Far \(SF12\)/);
+  g.weakBySf = { 7: 2, 9: 1, 12: 0 };
+  g.sf = 12;
+  assert.match(G.debrief(g).text, /at Fast even/);
+});
+
+test('the debrief trace covers the pass and resting time is counted', () => {
+  const g = G.createGame(G.LEVELS[0], 2);
+  G.setTransmit(g, false);
+  for (let i = 0; i < 200; i++) G.step(g, {}, 0.05); // 10 s resting
+  G.setTransmit(g, true);
+  while (!g.done) G.step(g, {}, 0.05);
+  assert.ok(Math.abs(g.restS - 10) < 0.2, String(g.restS));
+  assert.ok(g.trace.length >= g.level.duration * 2 - 1 && g.trace.length <= g.level.duration * 2 + 2, String(g.trace.length));
+  assert.ok(g.trace.every(p => p.snr >= -40 && Number.isFinite(p.floor)));
+  assert.equal(g.trace.slice(0, 19).some(p => p.on), false);
+  assert.equal(g.packets.length, g.rx + g.lost);
+});
