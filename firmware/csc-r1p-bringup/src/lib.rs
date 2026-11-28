@@ -1,5 +1,7 @@
 #![no_std]
 
+pub mod pll;
+
 use embedded_hal::i2c::I2c;
 
 const RF: u8 = 0x20;
@@ -11,6 +13,7 @@ const INPUT: u8 = 0;
 const OUTPUT: u8 = 1;
 const DIRECTION: u8 = 3;
 const STATUS_LED: u8 = 1 << 5;
+const PLL_CE: u8 = 1 << 6;
 
 pub struct Pedal<Bus>(pub Bus);
 
@@ -35,6 +38,12 @@ impl<Bus: I2c> Pedal<Bus> {
     pub fn enter_safe(&mut self) -> Result<(), Bus::Error> {
         self.0.write(RF, &[OUTPUT, 0])?;
         self.0.write(RF, &[DIRECTION, 0])
+    }
+
+    /// Change CE only in bench mode, after enter_safe has configured the port.
+    pub fn pll_enable(&mut self, enabled: bool) -> Result<(), Bus::Error> {
+        self.0
+            .write(RF, &[OUTPUT, if enabled { PLL_CE } else { 0 }])
     }
 
     pub fn init_controls(&mut self) -> Result<(), Bus::Error> {
@@ -182,6 +191,17 @@ mod tests {
                 band_70cm: true,
             }
         );
+        assert!(pedal.0.0.is_empty());
+    }
+
+    #[test]
+    fn enabling_the_pll_keeps_every_other_rf_control_low() {
+        let mut pedal = Pedal(Mock(&[
+            Step::Write(0x20, &[1, 0x40], false),
+            Step::Write(0x20, &[1, 0], false),
+        ]));
+        pedal.pll_enable(true).unwrap();
+        pedal.pll_enable(false).unwrap();
         assert!(pedal.0.0.is_empty());
     }
 

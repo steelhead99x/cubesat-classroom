@@ -1,6 +1,6 @@
 # CSC-R1P pedal bring-up
 
-The Rust console runs on the Seeed XIAO ESP32-S3 in the [CSC-R1P pedal](../../hardware/sdr-receiver/pedal/README.md). It sets both I²C expanders to known states, then lets you check the switches, pots, ENGAGE LED and OLED over USB. It keeps the bias tee, demodulator, ADC and PLL disabled and the audio muted after successful initialization. The PCB pulls PLL CE high until firmware can take control.
+The Rust console runs on the Seeed XIAO ESP32-S3 in the [CSC-R1P pedal](../../hardware/sdr-receiver/pedal/README.md). It sets both I²C expanders to known states, then lets you check the switches, pots, ENGAGE LED and OLED over USB. After successful initialization it keeps the bias tee, demodulator, ADC and PLL disabled and the audio muted. The PLL is enabled only during an explicit bench test. The PCB pulls PLL CE high until firmware can take control.
 
 ## Build
 
@@ -33,4 +33,17 @@ cargo +stable test --locked --manifest-path firmware/csc-r1p-bringup/Cargo.toml 
 | `SAFE` | Retry both expander setups and turn the ENGAGE LED off. |
 | `HELP` | List the commands. |
 
-The console uses USB Serial/JTAG, leaving XIAO D6 available for the control interrupt. Check that line during reset before adding interrupt-driven encoder handling. Future firmware needs PLL lock detection, ADC and DAC audio, encoder tracking, live OLED status and the station's receiver telemetry.
+The console uses USB Serial/JTAG, leaving XIAO D6 available for the control interrupt. Check that line during reset before adding interrupt-driven encoder handling. Future firmware needs ADC and DAC audio, encoder tracking, live OLED status and the station's receiver telemetry.
+
+## Check the local oscillator
+
+Connect the onboard LO MON port to a 50 Ω instrument or termination before running the test. Use the non-Sense XIAO ESP32-S3 so the PLL SPI pins are free of the Sense expansion board.
+
+| Command | Nominal LO | VCO divider |
+| --- | ---: | ---: |
+| `PLL TEST 2M` | 145.800 MHz | 16 |
+| `PLL TEST 70CM` | 437.000 MHz | 8 |
+
+The console checks that MUXOUT starts low and waits up to 100 ms for digital lock. After lock, the onboard monitor output is available for five seconds at the lowest ADF4351 output setting. It then sets the power-down register and drives CE low. Check the serial shutdown results, record the measured frequency and level, and repeat for the other band. The other RF controls and audio remain off throughout the test.
+
+The nominal profiles use the board's 25 MHz reference and the modeled 2.5 mA charge-pump setting. [ADF4351 register map and timing](https://www.analog.com/media/en/technical-documentation/data-sheets/ADF4351.pdf) · [XIAO ESP32-S3 pinout](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)

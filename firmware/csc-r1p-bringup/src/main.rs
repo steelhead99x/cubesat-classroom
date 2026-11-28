@@ -1,12 +1,21 @@
 #![no_std]
 #![no_main]
 
-use csc_r1p_bringup::{Pedal, Pot};
-use embedded_hal::i2c::I2c;
+use csc_r1p_bringup::{
+    Pedal, Pot,
+    pll::{BenchBand, POWER_DOWN},
+};
+use embedded_hal::{i2c::I2c, spi::SpiBus};
 use esp_backtrace as _;
 use esp_hal::{
     delay::Delay,
+    gpio::{Input, InputConfig, Level, Output, OutputConfig, Pull},
     i2c::master::{Config, I2c as HardwareI2c},
+    spi::{
+        Mode,
+        master::{Config as SpiConfig, Spi},
+    },
+    time::Rate,
     usb::usb_serial_jtag::UsbSerialJtag,
 };
 use esp_println::println;
@@ -23,6 +32,17 @@ fn main() -> ! {
         .with_sda(p.GPIO5)
         .with_scl(p.GPIO6);
     let mut pedal = Pedal(bus);
+    let mut latch = Output::new(p.GPIO8, Level::Low, OutputConfig::default());
+    let lock = Input::new(p.GPIO4, InputConfig::default().with_pull(Pull::Down));
+    let mut spi = Spi::new(
+        p.SPI2,
+        SpiConfig::default()
+            .with_mode(Mode::_0)
+            .with_frequency(Rate::from_mhz(1)),
+    )
+    .unwrap()
+    .with_sck(p.GPIO7)
+    .with_mosi(p.GPIO9);
     let delay = Delay::new();
     let mut controls_ready = setup(&mut pedal);
 
@@ -42,7 +62,7 @@ fn main() -> ! {
                     match &line[..len] {
                         b"HELP" => {
                             println!(
-                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | OLED TEST | HELP"
+                                "SAFE | CONTROLS | LED ON | LED OFF | POTS | OLED TEST | PLL TEST 2M | PLL TEST 70CM | HELP"
                             );
                         }
                         b"SAFE" => controls_ready = setup(&mut pedal),
@@ -62,6 +82,14 @@ fn main() -> ! {
                             }
                             let off = pedal.oled_off();
                             println!("OLED show={show:?} off={off:?}");
+                        }
+                        b"PLL TEST 2M" | b"PLL TEST 70CM" => {
+                            let band = if &line[..len] == b"PLL TEST 2M" {
+                                BenchBand::TwoMeters
+                            } else {
+                                BenchBand::SeventyCentimeters
+                            };
+                            run_pll_test(&mut pedal, &mut spi, &mut latch, &lock, &delay, band);
                         }
                         b"POTS" => {
                             let gain = read_pot(&mut pedal, Pot::Gain, &delay);
@@ -91,6 +119,78 @@ fn setup<Bus: I2c>(pedal: &mut Pedal<Bus>) -> bool {
     let controls = pedal.init_controls();
     println!("CSC-R1P bring-up: RF safe={main:?} controls={controls:?}");
     controls.is_ok()
+}
+
+fn run_pll_test<Bus: I2c, Serial: SpiBus>(
+    pedal: &mut Pedal<Bus>,
+    spi: &mut Serial,
+    latch: &mut Output<'_>,
+    lock: &Input<'_>,
+    delay: &Delay,
+    band: BenchBand,
+) {
+    if let Err(error) = pedal.enter_safe() {
+        println!("PLL: safe setup failed: {error:?}");
+        return;
+    }
+    if lock.is_high() {
+        println!("PLL: MUXOUT is high with CE low; check the lock wiring");
+        return;
+    }
+    match pedal.pll_enable(true) {
+        Ok(()) => {
+            // Allow the part to come out of CE power-down before loading R5.
+            delay.delay_millis(1);
+            match band
+                .registers()
+                .into_iter()
+                .try_for_each(|word| write_pll_register(spi, latch, delay, word))
+            {
+                Ok(()) => {
+                    let mut high_samples = 0;
+                    for _ in 0..100 {
+                        delay.delay_millis(1);
+                        if lock.is_high() {
+                            high_samples += 1;
+                            if high_samples == 3 {
+                                break;
+                            }
+                        } else {
+                            high_samples = 0;
+                        }
+                    }
+                    if high_samples == 3 {
+                        println!("PLL {} Hz: locked, measure LO MON now", band.frequency_hz());
+                        delay.delay_millis(5_000);
+                    } else {
+                        println!("PLL {} Hz: lock timeout", band.frequency_hz());
+                    }
+                }
+                Err(error) => println!("PLL: SPI programming failed: {error:?}"),
+            }
+        }
+        Err(error) => println!("PLL: CE enable failed: {error:?}"),
+    }
+
+    let power_down = write_pll_register(spi, latch, delay, POWER_DOWN);
+    let ce_low = pedal.pll_enable(false);
+    println!("PLL shutdown: register={power_down:?} CE={ce_low:?}");
+}
+
+fn write_pll_register<Serial: SpiBus>(
+    spi: &mut Serial,
+    latch: &mut Output<'_>,
+    delay: &Delay,
+    word: u32,
+) -> Result<(), Serial::Error> {
+    spi.write(&word.to_be_bytes())?;
+    spi.flush()?;
+    delay.delay_micros(1);
+    latch.set_high();
+    delay.delay_micros(1);
+    latch.set_low();
+    delay.delay_micros(1);
+    Ok(())
 }
 
 fn read_pot<Bus: I2c>(
