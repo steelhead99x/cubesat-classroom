@@ -2,24 +2,29 @@
 //! drawn from), for any words.
 //!
 //! Glyph outlines are flattened to polygons and filled non-zero, the way the font rasterizes.
-//! `size` is the em size in mm. Two things keep small bold lettering printable on a 0.6 mm
+//! `size` is the em size in mm. Three things keep small bold lettering printable on a 0.6 mm
 //! nozzle as well as a 0.4 mm one:
-//! - letters are spaced out by `size / 8`, so neighbours keep plastic between them;
+//! - glyphs are spaced by their finished outlines, so neighbours keep plastic between them;
 //! - letters are grown by `BOLD`, so their strokes stay wide enough at small sizes;
 //! - the outline is closed by `CLOSE` (grown, then shrunk back), which fills the sharp
 //!   notches inside letters such as N and M, where the plastic between strokes tapers away.
 
-use manifold_csg::{CrossSection, FillRule, JoinType};
+use manifold_csg::{CrossSection, FillRule};
 use std::sync::OnceLock;
 use ttf_parser::{Face, OutlineBuilder};
+
+use crate::brand::MIN_GAP;
+use crate::geom::offset;
 
 /// DejaVu Sans Bold 2.37, Bitstream Vera licence (see `fonts/LICENSE-DejaVu.txt`).
 const FONT: &[u8] = include_bytes!("../fonts/DejaVuSans-Bold.ttf");
 
-/// Notches narrower than twice this are filled.
-pub const CLOSE: f64 = 0.4;
+/// Close each glyph's tapered notches with some margin over the gap check.
+pub const CLOSE: f64 = MIN_GAP / 2.0 + 0.06;
 /// Letters are grown by this all round, so small lettering's strokes reach `brand::MIN_STROKE`.
 pub const BOLD: f64 = 0.12;
+/// Keep a little extra space between finished glyphs.
+pub(crate) const LETTER_GAP: f64 = MIN_GAP + 0.08;
 
 fn face() -> &'static Face<'static> {
     static FACE: OnceLock<Face<'static>> = OnceLock::new();
@@ -30,7 +35,6 @@ struct Flatten {
     contours: Vec<Vec<[f64; 2]>>,
     current: Vec<[f64; 2]>,
     scale: f64,
-    pen_x: f64,
     last: [f64; 2],
 }
 
@@ -38,10 +42,7 @@ const STEPS: usize = 8;
 
 impl Flatten {
     fn pt(&self, x: f32, y: f32) -> [f64; 2] {
-        [
-            self.pen_x + f64::from(x) * self.scale,
-            f64::from(y) * self.scale,
-        ]
+        [f64::from(x) * self.scale, f64::from(y) * self.scale]
     }
     fn push(&mut self, p: [f64; 2]) {
         self.current.push(p);
@@ -95,6 +96,34 @@ impl OutlineBuilder for Flatten {
     }
 }
 
+pub(crate) fn close_notches(glyph: &CrossSection) -> CrossSection {
+    offset(&offset(glyph, CLOSE, 32), -CLOSE, 32)
+}
+
+fn printable_glyph(glyph: CrossSection, ch: char) -> CrossSection {
+    if ch == ':' {
+        // Thicken the dots separately and give them room to stay separate.
+        let mut dots = glyph.decompose();
+        dots.sort_by(|a, b| a.bounds_rect2().min_y.total_cmp(&b.bounds_rect2().min_y));
+        if let [lower, upper] = dots.as_slice() {
+            let lower = offset(lower, BOLD, 32);
+            let upper = offset(upper, BOLD, 32);
+            let gap = upper.bounds_rect2().min_y - lower.bounds_rect2().max_y;
+            let spread = ((LETTER_GAP - gap) / 2.0).max(0.0);
+            return lower
+                .translate(0.0, -spread)
+                .union(&upper.translate(0.0, spread));
+        }
+    }
+    // Keep these narrow counters and channels open after thickening the strokes.
+    let glyph = if matches!(ch, '0' | '8' | 'U') {
+        glyph.scale(1.25, 1.0)
+    } else {
+        glyph
+    };
+    close_notches(&offset(&glyph, BOLD, 32))
+}
+
 /// One line of lettering, `size` mm em, centred on the origin, spaced and closed as above.
 pub fn line(text: &str, size: f64) -> CrossSection {
     let face = face();
@@ -103,20 +132,31 @@ pub fn line(text: &str, size: f64) -> CrossSection {
         contours: Vec::new(),
         current: Vec::new(),
         scale,
-        pen_x: 0.0,
         last: [0.0, 0.0],
     };
+    let mut glyphs = Vec::new();
+    let mut cursor = 0.0_f64;
+    let mut right = f64::NEG_INFINITY;
     for ch in text.chars() {
         let Some(id) = face.glyph_index(ch) else {
             continue;
         };
         face.outline_glyph(id, &mut pen);
         pen.finish();
-        pen.pen_x += f64::from(face.glyph_hor_advance(id).unwrap_or(0)) * scale + size / 8.0;
+        let advance = f64::from(face.glyph_hor_advance(id).unwrap_or(0)) * scale + size / 8.0;
+        if !pen.contours.is_empty() {
+            let glyph =
+                CrossSection::from_polygons_with_fill_rule(&pen.contours, FillRule::NonZero);
+            pen.contours.clear();
+            let glyph = printable_glyph(glyph, ch);
+            let bounds = glyph.bounds_rect2();
+            cursor = cursor.max(right + LETTER_GAP - bounds.min_x);
+            right = cursor + bounds.max_x;
+            glyphs.push(glyph.translate(cursor, 0.0));
+        }
+        cursor += advance;
     }
-    let shape = CrossSection::from_polygons_with_fill_rule(&pen.contours, FillRule::NonZero)
-        .offset(CLOSE, JoinType::Round, 2.0, 16)
-        .offset(BOLD - CLOSE, JoinType::Round, 2.0, 16);
+    let shape = CrossSection::batch_union(&glyphs);
     if shape.is_empty() {
         return shape;
     }

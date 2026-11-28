@@ -4,6 +4,8 @@ A fork of the [outdoor ground station](../outdoor-station/README.md): the same s
 
 **Status: design checks only.** Nothing in this folder has been printed. Several board sizes are assumptions, so print the XIAO coupon and try your boards in it before you print a plate.
 
+To open the full-size lid, press each latch finger inward toward the centre of the lid and lift.
+
 ## What it holds
 
 - **Seeed Wi-Fi HaLow board for XIAO** (42 × 25 mm, Quectel FGH100M-H, 902–928 MHz), with a **XIAO ESP32-S3** plugged onto its headers. It goes in like the Nano in the kit: tuck one long edge under two lips, press the other edge down until two snap hooks click. Corner stops keep it from sliding.
@@ -32,7 +34,7 @@ A fork of the [outdoor ground station](../outdoor-station/README.md): the same s
 |---|---|---|
 | BOARD MOUNTS / HALOW + XIAO MG24 | The plate's two board mounts: the XIAO ESP32-S3 on the Seeed Wi-Fi HaLow board, and the XIAO MG24 Sense | Tuck one edge of each real board under its lips and swing it down past the snap hooks until it clicks. It should sit flat without rocking, and come out when you push the hooks back |
 | TRIPOD THREAD / 1/4-20 SCREW IN | The box's tripod thread, and one 0.15 mm looser (the socket with a dot) | Screw a tripod's screw into each |
-| LID LATCH: BOX and LID LATCH: LID | One lug of the box's rim and one latch finger of the lid | Press the lid piece onto the rim piece until it clicks |
+| LID LATCH: BOX and LID LATCH: LID | Two latches on opposite sides of a small box and lid | Press until both click, check that the lid holds, then push both fingers inward and lift. Follow the [shared two-latch coupon procedure](../outdoor-station/README.md#two-latch-coupon) |
 | SNAP PIN and FIT 1, FIT 2, FIT 3 | The keyed snap pin the XIAO plate sits on, at three fits | Push each tab onto the pin; the one that clicks on without forcing or rattling is your fit |
 
 The labels and raised logos are new in this version and haven't been printed yet; the joints behind them are unchanged.

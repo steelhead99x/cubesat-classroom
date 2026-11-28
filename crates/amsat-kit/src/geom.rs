@@ -1,5 +1,6 @@
 //! Small geometry helpers on top of manifold-csg, and mesh input and output. Dimensions in mm.
 
+use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -13,6 +14,8 @@ pub const SIMPLIFY: f64 = 1e-3;
 /// Mesh export: vertices snap to this grid, mm. Its points stay distinct in f32 STL (a step under
 /// 2e-5 mm below 256 mm) and in the 3MF's six decimals.
 pub const GRID: f64 = 1e-4;
+/// Units per mm on the six-decimal lattice used by 3MF.
+const THREE_MF_SCALE: f64 = 1e6;
 
 /// Cylinder of diameter `d` (or tapering to `d2`) standing on (x, y, z).
 pub fn cyl(d: f64, h: f64, x: f64, y: f64, z: f64) -> Manifold {
@@ -138,7 +141,7 @@ impl Mesh {
     pub fn from_solid(solid: &Manifold) -> Self {
         let (props, n, tris) = solid.simplify(SIMPLIFY).to_mesh_f64();
         let snap = |x: f64| (x / GRID).round() * GRID;
-        let mut index = std::collections::HashMap::new();
+        let mut index = HashMap::new();
         let mut verts = Vec::new();
         let remap: Vec<u32> = props
             .chunks(n)
@@ -156,47 +159,62 @@ impl Mesh {
             .filter(|t| t[0] != t[1] && t[1] != t[2] && t[0] != t[2])
             .collect();
         let mut mesh = Self { verts, tris }.compacted();
-        mesh.flip_flat();
+        // GRID is a whole number of 3MF units. Test its triangles as integers too.
+        mesh.flip_flat(&mesh.three_mf_points());
         mesh
     }
 
-    /// A zero-area triangle left after welding has one corner on its longest edge. Flip that edge
-    /// with the triangle across it, so both new triangles have area and the mesh stays closed.
-    fn flip_flat(&mut self) {
-        let dist = |a: [f64; 3], b: [f64; 3]| (0..3).map(|i| (a[i] - b[i]).powi(2)).sum::<f64>();
-        for _ in 0..8 {
-            let mut edges = std::collections::HashMap::new();
-            for (t, tri) in self.tris.iter().enumerate() {
-                for k in 0..3 {
-                    edges.insert((tri[k], tri[(k + 1) % 3]), t);
+    /// Call on grid-snapped vertices or on the actual six-decimal 3MF coordinates.
+    pub(crate) fn three_mf_points(&self) -> Vec<[i64; 3]> {
+        self.verts
+            .iter()
+            .map(|v| v.map(|x| (x * THREE_MF_SCALE).round() as i64))
+            .collect()
+    }
+
+    pub(crate) fn degenerate_facets(&self, points: &[[i64; 3]]) -> usize {
+        self.tris
+            .iter()
+            .filter(|&&t| collinear(t.map(|i| points[i as usize])))
+            .count()
+    }
+
+    /// A flat triangle with distinct vertices has one corner on its longest edge. Flip that edge
+    /// with the triangle across it, preserving the winding and the closed boundary.
+    pub(crate) fn flip_flat(&mut self, points: &[[i64; 3]]) -> usize {
+        if self.degenerate_facets(points) == 0 {
+            return 0;
+        }
+        let directed = |[a, b, c]: [u32; 3]| [(a, b), (b, c), (c, a)];
+        loop {
+            // Welding can temporarily put more than one triangle on a directed edge. Rebuild
+            // after each pass so a remaining triangle can be found after another was flipped.
+            let mut edges = HashMap::new();
+            for (t, &tri) in self.tris.iter().enumerate() {
+                for edge in directed(tri) {
+                    edges.insert(edge, t);
                 }
             }
-            let mut done = vec![false; self.tris.len()];
             let mut flipped = false;
             for t in 0..self.tris.len() {
-                if done[t] || self.normal(t) != [0.0; 3] {
+                let tri = self.tris[t];
+                let p = tri.map(|i| points[i as usize]);
+                if !collinear(p) || p[0] == p[1] || p[1] == p[2] || p[0] == p[2] {
                     continue;
                 }
-                let tri = self.tris[t];
                 // Rotate so the longest edge is a-b and c sits on it.
                 let k = (0..3)
-                    .max_by(|&i, &j| {
-                        let e = |k: usize| {
-                            dist(
-                                self.verts[tri[k] as usize],
-                                self.verts[tri[(k + 1) % 3] as usize],
-                            )
-                        };
-                        e(i).total_cmp(&e(j))
+                    .max_by_key(|&i| {
+                        delta(p[i], p[(i + 1) % 3])
+                            .iter()
+                            .map(|&x| x * x)
+                            .sum::<i128>()
                     })
                     .unwrap_or(0);
                 let (a, b, c) = (tri[k], tri[(k + 1) % 3], tri[(k + 2) % 3]);
                 let Some(&u) = edges.get(&(b, a)) else {
                     continue;
                 };
-                if done[u] || u == t {
-                    continue;
-                }
                 let other = self.tris[u];
                 let Some(&d) = other.iter().find(|&&v| v != a && v != b) else {
                     continue;
@@ -204,16 +222,28 @@ impl Mesh {
                 if edges.contains_key(&(c, d)) || edges.contains_key(&(d, c)) {
                     continue;
                 }
-                self.tris[t] = [c, a, d];
-                self.tris[u] = [c, d, b];
-                done[t] = true;
-                done[u] = true;
+                let replacements = [[c, a, d], [c, d, b]];
+                if replacements
+                    .iter()
+                    .any(|r| collinear(r.map(|i| points[i as usize])))
+                {
+                    continue;
+                }
+                edges.remove(&(a, b));
+                edges.remove(&(b, a));
+                for (i, r) in [(t, replacements[0]), (u, replacements[1])] {
+                    self.tris[i] = r;
+                    for edge in directed(r) {
+                        edges.insert(edge, i);
+                    }
+                }
                 flipped = true;
             }
             if !flipped {
                 break;
             }
         }
+        self.degenerate_facets(points)
     }
 
     /// Drop vertices no triangle uses, keeping the rest in order.
@@ -432,6 +462,16 @@ impl Mesh {
     }
 }
 
+fn delta(a: [i64; 3], b: [i64; 3]) -> [i128; 3] {
+    std::array::from_fn(|i| i128::from(b[i]) - i128::from(a[i]))
+}
+
+fn collinear([a, b, c]: [[i64; 3]; 3]) -> bool {
+    let [ux, uy, uz] = delta(a, b);
+    let [vx, vy, vz] = delta(a, c);
+    ux * vy == uy * vx && ux * vz == uz * vx && uy * vz == uz * vy
+}
+
 /// The solid as a mesh, or an error if it isn't one clean, closed piece.
 pub fn closed_solid(name: &str, solid: &Manifold) -> Result<Mesh, String> {
     solid
@@ -444,6 +484,12 @@ pub fn closed_solid(name: &str, solid: &Manifold) -> Result<Mesh, String> {
     let mesh = Mesh::from_solid(solid);
     if !mesh.is_closed() {
         return Err(format!("{name}: mesh is not a closed solid"));
+    }
+    let flat = mesh.degenerate_facets(&mesh.three_mf_points());
+    if flat != 0 {
+        return Err(format!(
+            "{name}: mesh has {flat} degenerate facets on the export grid"
+        ));
     }
     if let Some(e) = mesh.defects() {
         return Err(format!("{name}: mesh has {e}"));

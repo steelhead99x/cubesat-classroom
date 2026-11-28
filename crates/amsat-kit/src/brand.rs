@@ -128,12 +128,24 @@ pub fn strokes_ok(shape: &CrossSection) -> bool {
     opened.area() >= 0.93 * shape.area()
 }
 
-/// No strip of plastic between inlay areas is narrower than `MIN_GAP` if closing the shape by
-/// half of it adds almost nothing.
+/// Check gaps locally. Growing both sides by half the gap must keep separate inlays apart.
+/// Closing also exposes narrow slots within one inlay. Allow small fills at inside corners.
 pub fn gaps_ok(shape: &CrossSection) -> bool {
     let h = MIN_GAP / 2.0;
-    let closed = offset(&offset(shape, h, 16), -h, 16);
-    closed.area() <= 1.07 * shape.area()
+    let grown = offset(shape, h - 1e-6, 32);
+    if grown.decompose().len() != shape.decompose().len() {
+        return false;
+    }
+    offset(&grown, -h, 32)
+        .difference(shape)
+        .decompose()
+        .iter()
+        .all(|fill| {
+            let r = fill.bounds_rect2();
+            // Ignore numerical traces and small patches left by rounding an inside corner.
+            fill.area() < 1e-4
+                || (fill.area() <= h * h && (r.max_x - r.min_x).max(r.max_y - r.min_y) <= MIN_GAP)
+        })
 }
 
 /// The height of the biggest upward-facing flat face.
@@ -353,7 +365,7 @@ pub fn place(
             .translate(0.0, 0.0, z - EPS);
         let room = offset(&shape, RAISE_CLEAR, 16)
             .extrude(d.logo_raise + RAISE_CLEAR)
-            .translate(0.0, 0.0, z + EPS);
+            .translate(0.0, 0.0, z);
         let clear = above.is_none_or(|a| a.intersection(&room).volume() < 1e-6)
             && body.intersection(&room).volume() < 1e-6;
         if clear {
@@ -507,4 +519,51 @@ fn two_bars(gap: f64, at: [f64; 2]) -> CrossSection {
     bar(-3.0 - gap / 2.0)
         .union(&bar(gap / 2.0))
         .translate(at[0], at[1])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::geom::{bx, rect};
+
+    #[test]
+    fn narrow_local_gaps_fail_in_large_labels() {
+        let large = rect(20.0, 20.0, 80.0, 80.0);
+        let two_letters = |gap| rect(0.0, 0.0, 2.0, 1.0).union(&rect(2.0 + gap, 0.0, 4.0, 1.0));
+        assert!(!gaps_ok(&large.union(&two_letters(0.33))));
+        assert!(!gaps_ok(&large.union(&two_letters(0.79))));
+        assert!(gaps_ok(&large.union(&two_letters(MIN_GAP))));
+
+        let slot = |gap| large.difference(&rect(40.0, 75.0, 40.0 + gap, 81.0));
+        assert!(!gaps_ok(&slot(0.02)));
+        assert!(gaps_ok(&slot(0.81)));
+    }
+
+    #[test]
+    fn raised_label_clearance_runs_from_the_face_to_the_relief_plus_clearance() {
+        let d = Design::default();
+        let z = 2.0;
+        let part = bx(0.0, 0.0, 0.0, 20.0, 20.0, z);
+        let limit = d.logo_raise + RAISE_CLEAR;
+        for (bottom, top, clears) in [
+            (-0.04, 0.0, true),
+            (0.01, 0.04, false),
+            (limit - 0.02, limit - 0.01, false),
+            (limit, limit + 0.03, true),
+        ] {
+            let obstruction = bx(6.5, 9.0, z + bottom, 8.5, 11.0, z + top);
+            let result = place(
+                &d,
+                "clearance test",
+                &part,
+                Spot::Label(two_bars(2.0, [10.0, 10.0]), z),
+                Some(&obstruction),
+            );
+            if clears {
+                assert_eq!(result.unwrap().raise, d.logo_raise);
+            } else {
+                assert!(matches!(result, Err(e) if e.contains("raised label would come within")));
+            }
+        }
+    }
 }

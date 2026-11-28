@@ -23,7 +23,7 @@ Use these joints, in this order of preference. Each is in [joints.rs](../crates/
 | **Keyed snap pin** | Plates onto columns | A pin with two flats and a 45° head. The plate's keyed slot drops on one way only, centred, and two flex fingers click in under the head. |
 | **Lips and snap hooks** | Circuit boards | Tuck one edge under fixed lips, swing the board down, and snap hooks click over the other edge. |
 | **Push-down end hooks** | Batteries and other thick parts | Press it straight down between side guides until a hook clicks over each end. Tuck-and-swing doesn't work for thick parts: their bottom edge swings into the lips. |
-| **Lid latches** | Lids, including sealed outdoor lids | Press the lid straight down: a finger cut into each edge of the lid bends out over a lug on the rim and clicks under it. Press each finger outward with a thumb to lift the lid off again. |
+| **Lid latches** | Lids, including sealed outdoor lids | Press the lid straight down. A finger cut into each edge bends inward over a lug on the rim and clicks under it. Press each finger inward toward the centre with a thumb and lift the lid off. |
 
 No screws, inserts or nuts hold printed parts together, anywhere. (A bought cable gland or antenna bulkhead keeps its own nut.) A seal doesn't need clamping force if it is a radial seal (see [Outdoor cases](#outdoor-cases)).
 
@@ -78,7 +78,7 @@ Every new joint or board mount gets a coupon: the same geometry, made by the sam
 - **Pin fit ladder:** three tabs (1, 2 and 3 dots, 0.1 to 0.3 mm). The best fit becomes the kit's fit.
 - **Nano coupon** and **XIAO coupon:** the plate's mounts on their own, for the real boards.
 - **Tripod-thread coupon:** the box's thread and one 0.15 mm looser.
-- **Latch coupon:** a small outdoor box and lid with two of the real latches, cut down to about 14 cm³: an open ring of box, flange only under the lugs, and a frame of lid. A coupon for a joint must hold its parts the way the real part does: a lone chunk of lid with nothing to keep it square just slides away from the lug, so it tests nothing.
+- **Latch coupon:** a small outdoor box and lid with two of the real latches. The box is an open ring with a flange under each lug, and the lid is an open frame. Both kits follow the [same two-latch coupon procedure](outdoor-station/README.md#two-latch-coupon). The ring and frame hold the parts square as the lugs bend the fingers.
 - **Camera coupon:** the camera side's cradle, guides and hooks on their own, for the real XIAO ESP32-S3 Sense.
 
 Print each coupon in the material of the real part. Record what you find, and change the one number that controls it.

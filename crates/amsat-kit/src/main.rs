@@ -241,6 +241,7 @@ fn build_outdoor(d: &Design) -> Result<(), String> {
     let dir = kit_dir().with_file_name("outdoor-station");
     println!("== outdoor station ({})", dir.display());
     outdoor_checks::verify_uno_nano(d, &o)?;
+    outdoor_checks::verify_latch_coupon(d, &o)?;
     println!("checks passed");
     report_outdoor(d, &o);
     let mut solids = outdoor_parts(d, &o)?;
@@ -257,6 +258,7 @@ fn build_xiao(d: &Design) -> Result<(), String> {
     let dir = kit_dir().with_file_name("outdoor-xiao");
     println!("== outdoor XIAO station ({})", dir.display());
     outdoor_checks::verify_xiao(d, &o)?;
+    outdoor_checks::verify_latch_coupon(d, &o)?;
     println!("checks passed");
     report_outdoor(d, &o);
     let mut solids = outdoor_parts(d, &o)?;
@@ -275,6 +277,7 @@ fn check_all(d: &Design) -> Result<(), String> {
     outdoor_checks::verify_uno_nano(d, &Outdoor::default())?;
     outdoor_checks::verify_latch_coupon(d, &Outdoor::default())?;
     outdoor_checks::verify_xiao(d, &Outdoor::xiao())?;
+    outdoor_checks::verify_latch_coupon(d, &Outdoor::xiao())?;
     println!("outdoor cases: checks passed");
     Ok(())
 }

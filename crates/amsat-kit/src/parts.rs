@@ -91,10 +91,21 @@ pub fn lettering(lines: &[&str]) -> Result<CrossSection, String> {
                     .collect()
             })
             .collect();
-        out = out.union(&CrossSection::from_polygons_with_fill_rule(
-            &polys,
-            FillRule::EvenOdd,
-        ));
+        let row = CrossSection::from_polygons_with_fill_rule(&polys, FillRule::EvenOdd);
+        let mut glyphs = row.decompose();
+        glyphs.sort_by(|a, b| a.bounds_rect2().min_x.total_cmp(&b.bounds_rect2().min_x));
+        let mut right = f64::NEG_INFINITY;
+        for glyph in &mut glyphs {
+            let clean = crate::text::close_notches(glyph);
+            let b = clean.bounds_rect2();
+            let x = (right + crate::text::LETTER_GAP - b.min_x).max(0.0);
+            right = b.max_x + x;
+            *glyph = clean.translate(x, 0.0);
+        }
+        let clean = CrossSection::batch_union(&glyphs);
+        let (old, new) = (row.bounds_rect2(), clean.bounds_rect2());
+        out =
+            out.union(&clean.translate((old.min_x + old.max_x - new.min_x - new.max_x) / 2.0, 0.0));
     }
     Ok(out)
 }

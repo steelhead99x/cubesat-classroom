@@ -9,7 +9,7 @@ The [classroom kit](../amsat-cubesatsim/README.md)'s payload, sealed in a box fo
 - **Plate:** the kit's payload plate snaps onto the box's columns the same way it snaps onto the AMSAT frame: one way round, three clicks. Two pins are tight, on opposite corners.
 - **Battery:** the largest cell MakerFocus's listing allows (67 × 36 × 12 mm plus 2 mm each way) lies in a walled pocket on a deck under the plate. The plate sits 0.5 mm above it, so once the plate is on the cell can't move, and there are no extra parts to hold it. The wire leaves the pocket's top end and comes up through the notch in the plate's top edge.
 - **Seal:** a skirt under the lid drops into the box's opening. A 2.5 mm nitrile O-ring sits in a groove round the skirt and is squeezed 24% sideways against the box wall (18–30% seals without crushing it); the groove is 73% full. This is a radial seal, like a jar lid's: it needs no clamping force, so nothing has to screw down. The O-ring is the one separate piece, and it stays in its groove.
-- **Lid:** press it straight down. A flex finger cut into each of the lid's four edges rides over a lug on the rim's 45° lead-in and clicks under it. To open, press each finger outward with a thumb and lift. The fingers bend 0.99% (the limit is 1.2%), so the lid can go on and off again and again. The CubeSat Classroom mark and lettering are inlaid flush in the lid's top face, in the second colour.
+- **Lid:** press it straight down. A flex finger cut into each of the lid's four edges rides over a lug on the rim's 45° lead-in and clicks under it. To open, press each finger inward toward the centre of the lid and lift. The fingers bend 0.99% (the limit is 1.2%), so the lid can go on and off again and again. The CubeSat Classroom mark and lettering are inlaid flush in the lid's top face, in the second colour.
 - **Ports** are in the wall that faces down on a tripod, so rain runs off them: an M12 × 1.5 cable gland for a USB cable (3–6.5 mm), and an M12 × 1.5 breathable membrane vent, which stops condensation and pressure changes from pumping water past the seal.
 - **Tripod:** a 1/4"-20 UNC thread printed straight into a sealed boss in the middle of the back, 9 mm deep. It stops 2 mm short of the inside, so it can't let water in. Tilt the tripod head so the lid faces out and the ports face down.
 
@@ -17,15 +17,24 @@ The [classroom kit](../amsat-cubesatsim/README.md)'s payload, sealed in a box fo
 
 | File | Plate | What's on it |
 | --- | --- | --- |
-| **[p1s/outdoor-test-coupons.3mf](p1s/outdoor-test-coupons.3mf)** (print first) | Test coupons | The tripod-thread coupon, the latch coupon (a small box and lid with the real latches), and the snap pin with its fit ladder |
+| **[p1s/outdoor-test-coupons.3mf](p1s/outdoor-test-coupons.3mf)** (print first) | Test coupons | The tripod-thread coupon, the [two-latch coupon](#two-latch-coupon), and the snap pin with its fit ladder |
 | **[p1s/outdoor-station.3mf](p1s/outdoor-station.3mf)** | 1. Box | The box (155 cm³) |
 | | 2. Lid and payload plate | The lid (48 cm³) and the kit's payload plate |
 
 - **Two colours:** load white in AMS slot 1 and black in slot 2. Every part, coupons too, carries the CubeSat Classroom logo in the other colour (white case parts get a black logo; the black plate gets a white one): inlaid 0.9 mm, and raised 0.6 mm on an upward face wherever nothing mounted sits over it. Sized for a 0.6 mm nozzle, so it prints on a 0.4 mm one too. One colour still works, and the raised logo still shows. Each coupon also has a label tile saying what it tests and how to try it (TRIPOD THREAD, LID LATCH, SNAP PIN, FIT 1 to 3). The labels are new and haven't been printed yet; the joints behind them are the ones printed below.
 - **Material:** ASA or PETG for the box, lid and plate. PLA softens in summer sun. The fit ladder was tuned in PLA, so print the pin coupon again in your outdoor material and check which tab fits best.
-- **Latch coupon:** a small box and lid, made by the same code as the real ones: the same rim, lugs, skirt, O-ring groove and latch fingers, with two latches on opposite sides instead of four. It's cut down to save plastic, about 14 cm³ (18 g of PLA) for both: the box is a 59 mm open ring only as tall as the skirt, its flange is only where the lugs stand, and the lid is a frame with an open middle. The lid prints upside down. Line the lid's fingers up with the box's lugs and press it straight down until both click. It should hold when you pull up on it, and come off when you push both fingers inward with your thumbs and lift. If it's too stiff or won't catch, tell us: the latch is a few numbers (`latch_slit`, `lug_reach`). An O-ring is optional (2.5 mm cord, about 43 mm inside diameter); without one the lid feels a little looser in the box.
 - **Supports:** none. The box prints on its back; the lid prints upside down, on its top. The rim's overhang has a 45° slope under it, and the deck under the battery is bridged between ribs 10 mm apart.
 - **Tripod-thread coupon:** two sockets in a block as thick as the box's boss. The plain one is the box's thread. The one with a dot is 0.15 mm looser, for printers that print holes small. Screw your tripod's screw into each. If the plain one is too tight and the dotted one is right, tell us: the box's thread is one number (`thread_clear`), and the files can be regenerated for it.
+
+### Two-latch coupon
+
+Both outdoor kits use this small box and lid. They have the same rim, lugs, skirt, O-ring groove and latch fingers as the full-size parts, with two latches on opposite sides. The box is a 59 mm open ring with a flange under each lug. The lid is an open frame and prints upside down.
+
+1. Line up the lid's fingers with the box's lugs and press the lid straight down until both latches click.
+2. Pull up gently on the lid. Both latches should hold.
+3. Push both fingers inward toward the centre with your thumbs and lift. The lid should come off. If it takes too much force or won't catch, tell us so we can check `latch_slit` and `lug_reach`.
+
+An O-ring is optional (2.5 mm cord, about 43 mm inside diameter). The lid has a little more play without one.
 
 **Printed so far (hardware bench, Nov 26, Bambu Lab P1S, PLA):** the outdoor test coupons. The first latch coupon was a chunk of rim and a chunk of lid, and it didn't work as a test: with nothing holding the lid chunk square, the lug just pushed it aside instead of bending the finger. It's been replaced by the small box and lid above, which haven't been printed yet. On the pin ladder, 1 dot still fits best. On the tripod-thread coupon, the plain socket (the box's thread) works with a tripod screw. So nothing in the design changed. The box, lid and plates will be printed in ASA; print the coupons again in ASA first and check the same things. The box and lid haven't been printed or water-tested yet.
 

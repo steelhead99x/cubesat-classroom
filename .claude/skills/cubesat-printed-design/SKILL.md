@@ -20,7 +20,7 @@ Every CubeSat Classroom 3D design follows these rules, in every repository and f
 | Keyed snap pin | Plates onto columns | A pin with two flats and a 45° head in a keyed slot: rigid walls on the flats, two straight flex fingers either side with teeth under the head. Drops on one way, centred; clicks. |
 | Lips + snap hooks | Circuit boards | Tuck one edge under fixed lips, swing down, and hooks on in-plane fingers click over the other edge. Hook underside at 10°, under PLA's ~17° friction angle, so it locks itself. |
 | Push-down end hooks | Thick parts: batteries | Press straight down between side guides until a hook clicks over each end. Tuck-and-swing fails for thick parts, because their bottom edge swings into the lips. |
-| Lid latches | Lids, sealed ones too | Press the lid down: an in-plane finger cut into each lid edge bends over a lug on the rim (45° lead-in) and clicks under it. Thumb each finger outward to lift it off. |
+| Lid latches | Lids, sealed ones too | Press the lid down. A finger in each edge bends inward over a lug (45° lead-in) and clicks under it. Push each finger inward toward the centre with a thumb and lift the lid off. |
 
 No screws, inserts or nuts hold printed parts together. A seal that needs no clamping force (a radial O-ring) lets a lid latch on.
 
@@ -57,5 +57,7 @@ Clean and engineered, like a modern launch vehicle, without copying anyone's nam
 5. Package prints with names, plates and settings (see the bambu-studio-projects skill).
 6. **Label every result**: design check, desk simulation or hardware bench. Never present a check as a measurement, and say in the README what has been printed and what hasn't.
 7. Run the checklist: no loose pieces or screws, one way round, no supports, snap rules, locating, launch, material, coupon, checks, look, labels.
+
+Both outdoor kits use the [same two-latch coupon procedure](../../../hardware/outdoor-station/README.md#two-latch-coupon).
 
 When an existing design doesn't meet the guide, say so in its README rather than hiding it.
