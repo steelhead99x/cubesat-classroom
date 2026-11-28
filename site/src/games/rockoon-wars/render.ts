@@ -7,6 +7,7 @@ type Unit = { x: number; y: number; angle: number; power: number; weapon: string
 export type Scene = {
   pads: Unit[];
   target: { x: number; y: number }; terrain: number[]; units: Unit[]; wind: number; colors: string[]; names: string[];
+  targetPreview?: { x: number; y: number }[];
   released?: number;
   active: number; // whose turn it is (-1 for none)
   preview: number[][] | null; // aim dots
@@ -128,9 +129,25 @@ export class Renderer {
     if (!scene) return;
     this.#world(shx, shy);
     ctx.save();
-    ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(scene.target.x, scene.target.y, G.TARGET_RADIUS, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(scene.target.x, scene.target.y, 2, 0, Math.PI * 2); ctx.fill();
+    if (scene.targetPreview) {
+      ctx.beginPath();
+      scene.targetPreview.forEach(({ x, y }, i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+      ctx.setLineDash([3, 5]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#ffe27a99';
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    for (let i = G.TARGET_RINGS.length - 1; i >= 0; i--) {
+      const ring = G.TARGET_RINGS[i];
+      ctx.beginPath();
+      ctx.arc(scene.target.x, scene.target.y, ring.radius, 0, Math.PI * 2);
+      ctx.fillStyle = hexA(ring.color, ring.points === 10 ? 1 : 0.17);
+      ctx.fill();
+      ctx.strokeStyle = ring.color;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
     ctx.restore();
     if (scene.ghost) this.#drawGhost(scene.ghost);
     if (scene.preview) {

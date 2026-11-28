@@ -63,7 +63,7 @@ test('more power goes farther', () => {
 });
 
 test('rocket releases above its pad and scores against the ring only', () => {
-  for (const [offset, points] of [[0, 3], [20, 1], [50, 0]]) {
+  for (const [offset, points] of [[0, 10], [6, 6], [11, 4], [20, 2], [27, 1], [50, 0]]) {
     const m = begin();
     m.field.wind = 0;
     const [pad, other] = m.field.units;
@@ -74,6 +74,8 @@ test('rocket releases above its pad and scores against the ring only', () => {
     const result = R.fire(m, { angle: 90, power: 50, weapon: 'baby' });
     assert.ok(Math.abs(result.path[0][1] - release) < 1e-8);
     assert.equal(m.players[0].score, points);
+    assert.equal(m.players[0].bullseyes, points === 10 ? 1 : 0);
+    assert.equal(result.hit.bullseye, points === 10);
     assert.equal(m.players[0].credits, R.START_CREDITS + 50 * points);
     assert.equal(m.players[1].score, 0);
     assert.ok(result.blast, 'a landing makes a crater');
@@ -83,6 +85,27 @@ test('rocket releases above its pad and scores against the ring only', () => {
     assert.equal(pad.y, under(m.field.terrain, pad.x), 'the pad sits on the highest ground under it');
     assert.deepEqual(other, otherPad, 'the distant pad stays put');
   }
+});
+
+test('target drift follows the same flight clock used for scoring and advances between shots', () => {
+  const m = begin();
+  m.field.wind = 7;
+  const field = structuredClone(m.field);
+  const positions = Array.from({ length: 5 }, (_, i) => R.targetPosition(field, i));
+  assert.notDeepEqual(positions[0], positions[1]);
+  assert.ok(positions.every(({ x, y }) => x > R.TARGET_RADIUS && x < R.W - R.TARGET_RADIUS && y < R.H - R.TARGET_RADIUS));
+  const path = Array.from({ length: 61 }, (_, i) => {
+    const target = R.targetPosition(field, i / R.FLIGHT_SAMPLES_PER_SECOND);
+    return [target.x + 10 * (i - 40.5), target.y];
+  });
+  const hit = R.targetHit(field, path, 0);
+  assert.equal(hit.at, 40.5);
+  assert.equal(hit.bullseye, true, 'detects a bullseye between samples');
+  const shot = { angle: 90, power: 25, weapon: 'baby' };
+  const next = structuredClone(m);
+  assert.deepEqual(R.fire(next, shot), R.fire(m, shot));
+  assert.equal(R.fingerprint(next), R.fingerprint(m));
+  assert.notDeepEqual(R.targetPosition(m.field), positions[0], 'the next shot starts from the target’s new position');
 });
 
 test('a rocket that leaves the field does not change terrain or pad positions', () => {
@@ -354,7 +377,7 @@ test('the ring is never next to a release point, and every crew can reach it', (
           for (let p = 0; p <= 100 && !reach; p += 2) {
             const { path } = R.trajectory(m, u, a, p);
             const hit = path.some(([x, y]) => (x - target.x) * (x - target.x) + (y - target.y) * (y - target.y) <= R.TARGET_RADIUS * R.TARGET_RADIUS);
-            if (hit && p <= 10) assert.fail(`n=${n} seed ${seed}: scores 3 at power ${p}`);
+            if (hit && p <= 10) assert.fail(`n=${n} seed ${seed}: hits the ring at power ${p}`);
             reach ||= hit;
           }
         }
