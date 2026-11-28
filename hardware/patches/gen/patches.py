@@ -304,7 +304,8 @@ def extrude(geom, z0, z1, s):
 
 def written(v):
     """Coordinates exactly as write_3mf writes them (4 decimals), read back as numbers."""
-    return np.vectorize(lambda c: float(f'{c:.4f}'), otypes=[float])(np.asarray(v, dtype=float))
+    v = np.asarray(v, dtype=float)
+    return np.array([float(f'{c:.4f}') for c in v.ravel()]).reshape(v.shape)
 
 
 def flip_flat_triangles(m):
